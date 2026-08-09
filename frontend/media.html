@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <script>
- const token = localStorage.getItem('token');
+  /* const token = localStorage.getItem('token');
     if (!token) {
       window.location.replace('/login.html');
-    } 
+    } */
    </script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,6 +81,19 @@ function checkFileSize(file) {
   return true;
 }
 
+// NEW: Rebuild URL if old one is broken
+function getValidUrl(item) {
+  if(item.url && item.url.includes('cloudinary')) {
+    return item.url; // new files are fine
+  }
+  // fallback: rebuild from public_id
+  if(item.public_id) {
+    const resourceType = item.type === 'video'? 'video' : 'image';
+    return `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/upload/${item.public_id}`;
+  }
+  return ""; // broken file
+}
+
 function login() {
   const email = document.getElementById('emailInput').value.trim();
   if(!email) return alert("Enter email");
@@ -107,15 +120,19 @@ async function loadFromDB() {
       gallery.innerHTML = `<div class="empty">No media yet. Upload something!</div>`;
       return;
     }
-    gallery.innerHTML = mediaList.map(item => `
+    gallery.innerHTML = mediaList.map(item => {
+      const validUrl = getValidUrl(item); // <-- FIX HERE
+      if(!validUrl) return ''; // skip broken files with no public_id
+
+      return `
       <div class="media-card">
         ${item.type === 'video'
-   ? `<video src="${item.url}" onclick="openViewer('${item.url}', 'video')"></video>`
-          : `<img src="${item.url}" onclick="openViewer('${item.url}', 'image')" />`
+         ? `<video src="${validUrl}" onclick="openViewer('${validUrl}', 'video')"></video>`
+          : `<img src="${validUrl}" onclick="openViewer('${validUrl}', 'image')" />`
         }
         <button onclick="deleteMedia('${item._id}')">Delete</button>
       </div>
-    `).join("");
+    `}).join("");
   } catch(err) {
     console.error(err);
     gallery.innerHTML = `<div class="empty">Error loading. Check server.</div>`;
@@ -126,7 +143,6 @@ document.getElementById('uploadBtn').onclick = async () => {
   const files = document.getElementById('fileInput').files;
   if (files.length === 0) return alert("Pick files first");
 
-  // Check all files before starting upload
   for(let i = 0; i < files.length; i++) {
     if (!checkFileSize(files[i])) return;
   }
@@ -160,7 +176,6 @@ document.getElementById('uploadBtn').onclick = async () => {
         uploaded++;
         btn.innerText = `Uploading ${uploaded}/${files.length}...`;
       } else {
-        // Handle Cloudinary errors cleanly
         const errMsg = result.error?.message || 'Upload failed';
         alert(`"${file.name}" failed:\n${errMsg}`);
       }

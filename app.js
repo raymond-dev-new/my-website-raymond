@@ -11,7 +11,7 @@ import cors from 'cors'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import path from 'path'
-//import bordyparser from 'body-parser'
+import bordyparser from 'body-parser'
 import axios from 'axios'
 import multer from 'multer'
 import fs from 'fs'
@@ -19,12 +19,12 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import {v2 as cloudinary } from 'cloudinary';
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-import { handleUpload } from '@vercel/blob/client';
-import { del } from '@vercel/blob';
+//import { handleUpload } from '@vercel/blob/client';
+//import { del } from '@vercel/blob';
 
 const app = express()
 
-
+//Raymond123
 const port = process.env.PORT || 8000
 const JWT_SECRET = process.env.JWT_SECRET
 const url = process.env.MONGO_URL
@@ -37,13 +37,14 @@ app.use(cors({ origin: "*",
  }));
 
 app.use(cors({ origin: "*" }));
-//app.use(bodyParser.json({ limit: '10mb' })); // for metadata
+app.use(bordyparser.json()); // for metadata
 //app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.json({ limit: '10mb' })); // increase limit for big metadata
  app.use(express.static(path.join(__dirname, 'frontend')))
 
  //start her sdfyuiopiuytrewrtyuiopoiuytretkjhgf
-  // 1. CONNECT MONGODB with Mongoose
+
+    // 1. CONNECT MONGODB with Mongoose
 mongoose.connect(url)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
