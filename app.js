@@ -19,7 +19,9 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import {v2 as cloudinary } from 'cloudinary';
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-import { put, del } from '@vercel/blob'; // <-- NEW
+import { handleUpload } from '@vercel/blob/client';
+import { del } from '@vercel/blob';
+
 const app = express()
 
 
@@ -302,92 +304,56 @@ const password = await bcrypt.hash(passwords, 10)
   // start here iuytrertyuiopiuytrtyuytrtyuiuytrtyuiuytfyuiuyt
 
 
-// MULTER - use memory storage for Vercel Blob
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 1024 * 1024 * 1024 } // 1GB limit
-});
-
-
-// MONGOOSE SCHEMA
-const mediaSchemal = new mongoose.Schema({
-  email: { type: String, required: true }, // this is the user
-  url: { type: String, required: true }, // blob public url
-  blobPath: { type: String, required: true }, // needed to delete
-  type: { type: String, required: true }, // image or video
-  filename: { type: String },
-  size: { type: Number },
+const MediaSchemal = new mongoose.Schema({
+  userId: { type: String, required: true, index: true },
+  url: { type: String, required: true },
+  blobPath: { type: String, required: true },
+  type: { type: String, enum: ['image', 'video'], required: true },
+  name: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
-const Medial = mongoose.model('savedIM', mediaSchemal);
+const Medial = mongoose.models.Media || mongoose.model('Medial', MediaSchemal);
 
+export const config = { api: { bodyParser: { sizeLimit: '10gb' } } };
 
-// 1. UPLOAD ROUTE - TO VERCEL BLOB
-app.post('/get/api/upload-blob', upload.single('file'), async (req, res) => {
-  try {
-    const { userId } = req.body; // userId = email from frontend
-    const file = req.file;
-    if (!file) return res.status(400).json({ error: "No file uploaded" });
-
-    // Upload to Vercel Blob
-    const blob = await put(`vault/${userId}/${Date.now()}-${file.originalname}`, file.buffer, {
-      access: 'public',
-      contentType: file.mimetype,
-    });
-
-    const fileType = file.mimetype.startsWith('video') ? 'video' : 'image';
-
-    // Save to MongoDB
-    const newMedia = new Medial({
-      email: userId,
-      url: blob.url,
-      blobPath: blob.pathname,
-      type: fileType,
-      filename: file.originalname,
-      size: file.size
-    });
-    await newMedia.save();
-
-    res.json({ success: true, url: blob.url, id: newMedia._id });
-
-  } catch(err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+export default async function handler(req, res) {
+  if (req.method === 'POST') {
+    try {
+      const jsonResponse = await handleUpload({
+        body: req.body,
+        request: req,
+        onBeforeGenerateToken: async (pathname, clientPayload) => {
+          const payload = JSON.parse(clientPayload || '{}');
+          return { allowedContentTypes: ['image/*', 'video/*'], tokenPayload: { userId: payload.userId } };
+        },
+        onUploadCompleted: async ({ blob, tokenPayload }) => {
+          await Medial.create({
+            userId: tokenPayload.userId,
+            url: blob.url, blobPath: blob.pathname,
+            type: blob.contentType.startsWith('video') ? 'video' : 'image',
+            name: blob.pathname.split('/').pop()
+          });
+        },
+      });
+      return res.status(200).json(jsonResponse);
+    } catch (error) { return res.status(400).json({ error: error.message }); }
   }
-});
 
-
-// 2. GET MEDIA FOR USER
-app.get('/get/api/get-media', async (req, res) => {
-  try {
-    const { userId } = req.query; // email
-    const mediaList = await Medial.find({ email: userId }).sort({ createdAt: -1 });
-    res.json(mediaList);
-  } catch(err) {
-    res.status(500).json({ error: err.message });
+  if (req.method === 'GET') {
+    const { userId } = req.query;
+    const media = await Medial.find({ userId }).sort({ createdAt: -1 });
+    return res.status(200).json(media);
   }
-});
 
-
-// 3. DELETE MEDIA
-app.delete('/get/api/delete-blob/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { blobPath } = req.body;
-
-    // Delete from Vercel Blob
-    if(blobPath) await del(blobPath);
-    // Delete from MongoDB
+  if (req.method === 'DELETE') {
+    const { id, blobPath } = req.body;
     await Medial.findByIdAndDelete(id);
-
-    res.json({ success: true });
-  } catch(err) {
-    res.status(500).json({ error: err.message });
+    if (blobPath) await del(blobPath);
+    return res.status(200).json({ success: true });
   }
-});
-
-
-  //end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
+}
+      
+  // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
   
 
   app.listen(port, console.log('server is running on port 8000')
