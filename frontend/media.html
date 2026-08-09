@@ -221,7 +221,7 @@ document.getElementById('uploadBtn').onclick = async () => {
 }
 
 async function deleteMedia(id, public_id) {
-  if(!confirm("Delete this media?")) return;
+ c
   await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
   loadFromDB();
 }

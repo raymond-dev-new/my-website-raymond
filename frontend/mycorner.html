@@ -3,12 +3,10 @@
 <head>
 
     <script>
-  const token = localStorage.getItem('token');
-
+ const token = localStorage.getItem('token');
     if (!token) {
-      // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    }
+    } 
    </script>
 
 <meta charset="UTF-8">
@@ -21,21 +19,24 @@
   }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
   body { background: linear-gradient(135deg, #0a0f1e, #1e1b4b); color: var(--text); padding: 16px; min-height: 100vh; }
- .container { max-width: 900px; margin: auto; }
+.container { max-width: 900px; margin: auto; }
   h1 { text-align: center; margin: 10px 0 20px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
- .tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
- .tab { background: var(--card); border: 1px solid #334155; padding: 10px 14px; border-radius: 12px; cursor: pointer; user-select: none; }
- .tab.active { background: linear-gradient(90deg, var(--accent), var(--accent-2)); border: none; }
- .page { display: none; background: var(--card); padding: 18px; border-radius: 16px; border: 1px solid #334155; }
- .page.show { display: block; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.tab { background: var(--card); border: 1px solid #334155; padding: 10px 14px; border-radius: 12px; cursor: pointer; user-select: none; }
+.tab.active { background: linear-gradient(90deg, var(--accent), var(--accent-2)); border: none; }
+.page { display: none; background: var(--card); padding: 18px; border-radius: 16px; border: 1px solid #334155; }
+.page.show { display: block; }
   input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: var(--text); font-size: 16px; }
   button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: white; font-weight: 700; font-size: 16px; cursor: pointer; }
   button.danger { background: var(--danger); }
   button.ok { background: var(--ok); }
- .card { background: #0f172a; padding: 12px; border-radius: 12px; margin-top: 12px; border: 1px solid #334155; }
- .card img,.card video { width: 100%; border-radius: 10px; margin-top: 8px; }
- .row { display: flex; gap: 8px; }
-  @media(min-width: 700px) {.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } }
+.card { background: #0f172a; padding: 12px; border-radius: 12px; margin-top: 12px; border: 1px solid #334155; }
+.card img,.card video { width: 100%; border-radius: 10px; margin-top: 8px; }
+.row { display: flex; gap: 8px; }
+
+  /* CHANGED: 2 columns for media and memory */
+ .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media(min-width: 700px) {.grid2 { grid-template-columns: 1fr 1fr; } } /* 2 columns on desktop */
 </style>
 </head>
 <body>
@@ -80,7 +81,7 @@
     <input type="file" id="mediaFile" accept="image/*,video/*">
     <input type="text" id="mediaTitle" placeholder="Title for this file">
     <button onclick="saveMedia()">Save to Gallery</button>
-    <div id="mediaList" class="grid2"></div>
+    <div id="mediaList" class="grid2"></div> <!-- NOW 2 COLUMNS -->
   </div>
 
   <div id="docs" class="page">
@@ -127,6 +128,11 @@ function openPage(id) {
   document.getElementById('tab-' + id).classList.add('active');
 }
 
+// CONFIRM HELPER
+function confirmDelete(msg) {
+  return confirm(msg);
+}
+
 // JOURNAL
 function saveJ(){
   let d = document.getElementById('jDate').value;
@@ -141,7 +147,10 @@ function renderJ(){
    ` <div class="card"><small>${x.d}</small><p>${x.t}</p><button class="danger" onclick="delJ(${i})">Delete</button></div> `
   ).join('');
 }
-function delJ(i){ DATA.journal.splice(i,1); save(); renderJ(); }
+function delJ(i){
+  if(!confirmDelete("Delete this journal entry?")) return; // ADDED CONFIRM
+  DATA.journal.splice(i,1); save(); renderJ();
+}
 
 // VOICE
 async function rec(){
@@ -168,7 +177,10 @@ function renderV(){
    ` <div class="card"><small>${x.d}</small><audio controls src="${x.data}"></audio><button class="danger" onclick="delV(${i})">Delete</button></div> `
   ).join('');
 }
-function delV(i){ DATA.voice.splice(i,1); save(); renderV(); }
+function delV(i){
+  if(!confirmDelete("Delete this voice note?")) return; // ADDED CONFIRM
+  DATA.voice.splice(i,1); save(); renderV();
+}
 
 // MEMORY
 function saveM(){
@@ -187,7 +199,11 @@ function renderM(){
    ` <div class="card"><small>${x.d}</small><h4>${x.t}</h4><p>${x.txt}</p>${x.img? ` <img src="${x.img}"> ` :''}<button class="danger" onclick="delM(${i})">Delete</button></div>`
   ).join('');
 }
-function delM(i){ DATA.memory.splice(i,1); save(); renderM(); }
+function delM(i){
+  if(!confirmDelete("Delete this memory?")) return; // ADDED CONFIRM
+  DATA.memory.splice(i,1); save(); renderM();
+}
+
 // MEDIA
 function saveMedia(){
   let f = document.getElementById('mediaFile').files[0];
@@ -205,7 +221,10 @@ function renderMedia(){
    ` <div class="card"><h4>${x.t}</h4><small>${x.d}</small>${x.type.startsWith('image')? `<img src="${x.data}"> ` : `<video controls src="${x.data}"></video> `}<button class="danger" onclick="delMedia(${i})">Delete</button></div>`
   ).join('');
 }
-function delMedia(i){ DATA.media.splice(i,1); save(); renderMedia(); }
+function delMedia(i){
+  if(!confirmDelete("Delete this media file?")) return; // ADDED CONFIRM
+  DATA.media.splice(i,1); save(); renderMedia();
+}
 
 // DOCS
 function saveDoc(){
@@ -223,7 +242,10 @@ function renderDoc(){
    ` <div class="card"><b>${x.n}</b><br><small>${x.d}</small><div class="row"><a href="${x.data}" download="${x.n}"><button>Download</button></a><button class="danger" onclick="delDoc(${i})">Delete</button></div></div>`
   ).join('');
 }
-function delDoc(i){ DATA.docs.splice(i,1); save(); renderDoc(); }
+function delDoc(i){
+  if(!confirmDelete("Delete this document?")) return; // ADDED CONFIRM
+  DATA.docs.splice(i,1); save(); renderDoc();
+}
 
 // WORRY
 function burn(){
@@ -237,7 +259,10 @@ function renderW(){
     `<div class="card"><small>${x.d}</small><p>${x.t}</p><button class="danger" onclick="delW(${i})">Delete</button></div>`
   ).join('');
 }
-function delW(i){ DATA.worry.splice(i,1); save(); renderW(); }
+function delW(i){
+  if(!confirmDelete("Delete this worry note?")) return; // ADDED CONFIRM
+  DATA.worry.splice(i,1); save(); renderW();
+}
 
 // EXPORT
 function exportAll(){
@@ -247,8 +272,9 @@ function exportAll(){
   a.download = 'backup.json';
   a.click();
 }
+
 function clearAll(){
-  if(confirm('Delete everything?')){
+  if(confirm('⚠️ Delete EVERYTHING in your vault? This cannot be undone.')){ // UPDATED CONFIRM
     localStorage.removeItem('vault'); location.reload();
   }
 }
