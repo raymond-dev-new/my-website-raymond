@@ -131,6 +131,46 @@ export const products = [{
       count: 2187
     },
    pricecents: 1899
+  } , {
+  id: 'uifg46764-hr46464g-jfg4rt764r-hfgytr4t7r4',
+  image: 'amazon-images/countertop-blender-64-oz.jpg',
+  name: 'Countertop Blender 64oz, 1400 Watts',
+  rating: {
+    stars: 4.5,
+    count: 3
+  }, 
+  pricecents: 1047
+
+}, {
+  id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
+  image: 'amazon-images/men-cozy-fleece-zip-up-hoodie-red.jpg',
+  name: "Men's Full-Zip Hooded Fleece Sweatshirt",
+  rating:{
+    stars: 4.5,
+    count: 3157
+  }, 
+  pricecents: 2400
+
+  }, {
+    id: 'urfghrf6767-jhfhr4764-jrfhr87478-jfwghr367',
+   image: 'amazon-images/luxury-tower-set-6-piece.jpg',
+   name: 'Luxury Towel Set - Graphite Gray pairs',
+   rating: {
+    stars: 4.5,
+    count: 144
+   },
+   pricecents: 3599 
+
+  }, {
+    id: 'efgdgr4674y-fhur476-bhdght7648-jhfrh4r7624',
+    image: 'amazon-images/straw-sunhat.webp',
+    name: 'Straw Lifeguard Sun Hat Fabrical -',
+    rating: {
+      stars: 4.5,
+      count: 215
+    },
+    pricecents: 2200
+
   }];
 
 

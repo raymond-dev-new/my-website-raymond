@@ -4,12 +4,12 @@
  
    <script>
    // This runs before the page shows
-    const token = localStorage.getItem('token');
+   /* const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    } 
+    } */
   </script>
    
     
@@ -155,7 +155,7 @@ button:hover{
   
 }
 
-.Media{
+.Medial{
   width: 100%;
   margin-top: 240px;
 }
@@ -169,6 +169,7 @@ button:hover{
     <span>
     <button class="Media"> Save image/video </button>
    </span> 
+   <button class="Medial"> Save image/video </button>
    <div><button class="Note"> Note </button></div>  
 
    <span> <button class="Calculator"> Diary </button> 
@@ -191,6 +192,7 @@ button:hover{
                       const logout = document.querySelector('.logout')
     const Note = document.querySelector('.Note')                  
     const Media = document.querySelector('.Media') 
+    const Medial = document.querySelector('.Medial')
       
      
 
@@ -201,6 +203,11 @@ button:hover{
    Media.addEventListener('click', () => {
       window.location.href="media.html"
    })  
+
+   Medial.addEventListener('click', () => {
+      window.location.href="newmedia.html"
+   })  
+
 
    Note.addEventListener('click', () => {
       window.location.href="note.html"
