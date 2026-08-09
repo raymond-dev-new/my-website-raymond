@@ -13,31 +13,46 @@
 <style>
   :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --primary: #007bff; --danger: #dc3545; --success: #28a745; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 12px; }
-.container { max-width: 700px; margin: 0 auto; }
+  body { background: var(--bg); color: var(--text); padding: 16px; min-height: 100vh; }
+
+  .container { max-width: 700px; margin: 0 auto; width: 100%; }
   h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
-.box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-  input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #333; border-radius: 8px; background: #2a2a2a; color: var(--text); }
+  .box { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 15px; }
+
+  input[type="file"] { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #333; border-radius: 8px; background: #2a2a2a; color: var(--text); }
+  input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #333; border-radius: 8px; background: #2a2a2a; color: var(--text); font-size: 16px; }
+  
   button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
   button:hover { opacity: 0.85; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  #gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  @media(min-width: 768px){ #gallery { grid-template-columns: 1fr 1fr 1fr; }
+  /* MOBILE FIRST: 1 column on phone */
+  #gallery { display: grid; grid-template-columns: 1fr; gap: 12px; } 
 
-.media-card { background: var(--card); border-radius: 10px; overflow: hidden; }
-.media-card img,.media-card video { width: 100%; height: 150px; object-fit: cover; cursor: pointer; display: block; }
-.media-card button { background: var(--danger); border-radius: 0; padding: 8px; font-size: 13px; }
-.hidden { display: none; }
-.empty { text-align: center; color: #aaa; grid-column: 1/-1; padding: 40px 0; }
-.progress { font-size: 12px; color: var(--success); text-align: center; margin-top: 5px; }
+  /* TABLET: 2 columns */
+  @media(min-width: 600px){ 
+    #gallery { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* DESKTOP: 3 columns */
+  @media(min-width: 900px){ 
+    #gallery { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
+  .media-card { background: var(--card); border-radius: 10px; overflow: hidden; }
+  .media-card img,.media-card video { width: 100%; height: 220px; object-fit: cover; cursor: pointer; display: block; }
+  @media(min-width: 600px){ .media-card img,.media-card video { height: 170px; } }
+
+  .media-card button { background: var(--danger); border-radius: 0; padding: 10px; font-size: 14px; margin: 0; }
+  .hidden { display: none; }
+  .empty { text-align: center; color: #aaa; grid-column: 1/-1; padding: 40px 0; }
+  .progress { font-size: 12px; color: var(--success); text-align: center; margin-top: 5px; }
 
   #viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; padding: 10px; }
   #viewerContent { width: 100%; max-width: 900px; }
   #viewerContent img, #viewerContent video { width: 100%; height: auto; max-height: 80vh; border-radius: 8px; }
   #closeBtn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-size: 28px; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
   #closeBtn:hover { background: rgba(255,255,255,0.2); }
-}
 </style>
 </head>
 <body>
