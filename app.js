@@ -302,7 +302,7 @@ const password = await bcrypt.hash(passwords, 10)
   })
 
   // start here iuytrertyuiopiuytrtyuytrtyuiuytrtyuiuytfyuiuyt
-
+/*
 
 const MediaSchemal = new mongoose.Schema({
   userId: { type: String, required: true, index: true },
@@ -353,6 +353,7 @@ export default async function handler(req, res) {
   }
 }
       
+*/
   // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
   
 
