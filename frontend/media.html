@@ -1,41 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-  /* const token = localStorage.getItem('token');
+
+    <script>
+  const token = localStorage.getItem('token');
+
     if (!token) {
+      // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    } */
-   </script>
+    }
+   </script> 
+  
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Media Vault</title>
 <style>
-  :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --primary: #007bff; --danger: #dc3545; }
+  :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --primary: #007bff; --danger: #dc3545; --warn: #ffc107; --success: #28a745; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
   body { background: var(--bg); color: var(--text); padding: 12px; }
-.container { max-width: 700px; margin: 0 auto; }
+ .container { max-width: 700px; margin: 0 auto; }
   h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
-.box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-  input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #333; border-radius: 8px; background: #2a2a2a; color: var(--text); }
+ .box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+  input { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid #333; border-radius: 8px; background: #2a2a2a; color: var(--text); }
+ .warning { font-size: 12px; color: var(--warn); margin-bottom: 10px; text-align: center; }
   button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
   button:hover { opacity: 0.85; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
-
   #gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media(min-width: 768px){ #gallery { grid-template-columns: 1fr 1fr 1fr; } }
-
-.media-card { background: var(--card); border-radius: 10px; overflow: hidden; }
-.media-card img,.media-card video { width: 100%; height: 150px; object-fit: cover; cursor: pointer; display: block; }
-.media-card button { background: var(--danger); border-radius: 0; padding: 8px; font-size: 13px; }
-.hidden { display: none; }
-.empty { text-align: center; color: #aaa; grid-column: 1/-1; padding: 40px 0; }
-
+ .media-card { background: var(--card); border-radius: 10px; overflow: hidden; position: relative; }
+ .media-card img,.media-card video { width: 100%; height: 150px; object-fit: cover; cursor: pointer; display: block; }
+ .media-card button { background: var(--danger); border-radius: 0; padding: 8px; font-size: 13px; }
+ .hidden { display: none; }
+ .empty { text-align: center; color: #aaa; grid-column: 1/-1; padding: 40px 0; }
   #viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; padding: 10px; }
   #viewerContent { width: 100%; max-width: 900px; }
   #viewerContent img, #viewerContent video { width: 100%; height: auto; max-height: 80vh; border-radius: 8px; }
   #closeBtn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-size: 28px; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
-  #closeBtn:hover { background: rgba(255,255,255,0.2); }
 </style>
 </head>
 <body>
@@ -50,6 +51,7 @@
   <div id="appBox" class="hidden">
     <h2>📁 Vault - <span id="userEmail"></span></h2>
     <div class="box">
+      <p class="warning">⚠️ No NSFW / Adult content. Max 100MB per file.</p>
       <input type="file" id="fileInput" accept="image/*,video/*" multiple />
       <button id="uploadBtn">Upload Selected</button>
       <button onclick="logout()" style="background:#555;margin-top:8px;">Logout</button>
@@ -65,33 +67,39 @@
 </div>
 
 <script>
-const CLOUD_NAME = "aevzkk4q"; // MATCHES YOUR CLOUDINARY DASHBOARD
+const CLOUD_NAME = "elgewm6z";
 const UPLOAD_PRESET = "media_vault";
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB Cloudinary free limit
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const API_URL = "https://my-website-raymond.vercel.app";
 
 let CURRENT_USER = "";
+const BANNED_WORDS = ['porn', 'xxx', 'nude', 'nsfw', 'sex', 'adult', 'xxxvideo'];
 
 function checkFileSize(file) {
   if (file.size > MAX_FILE_SIZE) {
     const sizeMB = (file.size / 1024 / 1024).toFixed(2);
-    alert(`File too large! 😅\n\n"${file.name}"\nSize: ${sizeMB} MB\nMax allowed: 100 MB\n\nCompress the video or upgrade Cloudinary.`);
+    alert(`File too large! 😅\n\n"${file.name}"\nSize: ${sizeMB} MB\nMax allowed: 100 MB`);
     return false;
   }
   return true;
 }
 
-// NEW: Rebuild URL if old one is broken
-function getValidUrl(item) {
-  if(item.url && item.url.includes('cloudinary')) {
-    return item.url; // new files are fine
+function checkFileName(file) {
+  const name = file.name.toLowerCase();
+  if(BANNED_WORDS.some(word => name.includes(word))) {
+    alert(`Blocked: "${file.name}"\nFilename contains banned words. Upload rejected.`);
+    return false;
   }
-  // fallback: rebuild from public_id
+  return true;
+}
+
+function getValidUrl(item) {
+  if(item.url && item.url.includes('cloudinary')) return item.url;
   if(item.public_id) {
     const resourceType = item.type === 'video'? 'video' : 'image';
-    return `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/upload/${item.public_id}`;
+    return `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/upload/q_auto,f_auto/${item.public_id}`;
   }
-  return ""; // broken file
+  return "";
 }
 
 function login() {
@@ -121,16 +129,15 @@ async function loadFromDB() {
       return;
     }
     gallery.innerHTML = mediaList.map(item => {
-      const validUrl = getValidUrl(item); // <-- FIX HERE
-      if(!validUrl) return ''; // skip broken files with no public_id
-
+      const validUrl = getValidUrl(item);
+      if(!validUrl) return '';
       return `
       <div class="media-card">
         ${item.type === 'video'
-         ? `<video src="${validUrl}" onclick="openViewer('${validUrl}', 'video')"></video>`
-          : `<img src="${validUrl}" onclick="openViewer('${validUrl}', 'image')" />`
+         ? `<video src="${validUrl}" controls preload="metadata" onclick="openViewer('${validUrl}', 'video')"></video>`
+          : `<img src="${validUrl}" loading="lazy" onclick="openViewer('${validUrl}', 'image')" />`
         }
-        <button onclick="deleteMedia('${item._id}')">Delete</button>
+        <button onclick="deleteMedia('${item._id}', '${item.public_id}')">Delete</button>
       </div>
     `}).join("");
   } catch(err) {
@@ -143,27 +150,38 @@ document.getElementById('uploadBtn').onclick = async () => {
   const files = document.getElementById('fileInput').files;
   if (files.length === 0) return alert("Pick files first");
 
+  // Check all files first
   for(let i = 0; i < files.length; i++) {
     if (!checkFileSize(files[i])) return;
+    if (!checkFileName(files[i])) return;
   }
 
   const btn = document.getElementById('uploadBtn');
   btn.disabled = true;
-  btn.innerText = `Uploading 0/${files.length}...`;
 
   let uploaded = 0;
+  let failed = 0;
+
   for(let i = 0; i < files.length; i++) {
     const file = files[i];
+    btn.innerText = `Uploading ${i+1}/${files.length}...`;
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
+    // NO MODERATION HERE - IT BREAKS UNSIGNED UPLOADS
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method: 'POST', body: formData });
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { 
+        method: 'POST', 
+        body: formData,
+        signal: AbortSignal.timeout(120000) // 2min timeout
+      });
       const result = await res.json();
 
       if(res.ok && result.secure_url) {
-        await fetch(`${API_URL}/api/save-media`, {
+        // Send to backend to check if Cloudinary later flagged it
+        const saveRes = await fetch(`${API_URL}/api/save-media`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
@@ -173,28 +191,35 @@ document.getElementById('uploadBtn').onclick = async () => {
             public_id: result.public_id
           })
         });
-        uploaded++;
-        btn.innerText = `Uploading ${uploaded}/${files.length}...`;
+        const saveData = await saveRes.json();
+        if(saveData.blocked) {
+          failed++;
+          alert(`BLOCKED: "${file.name}"\nReason: ${saveData.reason}`);
+        } else {
+          uploaded++;
+        }
       } else {
+        failed++;
         const errMsg = result.error?.message || 'Upload failed';
         alert(`"${file.name}" failed:\n${errMsg}`);
       }
     } catch(err) {
+      failed++;
       console.error("Upload error", err);
-      alert(`Network error uploading ${file.name}`);
+      alert(`Network/Timeout error uploading ${file.name}`);
     }
   }
 
   document.getElementById('fileInput').value = "";
   btn.disabled = false;
   btn.innerText = "Upload Selected";
-  if(uploaded > 0) {
-    alert(`${uploaded} files uploaded! ✅`);
-    loadFromDB();
-  }
+
+  if(uploaded > 0) alert(`${uploaded} files uploaded! ✅`);
+  if(failed > 0) alert(`${failed} files failed/blocked ❌`);
+  if(uploaded > 0) loadFromDB();
 }
 
-async function deleteMedia(id) {
+async function deleteMedia(id, public_id) {
   if(!confirm("Delete this media?")) return;
   await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
   loadFromDB();

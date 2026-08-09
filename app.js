@@ -56,51 +56,94 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET
 });
 
-// 3. MONGOOSE SCHEMA
+
+// SCHEMA
 const mediaSchema = new mongoose.Schema({
-  userId: { type: String, required: true }, // this is the email
+  userId: { type: String, required: true },
   url: { type: String, required: true },
-  type: { type: String }, // image or video
-  public_id: { type: String },
+  type: { type: String, required: true }, // image or video
+  public_id: { type: String, required: true },
+  moderation_status: { type: String, default: 'pending' },
   createdAt: { type: Date, default: Date.now }
 });
 const Media = mongoose.model('Media', mediaSchema);
 
-// 4. ROUTES
 
-// SAVE - after frontend uploads to cloudinary
-app.post('/api/save-media', async (req, res) => {
-  try {
-    const { userId, url, type, public_id } = req.body;
-    if (!userId || !url) return res.status(400).json({ error: "Missing userId or url" });
-    
-    const newMedia = new Media({ userId, url, type, public_id });
-    await newMedia.save();
-    res.json({ success: true, data: newMedia });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// ROUTES
 
-// GET - THIS IS WHAT FIXES MULTI-DEVICE
+// 1. GET ALL MEDIA FOR USER
 app.get('/api/get-media', async (req, res) => {
   try {
     const { userId } = req.query;
-    if (!userId) return res.status(400).json({ error: "Missing userId" });
+    if(!userId) return res.status(400).json({ error: 'userId required' });
     
-    const items = await Media.find({ userId }).sort({ createdAt: -1 });
-    res.json(items);
+    const mediaList = await Media.find({ userId }).sort({ createdAt: -1 });
+    res.json(mediaList);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE
+
+// 2. SAVE MEDIA - WITH AUTO MODERATION CHECK
+app.post('/api/save-media', async (req, res) => {
+  try {
+    const { userId, url, type, public_id } = req.body;
+    if(!userId ||!url ||!type ||!public_id) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+
+    // CHECK CLOUDINARY MODERATION STATUS
+    try {
+      const resource = await cloudinary.api.resource(public_id, { 
+        resource_type: type 
+      });
+
+      // If Cloudinary flagged it
+      if(resource.moderation && resource.moderation[0].status === 'rejected'){
+        console.log("NSFW DETECTED, DELETING:", public_id);
+        await cloudinary.uploader.destroy(public_id, { resource_type: type });
+        return res.json({ blocked: true, reason: 'NSFW content detected by Cloudinary' });
+      }
+    } catch(cloudErr) {
+      console.log("Cloudinary check failed, saving anyway:", cloudErr.message);
+    }
+
+    // SAVE TO DB IF SAFE
+    const newMedia = new Media({ userId, url, type, public_id, moderation_status: 'approved' });
+    await newMedia.save();
+    
+    res.json({ ok: 1, data: newMedia });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// 3. DELETE FROM DB
 app.delete('/api/delete-media/:id', async (req, res) => {
   try {
     await Media.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// 4. DELETE FROM CLOUDINARY - for flagged files
+app.post('/api/delete-cloudinary', async (req, res) => {
+  try {
+    const { public_id, type } = req.body;
+    if(!public_id) return res.status(400).json({ error: 'public_id required' });
+    
+    await cloudinary.uploader.destroy(public_id, { resource_type: type || 'image' });
+    res.json({ ok: 1 });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
