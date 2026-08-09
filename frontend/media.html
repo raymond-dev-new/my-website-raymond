@@ -8,7 +8,7 @@
     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    } 
+    }  
    </script> 
   
 
@@ -221,7 +221,6 @@ document.getElementById('uploadBtn').onclick = async () => {
 }
 
 async function deleteMedia(id, public_id) {
- c
   await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
   loadFromDB();
 }
