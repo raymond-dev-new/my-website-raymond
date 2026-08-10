@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  
+     <script>
+   const tokenn = localStorage.getItem('token');
+
+    if (!tokenn) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    }  
+    </script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Private Notes</title>
@@ -49,6 +59,11 @@
 .note small { color: #9ca3af; }
   #status { text-align: center; color: #22c55e; margin: 8px 0; height: 20px; }
   #error { text-align: center; color: #ef4444; margin: 8px 0; }
+  
+  .noteText{
+    width: 96%;
+  }
+
 </style>
 </head>
 <body>
@@ -64,7 +79,7 @@
 
 <div id="app" class="notes-box" style="display:none;">
   <h3>Write your note</h3>
-  <textarea id="noteText" rows="8" placeholder="Start typing..."></textarea>
+  <textarea id="noteText" class="noteText" rows="8" placeholder="Start typing..."></textarea>
   <button id="saveBtn" onclick="saveNote()">Save Note</button>
   <div id="status"></div>
   <button class="danger" onclick="logout()">Logout</button>
