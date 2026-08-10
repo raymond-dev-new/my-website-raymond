@@ -27,6 +27,7 @@ const app = express()
 //Raymond123
 const port = process.env.PORT || 8000
 const JWT_SECRET = process.env.JWT_SECRET
+const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
 const url = process.env.MONGO_URL
 
  
@@ -347,10 +348,6 @@ const password = await bcrypt.hash(passwords, 10)
 
   // start here kjhgfdsdfghioiuytdsdfghjklkjhgfdsdfgh
 
-//const jwt = require('jsonwebtoken');
-
-
-//const JWT_SECRET = "super_secret_key_change_this";
 
 // 2. SCHEMA - note belongs to userId
 const NoteSchema = new mongoose.Schema({
@@ -365,7 +362,7 @@ function auth(req, res, next){
   const token = req.headers['authorization']?.split(' ')[1];
   if(!token) return res.status(401).json({error: 'Login required'});
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRETT);
     req.userId = decoded.id;
     next();
   } catch(e){ return res.status(401).json({error: 'Invalid token'}); }
@@ -376,7 +373,7 @@ function auth(req, res, next){
 app.post('/api/login', (req,res) => {
   const {email} = req.body;
   if(!email) return res.status(400).json({error: "Email required"});
-  const token = jwt.sign({id: email}, JWT_SECRET); // use email as userId
+  const token = jwt.sign({id: email}, JWT_SECRETT); // use email as userId
   res.json({token});
 });
 
