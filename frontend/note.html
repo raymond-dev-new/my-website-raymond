@@ -1,19 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-   <script>
-  /* const token = localStorage.getItem('token');
-
-    if (!token) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    }  */
-   </script> 
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Notes</title>
+<title>My Private Notes</title>
 <style>
   body {
     background: #0f172a;
@@ -24,7 +14,7 @@
     margin: auto;
   }
   h1 { text-align: center; color: #8b5cf6; }
- .login-box,.notes-box { background: #1e293b; padding: 20px; border-radius: 12px; margin-top: 20px; }
+.login-box,.notes-box { background: #1e293b; padding: 20px; border-radius: 12px; margin-top: 20px; }
   input, textarea {
     width: 100%;
     padding: 12px;
@@ -46,8 +36,9 @@
     font-size: 16px;
     cursor: pointer;
   }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
   button.danger { background: #ef4444; }
- .note {
+.note {
     background: #0f172a;
     padding: 12px;
     border-radius: 8px;
@@ -55,9 +46,9 @@
     border: 1px solid #334155;
     white-space: pre-wrap;
   }
- .note small { color: #9ca3af; }
- .row { display: flex; gap: 8px; }
-  #status { text-align: center; color: #22c55e; margin: 8px 0; }
+.note small { color: #9ca3af; }
+  #status { text-align: center; color: #22c55e; margin: 8px 0; height: 20px; }
+  #error { text-align: center; color: #ef4444; margin: 8px 0; }
 </style>
 </head>
 <body>
@@ -67,90 +58,126 @@
 <div id="login" class="login-box">
   <h3>Login to access your notes</h3>
   <input type="email" id="email" placeholder="Enter any email">
-  <button onclick="login()">Login</button>
+  <button id="loginBtn" onclick="login()">Login</button>
+  <div id="error"></div>
 </div>
 
 <div id="app" class="notes-box" style="display:none;">
   <h3>Write your note</h3>
   <textarea id="noteText" rows="8" placeholder="Start typing..."></textarea>
-  <button onclick="saveNote()">Save Note</button>
+  <button id="saveBtn" onclick="saveNote()">Save Note</button>
   <div id="status"></div>
   <button class="danger" onclick="logout()">Logout</button>
 
   <h3 style="margin-top:20px;">Your Saved Notes</h3>
-  <div id="notesList"></div>
+  <div id="notesList">Loading...</div>
 </div>
 
 <script>
-const API_URL = 'https://my-website-raymond.vercel.app'; // CHANGE THIS WHEN YOU DEPLOY
+// IMPORTANT: CHANGE THIS AFTER DEPLOYMENT
+// Example: const API_URL = 'https://my-notes.onrender.com';
+const API_URL = 'https://my-website-raymond.vercel.app'; 
 const API = API_URL + '/api';
-//http://localhost:8000
-//https://my-website-raymond.vercel.app
+
 let token = localStorage.getItem('token');
 
-// CHECK LOGIN ON LOAD
+// CHECK LOGIN ON LOAD - FIXED
 window.addEventListener('DOMContentLoaded', () => {
   if(token){
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    showApp();
     loadNotes();
+  } else {
+    showLogin();
   }
 })
 
+function showLogin(){
+  document.getElementById('login').style.display = 'block';
+  document.getElementById('app').style.display = 'none';
+}
+function showApp(){
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
 // LOGIN
 async function login(){
+  const btn = document.getElementById('loginBtn');
   const email = document.getElementById('email').value.trim();
-  if(!email) return alert('Enter email');
-  const res = await fetch(API + '/login', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({email})
-  });
-  const data = await res.json();
-  token = data.token;
-  localStorage.setItem('tokenn', token);
-  location.reload(); // reload to show notes
+  if(!email) return document.getElementById('error').innerText = 'Enter email';
+  btn.disabled = true;
+  document.getElementById('error').innerText = '';
+  try {
+    const res = await fetch(API + '/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email})
+    });
+    if(!res.ok) throw new Error('Login failed');
+    const data = await res.json();
+    token = data.token;
+    localStorage.setItem('token', token);
+    showApp();
+    loadNotes();
+  } catch(e){
+    document.getElementById('error').innerText = 'Server not reachable. Check API_URL';
+  }
+  btn.disabled = false;
 }
 
 // LOGOUT
-function logout(){ 
-    localStorage.removeItem('tokenn')
-  location.reload();
+function logout(){
+  localStorage.removeItem('token');
+  token = null;
+  showLogin();
 }
 
-// LOAD NOTES FROM DB
+// LOAD NOTES FROM DB - FIXED
 async function loadNotes(){
-  const res = await fetch(API + '/notes', {
-    headers: {'Authorization': 'Bearer ' + token}
-  });
-  if(res.status === 401) return logout();
-  const notes = await res.json();
-  document.getElementById('notesList').innerHTML = notes.map(n => `
-    <div class="note">
-      <small>${new Date(n.createdAt).toLocaleString()}</small>
-      <p>${n.text}</p>
-      <button class="danger" onclick="deleteNote('${n._id}')">Delete</button>
-    </div>
-  `).join('');
+  try {
+    const res = await fetch(API + '/notes', {
+      headers: {'Authorization': 'Bearer ' + token}
+    });
+    if(res.status === 401) return logout(); // token expired
+    if(!res.ok) throw new Error('Load failed');
+    const notes = await res.json();
+    document.getElementById('notesList').innerHTML = notes.length? notes.map(n => `
+      <div class="note">
+        <small>${new Date(n.createdAt).toLocaleString()}</small>
+        <p>${n.text}</p>
+        <button class="danger" onclick="deleteNote('${n._id}')">Delete</button>
+      </div>
+    `).join('') : '<p>No notes yet</p>';
+  } catch(e){
+    document.getElementById('notesList').innerText = 'Failed to load. Check server/API_URL';
+  }
 }
 
-// SAVE NOTE
+// SAVE NOTE - FIXED
 async function saveNote(){
+  const btn = document.getElementById('saveBtn');
   const text = document.getElementById('noteText').value.trim();
   if(!text) return alert('Write something first');
+  btn.disabled = true;
   document.getElementById('status').innerText = 'Saving...';
-  await fetch(API + '/notes', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token
-    },
-    body: JSON.stringify({text})
-  });
-  document.getElementById('noteText').value = '';
-  document.getElementById('status').innerText = 'Saved!';
-  setTimeout(() => document.getElementById('status').innerText = '', 2000);
-  loadNotes();
+  try {
+    const res = await fetch(API + '/notes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({text})
+    });
+    if(!res.ok) throw new Error('Save failed');
+    document.getElementById('noteText').value = '';
+    document.getElementById('status').innerText = 'Saved!';
+    setTimeout(() => document.getElementById('status').innerText = '', 2000);
+    loadNotes();
+  } catch(e){
+    document.getElementById('status').innerText = 'Save Failed. Check server';
+  }
+  btn.disabled = false;
 }
 
 // DELETE NOTE
