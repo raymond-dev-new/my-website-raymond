@@ -3,9 +3,9 @@
 <head>
   
      <script>
-   const tokenn = localStorage.getItem('token');
+   const tokenN = localStorage.getItem('token');
 
-    if (!tokenn) {
+    if (!tokenN) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
     }  
@@ -94,7 +94,7 @@
 const API_URL = 'https://my-website-raymond.vercel.app'; 
 const API = API_URL + '/api';
 
-let token = localStorage.getItem('token');
+let token = localStorage.getItem('tokenn');
 
 // CHECK LOGIN ON LOAD - FIXED
 window.addEventListener('DOMContentLoaded', () => {
@@ -131,7 +131,7 @@ async function login(){
     if(!res.ok) throw new Error('Login failed');
     const data = await res.json();
     token = data.token;
-    localStorage.setItem('token', token);
+    localStorage.setItem('tokenn', token);
     showApp();
     loadNotes();
   } catch(e){
@@ -142,7 +142,7 @@ async function login(){
 
 // LOGOUT
 function logout(){
-  localStorage.removeItem('token');
+  localStorage.removeItem('tokenn');
   token = null;
   showLogin();
 }
