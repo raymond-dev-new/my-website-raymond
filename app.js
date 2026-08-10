@@ -345,62 +345,66 @@ const password = await bcrypt.hash(passwords, 10)
    res.json({status: 'ok'})
   })
 
-  // start here iuytrertyuiopiuytrtyuytrtyuiuytrtyuiuytfyuiuyt
-/*
+  // start here kjhgfdsdfghioiuytdsdfghjklkjhgfdsdfgh
 
-const MediaSchemal = new mongoose.Schema({
+//const jwt = require('jsonwebtoken');
+
+
+//const JWT_SECRET = "super_secret_key_change_this";
+
+// 2. SCHEMA - note belongs to userId
+const NoteSchema = new mongoose.Schema({
   userId: { type: String, required: true, index: true },
-  url: { type: String, required: true },
-  blobPath: { type: String, required: true },
-  type: { type: String, enum: ['image', 'video'], required: true },
-  name: { type: String },
+  text: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
-const Medial = mongoose.models.Media || mongoose.model('Medial', MediaSchemal);
+const Note = mongoose.model('Note', NoteSchema);
 
-export const config = { api: { bodyParser: { sizeLimit: '10gb' } } };
-
-export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    try {
-      const jsonResponse = await handleUpload({
-        body: req.body,
-        request: req,
-        onBeforeGenerateToken: async (pathname, clientPayload) => {
-          const payload = JSON.parse(clientPayload || '{}');
-          return { allowedContentTypes: ['image/*', 'video/*'], tokenPayload: { userId: payload.userId } };
-        },
-        onUploadCompleted: async ({ blob, tokenPayload }) => {
-          await Medial.create({
-            userId: tokenPayload.userId,
-            url: blob.url, blobPath: blob.pathname,
-            type: blob.contentType.startsWith('video') ? 'video' : 'image',
-            name: blob.pathname.split('/').pop()
-          });
-        },
-      });
-      return res.status(200).json(jsonResponse);
-    } catch (error) { return res.status(400).json({ error: error.message }); }
-  }
-
-  if (req.method === 'GET') {
-    const { userId } = req.query;
-    const media = await Medial.find({ userId }).sort({ createdAt: -1 });
-    return res.status(200).json(media);
-  }
-
-  if (req.method === 'DELETE') {
-    const { id, blobPath } = req.body;
-    await Medial.findByIdAndDelete(id);
-    if (blobPath) await del(blobPath);
-    return res.status(200).json({ success: true });
-  }
+// 3. AUTH MIDDLEWARE - gets userId from token
+function auth(req, res, next){
+  const token = req.headers['authorization']?.split(' ')[1];
+  if(!token) return res.status(401).json({error: 'Login required'});
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.userId = decoded.id;
+    next();
+  } catch(e){ return res.status(401).json({error: 'Invalid token'}); }
 }
-      
-*/
+
+// 4. FAKE LOGIN - for demo. Replace with real login later
+// Send any email and you get a token. That token = your account
+app.post('/api/login', (req,res) => {
+  const {email} = req.body;
+  if(!email) return res.status(400).json({error: "Email required"});
+  const token = jwt.sign({id: email}, JWT_SECRET); // use email as userId
+  res.json({token});
+});
+
+// 5. ROUTES
+
+// GET all notes for this user
+app.get('/api/notes', auth, async (req,res) => {
+  const notes = await Note.find({userId: req.userId}).sort({createdAt: -1});
+  res.json(notes);
+});
+
+// CREATE note
+app.post('/api/notes', auth, async (req,res) => {
+  const {text} = req.body;
+  if(!text) return res.status(400).json({error: "Text required"});
+  const note = await Note.create({ userId: req.userId, text });
+  res.json(note);
+});
+
+// DELETE note
+app.delete('/api/notes/:id', auth, async (req,res) => {
+  await Note.deleteOne({_id: req.params.id, userId: req.userId});
+  res.json({ok: true});
+});
+
+
   // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
   
 
-  app.listen(port, console.log('server is running on port 8000')
-  )
+  app.listen(port, console.log('server is running on port 8000'))
   

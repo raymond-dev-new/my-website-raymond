@@ -2,200 +2,165 @@
 <html lang="en">
 <head>
 
-    <script>
-  const token = localStorage.getItem('token');
+   <script>
+   const tokenn = localStorage.getItem('token');
 
-    if (!token) {
+    if (!tokenn) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    }
+    }  
    </script> 
-  
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes with Edit & Delete</title>
-    <style>
-        body {
-            font-family: system-ui, sans-serif;
-            max-width: 700px;
-            margin: 40px auto;
-            padding: 0 20px;
-            background: #f9f9f9;
-        }
-        
-        .input-area {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 15px;
-            box-sizing: border-box;
-        }
-        
-        textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-        
-        button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .save-btn {
-            background: #0d6efd;
-            color: white;
-            font-size: 10px;
-            font-weight: 700;
-        }
-        
-        .edit-btn {
-            background: #ffc107;
-            color: black;
-            font-size: 10px;
-            font-weight: 700;
-        }
-        
-        .delete-btn {
-            background: #dc3545;
-            color: white;
-            font-size: 10px;
-            font-weight: 700;
-        }
-        
-        .note {
-            background: white;
-            padding: 8px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .note h3 {
-            margin: 0 0 8px 0;
-        }
-        
-        .note p {
-            margin: 0 0 12px 0;
-            color: rgb(20, 19, 19);
-            white-space: pre-wrap;
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 8px;
-        }
-
-        .note {
-          font-size: 15px;
-          font-weight: 700;
-          color: green;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Notes</title>
+<style>
+  body {
+    background: #0f172a;
+    color: #e5e7eb;
+    font-family: system-ui, sans-serif;
+    padding: 20px;
+    max-width: 700px;
+    margin: auto;
+  }
+  h1 { text-align: center; color: #8b5cf6; }
+ .login-box,.notes-box { background: #1e293b; padding: 20px; border-radius: 12px; margin-top: 20px; }
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: white;
+    font-size: 16px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: #6366f1;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  button.danger { background: #ef4444; }
+ .note {
+    background: #0f172a;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 10px;
+    border: 1px solid #334155;
+    white-space: pre-wrap;
+  }
+ .note small { color: #9ca3af; }
+ .row { display: flex; gap: 8px; }
+  #status { text-align: center; color: #22c55e; margin: 8px 0; }
+</style>
 </head>
 <body>
-    <h1>Notes App</h1>
-    
-    <div class="input-area">
-        <input class="note" type="text" id="titleInput" placeholder="Title">
-        <textarea class="note" id="contentInput" placeholder="Your note..."> </textarea>
-        <button class="save-btn" id="saveBtn">Save Note</button>
-    </div>
-    
-    <div id="notesList"></div>
 
-    <script>
-      //localStorage.removeItem('notes')
-        const titleInput = document.getElementById('titleInput')
-        const contentInput = document.getElementById('contentInput')
-        const saveBtn = document.getElementById('saveBtn')
-        const notesList = document.getElementById('notesList')
-        
-        let notes = JSON.parse(localStorage.getItem('notes')) || []
-        let editId = null
-        
-        // Render all notes
-        function renderNotes() {
-            if (notes.length === 0) {
-                notesList.innerHTML = '<p style="text-align:center; color:#999;">No notes yet</p>'
-                return
-            }
-            
-            notesList.innerHTML = notes.map(note => `
-                <div class="note">
-                    <h3>${note.title}</h3>
-                    <p>${note.content}</p>
-                    <div class="btn-group">
-                        <button class="edit-btn" onclick="editNote(${note.id})">Edit</button>
-                        <button class="delete-btn" onclick="deleteNote(${note.id})">Delete</button>
-                    </div>
-                </div>
-            `).join('')
-        }
-        
-        // Save or update note
-        saveBtn.addEventListener('click', () => {
-            const title = titleInput.value.trim()
-            const content = contentInput.value.trim()
-            
-            if (!title && !content) return alert('Note is empty')
-            
-            if (editId) {
-                // Update existing
-                notes = notes.map(note => note.id === editId 
-                        ? {...note, title, content }
-                        : note
-                )
-                editId = null
-                saveBtn.textContent = 'Save Note'
-            } else {
-                // Add new
-                notes.unshift({
-                    id: Date.now(),
-                    title: title || 'Untitled',
-                    content
-                })
-            }
-            
-            localStorage.setItem('notes', JSON.stringify(notes))
-            titleInput.value = ''
-            contentInput.value = ''
-            renderNotes()
-        })
-        
-        // Edit note - fills inputs with existing data
-        function editNote(id) {
-            const note = notes.find(n => n.id === id)
-            titleInput.value = note.title
-            contentInput.value = note.content
-            editId = id
-            saveBtn.textContent = 'Update Note'
-            window.scrollTo(0, 0)
-        }
-        
-        // Delete note from localStorage
-        function deleteNote(id) {
-            if (!confirm('Delete this note?')) return
-            notes = notes.filter(n => n.id !== id)
-            localStorage.setItem('notes', JSON.stringify(notes))
-            renderNotes()
-        }
-        
-        // Load notes on page load
-        renderNotes()
-    </script>
+<h1>📝 My Private Notes</h1>
+
+<div id="login" class="login-box">
+  <h3>Login to access your notes</h3>
+  <input type="email" id="email" placeholder="Enter any email">
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="app" class="notes-box" style="display:none;">
+  <h3>Write your note</h3>
+  <textarea id="noteText" rows="8" placeholder="Start typing..."></textarea>
+  <button onclick="saveNote()">Save Note</button>
+  <div id="status"></div>
+  <button class="danger" onclick="logout()">Logout</button>
+
+  <h3 style="margin-top:20px;">Your Saved Notes</h3>
+  <div id="notesList"></div>
+</div>
+
+<script>
+const API_URL = 'https://my-website-raymond.vercel.app'; // CHANGE THIS WHEN YOU DEPLOY
+const API = API_URL + '/api';
+
+let token = localStorage.getItem('token');
+
+// CHECK LOGIN ON LOAD
+window.addEventListener('DOMContentLoaded', () => {
+  if(token){
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadNotes();
+  }
+})
+
+// LOGIN
+async function login(){
+  const email = document.getElementById('email').value.trim();
+  if(!email) return alert('Enter email');
+  const res = await fetch(API + '/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email})
+  });
+  const data = await res.json();
+  token = data.token;
+  localStorage.setItem('token', token);
+  location.reload(); // reload to show notes
+}
+
+// LOGOUT
+function logout(){
+  localStorage.removeItem('token');
+  location.reload();
+}
+
+// LOAD NOTES FROM DB
+async function loadNotes(){
+  const res = await fetch(API + '/notes', {
+    headers: {'Authorization': 'Bearer ' + token}
+  });
+  if(res.status === 401) return logout();
+  const notes = await res.json();
+  document.getElementById('notesList').innerHTML = notes.map(n => `
+    <div class="note">
+      <small>${new Date(n.createdAt).toLocaleString()}</small>
+      <p>${n.text}</p>
+      <button class="danger" onclick="deleteNote('${n._id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+// SAVE NOTE
+async function saveNote(){
+  const text = document.getElementById('noteText').value.trim();
+  if(!text) return alert('Write something first');
+  document.getElementById('status').innerText = 'Saving...';
+  await fetch(API + '/notes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify({text})
+  });
+  document.getElementById('noteText').value = '';
+  document.getElementById('status').innerText = 'Saved!';
+  setTimeout(() => document.getElementById('status').innerText = '', 2000);
+  loadNotes();
+}
+
+// DELETE NOTE
+async function deleteNote(id){
+  if(!confirm('Delete this note?')) return;
+  await fetch(API + '/notes/' + id, {
+    method: 'DELETE',
+    headers: {'Authorization': 'Bearer ' + token}
+  });
+  loadNotes();
+}
+</script>
 </body>
 </html>

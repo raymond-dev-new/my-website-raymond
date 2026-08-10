@@ -3,7 +3,7 @@
 <head>
 
     <script>
-  const token = localStorage.getItem('token');
+   const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -221,6 +221,7 @@ document.getElementById('uploadBtn').onclick = async () => {
 }
 
 async function deleteMedia(id, public_id) {
+   if(!confirm('Delete this file?')) return;
   await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
   loadFromDB();
 }
