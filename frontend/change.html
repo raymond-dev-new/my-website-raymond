@@ -9,7 +9,7 @@
     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    }
+    } 
    </script>
 
   <meta charset="UTF-8">
@@ -39,16 +39,21 @@ html, body {
 }
 
 .form-div {
-  border: 3px solid rgb(185, 180, 180);
-  width: 100%;
-  max-width: 530px;
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  padding-top: 60%;
+ /* background-color: rgb(223, 216, 216);
+  border: 3px solid rgb(185, 180, 180); 
+  width: 80%;
+   max-width: 530px;
   height: auto;
   min-height: 320px;
   margin-left: 0;
-  margin-top: 20px;
   border-radius: 5px;
-  background-color: rgb(223, 216, 216);
-  padding: 25px 6%;
+  margin-top: 20px;
+  padding: 25px 6%;*/
+  
 }
 
 .login {
@@ -79,7 +84,9 @@ html, body {
 .space {
   font-family: Roboto, Arial, sans-serif;
   font-size: 16px;
-  margin-left: 0;
+  display: grid;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
   margin-bottom: 20px;
   margin-top: 8px;
@@ -187,7 +194,7 @@ html, body {
 
   .space {
     font-size: 20px;
-    margin-left: 0;
+    margin-left: 50%;
   }
 
   .button {
