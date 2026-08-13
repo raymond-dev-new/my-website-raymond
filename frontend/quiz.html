@@ -198,185 +198,186 @@ html, body {
   </div>
 
   <script>
-  const questions = [
+
+   const questions = [
   {
-    question: "Which sport is known as 'The King of Sports'?",
-    answers: [
-      { text: "Basketball", correct: false },
-      { text: "Cricket", correct: false },
-      { text: "Football/Soccer", correct: true },
-      { text: "Tennis", correct: false }
-    ]
-  },
-  {
-    question: "What does 'API' stand for?",
-    answers: [
-      { text: "Application Programming Interface", correct: true },
-      { text: "Advanced Program Integration", correct: false },
-      { text: "Application Process Input", correct: false },
-      { text: "Automated Programming Interface", correct: false }
-    ]
-  },
-  {
-    question: "Who was the first person to walk on the moon?",
-    answers: [
-      { text: "Buzz Aldrin", correct: false },
-      { text: "Neil Armstrong", correct: true },
-      { text: "Yuri Gagarin", correct: false },
-      { text: "Michael Collins", correct: false }
-    ]
-  },
-  {
-    question: "Which of these is a CSS framework?",
-    answers: [
-      { text: "Node.js", correct: false },
-      { text: "Bootstrap", correct: true },
-      { text: "Express", correct: false },
-      { text: "React Native", correct: false }
-    ]
-  },
-  {
-    question: "What is the longest river in the world?",
-    answers: [
-      { text: "Amazon River", correct: false },
-      { text: "Nile River", correct: true },
-      { text: "Mississippi River", correct: false },
-      { text: "Yangtze River", correct: false }
-    ]
-  },
-  {
-    question: "Which company created the Android operating system?",
-    answers: [
-      { text: "Apple", correct: false },
-      { text: "Microsoft", correct: false },
-      { text: "Google", correct: true },
-      { text: "Samsung", correct: false }
-    ]
-  },
-  {
-    question: "How many players are on a basketball team on court?",
-    answers: [
-      { text: "4", correct: false },
-      { text: "5", correct: true },
-      { text: "6", correct: false },
-      { text: "7", correct: false }
-    ]
-  },
-  {
-    question: "What does 'VPN' stand for?",
-    answers: [
-      { text: "Virtual Private Network", correct: true },
-      { text: "Very Personal Network", correct: false },
-      { text: "Visual Private Net", correct: false },
-      { text: "Virtual Public Node", correct: false }
-    ]
-  },
-  {
-    question: "Which country won the most Olympic gold medals all time?",
+    question: "Which country is known as the Land of the Rising Sun?",
     answers: [
       { text: "China", correct: false },
-      { text: "Russia", correct: false },
-      { text: "USA", correct: true },
-      { text: "Germany", correct: false }
+      { text: "South Korea", correct: false },
+      { text: "Japan", correct: true },
+      { text: "Thailand", correct: false }
     ]
   },
   {
-    question: "What is the process of plants making food called?",
+    question: "What is the largest internal organ in the human body?",
     answers: [
-      { text: "Respiration", correct: false },
-      { text: "Photosynthesis", correct: true },
-      { text: "Transpiration", correct: false },
-      { text: "Digestion", correct: false }
+      { text: "Heart", correct: false },
+      { text: "Brain", correct: false },
+      { text: "Liver", correct: true },
+      { text: "Lungs", correct: false }
     ]
   },
   {
-    question: "Which of these is NOT a database?",
+    question: "Which metal is liquid at room temperature?",
     answers: [
-      { text: "Firebase", correct: false },
-      { text: "MongoDB", correct: false },
-      { text: "GitHub", correct: true },
-      { text: "MySQL", correct: false }
+      { text: "Iron", correct: false },
+      { text: "Mercury", correct: true },
+      { text: "Copper", correct: false },
+      { text: "Gold", correct: false }
     ]
   },
   {
-    question: "In what year was Facebook launched?",
+    question: "How many legs does a spider have?",
     answers: [
-      { text: "2002", correct: false },
-      { text: "2004", correct: true },
-      { text: "2006", correct: false },
-      { text: "2008", correct: false }
+      { text: "6", correct: false },
+      { text: "8", correct: true },
+      { text: "10", correct: false },
+      { text: "12", correct: false }
     ]
   },
   {
-    question: "What is 15% of 200?",
+    question: "What is the capital city of France?",
     answers: [
-      { text: "20", correct: false },
-      { text: "25", correct: false },
-      { text: "30", correct: true },
-      { text: "35", correct: false }
+      { text: "London", correct: false },
+      { text: "Berlin", correct: false },
+      { text: "Paris", correct: true },
+      { text: "Madrid", correct: false }
     ]
   },
   {
-    question: "Which African country has the most population?",
-    answers: [
-      { text: "Egypt", correct: false },
-      { text: "South Africa", correct: false },
-      { text: "Nigeria", correct: true },
-      { text: "Ethiopia", correct: false }
-    ]
-  },
-  {
-    question: "What does 'JSON' stand for?",
-    answers: [
-      { text: "JavaScript Object Notation", correct: true },
-      { text: "Java Serialized Object Node", correct: false },
-      { text: "JavaScript Oriented Network", correct: false },
-      { text: "Joined System Object Notation", correct: false }
-    ]
-  },
-  {
-    question: "Who is known as the 'Father of Computers'?",
-    answers: [
-      { text: "Alan Turing", correct: false },
-      { text: "Charles Babbage", correct: true },
-      { text: "Bill Gates", correct: false },
-      { text: "Steve Wozniak", correct: false }
-    ]
-  },
-  {
-    question: "Which game has characters like Mario and Luigi?",
-    answers: [
-      { text: "Sonic", correct: false },
-      { text: "Pokemon", correct: false },
-      { text: "Super Mario", correct: true },
-      { text: "Zelda", correct: false }
-    ]
-  },
-  {
-    question: "What is the boiling point of water in Celsius?",
-    answers: [
-      { text: "90°C", correct: false },
-      { text: "100°C", correct: true },
-      { text: "110°C", correct: false },
-      { text: "120°C", correct: false }
-    ]
-  },
-  {
-    question: "Which loop runs at least once in JavaScript?",
-    answers: [
-      { text: "for loop", correct: false },
-      { text: "while loop", correct: false },
-      { text: "do...while loop", correct: true },
-      { text: "if loop", correct: false }
-    ]
-  },
-  {
-    question: "What is the national animal of Nigeria?",
+    question: "Which animal is the fastest on land?",
     answers: [
       { text: "Lion", correct: false },
-      { text: "Eagle", correct: true },
-      { text: "Elephant", correct: false },
+      { text: "Cheetah", correct: true },
+      { text: "Horse", correct: false },
       { text: "Leopard", correct: false }
+    ]
+  },
+  {
+    question: "What do we call the study of stars and planets?",
+    answers: [
+      { text: "Biology", correct: false },
+      { text: "Chemistry", correct: false },
+      { text: "Astronomy", correct: true },
+      { text: "Geology", correct: false }
+    ]
+  },
+  {
+    question: "Which country gifted the Statue of Liberty to the USA?",
+    answers: [
+      { text: "England", correct: false },
+      { text: "France", correct: true },
+      { text: "Germany", correct: false },
+      { text: "Italy", correct: false }
+    ]
+  },
+  {
+    question: "What is the currency of Japan?",
+    answers: [
+      { text: "Yuan", correct: false },
+      { text: "Won", correct: false },
+      { text: "Yen", correct: true },
+      { text: "Dollar", correct: false }
+    ]
+  },
+  {
+    question: "How many sides does a triangle have?",
+    answers: [
+      { text: "2", correct: false },
+      { text: "3", correct: true },
+      { text: "4", correct: false },
+      { text: "5", correct: false }
+    ]
+  },
+  {
+    question: "Which ocean is between Africa and Australia?",
+    answers: [
+      { text: "Atlantic Ocean", correct: false },
+      { text: "Arctic Ocean", correct: false },
+      { text: "Indian Ocean", correct: true },
+      { text: "Pacific Ocean", correct: false }
+    ]
+  },
+  {
+    question: "What is the main source of energy for the Earth?",
+    answers: [
+      { text: "Wind", correct: false },
+      { text: "Sun", correct: true },
+      { text: "Moon", correct: false },
+      { text: "Oil", correct: false }
+    ]
+  },
+  {
+    question: "Which country is both an island and a continent?",
+    answers: [
+      { text: "New Zealand", correct: false },
+      { text: "Australia", correct: true },
+      { text: "Iceland", correct: false },
+      { text: "Madagascar", correct: false }
+    ]
+  },
+  {
+    question: "What color is an emerald?",
+    answers: [
+      { text: "Red", correct: false },
+      { text: "Blue", correct: false },
+      { text: "Green", correct: true },
+      { text: "Yellow", correct: false }
+    ]
+  },
+  {
+    question: "Who wrote 'Romeo and Juliet'?",
+    answers: [
+      { text: "Charles Dickens", correct: false },
+      { text: "William Shakespeare", correct: true },
+      { text: "Jane Austen", correct: false },
+      { text: "Mark Twain", correct: false }
+    ]
+  },
+  {
+    question: "How many minutes are in one hour?",
+    answers: [
+      { text: "50", correct: false },
+      { text: "60", correct: true },
+      { text: "70", correct: false },
+      { text: "100", correct: false }
+    ]
+  },
+  {
+    question: "Which animal is known to carry its baby in a pouch?",
+    answers: [
+      { text: "Kangaroo", correct: true },
+      { text: "Monkey", correct: false },
+      { text: "Bear", correct: false },
+      { text: "Fox", correct: false }
+    ]
+  },
+  {
+    question: "What is the largest desert in Asia?",
+    answers: [
+      { text: "Sahara Desert", correct: false },
+      { text: "Gobi Desert", correct: true },
+      { text: "Thar Desert", correct: false },
+      { text: "Arabian Desert", correct: false }
+    ]
+  },
+  {
+    question: "Which holiday marks the beginning of a new year?",
+    answers: [
+      { text: "Valentine's Day", correct: false },
+      { text: "New Year's Day", correct: true },
+      { text: "Halloween", correct: false },
+      { text: "Independence Day", correct: false }
+    ]
+  },
+  {
+    question: "What is the name of the toy store in the movie 'Toy Story'?",
+    answers: [
+      { text: "Al's Toy Barn", correct: false },
+      { text: "Pizza Planet", correct: false },
+      { text: "Andy's Room", correct: false },
+      { text: "Sid's House", correct: true }
     ]
   }
 ];

@@ -4,7 +4,7 @@
  
    <script>
    // This runs before the page shows
-    const token = localStorage.getItem('token');
+   const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -122,7 +122,8 @@ button:hover{
 
   .game, .quiz, .Calculator, .todo, .expense, .product{
     margin-left: 13px;
-    width: 90px;
+    font-size: 13px;
+    width: 70px;
   }
 
   h1{
@@ -175,7 +176,7 @@ button:hover{
     <button class="Media"> Save image/video </button>
    </span> 
    
-   <div><button class="Note"> Note </button></div>  
+   <div><button class="Note"> Save Note </button></div>  
 
    <span> <button class="Calculator"> Diary </button> 
   <span>  <button class="expense"> Expense </button> </span> </span>
