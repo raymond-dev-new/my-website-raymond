@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+   <script>
+   // This runs before the page shows
+   const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    } 
+  </script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Scores History</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #0d1117; color: #fff; font-family: Arial; padding: 10px; margin: 0; }
+    h1 { text-align: center; color: #ffa657; font-size: 24px; }
+  .match { background: #161b22; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 3px solid #30363d; }
+  .match.big-club { border-left: 3px solid #238636; } /* Green border for big clubs */
+  .teams { font-size: 16px; font-weight: bold; }
+  .score { font-size: 20px; color: #2ea043; }
+  .time { color: #58a6ff; margin-bottom: 8px; font-size: 13px; }
+  .league { color: #ffa657; font-size: 12px; font-weight: bold; }
+  .status { font-size: 12px; padding: 3px 8px; border-radius: 4px; background: #30363d; display: inline-block; }
+  .status.live { background: #da3633; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%{opacity:1} 50%{opacity:0.5} 100%{opacity:1} }
+  .watch-btn { background: #ff0000; color: #fff; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: block; font-size: 14px; margin-top: 8px; text-align: center; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+  .tab { padding: 10px; background: #21262d; border-radius: 6px; cursor: pointer; flex: 1; min-width: 90px; text-align: center; border: none; color: #fff; }
+  .tab.active { background: #238636; }
+    h2 { border-bottom: 1px solid #30363d; padding-bottom: 5px; margin-top: 30px; font-size: 18px; }
+   .date-group { margin-bottom: 20px; }
+
+    /* Desktop */
+    @media(min-width: 768px) {
+      body { padding: 20px; max-width: 900px; margin: 0 auto; }
+    .teams { font-size: 18px; }
+    .score { font-size: 22px; }
+    .watch-btn { display: inline-block; width: auto; }
+    }
+  </style>
+</head>
+<body>
+  <h1>⚽ Football Scores</h1>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('all')">All Matches</button>
+    <button class="tab" onclick="showTab('live')">Live Now</button>
+    <button class="tab" onclick="showTab('upcoming')">Upcoming</button>
+    <button class="tab" onclick="showTab('finished')">Finished</button>
+  </div>
+
+  <div id="content">Loading 7 days of matches...</div>
+
+  <script>
+    // LIST OF BIG CLUBS
+    const bigClubs = [
+      "Arsenal", "Manchester City", "Manchester United", "Chelsea", "Liverpool", "Tottenham Hotspur",
+      "Barcelona", "Real Madrid", "Atletico Madrid",
+      "Bayern Munich", "Borussia Dortmund",
+      "PSG",
+      "Juventus", "Inter", "AC Milan", "Napoli"
+    ];
+
+    // Load saved history from browser. This never deletes on refresh
+    let allMatches = JSON.parse(localStorage.getItem('allMatches')) || [];
+    let currentFilter = 'all';
+
+    function toWAT(utcTime) {
+      if(!utcTime) return "TBD";
+      const [h, m] = utcTime.split(':');
+      let hour = (parseInt(h) + 1) % 24;
+      return `${hour.toString().padStart(2,'0')}:${m} WAT`;
+    }
+
+    function showTab(tab) {
+      currentFilter = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderMatches();
+    }
+
+    function isBigClub(team) {
+      return bigClubs.includes(team);
+    }
+
+    function saveMatches(newMatches) {
+      newMatches.forEach(m => {
+        const exists = allMatches.find(x => x.idEvent === m.idEvent);
+        if(!exists) {
+          allMatches.push({
+            idEvent: m.idEvent,
+            home: m.strHomeTeam,
+            away: m.strAwayTeam,
+            homeScore: m.intHomeScore,
+            awayScore: m.intAwayScore,
+            league: m.strLeague,
+            date: m.dateEvent,
+            time: m.strTime,
+            status: m.strStatus
+          });
+        } else {
+          exists.homeScore = m.intHomeScore;
+          exists.awayScore = m.intAwayScore;
+          exists.status = m.strStatus;
+        }
+      });
+      localStorage.setItem('allMatches', JSON.stringify(allMatches));
+    }
+
+    function renderMatches() {
+      const container = document.getElementById('content');
+
+      // Filter based on tab
+      let filtered = allMatches;
+      if(currentFilter === 'live') filtered = allMatches.filter(m => m.status === "Match in Progress");
+      if(currentFilter === 'upcoming') filtered = allMatches.filter(m =>!m.homeScore && new Date(m.date) >= new Date());
+      if(currentFilter === 'finished') filtered = allMatches.filter(m => m.homeScore!== null);
+
+      // SORT: Big clubs first, then by date
+      filtered.sort((a,b) => {
+        const aIsBig = isBigClub(a.home) || isBigClub(a.away)? 0 : 1;
+        const bIsBig = isBigClub(b.home) || isBigClub(b.away)? 0 : 1;
+        if(aIsBig!== bIsBig) return aIsBig - bIsBig; // Big clubs come first
+
+        return new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time); // Newest first
+      });
+
+      // Group by date
+      const grouped = {};
+      filtered.forEach(m => {
+        if(!grouped[m.date]) grouped[m.date] = [];
+        grouped[m.date].push(m);
+      });
+
+      container.innerHTML = Object.keys(grouped).sort().reverse().map(date => `
+        <div class="date-group">
+          <h2>📅 ${date}</h2>
+          ${grouped[date].map(m => {
+            const searchQuery = encodeURIComponent(`${m.home} vs ${m.away} live`);
+            const youtubeSearch = `https://www.youtube.com/results?search_query=${searchQuery}`;
+            const score = m.homeScore!== null? `<span class="score">${m.homeScore} - ${m.awayScore}</span>` : 'vs';
+            const statusClass = m.status === "Match in Progress"? 'status live' : 'status';
+            const winner = m.homeScore!== null? `<div><b>Result:</b> ${m.homeScore > m.awayScore? m.home : m.awayScore > m.homeScore? m.away : 'Draw'}</div>` : '';
+            const isBig = isBigClub(m.home) || isBigClub(m.away);
+
+            return `
+              <div class="match ${isBig? 'big-club' : ''}">
+                <div class="league">${m.league}</div>
+                <div class="teams">${m.home} ${score} ${m.away} ${isBig? '⭐' : ''}</div>
+                <div class="time">${toWAT(m.time)} WAT - ${m.status || 'Scheduled'}</div>
+                ${winner}
+                <a href="${youtubeSearch}" target="_blank" class="watch-btn">▶️ Watch Live</a>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `).join('');
+
+      if(filtered.length === 0) container.innerHTML = "<p style='text-align:center;color:#8b949e'>No matches found for this filter.</p>";
+    }
+
+    // Fetch last 3 days + next 4 days = 7 days total
+    const datesToFetch = [];
+    for(let i = -3; i <= 4; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      datesToFetch.push(d.toISOString().split('T')[0]);
+    }
+
+    Promise.all(datesToFetch.map(date =>
+      fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${date}&s=Soccer`).then(res => res.json())
+    ))
+   .then(results => {
+      const allFetched = results.flatMap(r => r.events || []);
+      saveMatches(allFetched);
+      renderMatches();
+    })
+   .catch(err => {
+      document.getElementById('content').innerHTML = `<p>Error loading matches. Check internet.</p>`;
+      console.log(err);
+    });
+
+    // Auto refresh every 60 seconds to update live scores
+    setInterval(() => {
+      fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${new Date().toISOString().split('T')[0]}&s=Soccer`)
+     .then(res => res.json())
+     .then(data => { saveMatches(data.events || []); renderMatches(); })
+    }, 60000);
+  </script>
+</body>
+</html>

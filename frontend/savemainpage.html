@@ -156,7 +156,7 @@ button:hover{
   
 }
 
-.Media{
+.Media, .ball{
   width: 100%;
   margin-top: 240px;
 }
@@ -182,6 +182,7 @@ button:hover{
    
    <div> <button class="quiz"> Quiz </button>  
    <span> <button class="todo"> Todo </button> </span> </div>
+    <span> <button class="ball"> Live Match </button> </span> </div>
   
   </div>
 
@@ -197,6 +198,7 @@ button:hover{
                       const logout = document.querySelector('.logout')
     const Note = document.querySelector('.Note')                  
     const Media = document.querySelector('.Media') 
+    const ball = document.querySelector('.ball')
     //const Medial = document.querySelector('.Medial')
       
      
@@ -205,6 +207,10 @@ button:hover{
       window.location.href="mycorner.html"
    })  
      
+   ball.addEventListener('click', () => {
+      window.location.href="football.html"
+   })  
+
    Media.addEventListener('click', () => {
       window.location.href="media.html"
    })  
