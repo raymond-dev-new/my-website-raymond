@@ -9,7 +9,7 @@
     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    } 
+    }  
   </script>
     
   <meta charset="UTF-8">
@@ -163,13 +163,15 @@ button:hover{
 
 .Media{
   width: 100%;
-  margin-top: 210px;
+  margin-top: 240px;
 }
 
-.next{
-  display: grid;
-  justify-self: center;
-  width: 80px;
+.Medial{
+  width: 90%;
+}
+
+.grid{
+  margin-top: 200px;
 }
   </style>
 </head>
@@ -178,21 +180,23 @@ button:hover{
   <div> <button class="logout"> Back </button> </div>
 
   <div class="grid">
-    <span>
-    <button class="Media"> Save image/video </button>
-   </span> 
+    
+   <span> 
+    <button class="Calculator"> Diary </button> 
+   <span>  <button class="expense"> Expense </button> </span> 
+   </span>
    
-   <div><button class="Note"> Save Note </button></div>
-   
-    <span> <button class="ball"> Live Match </button> </span> 
-             <div><button class="next"> Next </button></div>
+   <div> <button class="quiz"> Quiz </button>  
+   <span> <button class="todo"> Todo </button> </span> </div>
+  </div>
+  
   </div>
 
   <script>
 
    const calculator = document.querySelector('.Calculator')
       const product = document.querySelector('.product')
-         const next = document.querySelector('.next')
+         const quiz = document.querySelector('.quiz')
             const todo = document.querySelector('.todo')
                const expense = document.querySelector('.expense')
                   const changep = document.querySelector('.changep')
@@ -205,26 +209,28 @@ button:hover{
       
      
 
-  
-   ball.addEventListener('click', () => {
-      window.location.href="football.html"
+   calculator.addEventListener('click', () => {
+      window.location.href="mycorner.html"
    })  
 
-   Media.addEventListener('click', () => {
-      window.location.href="media.html"
-   })  
-
-   Note.addEventListener('click', () => {
-      window.location.href="note.html"
+   quiz.addEventListener('click', () => {
+     window.location.href="quiz.html"
    })
+
+   todo.addEventListener('click', () => {
+     window.location.href="todo.html"
+   })
+
+   
+   expense.addEventListener('click', () => {
+     window.location.href="expense.html"
+   })
+
 
     logout.addEventListener('click', () => {
-     window.location.href="mainpage.html"
+     window.location.href="savemainpage.html"
    })
 
-    next.addEventListener('click', () => {
-      window.location.href="next.html"
-   })
   </script>
 </body>
 </html>
