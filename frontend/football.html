@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-   <script>
-   const token = localStorage.getItem('token');
+  
+  <script>
+   // This runs before the page shows
+    const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
     } 
-   </script> 
+  </script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Football Live Scores</title>
@@ -17,70 +18,70 @@
     * { box-sizing: border-box; }
     body { background: #0d1117; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial; padding: 10px; margin: 0; }
     h1 { text-align: center; color: #ffa657; font-size: 22px; margin: 15px 0; }
-    h1.ball { margin-right: 6px; }
 
-.match { background: #161b22; padding: 14px; margin: 12px 0; border-radius: 10px; border: 1px solid #21262d; }
-.match.big-club { border-left: 3px solid #238636; }
-.match.live-match { border: 1px solid #da3633; background: #1f1616; }
+   .match { background: #161b22; padding: 14px; margin: 12px 0; border-radius: 10px; border: 1px solid #21262d; }
+   .match.big-club { border-left: 3px solid #238636; }
+   .match.live-match { border: 1px solid #da3633; background: #1f1616; }
 
-.teams { font-size: 16px; font-weight: bold; margin: 6px 0; line-height: 1.4; }
-.score { font-size: 20px; color: #2ea043; font-weight: 800; }
-.time { color: #58a6ff; margin-bottom: 6px; font-size: 12px; }
-.league { color: #ffa657; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
-.status { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #30363d; display: inline-block; margin-left: 4px; }
-.status.live { background: #da3633; animation: pulse 1s infinite; color: #fff; font-weight: bold; }
-.status.ft { background: #6e7681; color: #fff; }
+   .teams { font-size: 16px; font-weight: bold; margin: 6px 0; line-height: 1.4; }
+   .score { font-size: 20px; color: #2ea043; font-weight: 800; }
+   .time { color: #58a6ff; margin-bottom: 6px; font-size: 12px; }
+   .league { color: #ffa657; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+   .status { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #30363d; display: inline-block; margin-left: 4px; }
+   .status.live { background: #da3633; animation: pulse 1s infinite; color: #fff; font-weight: bold; }
+   .status.ft { background: #6e7681; color: #fff; }
     @keyframes pulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
 
-.watch-btn {
-  background: #da3633; color: #fff; padding: 10px 12px; border: none; border-radius: 8px;
-  cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center;
-  gap: 6px; font-size: 14px; font-weight: bold; margin-top: 10px; width: 100%;
-}
-.watch-btn:hover { background: #b91c1c; }
+   .watch-btn {
+      background: #da3633; color: #fff; padding: 10px 12px; border: none; border-radius: 8px;
+      cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center;
+      gap: 6px; font-size: 14px; font-weight: bold; margin-top: 10px; width: 100%;
+    }
+   .watch-btn:hover { background: #b91c1c; }
 
-.tabs { display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; }
-.tab {
-  padding: 10px 14px; background: #21262d; border-radius: 8px; cursor: pointer;
-  border: none; color: #fff; font-size: 14px; white-space: nowrap; flex-shrink: 0;
-}
-.tab.active { background: #238636; }
+   .tabs { display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; }
+   .tab {
+      padding: 10px 14px; background: #21262d; border-radius: 8px; cursor: pointer;
+      border: none; color: #fff; font-size: 14px; white-space: nowrap; flex-shrink: 0;
+    }
+   .tab.active { background: #238636; }
 
-h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; font-size: 16px; color: #58a6ff; }
-.date-group { margin-bottom: 20px; }
+    h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; font-size: 16px; color: #58a6ff; }
+   .date-group { margin-bottom: 20px; }
 
-.btn { background: #21262d; color: #fff; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 5px 0 0 0; width: 100%; }
-.btn:hover { background: #30363d; }
-.details { margin-top: 12px; padding-top: 12px; border-top: 1px solid #30363d; display: none; }
-.lineups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.team-lineup h4 { margin: 0 0 6px 0; color: #ffa657; font-size: 13px; }
-.player { padding: 3px 0; font-size: 12px; border-bottom: 1px dashed #30363d; }
-.goals { margin: 10px 0; }
-.goal { font-size: 13px; padding: 3px 0; }
-.goal.minute { color: #2ea043; font-weight: bold; }
-.no-data { color:#8b949e; font-size:12px; margin-top:10px; }
+   .btn { background: #21262d; color: #fff; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 5px 0 0 0; width: 100%; }
+   .btn:hover { background: #30363d; }
+   .details { margin-top: 12px; padding-top: 12px; border-top: 1px solid #30363d; display: none; }
+   .lineups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+   .team-lineup h4 { margin: 0 0 6px 0; color: #ffa657; font-size: 13px; }
+   .player { padding: 3px 0; font-size: 12px; border-bottom: 1px dashed #30363d; }
+   .goals { margin: 10px 0; }
+   .goal { font-size: 13px; padding: 3px 0; }
+   .goal.minute { color: #2ea043; font-weight: bold; }
+   .no-data { color:#8b949e; font-size:12px; margin-top:10px; }
+   .no-live-card { text-align:center; padding:20px; background:#161b22; border-radius:10px; margin:15px 0; border:1px dashed #30363d; }
 
-/* Mobile First Responsive */
-@media(min-width: 768px) {
-  body { padding: 20px; max-width: 900px; margin: 0 auto; }
- .teams { font-size: 18px; }
- .watch-btn { width: auto; display: inline-flex; }
- .btn { width: auto; }
- .tabs { justify-content: center; }
-}
+    /* Mobile First Responsive */
+    @media(min-width: 768px) {
+      body { padding: 20px; max-width: 900px; margin: 0 auto; }
+     .teams { font-size: 18px; }
+     .watch-btn { width: auto; display: inline-flex; }
+     .btn { width: auto; }
+     .tabs { justify-content: center; }
+    }
   </style>
 </head>
 <body>
-  <h1><span class="ball">⚽</span> Football Scores</h1>
+  <h1>⚽ Football Scores</h1>
 
   <div class="tabs">
-    <button class="tab active" onclick="showTab('all')">All Matches</button>
-    <button class="tab" onclick="showTab('live')">Live Now</button>
-    <button class="tab" onclick="showTab('upcoming')">Upcoming</button>
-    <button class="tab" onclick="showTab('finished')">Finished</button>
+    <button class="tab active" onclick="showTab('all', this)">All Matches</button>
+    <button class="tab" onclick="showTab('live', this)">Live Now</button>
+    <button class="tab" onclick="showTab('upcoming', this)">Upcoming</button>
+    <button class="tab" onclick="showTab('finished', this)">Finished</button>
   </div>
 
-  <div id="content">Loading 7 days of matches...</div>
+  <div id="content">Loading 14 days of matches...</div>
 
   <script>
     const bigClubs = [
@@ -102,10 +103,10 @@ h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; fo
       return `${hour.toString().padStart(2,'0')}:${m} WAT`;
     }
 
-    function showTab(tab) {
+    function showTab(tab, el) {
       currentFilter = tab;
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
+      el.classList.add('active');
       renderMatches();
     }
 
@@ -212,7 +213,7 @@ h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; fo
         const aIsBig = isBigClub(a.home) || isBigClub(a.away)? 0 : 1;
         const bIsBig = isBigClub(b.home) || isBigClub(b.away)? 0 : 1;
         if(aIsBig!== bIsBig) return aIsBig - bIsBig;
-        return new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time);
+        return new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time);
       });
 
       const grouped = {};
@@ -222,21 +223,32 @@ h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; fo
       });
 
       let html = '';
-      const liveGames = filtered.filter(m => m.status === "Match in Progress");
+      const liveGames = allMatches.filter(m => m.status === "Match in Progress");
+
+      // LIVE SECTION
       if(liveGames.length > 0 && currentFilter === 'all') {
         html += `<h2>🔴 LIVE NOW</h2>`;
         html += liveGames.map(m => renderMatchCard(m)).join('');
+      } else if(currentFilter === 'live' && liveGames.length === 0) {
+        const nextMatch = allMatches.filter(m =>!m.homeScore).sort((a,b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time))[0];
+        html += `<div class="no-live-card">
+          <h3 style="color:#da3633; margin:0 0 8px 0;">😴 No Live Matches Right Now</h3>
+          ${nextMatch? `<p style="color:#8b949e; margin:0;">Next: <b style="color:#ffa657">${nextMatch.home} vs ${nextMatch.away}</b><br>${nextMatch.league} • ${nextMatch.date} • ${toWAT(nextMatch.time)}</p>` : `<p style="color:#8b949e; margin:0;">Check back later</p>`}
+        </div>`;
       }
 
-      html += Object.keys(grouped).sort().reverse().map(date => `
-        <div class="date-group">
-          <h2>📅 ${date}</h2>
-          ${grouped[date].map(m => renderMatchCard(m)).join('')}
-        </div>
-      `).join('');
+      // OTHER DATES
+      if(Object.keys(grouped).length > 0) {
+        html += Object.keys(grouped).sort().map(date => `
+          <div class="date-group">
+            <h2>📅 ${date}</h2>
+            ${grouped[date].map(m => renderMatchCard(m)).join('')}
+          </div>
+        `).join('');
+      }
 
       container.innerHTML = html;
-      if(filtered.length === 0) container.innerHTML = "<p style='text-align:center;color:#8b949e'>No matches found</p>";
+      if(filtered.length === 0 && currentFilter!== 'live') container.innerHTML = "<p style='text-align:center;color:#8b949e'>No matches found</p>";
     }
 
     function renderMatchCard(m) {
@@ -247,7 +259,7 @@ h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; fo
       const isFT = m.homeScore!== null &&!isLive;
       const statusText = isLive? 'LIVE' : isFT? 'FT' : 'Scheduled';
       const statusClass = isLive? 'status live' : isFT? 'status ft' : 'status';
-      const winner = isFT? `<div><b>Result:</b> ${m.homeScore > m.awayScore? m.home : m.awayScore > m.homeScore? m.away : 'Draw'}</div>` : '';
+      const winner = isFT? `<div style="font-size:12px; margin-top:4px;"><b>Result:</b> ${m.homeScore > m.awayScore? m.home : m.awayScore > m.homeScore? m.away : 'Draw'}</div>` : '';
       const isBig = isBigClub(m.home) || isBigClub(m.away);
       const matchClass = `match ${isBig? 'big-club' : ''} ${isLive? 'live-match' : ''}`;
       const detailsId = `details-${m.idEvent}`;
@@ -256,7 +268,7 @@ h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; fo
         <div class="${matchClass}">
           <div class="league">${m.league}</div>
           <div class="teams">${m.home} ${score} ${m.away} ${isBig? '⭐' : ''}</div>
-          <div class="time">${toWAT(m.time)} WAT - <span class="${statusClass}">${statusText}</span></div>
+          <div class="time">${toWAT(m.time)} - <span class="${statusClass}">${statusText}</span></div>
           ${winner}
           <button class="btn" onclick="fetchDetails('${m.idEvent}', document.getElementById('${detailsId}'), this)">Show Details</button>
           <a href="${youtubeSearch}" target="_blank" class="watch-btn">▶️ Watch Live</a>
@@ -265,8 +277,9 @@ h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; fo
       `;
     }
 
+    // Fetch 14 days: last 3 + next 11
     const datesToFetch = [];
-    for(let i = -3; i <= 4; i++) {
+    for(let i = -3; i <= 11; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       datesToFetch.push(d.toISOString().split('T')[0]);
@@ -276,18 +289,18 @@ h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; fo
       Promise.all(datesToFetch.map(date =>
         fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${date}&s=Soccer`).then(res => res.json())
       ))
-  .then(results => {
+     .then(results => {
         const allFetched = results.flatMap(r => r.events || []);
         saveMatches(allFetched);
         renderMatches();
       })
-  .catch(err => {
+     .catch(err => {
         document.getElementById('content').innerHTML = `<p>Error loading. Check internet.</p>`;
       });
     }
 
     fetchData();
-    setInterval(fetchData, 30000);
+    setInterval(fetchData, 30000); // refresh every 30s
   </script>
 </body>
 </html>
