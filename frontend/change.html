@@ -245,7 +245,8 @@ html, body {
     const data = await result.json()
     if(data.status === 'ok') {
      // localStorage.setItem('token', data.data)
-       alert('Password change')
+       alert('Password change successfully')
+       newPassword = '';
     } else {
       alert(data.error)
     }
