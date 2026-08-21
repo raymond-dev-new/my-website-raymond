@@ -557,9 +557,7 @@ app.get("/api/lineup/:id", async (req, res) => {
   res.json([]);
 });
 
-// YOUR REAL API ROUTE - comment this out for now
-// app.get("/api/lineup/:id", async (req, res) => { ... })
-
+ 
   //end iuytuiopioiuytruiooiuyftyuioiuy
   
 

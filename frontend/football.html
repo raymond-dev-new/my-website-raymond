@@ -4,7 +4,7 @@
 
   
     <script>
-   const token = localStorage.getItem('token');
+  /* const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -53,10 +53,10 @@
 
 <div class="tabs">
   <button class="tab" onclick="filterTab('all')">All Matches</button>
-  <button class="tab" onclick="filterTab('live')">Live Now</button>
   <button class="tab active" onclick="filterTab('today')">Today</button>
   <button class="tab" onclick="filterTab('upcoming')">Upcoming</button>
   <button class="tab" onclick="filterTab('finished')">Finished</button>
+ 
 </div>
 
 <div class="container" id="matches">Loading...</div>
