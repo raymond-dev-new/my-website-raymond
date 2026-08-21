@@ -167,11 +167,11 @@ async function fetchLineup(fixtureId) {
         <div class="players">`;
       
       team.startXI.slice(0,11).forEach(p => {
-        html += `<div>${p.player.number}. ${p.player.name}</div>`;
-      });
+        html += `... ${p.player.name}</div>`;
+      });  
       
       html += `</div></div>`;
-    });
+    }); 
     
     div.innerHTML = html;
   } catch(e) {

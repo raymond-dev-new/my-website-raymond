@@ -436,21 +436,70 @@ app.get("/api/matches", async (req, res) => {
     console.log("Total real matches found:", allMatches.length);
     
     // IF API IS EMPTY, ADD MOCK DATA FOR 3 DAYS BACK, TODAY, 3 DAYS FORWARD
-    if(allMatches.length === 0) {
-      const now = new Date();
-      allMatches = [
-        // 2 DAYS BACK - FINISHED
-        { fixture: { id: 1, date: new Date(now.getTime() - 2*24*60*60*1000).toISOString(), status: {short: "FT"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:40,name:"Liverpool"}}, goals: {home: 2, away: 0}, league: {name: "Premier League"} },
-        // 1 DAY BACK - FINISHED 
-        { fixture: { id: 2, date: new Date(now.getTime() - 1*24*60*60*1000).toISOString(), status: {short: "FT"} }, teams: { home: {id:50,name:"Man City"}, away: {id:33,name:"Man Utd"}}, goals: {home: 3, away: 1}, league: {name: "Premier League"} },
-        // TODAY
-        { fixture: { id: 3, date: new Date().toISOString(), status: {short: "NS"} }, teams: { home: {id:541,name:"Real Madrid"}, away: {id:529,name:"Barcelona"}}, goals: {home: null, away: null}, league: {name: "La Liga"} },
-        // 2 DAYS FORWARD - UPCOMING
-        { fixture: { id: 4, date: new Date(now.getTime() + 2*24*60*60*1000).toISOString(), status: {short: "NS"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:33,name:"Man Utd"}}, goals: {home: null, away: null}, league: {name: "Premier League"} },
-        // 3 DAYS FORWARD - UPCOMING
-        { fixture: { id: 5, date: new Date(now.getTime() + 3*24*60*60*1000).toISOString(), status: {short: "NS"} }, teams: { home: {id:157,name:"Bayern"}, away: {id:50,name:"Man City"}}, goals: {home: null, away: null}, league: {name: "Champions League"} }
-      ];
+   
+
+  if(allMatches.length === 0) {
+  const baseDate = new Date();
+  allMatches = [];
+
+  // Generate matches for -3 days to +3 days
+  for(let i = -3; i <= 3; i++) {
+    const d = new Date(baseDate);
+    d.setDate(baseDate.getDate() + i);
+    const day = d.toISOString().split('T')[0];
+
+    // Define times for this day
+    const t730pm = `${day}T19:30:00+01:00`;
+    const t735pm = `${day}T19:35:00+01:00`;
+    const t8pm = `${day}T20:00:00+01:00`;
+    const t9pm = `${day}T21:00:00+01:00`;
+    const t930pm = `${day}T21:30:00+01:00`;
+    const t945pm = `${day}T21:45:00+01:00`;
+    const t1030pm = `${day}T22:30:00+01:00`;
+
+    // TODAY - Aug 21
+    if(i === 0) {
+      allMatches.push(
+        { fixture: { id: 101, date: t8pm, status: {short: "NS"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:84,name:"Coventry City"}}, goals: {home: null, away: null}, league: {name: "Premier League"} },
+        { fixture: { id: 201, date: t8pm, status: {short: "NS"} }, teams: { home: {id:543,name:"Real Betis"}, away: {id:548,name:"Real Sociedad"}}, goals: {home: null, away: null}, league: {name: "La Liga"} },
+        { fixture: { id: 301, date: t945pm, status: {short: "NS"} }, teams: { home: {id:81,name:"Marseille"}, away: {id:82,name:"Strasbourg"}}, goals: {home: null, away: null}, league: {name: "Ligue 1"} },
+        { fixture: { id: 401, date: t930pm, status: {short: "NS"} }, teams: { home: {id:501,name:"Erzurumspor"}, away: {id:490,name:"Galatasaray"}}, goals: {home: null, away: null}, league: {name: "Turkish Super Lig"} },
+        { fixture: { id: 501, date: t9pm, status: {short: "NS"} }, teams: { home: {id:600,name:"Al Qadisiya"}, away: {id:601,name:"Al Ittihad"}}, goals: {home: null, away: null}, league: {name: "Saudi Pro League"} },
+        { fixture: { id: 601, date: t8pm, status: {short: "NS"} }, teams: { home: {id:541,name:"Zamalek"}, away: {id:542,name:"Al Ittihad Alexandria"}}, goals: {home: null, away: null}, league: {name: "Egyptian League"} }
+      );
     }
+
+    // 1 DAY AGO - Aug 20
+    if(i === -1) {
+      allMatches.push(
+        { fixture: { id: 111, date: t8pm, status: {short: "FT"} }, teams: { home: {id:50,name:"Man City"}, away: {id:47,name:"Tottenham"}}, goals: {home: 2, away: 1}, league: {name: "Premier League"} },
+        { fixture: { id: 211, date: t9pm, status: {short: "FT"} }, teams: { home: {id:541,name:"Real Madrid"}, away: {id:530,name:"Atletico Madrid"}}, goals: {home: 3, away: 0}, league: {name: "La Liga"} }
+      );
+    }
+
+    // 1 DAY AHEAD - Aug 22
+    if(i === 1) {
+      allMatches.push(
+        { fixture: { id: 112, date: t730pm, status: {short: "NS"} }, teams: { home: {id:33,name:"Man United"}, away: {id:49,name:"Chelsea"}}, goals: {home: null, away: null}, league: {name: "Premier League"} },
+        { fixture: { id: 212, date: t8pm, status: {short: "NS"} }, teams: { home: {id:529,name:"Barcelona"}, away: {id:549,name:"Valencia"}}, goals: {home: null, away: null}, league: {name: "La Liga"} }
+      );
+    }
+
+    // 2 DAYS AHEAD - Aug 23
+    if(i === 2) {
+      allMatches.push(
+        { fixture: { id: 113, date: t9pm, status: {short: "NS"} }, teams: { home: {id:40,name:"Liverpool"}, away: {id:46,name:"Newcastle"}}, goals: {home: null, away: null}, league: {name: "Premier League"} }
+      );
+    }
+
+    // 3 DAYS BACK - Aug 18
+    if(i === -3) {
+      allMatches.push(
+        { fixture: { id: 110, date: t8pm, status: {short: "FT"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:41,name:"Man City"}}, goals: {home: 1, away: 1}, league: {name: "Premier League"} }
+      );
+    }
+  }
+}
     
     res.json(allMatches);
   } catch(e) {
@@ -458,25 +507,58 @@ app.get("/api/matches", async (req, res) => {
   }
 });
 
-  app.get("/api/lineup/:id", async (req, res) => {
-  try {
-    const fixtureId = req.params.id;
-    const url = `https://v3.football.api-sports.io/fixtures/lineups?fixture=${fixtureId}`;
-    
-    const response = await fetch(url, { 
-      headers: { "x-apisports-key": API_KEY }
-    });
-    const data = await response.json();
-    
-    if(!data.errors || Object.keys(data.errors).length === 0) {
-      res.json(data.response); // This returns [HomeTeam, AwayTeam] with players
-    } else {
-      res.json([]);
-    }
-  } catch(e) {
-    res.status(500).json({error: e.message});
+ // MOCK LINEUP FOR TESTING
+app.get("/api/lineup/:id", async (req, res) => {
+  const fixtureId = parseInt(req.params.id);
+  
+  // Mock lineup for Arsenal vs Coventry id: 101
+  if(fixtureId === 101) {
+    return res.json([
+      {
+        team: {id: 42, name: "Arsenal", logo: "https://media.api-sports.io/football/teams/42.png"},
+        coach: {id: 1, name: "Mikel Arteta"},
+        formation: "4-3-3",
+        startXI: [
+          {player: {id: 1, name: "David Raya"}, number: 1, pos: "G"},
+          {player: {id: 2, name: "Ben White"}, number: 4, pos: "D"},
+          {player: {id: 3, name: "William Saliba"}, number: 2, pos: "D"},
+          {player: {id: 4, name: "Gabriel"}, number: 6, pos: "D"},
+          {player: {id: 5, name: "Oleksandr Zinchenko"}, number: 35, pos: "D"},
+          {player: {id: 6, name: "Declan Rice"}, number: 41, pos: "M"},
+          {player: {id: 7, name: "Martin Odegaard"}, number: 8, pos: "M"},
+          {player: {id: 8, name: "Kai Havertz"}, number: 29, pos: "M"},
+          {player: {id: 9, name: "Bukayo Saka"}, number: 7, pos: "F"},
+          {player: {id: 10, name: "Gabriel Jesus"}, number: 9, pos: "F"},
+          {player: {id: 11, name: "Gabriel Martinelli"}, number: 11, pos: "F"}
+        ]
+      },
+      {
+        team: {id: 84, name: "Coventry City", logo: "https://media.api-sports.io/football/teams/84.png"},
+        coach: {id: 2, name: "Mark Robins"},
+        formation: "4-2-3-1",
+        startXI: [
+          {player: {id: 12, name: "Brad Collins"}, number: 1, pos: "G"},
+          {player: {id: 13, name: "Milan van Ewijk"}, number: 2, pos: "D"},
+          {player: {id: 14, name: "Bobby Thomas"}, number: 5, pos: "D"},
+          {player: {id: 15, name: "Luis Binks"}, number: 6, pos: "D"},
+          {player: {id: 16, name: "Jake Bidwell"}, number: 3, pos: "D"},
+          {player: {id: 17, name: "Ben Sheaf"}, number: 8, pos: "M"},
+          {player: {id: 18, name: "Josh Eccles"}, number: 14, pos: "M"},
+          {player: {id: 19, name: "Haji Wright"}, number: 11, pos: "F"},
+          {player: {id: 20, name: "Tatsuhiro Sakamoto"}, number: 7, pos: "F"},
+          {player: {id: 21, name: "Ellis Simms"}, number: 9, pos: "F"},
+          {player: {id: 22, name: "Callum O'Hare"}, number: 10, pos: "F"}
+        ]
+      }
+    ]);
   }
+  
+  // For other matches, return empty for now
+  res.json([]);
 });
+
+// YOUR REAL API ROUTE - comment this out for now
+// app.get("/api/lineup/:id", async (req, res) => { ... })
 
   //end iuytuiopioiuytruiooiuyftyuioiuy
   
