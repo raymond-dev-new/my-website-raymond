@@ -1,106 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  
-  <script>
-   // This runs before the page shows
-    const token = localStorage.getItem('token');
 
-    if (!token) {
+     <script>
+   const tokenN = localStorage.getItem('token');
+
+    if (!tokenN) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    } 
-  </script>
+    }  
+    </script>
+
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Football Live Scores</title>
   <style>
     * { box-sizing: border-box; }
-    body { background: #0d1117; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial; padding: 10px; margin: 0; }
+    body { background: #0d1117; color: #fff; font-family: Arial; padding: 10px; margin: 0; }
     h1 { text-align: center; color: #ffa657; font-size: 22px; margin: 15px 0; }
 
-   .match { background: #161b22; padding: 14px; margin: 12px 0; border-radius: 10px; border: 1px solid #21262d; }
-   .match.big-club { border-left: 3px solid #238636; }
-   .match.live-match { border: 1px solid #da3633; background: #1f1616; }
+.match { background: #161b22; padding: 14px; margin: 12px 0; border-radius: 10px; border: 1px solid #21262d; }
+.match.big-club { border-left: 4px solid #238636; }
+.match.live-match { border: 2px solid #da3633; background: #1f1616; }
 
-   .teams { font-size: 16px; font-weight: bold; margin: 6px 0; line-height: 1.4; }
-   .score { font-size: 20px; color: #2ea043; font-weight: 800; }
-   .time { color: #58a6ff; margin-bottom: 6px; font-size: 12px; }
-   .league { color: #ffa657; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
-   .status { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #30363d; display: inline-block; margin-left: 4px; }
-   .status.live { background: #da3633; animation: pulse 1s infinite; color: #fff; font-weight: bold; }
-   .status.ft { background: #6e7681; color: #fff; }
+.date-header { background: #21262d; padding: 8px 12px; border-radius: 8px; margin: 20px 0 10px 0; font-weight: bold; color: #ffa657; font-size: 14px; }
+
+.teams { font-size: 16px; font-weight: bold; margin: 6px 0; }
+.score { font-size: 20px; color: #2ea043; font-weight: 800; }
+.time { color: #58a6ff; font-size: 12px; }
+.league { color: #ffa657; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+.status { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #30363d; display: inline-block; margin-left: 4px; }
+.status.live { background: #da3633; animation: pulse 1s infinite; color: #fff; }
+.status.ft { background: #6e7681; color: #fff; }
     @keyframes pulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
 
-   .watch-btn {
-      background: #da3633; color: #fff; padding: 10px 12px; border: none; border-radius: 8px;
-      cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center;
-      gap: 6px; font-size: 14px; font-weight: bold; margin-top: 10px; width: 100%;
-    }
-   .watch-btn:hover { background: #b91c1c; }
+.btn { background: #21262d; color: #fff; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 8px 5px 0 0; }
+.btn:hover { background: #30363d; }
+.watch-btn { background: #da3633; text-decoration: none; display: inline-block; }
+.watch-btn:hover { background: #b91c1c; }
 
-   .tabs { display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; }
-   .tab {
-      padding: 10px 14px; background: #21262d; border-radius: 8px; cursor: pointer;
-      border: none; color: #fff; font-size: 14px; white-space: nowrap; flex-shrink: 0;
-    }
-   .tab.active { background: #238636; }
+.tabs { display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; }
+.tab { padding: 10px 14px; background: #21262d; border-radius: 8px; cursor: pointer; border: none; color: #fff; font-size: 14px; white-space: nowrap; }
+.tab.active { background: #238636; }
 
-    h2 { border-bottom: 1px solid #30363d; padding-bottom: 6px; margin-top: 20px; font-size: 16px; color: #58a6ff; }
-   .date-group { margin-bottom: 20px; }
-
-   .btn { background: #21262d; color: #fff; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 5px 0 0 0; width: 100%; }
-   .btn:hover { background: #30363d; }
-   .details { margin-top: 12px; padding-top: 12px; border-top: 1px solid #30363d; display: none; }
-   .lineups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-   .team-lineup h4 { margin: 0 0 6px 0; color: #ffa657; font-size: 13px; }
-   .player { padding: 3px 0; font-size: 12px; border-bottom: 1px dashed #30363d; }
-   .goals { margin: 10px 0; }
-   .goal { font-size: 13px; padding: 3px 0; }
-   .goal.minute { color: #2ea043; font-weight: bold; }
-   .no-data { color:#8b949e; font-size:12px; margin-top:10px; }
-   .no-live-card { text-align:center; padding:20px; background:#161b22; border-radius:10px; margin:15px 0; border:1px dashed #30363d; }
-
-    /* Mobile First Responsive */
-    @media(min-width: 768px) {
-      body { padding: 20px; max-width: 900px; margin: 0 auto; }
-     .teams { font-size: 18px; }
-     .watch-btn { width: auto; display: inline-flex; }
-     .btn { width: auto; }
-     .tabs { justify-content: center; }
-    }
+.details { margin-top: 12px; padding-top: 12px; border-top: 1px solid #30363d; display: none; }
+.lineups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.team-lineup h4 { margin: 0 0 6px 0; color: #ffa657; font-size: 13px; }
+.player { padding: 3px 0; font-size: 12px; border-bottom: 1px dashed #30363d; }
+.loading { text-align:center; color:#8b949e; padding:20px; }
+.no-data { color:#8b949e; font-size:12px; margin-top:10px; text-align:center; }
   </style>
 </head>
 <body>
   <h1>⚽ Football Scores</h1>
 
   <div class="tabs">
-    <button class="tab active" onclick="showTab('all', this)">All Matches</button>
-    <button class="tab" onclick="showTab('live', this)">Live Now</button>
+    <button class="tab active" onclick="showTab('today', this)">🔥 Today</button>
+    <button class="tab" onclick="showTab('live', this)">🔴 Live Now</button>
     <button class="tab" onclick="showTab('upcoming', this)">Upcoming</button>
     <button class="tab" onclick="showTab('finished', this)">Finished</button>
   </div>
 
-  <div id="content">Loading 14 days of matches...</div>
+  <div id="content"><div class="loading">Loading 3 days back + 3 days future...</div></div>
 
   <script>
-    const bigClubs = [
-      "Arsenal", "Manchester City", "Manchester United", "Chelsea", "Liverpool", "Tottenham Hotspur",
+    const BIG_CLUBS = [
+      "Arsenal", "Manchester City", "Manchester United", "Chelsea", "Liverpool", "Tottenham",
       "Barcelona", "Real Madrid", "Atletico Madrid",
       "Bayern Munich", "Borussia Dortmund",
-      "PSG",
+      "PSG", "Marseille",
       "Juventus", "Inter", "AC Milan", "Napoli"
     ];
 
-    let allMatches = JSON.parse(localStorage.getItem('allMatches')) || [];
-    let currentFilter = 'all';
+    let allMatches = JSON.parse(localStorage.getItem('allMatches7Days')) || [];
+    let currentFilter = 'today';
     let lineupCache = {};
+    const TODAY = new Date().toISOString().split('T')[0];
 
-    function toWAT(utcTime) {
-      if(!utcTime) return "TBD";
-      const [h, m] = utcTime.split(':');
-      let hour = (parseInt(h) + 1) % 24;
-      return `${hour.toString().padStart(2,'0')}:${m} WAT`;
+    function toWAT(dateStr, timeStr) {
+      if(!dateStr ||!timeStr) return "TBD";
+      const d = new Date(dateStr + 'T' + timeStr + 'Z');
+      d.setHours(d.getHours() + 1);
+      return d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) + " WAT";
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
+      return d.toLocaleDateString('en-GB', options);
     }
 
     function showTab(tab, el) {
@@ -111,196 +98,167 @@
     }
 
     function isBigClub(team) {
-      return bigClubs.includes(team);
+      return BIG_CLUBS.some(c => team.toLowerCase().includes(c.toLowerCase()));
     }
 
     function saveMatches(newMatches) {
       newMatches.forEach(m => {
+        if(!m) return;
         const exists = allMatches.find(x => x.idEvent === m.idEvent);
-        if(!exists) {
-          allMatches.push({
-            idEvent: m.idEvent,
-            home: m.strHomeTeam,
-            away: m.strAwayTeam,
-            homeScore: m.intHomeScore,
-            awayScore: m.intAwayScore,
-            league: m.strLeague,
-            date: m.dateEvent,
-            time: m.strTime,
-            status: m.strStatus
-          });
-        } else {
-          exists.homeScore = m.intHomeScore;
-          exists.awayScore = m.intAwayScore;
-          exists.status = m.strStatus;
-        }
+        const matchData = {
+          idEvent: m.idEvent,
+          home: m.strHomeTeam,
+          away: m.strAwayTeam,
+          homeScore: m.intHomeScore,
+          awayScore: m.intAwayScore,
+          league: m.strLeague,
+          date: m.dateEvent,
+          time: m.strTime,
+          status: m.strStatus
+        };
+        if(!exists) allMatches.push(matchData);
+        else Object.assign(exists, matchData);
       });
-      localStorage.setItem('allMatches', JSON.stringify(allMatches));
+      allMatches = allMatches.slice(-300);
+      localStorage.setItem('allMatches7Days', JSON.stringify(allMatches));
     }
 
-    async function fetchDetails(idEvent, detailsDiv, btn) {
+    async function fetchLineup(idEvent, detailsDiv, btn) {
       if(detailsDiv.style.display === "block") {
         detailsDiv.style.display = "none";
-        btn.innerText = "Show Details";
+        btn.innerText = "Show Lineup";
         return;
       }
       detailsDiv.style.display = "block";
-      btn.innerText = "Hide Details";
+      btn.innerText = "Hide Lineup";
 
       if(lineupCache[idEvent]) {
         detailsDiv.innerHTML = lineupCache[idEvent];
         return;
       }
 
-      detailsDiv.innerHTML = `<p style="color:#8b949e">Loading...</p>`;
+      detailsDiv.innerHTML = `<p style="color:#8b949e">Loading lineup...</p>`;
 
       try {
-        let event = null;
-        for(let i=0; i<3; i++) {
-          const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${idEvent}`);
-          const data = await res.json();
-          if(data.events && data.events[0]) { event = data.events[0]; break; }
-          await new Promise(r => setTimeout(r, 500));
-        }
+        const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${idEvent}`);
+        const data = await res.json();
+        const event = data.events? data.events[0] : null;
 
         if(!event) {
-          detailsDiv.innerHTML = `<p class="no-data">No details for this league</p>`;
+          detailsDiv.innerHTML = `<p class="no-data">Lineup not available for this league</p>`;
           return;
         }
 
         const homeLineup = event.strHomeLineupPlayers? event.strHomeLineupPlayers.split(";").filter(p=>p) : [];
         const awayLineup = event.strAwayLineupPlayers? event.strAwayLineupPlayers.split(";").filter(p=>p) : [];
 
-        const goals = [];
-        for(let i=1; i<=15; i++) {
-          if(event[`strHomeGoalDetails${i}`]) goals.push({team: event.strHomeTeam, detail: event[`strHomeGoalDetails${i}`]});
-          if(event[`strAwayGoalDetails${i}`]) goals.push({team: event.strAwayTeam, detail: event[`strAwayGoalDetails${i}`]});
-        }
-
         let html = '';
-        if(goals.length > 0) {
-          html += `<div class="goals"><h4 style="margin:0 0 6px 0; color:#2ea043">⚽ Goals</h4>`;
-          html += goals.map(g => `<div class="goal"><span class="minute">${g.detail}</span> - ${g.team}</div>`).join('');
-          html += `</div>`;
-        }
         if(homeLineup.length > 0 || awayLineup.length > 0) {
           html += `<div class="lineups">
             <div class="team-lineup"><h4>${event.strHomeTeam} XI</h4>${homeLineup.map(p => `<div class="player">${p}</div>`).join("")}</div>
             <div class="team-lineup"><h4>${event.strAwayTeam} XI</h4>${awayLineup.map(p => `<div class="player">${p}</div>`).join("")}</div>
           </div>`;
         } else {
-          html += `<p class="no-data">Lineups not available for this league</p>`;
+          html += `<p class="no-data">Lineups not available yet. Usually appears 1hr before kickoff</p>`;
         }
 
         lineupCache[idEvent] = html;
         detailsDiv.innerHTML = html;
       } catch(e) {
-        detailsDiv.innerHTML = `<p style="color:red">Error loading</p>`;
+        detailsDiv.innerHTML = `<p style="color:red">Error loading lineup</p>`;
       }
     }
 
     function renderMatches() {
       const container = document.getElementById('content');
       let filtered = allMatches;
-      if(currentFilter === 'live') filtered = allMatches.filter(m => m.status === "Match in Progress");
-      if(currentFilter === 'upcoming') filtered = allMatches.filter(m =>!m.homeScore && new Date(m.date) >= new Date());
-      if(currentFilter === 'finished') filtered = allMatches.filter(m => m.homeScore!== null);
 
+      // FILTER LOGIC
+      if(currentFilter === 'today') filtered = allMatches.filter(m => m.date === TODAY);
+      if(currentFilter === 'live') filtered = allMatches.filter(m => m.status === "Match in Progress");
+      if(currentFilter === 'upcoming') filtered = allMatches.filter(m => m.homeScore === null && m.date >= TODAY);
+      if(currentFilter === 'finished') filtered = allMatches.filter(m => m.homeScore!== null && m.status!== "Match in Progress");
+
+      // SORT: Date first, then Big clubs first
       filtered.sort((a,b) => {
-        const aIsLive = a.status === "Match in Progress"? 0 : 1;
-        const bIsLive = b.status === "Match in Progress"? 0 : 1;
-        if(aIsLive!== bIsLive) return aIsLive - bIsLive;
+        if(a.date!== b.date) return new Date(a.date) - new Date(b.date);
         const aIsBig = isBigClub(a.home) || isBigClub(a.away)? 0 : 1;
         const bIsBig = isBigClub(b.home) || isBigClub(b.away)? 0 : 1;
         if(aIsBig!== bIsBig) return aIsBig - bIsBig;
-        return new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time);
+        return a.time.localeCompare(b.time);
       });
 
-      const grouped = {};
-      filtered.forEach(m => {
-        if(!grouped[m.date]) grouped[m.date] = [];
-        grouped[m.date].push(m);
-      });
+      if(filtered.length === 0) {
+        let msg = "No matches found";
+        if(currentFilter === 'today') msg = `No matches yet for today.<br>EPL appears 2hrs before kickoff.<br><br>Expected: Arsenal vs Coventry 20:00 WAT`;
+        if(currentFilter === 'live') msg = "No live matches right now";
+        container.innerHTML = `<p class="no-data">${msg}</p>`;
+        return;
+      }
 
       let html = '';
-      const liveGames = allMatches.filter(m => m.status === "Match in Progress");
+      if(currentFilter === 'live') html += `<h2>🔴 LIVE NOW</h2>`;
 
-      // LIVE SECTION
-      if(liveGames.length > 0 && currentFilter === 'all') {
-        html += `<h2>🔴 LIVE NOW</h2>`;
-        html += liveGames.map(m => renderMatchCard(m)).join('');
-      } else if(currentFilter === 'live' && liveGames.length === 0) {
-        const nextMatch = allMatches.filter(m =>!m.homeScore).sort((a,b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time))[0];
-        html += `<div class="no-live-card">
-          <h3 style="color:#da3633; margin:0 0 8px 0;">😴 No Live Matches Right Now</h3>
-          ${nextMatch? `<p style="color:#8b949e; margin:0;">Next: <b style="color:#ffa657">${nextMatch.home} vs ${nextMatch.away}</b><br>${nextMatch.league} • ${nextMatch.date} • ${toWAT(nextMatch.time)}</p>` : `<p style="color:#8b949e; margin:0;">Check back later</p>`}
-        </div>`;
-      }
+      let lastDate = '';
+      html += filtered.map(m => {
+        const score = m.homeScore!== null? `<span class="score">${m.homeScore} - ${m.awayScore}</span>` : 'vs';
+        const isBig = isBigClub(m.home) || isBigClub(m.away);
+        const isLive = m.status === "Match in Progress";
+        const isFT = m.homeScore!== null &&!isLive;
+        const statusText = isLive? 'LIVE' : isFT? 'FT' : 'Scheduled';
+        const statusClass = isLive? 'status live' : isFT? 'status ft' : 'status';
+        const searchQuery = encodeURIComponent(`${m.home} vs ${m.away} live stream`);
+        const youtubeSearch = `https://www.youtube.com/results?search_query=${searchQuery}`;
+        const detailsId = `details-${m.idEvent}`;
 
-      // OTHER DATES
-      if(Object.keys(grouped).length > 0) {
-        html += Object.keys(grouped).sort().map(date => `
-          <div class="date-group">
-            <h2>📅 ${date}</h2>
-            ${grouped[date].map(m => renderMatchCard(m)).join('')}
+        // ADD DATE HEADER
+        let dateHeader = '';
+        if(m.date!== lastDate) {
+          dateHeader = `<div class="date-header">📅 ${formatDate(m.date)}</div>`;
+          lastDate = m.date;
+        }
+
+        return `
+          ${dateHeader}
+          <div class="match ${isBig? 'big-club' : ''} ${isLive? 'live-match' : ''}">
+            <div class="league">${m.league} ${isBig? '⭐' : ''}</div>
+            <div class="teams">${m.home} ${score} ${m.away}</div>
+            <div class="time">⏰ ${toWAT(m.date, m.time)} - <span class="${statusClass}">${statusText}</span></div>
+            <button class="btn" onclick="fetchLineup('${m.idEvent}', document.getElementById('${detailsId}'), this)">Show Lineup</button>
+            <a href="${youtubeSearch}" target="_blank" class="btn watch-btn">▶️ Watch on YouTube</a>
+            <div id="${detailsId}" class="details"></div>
           </div>
-        `).join('');
-      }
+        `;
+      }).join('');
 
       container.innerHTML = html;
-      if(filtered.length === 0 && currentFilter!== 'live') container.innerHTML = "<p style='text-align:center;color:#8b949e'>No matches found</p>";
     }
 
-    function renderMatchCard(m) {
-      const searchQuery = encodeURIComponent(`${m.home} vs ${m.away} live stream`);
-      const youtubeSearch = `https://www.youtube.com/results?search_query=${searchQuery}`;
-      const score = m.homeScore!== null? `<span class="score">${m.homeScore} - ${m.awayScore}</span>` : 'vs';
-      const isLive = m.status === "Match in Progress";
-      const isFT = m.homeScore!== null &&!isLive;
-      const statusText = isLive? 'LIVE' : isFT? 'FT' : 'Scheduled';
-      const statusClass = isLive? 'status live' : isFT? 'status ft' : 'status';
-      const winner = isFT? `<div style="font-size:12px; margin-top:4px;"><b>Result:</b> ${m.homeScore > m.awayScore? m.home : m.awayScore > m.homeScore? m.away : 'Draw'}</div>` : '';
-      const isBig = isBigClub(m.home) || isBigClub(m.away);
-      const matchClass = `match ${isBig? 'big-club' : ''} ${isLive? 'live-match' : ''}`;
-      const detailsId = `details-${m.idEvent}`;
-
-      return `
-        <div class="${matchClass}">
-          <div class="league">${m.league}</div>
-          <div class="teams">${m.home} ${score} ${m.away} ${isBig? '⭐' : ''}</div>
-          <div class="time">${toWAT(m.time)} - <span class="${statusClass}">${statusText}</span></div>
-          ${winner}
-          <button class="btn" onclick="fetchDetails('${m.idEvent}', document.getElementById('${detailsId}'), this)">Show Details</button>
-          <a href="${youtubeSearch}" target="_blank" class="watch-btn">▶️ Watch Live</a>
-          <div id="${detailsId}" class="details"></div>
-        </div>
-      `;
-    }
-
-    // Fetch 14 days: last 3 + next 11
+    // FETCH 3 DAYS BACK + 3 DAYS FORWARD
     const datesToFetch = [];
-    for(let i = -3; i <= 11; i++) {
+    for(let i = -3; i <= 3; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       datesToFetch.push(d.toISOString().split('T')[0]);
     }
 
     function fetchData() {
+      document.getElementById('content').innerHTML = `<div class="loading">Fetching ${datesToFetch.length} days...</div>`;
       Promise.all(datesToFetch.map(date =>
         fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${date}&s=Soccer`).then(res => res.json())
       ))
-     .then(results => {
+.then(results => {
         const allFetched = results.flatMap(r => r.events || []);
         saveMatches(allFetched);
         renderMatches();
       })
-     .catch(err => {
-        document.getElementById('content').innerHTML = `<p>Error loading. Check internet.</p>`;
+.catch(err => {
+        document.getElementById('content').innerHTML = `<p style="color:red; text-align:center">Error loading. Check internet.</p>`;
       });
     }
 
     fetchData();
-    setInterval(fetchData, 30000); // refresh every 30s
+    setInterval(fetchData, 60000);
   </script>
 </body>
 </html>
