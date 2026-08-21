@@ -1,264 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-     <script>
-   const tokenN = localStorage.getItem('token');
-
-    if (!tokenN) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    }  
-    </script>
-
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Football Live Scores</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { background: #0d1117; color: #fff; font-family: Arial; padding: 10px; margin: 0; }
-    h1 { text-align: center; color: #ffa657; font-size: 22px; margin: 15px 0; }
-
-.match { background: #161b22; padding: 14px; margin: 12px 0; border-radius: 10px; border: 1px solid #21262d; }
-.match.big-club { border-left: 4px solid #238636; }
-.match.live-match { border: 2px solid #da3633; background: #1f1616; }
-
-.date-header { background: #21262d; padding: 8px 12px; border-radius: 8px; margin: 20px 0 10px 0; font-weight: bold; color: #ffa657; font-size: 14px; }
-
-.teams { font-size: 16px; font-weight: bold; margin: 6px 0; }
-.score { font-size: 20px; color: #2ea043; font-weight: 800; }
-.time { color: #58a6ff; font-size: 12px; }
-.league { color: #ffa657; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
-.status { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #30363d; display: inline-block; margin-left: 4px; }
-.status.live { background: #da3633; animation: pulse 1s infinite; color: #fff; }
-.status.ft { background: #6e7681; color: #fff; }
-    @keyframes pulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
-
-.btn { background: #21262d; color: #fff; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; margin: 8px 5px 0 0; }
-.btn:hover { background: #30363d; }
-.watch-btn { background: #da3633; text-decoration: none; display: inline-block; }
-.watch-btn:hover { background: #b91c1c; }
-
-.tabs { display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; }
-.tab { padding: 10px 14px; background: #21262d; border-radius: 8px; cursor: pointer; border: none; color: #fff; font-size: 14px; white-space: nowrap; }
-.tab.active { background: #238636; }
-
-.details { margin-top: 12px; padding-top: 12px; border-top: 1px solid #30363d; display: none; }
-.lineups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.team-lineup h4 { margin: 0 0 6px 0; color: #ffa657; font-size: 13px; }
-.player { padding: 3px 0; font-size: 12px; border-bottom: 1px dashed #30363d; }
-.loading { text-align:center; color:#8b949e; padding:20px; }
-.no-data { color:#8b949e; font-size:12px; margin-top:10px; text-align:center; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Football Scores</title>
+<style>
+  body { font-family: Arial; background: #0a0a0a; color: #fff; margin: 0; padding: 10px; }
+  h1 { text-align: center; color: #00ff88; }
+ .match { background: #1a1a1a; margin: 10px 0; padding: 12px; border-radius: 10px; border-left: 4px solid #00ff88; }
+ .teams { font-size: 18px; font-weight: bold; }
+ .info { font-size: 14px; color: #aaa; margin: 5px 0; }
+ .lineup { font-size: 13px; color: #ccc; margin-top: 8px; }
+ .youtube { display: inline-block; margin-top: 8px; padding: 6px 12px; background: #ff0000; color: #fff; text-decoration: none; border-radius: 5px; font-size: 13px; }
+ .loading { text-align: center; padding: 20px; }
+</style>
 </head>
 <body>
-  <h1>⚽ Football Scores</h1>
+<h1>⚽ Live Football</h1>
+<div id="matches" class="loading">Loading matches...</div>
 
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('today', this)">🔥 Today</button>
-    <button class="tab" onclick="showTab('live', this)">🔴 Live Now</button>
-    <button class="tab" onclick="showTab('upcoming', this)">Upcoming</button>
-    <button class="tab" onclick="showTab('finished', this)">Finished</button>
-  </div>
+<script>
+const API_KEY = "449f6dc5fbf34ba82d9e636c7598ccab"; // YOUR KEY
+const TEAMS = [33, 50, 529, 541, 40, 49, 42]; // Arsenal, Man City, Real Madrid, Barca, Liverpool, Man U, Bayern
 
-  <div id="content"><div class="loading">Loading 3 days back + 3 days future...</div></div>
+async function getMatches() {
+  const today = new Date();
+  const from = new Date(today); from.setDate(today.getDate() - 3); // past 3 days
+  const to = new Date(today); to.setDate(today.getDate() + 3); // next 3 days
+  
+  const fromStr = from.toISOString().split('T')[0];
+  const toStr = to.toISOString().split('T')[0];
+  
+  let url = `https://v3.football.api-sports.io/fixtures?from=${fromStr}&to=${toStr}&league=39,140,135,78,61&status=NS,1H,HT,2H,FT`;
+  
+  const res = await fetch(url, {
+    headers: { "x-api-sports-key": API_KEY }
+  });
+  const data = await res.json();
+  
+  // Filter for big teams only
+  const matches = data.response.filter(m => 
+    TEAMS.includes(m.teams.home.id) || TEAMS.includes(m.teams.away.id)
+  );
+  
+  displayMatches(matches);
+}
 
-  <script>
-    const BIG_CLUBS = [
-      "Arsenal", "Manchester City", "Manchester United", "Chelsea", "Liverpool", "Tottenham",
-      "Barcelona", "Real Madrid", "Atletico Madrid",
-      "Bayern Munich", "Borussia Dortmund",
-      "PSG", "Marseille",
-      "Juventus", "Inter", "AC Milan", "Napoli"
-    ];
-
-    let allMatches = JSON.parse(localStorage.getItem('allMatches7Days')) || [];
-    let currentFilter = 'today';
-    let lineupCache = {};
-    const TODAY = new Date().toISOString().split('T')[0];
-
-    function toWAT(dateStr, timeStr) {
-      if(!dateStr ||!timeStr) return "TBD";
-      const d = new Date(dateStr + 'T' + timeStr + 'Z');
-      d.setHours(d.getHours() + 1);
-      return d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) + " WAT";
-    }
-
-    function formatDate(dateStr) {
-      const d = new Date(dateStr);
-      const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
-      return d.toLocaleDateString('en-GB', options);
-    }
-
-    function showTab(tab, el) {
-      currentFilter = tab;
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      el.classList.add('active');
-      renderMatches();
-    }
-
-    function isBigClub(team) {
-      return BIG_CLUBS.some(c => team.toLowerCase().includes(c.toLowerCase()));
-    }
-
-    function saveMatches(newMatches) {
-      newMatches.forEach(m => {
-        if(!m) return;
-        const exists = allMatches.find(x => x.idEvent === m.idEvent);
-        const matchData = {
-          idEvent: m.idEvent,
-          home: m.strHomeTeam,
-          away: m.strAwayTeam,
-          homeScore: m.intHomeScore,
-          awayScore: m.intAwayScore,
-          league: m.strLeague,
-          date: m.dateEvent,
-          time: m.strTime,
-          status: m.strStatus
-        };
-        if(!exists) allMatches.push(matchData);
-        else Object.assign(exists, matchData);
+async function displayMatches(matches) {
+  const container = document.getElementById("matches");
+  if(matches.length === 0) {
+    container.innerHTML = "No matches found for big teams in last 3 + next 3 days";
+    return;
+  }
+  
+  let html = "";
+  for(let m of matches) {
+    const date = new Date(m.fixture.date).toLocaleString();
+    const score = m.goals.home!== null? `${m.goals.home} - ${m.goals.away}` : "vs";
+    const status = m.fixture.status.short;
+    
+    // Get lineup
+    let lineupHtml = "";
+    try {
+      const lineupRes = await fetch(`https://v3.football.api-sports.io/fixtures/lineups?fixture=${m.fixture.id}`, {
+        headers: { "x-api-sports-key": API_KEY }
       });
-      allMatches = allMatches.slice(-300);
-      localStorage.setItem('allMatches7Days', JSON.stringify(allMatches));
-    }
-
-    async function fetchLineup(idEvent, detailsDiv, btn) {
-      if(detailsDiv.style.display === "block") {
-        detailsDiv.style.display = "none";
-        btn.innerText = "Show Lineup";
-        return;
+      const lineupData = await lineupRes.json();
+      if(lineupData.response.length > 0) {
+        lineupHtml = `<div class="lineup"><b>Lineup:</b> ${lineupData.response[0].team.name} - ${lineupData.response[0].formation}</div>`;
       }
-      detailsDiv.style.display = "block";
-      btn.innerText = "Hide Lineup";
+    } catch(e) {}
+    
+    // YouTube search link
+    const ytSearch = encodeURIComponent(`${m.teams.home.name} vs ${m.teams.away.name} highlights`);
+    const ytLink = `https://www.youtube.com/results?search_query=${ytSearch}`;
+    
+    html += `
+      <div class="match">
+        <div class="teams">${m.teams.home.name} ${score} ${m.teams.away.name}</div>
+        <div class="info">📅 ${date} | 🏆 ${m.league.name} | Status: ${status}</div>
+        ${lineupHtml}
+        <a class="youtube" href="${ytLink}" target="_blank">▶ Watch Highlights on YouTube</a>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
 
-      if(lineupCache[idEvent]) {
-        detailsDiv.innerHTML = lineupCache[idEvent];
-        return;
-      }
-
-      detailsDiv.innerHTML = `<p style="color:#8b949e">Loading lineup...</p>`;
-
-      try {
-        const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${idEvent}`);
-        const data = await res.json();
-        const event = data.events? data.events[0] : null;
-
-        if(!event) {
-          detailsDiv.innerHTML = `<p class="no-data">Lineup not available for this league</p>`;
-          return;
-        }
-
-        const homeLineup = event.strHomeLineupPlayers? event.strHomeLineupPlayers.split(";").filter(p=>p) : [];
-        const awayLineup = event.strAwayLineupPlayers? event.strAwayLineupPlayers.split(";").filter(p=>p) : [];
-
-        let html = '';
-        if(homeLineup.length > 0 || awayLineup.length > 0) {
-          html += `<div class="lineups">
-            <div class="team-lineup"><h4>${event.strHomeTeam} XI</h4>${homeLineup.map(p => `<div class="player">${p}</div>`).join("")}</div>
-            <div class="team-lineup"><h4>${event.strAwayTeam} XI</h4>${awayLineup.map(p => `<div class="player">${p}</div>`).join("")}</div>
-          </div>`;
-        } else {
-          html += `<p class="no-data">Lineups not available yet. Usually appears 1hr before kickoff</p>`;
-        }
-
-        lineupCache[idEvent] = html;
-        detailsDiv.innerHTML = html;
-      } catch(e) {
-        detailsDiv.innerHTML = `<p style="color:red">Error loading lineup</p>`;
-      }
-    }
-
-    function renderMatches() {
-      const container = document.getElementById('content');
-      let filtered = allMatches;
-
-      // FILTER LOGIC
-      if(currentFilter === 'today') filtered = allMatches.filter(m => m.date === TODAY);
-      if(currentFilter === 'live') filtered = allMatches.filter(m => m.status === "Match in Progress");
-      if(currentFilter === 'upcoming') filtered = allMatches.filter(m => m.homeScore === null && m.date >= TODAY);
-      if(currentFilter === 'finished') filtered = allMatches.filter(m => m.homeScore!== null && m.status!== "Match in Progress");
-
-      // SORT: Date first, then Big clubs first
-      filtered.sort((a,b) => {
-        if(a.date!== b.date) return new Date(a.date) - new Date(b.date);
-        const aIsBig = isBigClub(a.home) || isBigClub(a.away)? 0 : 1;
-        const bIsBig = isBigClub(b.home) || isBigClub(b.away)? 0 : 1;
-        if(aIsBig!== bIsBig) return aIsBig - bIsBig;
-        return a.time.localeCompare(b.time);
-      });
-
-      if(filtered.length === 0) {
-        let msg = "No matches found";
-        if(currentFilter === 'today') msg = `No matches yet for today.<br>EPL appears 2hrs before kickoff.<br><br>Expected: Arsenal vs Coventry 20:00 WAT`;
-        if(currentFilter === 'live') msg = "No live matches right now";
-        container.innerHTML = `<p class="no-data">${msg}</p>`;
-        return;
-      }
-
-      let html = '';
-      if(currentFilter === 'live') html += `<h2>🔴 LIVE NOW</h2>`;
-
-      let lastDate = '';
-      html += filtered.map(m => {
-        const score = m.homeScore!== null? `<span class="score">${m.homeScore} - ${m.awayScore}</span>` : 'vs';
-        const isBig = isBigClub(m.home) || isBigClub(m.away);
-        const isLive = m.status === "Match in Progress";
-        const isFT = m.homeScore!== null &&!isLive;
-        const statusText = isLive? 'LIVE' : isFT? 'FT' : 'Scheduled';
-        const statusClass = isLive? 'status live' : isFT? 'status ft' : 'status';
-        const searchQuery = encodeURIComponent(`${m.home} vs ${m.away} live stream`);
-        const youtubeSearch = `https://www.youtube.com/results?search_query=${searchQuery}`;
-        const detailsId = `details-${m.idEvent}`;
-
-        // ADD DATE HEADER
-        let dateHeader = '';
-        if(m.date!== lastDate) {
-          dateHeader = `<div class="date-header">📅 ${formatDate(m.date)}</div>`;
-          lastDate = m.date;
-        }
-
-        return `
-          ${dateHeader}
-          <div class="match ${isBig? 'big-club' : ''} ${isLive? 'live-match' : ''}">
-            <div class="league">${m.league} ${isBig? '⭐' : ''}</div>
-            <div class="teams">${m.home} ${score} ${m.away}</div>
-            <div class="time">⏰ ${toWAT(m.date, m.time)} - <span class="${statusClass}">${statusText}</span></div>
-            <button class="btn" onclick="fetchLineup('${m.idEvent}', document.getElementById('${detailsId}'), this)">Show Lineup</button>
-            <a href="${youtubeSearch}" target="_blank" class="btn watch-btn">▶️ Watch on YouTube</a>
-            <div id="${detailsId}" class="details"></div>
-          </div>
-        `;
-      }).join('');
-
-      container.innerHTML = html;
-    }
-
-    // FETCH 3 DAYS BACK + 3 DAYS FORWARD
-    const datesToFetch = [];
-    for(let i = -3; i <= 3; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      datesToFetch.push(d.toISOString().split('T')[0]);
-    }
-
-    function fetchData() {
-      document.getElementById('content').innerHTML = `<div class="loading">Fetching ${datesToFetch.length} days...</div>`;
-      Promise.all(datesToFetch.map(date =>
-        fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${date}&s=Soccer`).then(res => res.json())
-      ))
-.then(results => {
-        const allFetched = results.flatMap(r => r.events || []);
-        saveMatches(allFetched);
-        renderMatches();
-      })
-.catch(err => {
-        document.getElementById('content').innerHTML = `<p style="color:red; text-align:center">Error loading. Check internet.</p>`;
-      });
-    }
-
-    fetchData();
-    setInterval(fetchData, 60000);
-  </script>
+getMatches();
+</script>
 </body>
 </html>
