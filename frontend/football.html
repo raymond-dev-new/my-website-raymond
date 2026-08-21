@@ -1,93 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Football Scores</title>
+
+  
+    <script>
+   const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    } 
+   </script> 
+
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Scores</title>
 <style>
-  body { font-family: Arial; background: #0a0a0a; color: #fff; margin: 0; padding: 10px; }
-  h1 { text-align: center; color: #00ff88; }
- .match { background: #1a1a1a; margin: 10px 0; padding: 12px; border-radius: 10px; border-left: 4px solid #00ff88; }
- .teams { font-size: 18px; font-weight: bold; }
- .info { font-size: 14px; color: #aaa; margin: 5px 0; }
- .lineup { font-size: 13px; color: #ccc; margin-top: 8px; }
- .youtube { display: inline-block; margin-top: 8px; padding: 6px 12px; background: #ff0000; color: #fff; text-decoration: none; border-radius: 5px; font-size: 13px; }
- .loading { text-align: center; padding: 20px; }
+  body { font-family: Arial; background: #0a0a0a; color: #fff; margin: 0; padding: 0; }
+  .header { text-align: center; padding: 15px; background: #111; }
+  .header h1 { color: #ff8800; font-size: 20px; margin: 0; }
+  
+  .tabs { display: flex; background: #111; padding: 10px; gap: 8px; overflow-x: auto; }
+  .tab { padding: 8px 14px; background: #222; border: none; color: #aaa; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .tab.active { background: #00aa44; color: #fff; }
+  
+  .container { padding: 10px; }
+  .date-header { color: #4488ff; font-size: 15px; margin: 20px 5px 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 5px; }
+  
+  .match { background: #1a1a1a; margin: 10px 0; padding: 12px; border-radius: 10px; }
+  .league { color: #ff8800; font-size: 12px; margin-bottom: 5px; }
+  .teams { font-size: 16px; font-weight: bold; margin: 5px 0; }
+  .time { color: #4488ff; font-size: 13px; }
+  .status { background: #1e3a8a; color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 5px; }
+  
+  /* LINEUP STYLES */
+  .lineup { font-size: 12px; color: #ccc; margin: 8px 0; padding: 10px; background: #222; border-radius: 5px; display: none; }
+  .team-lineup { margin-bottom: 10px; }
+  .team-lineup b { color: #00ff88; }
+  .players { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 5px; }
+  
+  .btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 6px; }
+  .btn-details { background: #333; color: #fff; }
+  .btn-watch { background: #ff0000; color: #fff; }
+  .btn-watch:hover { background: #cc0000; }
+  .empty { text-align: center; color: #666; padding: 30px; }
 </style>
 </head>
 <body>
-<h1>⚽ Live Football</h1>
-<div id="matches" class="loading">Loading matches...</div>
+
+<div class="header">
+  <h1>⚽ Football Scores</h1>
+</div>
+
+<div class="tabs">
+  <button class="tab" onclick="filterTab('all')">All Matches</button>
+  <button class="tab" onclick="filterTab('live')">Live Now</button>
+  <button class="tab active" onclick="filterTab('today')">Today</button>
+  <button class="tab" onclick="filterTab('upcoming')">Upcoming</button>
+  <button class="tab" onclick="filterTab('finished')">Finished</button>
+</div>
+
+<div class="container" id="matches">Loading...</div>
 
 <script>
-const API_KEY = "449f6dc5fbf34ba82d9e636c7598ccab"; // YOUR KEY
-const TEAMS = [33, 50, 529, 541, 40, 49, 42]; // Arsenal, Man City, Real Madrid, Barca, Liverpool, Man U, Bayern
+let allData = [];
+let currentFilter = 'today';
+
+const API_URL = "https://my-website-raymond.vercel.app/api/matches";
 
 async function getMatches() {
-  const today = new Date();
-  const from = new Date(today); from.setDate(today.getDate() - 3); // past 3 days
-  const to = new Date(today); to.setDate(today.getDate() + 3); // next 3 days
-  
-  const fromStr = from.toISOString().split('T')[0];
-  const toStr = to.toISOString().split('T')[0];
-  
-  let url = `https://v3.football.api-sports.io/fixtures?from=${fromStr}&to=${toStr}&league=39,140,135,78,61&status=NS,1H,HT,2H,FT`;
-  
-  const res = await fetch(url, {
-    headers: { "x-api-sports-key": API_KEY }
-  });
-  const data = await res.json();
-  
-  // Filter for big teams only
-  const matches = data.response.filter(m => 
-    TEAMS.includes(m.teams.home.id) || TEAMS.includes(m.teams.away.id)
-  );
-  
-  displayMatches(matches);
+  const container = document.getElementById("matches");
+  try {
+    const res = await fetch(API_URL);
+    allData = await res.json();
+    if(allData.error) throw new Error(allData.error);
+    renderMatches();
+  } catch(e) {
+    container.innerHTML = `<div class="empty">${e.message}</div>`;
+  }
 }
 
-async function displayMatches(matches) {
+function filterTab(type) {
+  currentFilter = type;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderMatches();
+}
+
+function renderMatches() {
   const container = document.getElementById("matches");
-  if(matches.length === 0) {
-    container.innerHTML = "No matches found for big teams in last 3 + next 3 days";
+  const now = new Date();
+  
+  let filtered = allData.filter(m => {
+    const matchDate = new Date(m.fixture.date);
+    if(currentFilter === 'live') return ["1H","2H","HT"].includes(m.fixture.status.short);
+    if(currentFilter === 'finished') return m.fixture.status.short === "FT";
+    if(currentFilter === 'today') return matchDate.toDateString() === now.toDateString();
+    if(currentFilter === 'upcoming') return matchDate > now && m.fixture.status.short === "NS";
+    return true;
+  });
+
+  if(filtered.length === 0) {
+    container.innerHTML = `<div class="empty">No matches</div>`;
     return;
   }
-  
+
+  // GROUP BY DATE
+  const grouped = {};
+  filtered.forEach(m => {
+    const dateKey = new Date(m.fixture.date).toISOString().split('T')[0];
+    if(!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push(m);
+  });
+
   let html = "";
-  for(let m of matches) {
-    const date = new Date(m.fixture.date).toLocaleString();
-    const score = m.goals.home!== null? `${m.goals.home} - ${m.goals.away}` : "vs";
-    const status = m.fixture.status.short;
+  
+  Object.keys(grouped).sort().forEach(dateKey => {
+    const dateObj = new Date(dateKey);
+    const prettyDate = dateObj.toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'});
+    html += `<div class="date-header">📅 ${dateKey} - ${prettyDate}</div>`;
     
-    // Get lineup
-    let lineupHtml = "";
-    try {
-      const lineupRes = await fetch(`https://v3.football.api-sports.io/fixtures/lineups?fixture=${m.fixture.id}`, {
-        headers: { "x-api-sports-key": API_KEY }
-      });
-      const lineupData = await lineupRes.json();
-      if(lineupData.response.length > 0) {
-        lineupHtml = `<div class="lineup"><b>Lineup:</b> ${lineupData.response[0].team.name} - ${lineupData.response[0].formation}</div>`;
-      }
-    } catch(e) {}
-    
-    // YouTube search link
-    const ytSearch = encodeURIComponent(`${m.teams.home.name} vs ${m.teams.away.name} highlights`);
-    const ytLink = `https://www.youtube.com/results?search_query=${ytSearch}`;
-    
-    html += `
-      <div class="match">
-        <div class="teams">${m.teams.home.name} ${score} ${m.teams.away.name}</div>
-        <div class="info">📅 ${date} | 🏆 ${m.league.name} | Status: ${status}</div>
-        ${lineupHtml}
-        <a class="youtube" href="${ytLink}" target="_blank">▶ Watch Highlights on YouTube</a>
-      </div>
-    `;
-  }
+    grouped[dateKey].forEach(m => {
+      const time = new Date(m.fixture.date).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+      const score = m.goals.home !== null ? `${m.goals.home} - ${m.goals.away}` : time + " WAT";
+      const statusText = m.fixture.status.short === "NS" ? "Scheduled" : m.fixture.status.short;
+      const yt = `https://www.youtube.com/results?search_query=${encodeURIComponent(m.teams.home.name+' vs '+m.teams.away.name+' live')}`;
+      
+      html += `<div class="match">
+        <div class="league">${m.league.name}</div>
+        <div class="teams">${m.teams.home.name} vs ${m.teams.away.name}</div>
+        <div class="time">${score} <span class="status">${statusText}</span></div>
+        
+        <div class="lineup" id="lineup-${m.fixture.id}">Loading lineup...</div>
+        
+        <button class="btn btn-details" onclick="toggleDetails(${m.fixture.id})">Show Details</button>
+        <a href="${yt}" target="_blank"><button class="btn btn-watch">▶ Watch Live</button></a>
+      </div>`;
+    });
+  });
+  
   container.innerHTML = html;
+  filtered.forEach(m => fetchLineup(m.fixture.id));
+}
+
+function toggleDetails(id) {
+  const div = document.getElementById(`lineup-${id}`);
+  div.style.display = div.style.display === 'block' ? 'none' : 'block';
+}
+
+// FULL LINEUP CODE ADDED HERE
+async function fetchLineup(fixtureId) {
+  try {
+    const res = await fetch(`https://my-website-raymond.vercel.app/api/lineup/${fixtureId}`);
+    const data = await res.json();
+    const div = document.getElementById(`lineup-${fixtureId}`);
+    
+    if(!div) return;
+    if(data.length === 0) {
+      div.innerHTML = `<b>Lineup:</b> Not available yet`;
+      return;
+    }
+    
+    let html = `<b>Starting XI</b>`;
+    data.forEach(team => {
+      html += `<div class="team-lineup">
+        <b>${team.team.name} - ${team.formation}</b>
+        <div class="players">`;
+      
+      team.startXI.slice(0,11).forEach(p => {
+        html += `<div>${p.player.number}. ${p.player.name}</div>`;
+      });
+      
+      html += `</div></div>`;
+    });
+    
+    div.innerHTML = html;
+  } catch(e) {
+    const div = document.getElementById(`lineup-${fixtureId}`);
+    if(div) div.innerHTML = `<b>Lineup:</b> Error loading`;
+  }
 }
 
 getMatches();
+setInterval(getMatches, 60000);
 </script>
 </body>
 </html>

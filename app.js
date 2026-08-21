@@ -19,6 +19,7 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import {v2 as cloudinary } from 'cloudinary';
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+import fetch from "node-fetch"; // npm i node-fetch
 //import { handleUpload } from '@vercel/blob/client';
 //import { del } from '@vercel/blob';
 
@@ -401,6 +402,83 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
   // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
+
+
+  //football uytryuigddfijoiuytryuihxrtyuihguytrzyuihguytr8987ft
+
+const API_KEY = "3b62c9c9c263ae7dcda2ede1c7be7236"; 
+const TEAMS = [42, 50, 541, 529, 40, 33, 157]; // Arsenal, City, Real, Barca, Liverpool, ManU, Bayern
+
+app.get("/api/matches", async (req, res) => {
+  try {
+    let allMatches = [];
+    
+    // LOOP 3 DAYS BACK TO 3 DAYS FORWARD
+    for(let i = -7; i <= 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      
+      console.log("Fetching:", dateStr);
+      const url = `https://v3.football.api-sports.io/fixtures?date=${dateStr}`;
+      
+      const response = await fetch(url, { headers: { "x-apisports-key": API_KEY }});
+      const data = await response.json();
+      
+      if(!data.errors || Object.keys(data.errors).length === 0) {
+        const filtered = data.response.filter(m => 
+          TEAMS.includes(m.teams.home.id) || TEAMS.includes(m.teams.away.id)
+        );
+        allMatches = allMatches.concat(filtered);
+      }
+    }
+    
+    console.log("Total real matches found:", allMatches.length);
+    
+    // IF API IS EMPTY, ADD MOCK DATA FOR 3 DAYS BACK, TODAY, 3 DAYS FORWARD
+    if(allMatches.length === 0) {
+      const now = new Date();
+      allMatches = [
+        // 2 DAYS BACK - FINISHED
+        { fixture: { id: 1, date: new Date(now.getTime() - 2*24*60*60*1000).toISOString(), status: {short: "FT"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:40,name:"Liverpool"}}, goals: {home: 2, away: 0}, league: {name: "Premier League"} },
+        // 1 DAY BACK - FINISHED 
+        { fixture: { id: 2, date: new Date(now.getTime() - 1*24*60*60*1000).toISOString(), status: {short: "FT"} }, teams: { home: {id:50,name:"Man City"}, away: {id:33,name:"Man Utd"}}, goals: {home: 3, away: 1}, league: {name: "Premier League"} },
+        // TODAY
+        { fixture: { id: 3, date: new Date().toISOString(), status: {short: "NS"} }, teams: { home: {id:541,name:"Real Madrid"}, away: {id:529,name:"Barcelona"}}, goals: {home: null, away: null}, league: {name: "La Liga"} },
+        // 2 DAYS FORWARD - UPCOMING
+        { fixture: { id: 4, date: new Date(now.getTime() + 2*24*60*60*1000).toISOString(), status: {short: "NS"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:33,name:"Man Utd"}}, goals: {home: null, away: null}, league: {name: "Premier League"} },
+        // 3 DAYS FORWARD - UPCOMING
+        { fixture: { id: 5, date: new Date(now.getTime() + 3*24*60*60*1000).toISOString(), status: {short: "NS"} }, teams: { home: {id:157,name:"Bayern"}, away: {id:50,name:"Man City"}}, goals: {home: null, away: null}, league: {name: "Champions League"} }
+      ];
+    }
+    
+    res.json(allMatches);
+  } catch(e) {
+    res.status(500).json({error: e.message});
+  }
+});
+
+  app.get("/api/lineup/:id", async (req, res) => {
+  try {
+    const fixtureId = req.params.id;
+    const url = `https://v3.football.api-sports.io/fixtures/lineups?fixture=${fixtureId}`;
+    
+    const response = await fetch(url, { 
+      headers: { "x-apisports-key": API_KEY }
+    });
+    const data = await response.json();
+    
+    if(!data.errors || Object.keys(data.errors).length === 0) {
+      res.json(data.response); // This returns [HomeTeam, AwayTeam] with players
+    } else {
+      res.json([]);
+    }
+  } catch(e) {
+    res.status(500).json({error: e.message});
+  }
+});
+
+  //end iuytuiopioiuytruiooiuyftyuioiuy
   
 
   app.listen(port, console.log('server is running on port 8000'))
