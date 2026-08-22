@@ -1,28 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- CRITICAL FOR MOBILE -->
 <title>Premier League 2025/2026</title>
 <style>
-body { background: #0a0e1a; color: white; font-family: Arial; padding: 20px; max-width: 900px; margin: auto; }
-h1 { text-align: center; color: #22c55e; margin-bottom: 20px; }
-.tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.tabs button { background: #1e293b; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 8px; font-weight: bold; }
-.tabs button.active { background: #22c55e; }
-.match-card { background: #1e293b; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #334155; }
-.teams { display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: bold; }
-.teams span { display: flex; align-items: center; gap: 8px; }
-.teams img { width: 25px; height: 25px; }
-.score { font-size: 22px; }
-.time { color: #94a3b8; font-size: 12px; margin-top: 5px; text-align: center; }
+* { box-sizing: border-box; }
+body { 
+  background: #0a0e1a; 
+  color: white; 
+  font-family: 'Segoe UI', Arial; 
+  padding: 15px; 
+  max-width: 900px; 
+  margin: auto; 
+}
+h1 { 
+  text-align: center; 
+  color: #22c55e; 
+  margin-bottom: 20px; 
+  font-size: 22px; 
+}
+
+.tabs { 
+  display: flex; 
+  justify-content: center; 
+  gap: 8px; 
+  margin-bottom: 20px; 
+  overflow-x: auto; /* scroll on small screens */
+  padding-bottom: 5px;
+}
+.tabs::-webkit-scrollbar { display: none; } /* hide scrollbar */
+.tabs button { 
+  background: #1e293b; 
+  color: white; 
+  border: none; 
+  padding: 10px 16px; 
+  cursor: pointer; 
+  border-radius: 8px; 
+  font-weight: bold; 
+  white-space: nowrap; /* prevent wrap */
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.tabs button.active { background: #22c55e; color: #0a0e1a; }
+
+.match-card { 
+  background: #1e293b; 
+  padding: 15px; 
+  margin: 12px 0; 
+  border-radius: 12px; 
+  border: 1px solid #334155; 
+}
+.teams { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  font-size: 16px; 
+  font-weight: bold; 
+  gap: 8px;
+}
+.teams span { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; 
+  text-align: center;
+  flex: 1;
+}
+.teams img { width: 22px; height: 22px; }
+.score { font-size: 20px; flex: 0 0 auto !important; }
+.time { color: #94a3b8; font-size: 12px; margin-top: 8px; text-align: center; }
 .status { text-align: center; color: #facc15; font-size: 12px; font-weight: bold; margin-top: 3px; }
-.buttons { margin-top: 12px; display: flex; gap: 10px; justify-content: center; }
-.btn { background: #334155; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+
+.buttons { 
+  margin-top: 12px; 
+  display: flex; 
+  gap: 10px; 
+}
+.btn, .watch-btn { 
+  flex: 1; /* buttons take 50% each */
+  text-align: center;
+  border: none; 
+  padding: 10px 0; 
+  cursor: pointer; 
+  border-radius: 6px; 
+  font-weight: bold; 
+  font-size: 14px;
+  text-decoration: none;
+}
+.btn { background: #334155; color: white; }
 .btn:hover { background: #475569; }
-.watch-btn { background: #ef4444; text-decoration: none; color: white; padding: 8px 15px; border-radius: 6px; font-weight: bold; }
+.watch-btn { background: #ef4444; color: white; }
 .watch-btn:hover { background: #dc2626; }
-.lineup { background: #0f172a; padding: 12px; margin-top: 10px; border-radius: 8px; font-size: 14px; border-left: 3px solid #22c55e; }
+
+.lineup { 
+  background: #0f172a; 
+  padding: 12px; 
+  margin-top: 10px; 
+  border-radius: 8px; 
+  font-size: 13px; 
+  border-left: 3px solid #22c55e; 
+  line-height: 1.6;
+}
 .hidden { display: none; }
 .loading { text-align: center; padding: 30px; color: #94a3b8; }
+
+/* MOBILE RESPONSIVE FIXES */
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  h1 { font-size: 18px; }
+  .teams { font-size: 14px; flex-direction: column; gap: 10px; }
+  .score { font-size: 24px; order: -1; } /* score on top on mobile */
+  .teams span { justify-content: center; width: 100%; }
+  .buttons { flex-direction: column; } /* buttons stack */
+  .btn, .watch-btn { width: 100%; }
+}
 </style>
 </head>
 <body>
@@ -40,7 +131,7 @@ h1 { text-align: center; color: #22c55e; margin-bottom: 20px; }
 <script>
 async function loadMatches(tab, e){
   document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
+  if(e) e.target.classList.add('active'); // fixed: won't crash if e is null
   
   const container = document.getElementById('matches');
   container.innerHTML = '<div class="loading">Loading matches...</div>';
@@ -57,14 +148,15 @@ async function loadMatches(tab, e){
     }
 
     matches.forEach(match => {
+      const time = new Date(match.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
       container.innerHTML += `
         <div class="match-card">
           <div class="teams">
-            <span><img src="${match.homeLogo}" onerror="this.src='https://via.placeholder.com/25'"> ${match.homeTeam}</span>
+            <span><img src="${match.homeLogo}" onerror="this.src='https://via.placeholder.com/22'"> ${match.homeTeam}</span>
             <span class="score"><b>${match.homeGoals ?? '-'}</b> : <b>${match.awayGoals ?? '-'}</b></span>
-            <span>${match.awayTeam} <img src="${match.awayLogo}" onerror="this.src='https://via.placeholder.com/25'"></span>
+            <span>${match.awayTeam} <img src="${match.awayLogo}" onerror="this.src='https://via.placeholder.com/22'"></span>
           </div>
-          <div class="time">${new Date(match.date).toLocaleString()}</div>
+          <div class="time">${time}</div>
           <div class="status">${match.status}</div>
           
           <div class="buttons">
@@ -73,14 +165,14 @@ async function loadMatches(tab, e){
           </div>
 
           <div id="lineup-${match.fixtureId}" class="lineup hidden">
-            <b style="color:#22c55e">${match.homeTeam}:</b> ${match.homeLineup.join(', ')} <br><br>
-            <b style="color:#22c55e">${match.awayTeam}:</b> ${match.awayLineup.join(', ')}
+            <b style="color:#22c55e">${match.homeTeam}:</b> ${match.homeLineup.length ? match.homeLineup.join(', ') : 'TBA'} <br><br>
+            <b style="color:#22c55e">${match.awayTeam}:</b> ${match.awayLineup.length ? match.awayLineup.join(', ') : 'TBA'}
           </div>
         </div>
       `;
     });
   }catch(err){
-    container.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Error: Is server running on port 8000?</p>';
+    container.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Error: Check your API connection</p>';
   }
 }
 
