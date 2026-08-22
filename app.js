@@ -408,17 +408,12 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
   //football uytryuigddfijoiuytryuihxrtyuihguytrzyuihguytr8987ft
 
 app.use(express.static("public"));
-
 const MatchSchema = new mongoose.Schema({
   fixtureId: { type: Number, unique: true },
-  date: Date, 
-  status: { type: String, default: 'SCHEDULED' }, // default
-  minute: String, // ADD THIS
-  league: String,
+  date: Date, status: String, league: String,
   homeTeam: String, awayTeam: String,
   homeLogo: String, awayLogo: String,
-  homeGoals: { type: Number, default: null }, // default null
-  awayGoals: { type: Number, default: null },
+  homeGoals: Number, awayGoals: Number,
   homeLineup: [String], 
   awayLineup: [String], 
   streamUrl: String,
@@ -426,32 +421,17 @@ const MatchSchema = new mongoose.Schema({
 });
 const Match = mongoose.model("Match", MatchSchema);
 
-const API_KEY = "3f573f5df386480f821f33ab189cb02f"; 
+const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30"; 
 const API_HEADERS = { "X-Auth-Token": API_KEY }
-
-// HELPER TO CLEAN STATUS
-function getCleanStatus(apiMatch) {
-  const status = apiMatch.status;
-  const minute = apiMatch.minute;
-  
-  if(minute) return { status: status, minute: minute }; // 1H, 2H, 90+3
-  if(status === 'FINISHED') return { status: 'FINISHED', minute: 'FT' };
-  if(status === 'SCHEDULED') return { status: 'SCHEDULED', minute: '' };
-  if(status === 'IN_PLAY') return { status: 'IN_PLAY', minute: 'LIVE' };
-  if(status === 'PAUSED') return { status: 'PAUSED', minute: 'HT' };
-  
-  // FALLBACK
-  if(apiMatch.score.fullTime.home!== null) return { status: 'FINISHED', minute: 'FT' };
-  return { status: 'SCHEDULED', minute: '' };
-}
 
 // FETCH PL 2025/2026
 async function fetchAndSaveMatches(){
   console.log("Running Job: Fetching PL 2025/2026...");
   try{
+    // FIX 1: Get next 50 matches + last 50 matches so upcoming is not empty
     const response = await axios.get("https://api.football-data.org/v4/competitions/PL/matches", {
       headers: API_HEADERS,
-      params: { season: 2025, limit: 100 }
+      params: { season: 2025, limit: 100 } // get more matches
     });
 
     const matches = response.data.matches;
@@ -467,25 +447,19 @@ async function fetchAndSaveMatches(){
         awayLineup = lineupRes.data.awayTeam.lineup?.map(p => p.name) || [];
       }catch(e){}
 
-      // FIX: NEVER SAVE UNDEFINED
-      const clean = getCleanStatus(m);
-      const homeGoals = m.score.fullTime.home?? null;
-      const awayGoals = m.score.fullTime.away?? null;
-
       await Match.updateOne(
         { fixtureId: m.id },
         { $set: {
             fixtureId: m.id, 
             date: m.utcDate, 
-            status: clean.status, // <-- CLEAN
-            minute: clean.minute, // <-- CLEAN
+            status: m.status,
             league: "Premier League", 
             homeTeam: m.homeTeam.name, 
             awayTeam: m.awayTeam.name,
             homeLogo: m.homeTeam.crest, 
             awayLogo: m.awayTeam.crest,
-            homeGoals: homeGoals, // <-- will be null not undefined
-            awayGoals: awayGoals, 
+            homeGoals: m.score.fullTime.home, 
+            awayGoals: m.score.fullTime.away, 
             homeLineup, awayLineup,
             streamUrl: `https://www.youtube.com/results?search_query=${m.homeTeam.name}+vs+${m.awayTeam.name}+full+match`,
             lastUpdated: new Date()
@@ -512,9 +486,10 @@ app.get("/api/matches", async (req,res)=>{
 
   let filter = { league: "Premier League" };
   if(tab === "today") filter.date = {$gte: today, $lt: tomorrow};
-  if(tab === "upcoming") filter.status = "SCHEDULED";
+  if(tab === "upcoming") filter.status = "SCHEDULED"; // only scheduled matches
   if(tab === "finished") filter.status = "FINISHED";
 
+  // FIX 2: Upcoming sorts ASC, others DESC
   const sortOrder = (tab === "upcoming")? {date: 1} : {date: -1}; 
   const matches = await Match.find(filter).sort(sortOrder).limit(50);
   res.json(matches);
@@ -523,7 +498,6 @@ app.get("/api/matches", async (req,res)=>{
 app.get("*", (req,res)=>{
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
 //end iuytuiopioiuytruiooiuyftyuioiuy
   
 
