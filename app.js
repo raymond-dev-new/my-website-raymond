@@ -19,6 +19,7 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import {v2 as cloudinary } from 'cloudinary';
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+import cron from "node-cron"
 import fetch from "node-fetch"; // npm i node-fetch
 //import { handleUpload } from '@vercel/blob/client';
 //import { del } from '@vercel/blob';
@@ -405,8 +406,8 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
   //football uytryuigddfijoiuytryuihxrtyuihguytrzyuihguytr8987ft
-
-const API_KEY = "3b62c9c9c263ae7dcda2ede1c7be7236"; 
+/*
+const API_KEY = "7e5ce14b39183f3ecb2a089da5aa245b"; 
 const TEAMS = [42, 50, 541, 529, 40, 33, 157]; // Arsenal, City, Real, Barca, Liverpool, ManU, Bayern
 
 app.get("/api/matches", async (req, res) => {
@@ -556,9 +557,107 @@ app.get("/api/lineup/:id", async (req, res) => {
   // For other matches, return empty for now
   res.json([]);
 });
+*/
 
- 
-  //end iuytuiopioiuytruiooiuyftyuioiuy
+//iuytdsdfghoiuytrertyuiopoiuytrtyuiuyt
+
+app.use(express.static("public"));
+
+
+
+const MatchSchema = new mongoose.Schema({
+  fixtureId: { type: Number, unique: true },
+  date: Date, status: String, league: String,
+  homeTeam: String, awayTeam: String,
+  homeLogo: String, awayLogo: String,
+  homeGoals: Number, awayGoals: Number,
+  homeLineup: [String], 
+  awayLineup: [String], 
+  streamUrl: String,
+  lastUpdated: Date
+});
+const Match = mongoose.model("Match", MatchSchema);
+
+const API_KEY = "81431c2eedf64badbe12e5738921efa9"; 
+const API_HEADERS = { "X-Auth-Token": API_KEY }
+
+// FETCH PL 2025/2026
+async function fetchAndSaveMatches(){
+  console.log("Running Job: Fetching PL 2025/2026...");
+  try{
+    // FIX 1: Get next 50 matches + last 50 matches so upcoming is not empty
+    const response = await axios.get("https://api.football-data.org/v4/competitions/PL/matches", {
+      headers: API_HEADERS,
+      params: { season: 2025, limit: 100 } // get more matches
+    });
+
+    const matches = response.data.matches;
+    console.log(`Got ${matches.length} matches from API`);
+
+    for(let m of matches){
+      let homeLineup = [];
+      let awayLineup = [];
+
+      try{
+        const lineupRes = await axios.get(`https://api.football-data.org/v4/matches/${m.id}`, {headers: API_HEADERS});
+        homeLineup = lineupRes.data.homeTeam.lineup?.map(p => p.name) || [];
+        awayLineup = lineupRes.data.awayTeam.lineup?.map(p => p.name) || [];
+      }catch(e){}
+
+      await Match.updateOne(
+        { fixtureId: m.id },
+        { $set: {
+            fixtureId: m.id, 
+            date: m.utcDate, 
+            status: m.status,
+            league: "Premier League", 
+            homeTeam: m.homeTeam.name, 
+            awayTeam: m.awayTeam.name,
+            homeLogo: m.homeTeam.crest, 
+            awayLogo: m.awayTeam.crest,
+            homeGoals: m.score.fullTime.home, 
+            awayGoals: m.score.fullTime.away, 
+            homeLineup, awayLineup,
+            streamUrl: `https://www.youtube.com/results?search_query=${m.homeTeam.name}+vs+${m.awayTeam.name}+full+match`,
+            lastUpdated: new Date()
+          }
+        }, 
+        { upsert: true }
+      );
+    }
+    console.log(`✅ Saved ${matches.length} matches`);
+
+  }catch(err){
+    console.log("API Error:", err.response? err.response.data : err.message);
+  }
+}
+
+cron.schedule("0 */6 * * *", fetchAndSaveMatches); // every 6 hours
+fetchAndSaveMatches(); // run immediately on start
+
+// API ROUTE - FIXED
+app.get("/api/matches", async (req,res)=>{
+  const {tab} = req.query;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+  let filter = { league: "Premier League" };
+  if(tab === "today") filter.date = {$gte: today, $lt: tomorrow};
+  if(tab === "upcoming") filter.status = "SCHEDULED"; // only scheduled matches
+  if(tab === "finished") filter.status = "FINISHED";
+
+  // FIX 2: Upcoming sorts ASC, others DESC
+  const sortOrder = (tab === "upcoming")? {date: 1} : {date: -1}; 
+  const matches = await Match.find(filter).sort(sortOrder).limit(50);
+  res.json(matches);
+});
+
+app.get("*", (req,res)=>{
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+
+//end iuytuiopioiuytruiooiuyftyuioiuy
   
 
   app.listen(port, console.log('server is running on port 8000'))
