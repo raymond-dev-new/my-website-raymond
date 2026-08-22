@@ -426,7 +426,7 @@ const MatchSchema = new mongoose.Schema({
 });
 const Match = mongoose.model("Match", MatchSchema);
 
-const API_KEY = "81431c2eedf64badbe12e5738921efa9"; 
+const API_KEY = "3f573f5df386480f821f33ab189cb02f"; 
 const API_HEADERS = { "X-Auth-Token": API_KEY }
 
 // HELPER TO CLEAN STATUS
