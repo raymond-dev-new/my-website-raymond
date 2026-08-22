@@ -406,171 +406,19 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
   //football uytryuigddfijoiuytryuihxrtyuihguytrzyuihguytr8987ft
-/*
-const API_KEY = "7e5ce14b39183f3ecb2a089da5aa245b"; 
-const TEAMS = [42, 50, 541, 529, 40, 33, 157]; // Arsenal, City, Real, Barca, Liverpool, ManU, Bayern
-
-app.get("/api/matches", async (req, res) => {
-  try {
-    let allMatches = [];
-    
-    // LOOP 3 DAYS BACK TO 3 DAYS FORWARD
-    for(let i = -7; i <= 7; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
-      
-      console.log("Fetching:", dateStr);
-      const url = `https://v3.football.api-sports.io/fixtures?date=${dateStr}`;
-      
-      const response = await fetch(url, { headers: { "x-apisports-key": API_KEY }});
-      const data = await response.json();
-      
-      if(!data.errors || Object.keys(data.errors).length === 0) {
-        const filtered = data.response.filter(m => 
-          TEAMS.includes(m.teams.home.id) || TEAMS.includes(m.teams.away.id)
-        );
-        allMatches = allMatches.concat(filtered);
-      }
-    }
-    
-    console.log("Total real matches found:", allMatches.length);
-    
-    // IF API IS EMPTY, ADD MOCK DATA FOR 3 DAYS BACK, TODAY, 3 DAYS FORWARD
-   
-
-  if(allMatches.length === 0) {
-  const baseDate = new Date();
-  allMatches = [];
-
-  // Generate matches for -3 days to +3 days
-  for(let i = -3; i <= 3; i++) {
-    const d = new Date(baseDate);
-    d.setDate(baseDate.getDate() + i);
-    const day = d.toISOString().split('T')[0];
-
-    // Define times for this day
-    const t730pm = `${day}T19:30:00+01:00`;
-    const t735pm = `${day}T19:35:00+01:00`;
-    const t8pm = `${day}T20:00:00+01:00`;
-    const t9pm = `${day}T21:00:00+01:00`;
-    const t930pm = `${day}T21:30:00+01:00`;
-    const t945pm = `${day}T21:45:00+01:00`;
-    const t1030pm = `${day}T22:30:00+01:00`;
-
-    // TODAY - Aug 21
-    if(i === 0) {
-      allMatches.push(
-        { fixture: { id: 101, date: t8pm, status: {short: "NS"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:84,name:"Coventry City"}}, goals: {home: null, away: null}, league: {name: "Premier League"} },
-        { fixture: { id: 201, date: t8pm, status: {short: "NS"} }, teams: { home: {id:543,name:"Real Betis"}, away: {id:548,name:"Real Sociedad"}}, goals: {home: null, away: null}, league: {name: "La Liga"} },
-        { fixture: { id: 301, date: t945pm, status: {short: "NS"} }, teams: { home: {id:81,name:"Marseille"}, away: {id:82,name:"Strasbourg"}}, goals: {home: null, away: null}, league: {name: "Ligue 1"} },
-        { fixture: { id: 401, date: t930pm, status: {short: "NS"} }, teams: { home: {id:501,name:"Erzurumspor"}, away: {id:490,name:"Galatasaray"}}, goals: {home: null, away: null}, league: {name: "Turkish Super Lig"} },
-        { fixture: { id: 501, date: t9pm, status: {short: "NS"} }, teams: { home: {id:600,name:"Al Qadisiya"}, away: {id:601,name:"Al Ittihad"}}, goals: {home: null, away: null}, league: {name: "Saudi Pro League"} },
-        { fixture: { id: 601, date: t8pm, status: {short: "NS"} }, teams: { home: {id:541,name:"Zamalek"}, away: {id:542,name:"Al Ittihad Alexandria"}}, goals: {home: null, away: null}, league: {name: "Egyptian League"} }
-      );
-    }
-
-    // 1 DAY AGO - Aug 20
-    if(i === -1) {
-      allMatches.push(
-        { fixture: { id: 111, date: t8pm, status: {short: "FT"} }, teams: { home: {id:50,name:"Man City"}, away: {id:47,name:"Tottenham"}}, goals: {home: 2, away: 1}, league: {name: "Premier League"} },
-        { fixture: { id: 211, date: t9pm, status: {short: "FT"} }, teams: { home: {id:541,name:"Real Madrid"}, away: {id:530,name:"Atletico Madrid"}}, goals: {home: 3, away: 0}, league: {name: "La Liga"} }
-      );
-    }
-
-    // 1 DAY AHEAD - Aug 22
-    if(i === 1) {
-      allMatches.push(
-        { fixture: { id: 112, date: t730pm, status: {short: "NS"} }, teams: { home: {id:33,name:"Man United"}, away: {id:49,name:"Chelsea"}}, goals: {home: null, away: null}, league: {name: "Premier League"} },
-        { fixture: { id: 212, date: t8pm, status: {short: "NS"} }, teams: { home: {id:529,name:"Barcelona"}, away: {id:549,name:"Valencia"}}, goals: {home: null, away: null}, league: {name: "La Liga"} }
-      );
-    }
-
-    // 2 DAYS AHEAD - Aug 23
-    if(i === 2) {
-      allMatches.push(
-        { fixture: { id: 113, date: t9pm, status: {short: "NS"} }, teams: { home: {id:40,name:"Liverpool"}, away: {id:46,name:"Newcastle"}}, goals: {home: null, away: null}, league: {name: "Premier League"} }
-      );
-    }
-
-    // 3 DAYS BACK - Aug 18
-    if(i === -3) {
-      allMatches.push(
-        { fixture: { id: 110, date: t8pm, status: {short: "FT"} }, teams: { home: {id:42,name:"Arsenal"}, away: {id:41,name:"Man City"}}, goals: {home: 1, away: 1}, league: {name: "Premier League"} }
-      );
-    }
-  }
-}
-    
-    res.json(allMatches);
-  } catch(e) {
-    res.status(500).json({error: e.message});
-  }
-});
-
- // MOCK LINEUP FOR TESTING
-app.get("/api/lineup/:id", async (req, res) => {
-  const fixtureId = parseInt(req.params.id);
-  
-  // Mock lineup for Arsenal vs Coventry id: 101
-  if(fixtureId === 101) {
-    return res.json([
-      {
-        team: {id: 42, name: "Arsenal", logo: "https://media.api-sports.io/football/teams/42.png"},
-        coach: {id: 1, name: "Mikel Arteta"},
-        formation: "4-3-3",
-        startXI: [
-          {player: {id: 1, name: "David Raya"}, number: 1, pos: "G"},
-          {player: {id: 2, name: "Ben White"}, number: 4, pos: "D"},
-          {player: {id: 3, name: "William Saliba"}, number: 2, pos: "D"},
-          {player: {id: 4, name: "Gabriel"}, number: 6, pos: "D"},
-          {player: {id: 5, name: "Oleksandr Zinchenko"}, number: 35, pos: "D"},
-          {player: {id: 6, name: "Declan Rice"}, number: 41, pos: "M"},
-          {player: {id: 7, name: "Martin Odegaard"}, number: 8, pos: "M"},
-          {player: {id: 8, name: "Kai Havertz"}, number: 29, pos: "M"},
-          {player: {id: 9, name: "Bukayo Saka"}, number: 7, pos: "F"},
-          {player: {id: 10, name: "Gabriel Jesus"}, number: 9, pos: "F"},
-          {player: {id: 11, name: "Gabriel Martinelli"}, number: 11, pos: "F"}
-        ]
-      },
-      {
-        team: {id: 84, name: "Coventry City", logo: "https://media.api-sports.io/football/teams/84.png"},
-        coach: {id: 2, name: "Mark Robins"},
-        formation: "4-2-3-1",
-        startXI: [
-          {player: {id: 12, name: "Brad Collins"}, number: 1, pos: "G"},
-          {player: {id: 13, name: "Milan van Ewijk"}, number: 2, pos: "D"},
-          {player: {id: 14, name: "Bobby Thomas"}, number: 5, pos: "D"},
-          {player: {id: 15, name: "Luis Binks"}, number: 6, pos: "D"},
-          {player: {id: 16, name: "Jake Bidwell"}, number: 3, pos: "D"},
-          {player: {id: 17, name: "Ben Sheaf"}, number: 8, pos: "M"},
-          {player: {id: 18, name: "Josh Eccles"}, number: 14, pos: "M"},
-          {player: {id: 19, name: "Haji Wright"}, number: 11, pos: "F"},
-          {player: {id: 20, name: "Tatsuhiro Sakamoto"}, number: 7, pos: "F"},
-          {player: {id: 21, name: "Ellis Simms"}, number: 9, pos: "F"},
-          {player: {id: 22, name: "Callum O'Hare"}, number: 10, pos: "F"}
-        ]
-      }
-    ]);
-  }
-  
-  // For other matches, return empty for now
-  res.json([]);
-});
-*/
-
-//iuytdsdfghoiuytrertyuiopoiuytrtyuiuyt
 
 app.use(express.static("public"));
 
-
-
 const MatchSchema = new mongoose.Schema({
   fixtureId: { type: Number, unique: true },
-  date: Date, status: String, league: String,
+  date: Date, 
+  status: { type: String, default: 'SCHEDULED' }, // default
+  minute: String, // ADD THIS
+  league: String,
   homeTeam: String, awayTeam: String,
   homeLogo: String, awayLogo: String,
-  homeGoals: Number, awayGoals: Number,
+  homeGoals: { type: Number, default: null }, // default null
+  awayGoals: { type: Number, default: null },
   homeLineup: [String], 
   awayLineup: [String], 
   streamUrl: String,
@@ -581,14 +429,29 @@ const Match = mongoose.model("Match", MatchSchema);
 const API_KEY = "81431c2eedf64badbe12e5738921efa9"; 
 const API_HEADERS = { "X-Auth-Token": API_KEY }
 
+// HELPER TO CLEAN STATUS
+function getCleanStatus(apiMatch) {
+  const status = apiMatch.status;
+  const minute = apiMatch.minute;
+  
+  if(minute) return { status: status, minute: minute }; // 1H, 2H, 90+3
+  if(status === 'FINISHED') return { status: 'FINISHED', minute: 'FT' };
+  if(status === 'SCHEDULED') return { status: 'SCHEDULED', minute: '' };
+  if(status === 'IN_PLAY') return { status: 'IN_PLAY', minute: 'LIVE' };
+  if(status === 'PAUSED') return { status: 'PAUSED', minute: 'HT' };
+  
+  // FALLBACK
+  if(apiMatch.score.fullTime.home!== null) return { status: 'FINISHED', minute: 'FT' };
+  return { status: 'SCHEDULED', minute: '' };
+}
+
 // FETCH PL 2025/2026
 async function fetchAndSaveMatches(){
   console.log("Running Job: Fetching PL 2025/2026...");
   try{
-    // FIX 1: Get next 50 matches + last 50 matches so upcoming is not empty
     const response = await axios.get("https://api.football-data.org/v4/competitions/PL/matches", {
       headers: API_HEADERS,
-      params: { season: 2025, limit: 100 } // get more matches
+      params: { season: 2025, limit: 100 }
     });
 
     const matches = response.data.matches;
@@ -604,19 +467,25 @@ async function fetchAndSaveMatches(){
         awayLineup = lineupRes.data.awayTeam.lineup?.map(p => p.name) || [];
       }catch(e){}
 
+      // FIX: NEVER SAVE UNDEFINED
+      const clean = getCleanStatus(m);
+      const homeGoals = m.score.fullTime.home?? null;
+      const awayGoals = m.score.fullTime.away?? null;
+
       await Match.updateOne(
         { fixtureId: m.id },
         { $set: {
             fixtureId: m.id, 
             date: m.utcDate, 
-            status: m.status,
+            status: clean.status, // <-- CLEAN
+            minute: clean.minute, // <-- CLEAN
             league: "Premier League", 
             homeTeam: m.homeTeam.name, 
             awayTeam: m.awayTeam.name,
             homeLogo: m.homeTeam.crest, 
             awayLogo: m.awayTeam.crest,
-            homeGoals: m.score.fullTime.home, 
-            awayGoals: m.score.fullTime.away, 
+            homeGoals: homeGoals, // <-- will be null not undefined
+            awayGoals: awayGoals, 
             homeLineup, awayLineup,
             streamUrl: `https://www.youtube.com/results?search_query=${m.homeTeam.name}+vs+${m.awayTeam.name}+full+match`,
             lastUpdated: new Date()
@@ -643,10 +512,9 @@ app.get("/api/matches", async (req,res)=>{
 
   let filter = { league: "Premier League" };
   if(tab === "today") filter.date = {$gte: today, $lt: tomorrow};
-  if(tab === "upcoming") filter.status = "SCHEDULED"; // only scheduled matches
+  if(tab === "upcoming") filter.status = "SCHEDULED";
   if(tab === "finished") filter.status = "FINISHED";
 
-  // FIX 2: Upcoming sorts ASC, others DESC
   const sortOrder = (tab === "upcoming")? {date: 1} : {date: -1}; 
   const matches = await Match.find(filter).sort(sortOrder).limit(50);
   res.json(matches);
@@ -655,7 +523,6 @@ app.get("/api/matches", async (req,res)=>{
 app.get("*", (req,res)=>{
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
 
 //end iuytuiopioiuytruiooiuyftyuioiuy
   

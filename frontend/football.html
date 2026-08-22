@@ -2,23 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- CRITICAL FOR MOBILE -->
-<title>Premier League 2025/2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Scores</title>
 <style>
 * { box-sizing: border-box; }
 body { 
-  background: #0a0e1a; 
+  background: #0a0a0a; 
   color: white; 
   font-family: 'Segoe UI', Arial; 
-  padding: 15px; 
-  max-width: 900px; 
+  padding: 10px; 
+  max-width: 800px; 
   margin: auto; 
 }
 h1 { 
   text-align: center; 
-  color: #22c55e; 
+  color: #ff8c00; 
   margin-bottom: 20px; 
-  font-size: 22px; 
+  font-size: 24px; 
 }
 
 .tabs { 
@@ -26,75 +26,109 @@ h1 {
   justify-content: center; 
   gap: 8px; 
   margin-bottom: 20px; 
-  overflow-x: auto; /* scroll on small screens */
+  overflow-x: auto;
   padding-bottom: 5px;
 }
-.tabs::-webkit-scrollbar { display: none; } /* hide scrollbar */
+.tabs::-webkit-scrollbar { display: none; }
 .tabs button { 
-  background: #1e293b; 
-  color: white; 
+  background: #1a1a1a; 
+  color: #aaa; 
   border: none; 
-  padding: 10px 16px; 
+  padding: 10px 18px; 
   cursor: pointer; 
   border-radius: 8px; 
   font-weight: bold; 
-  white-space: nowrap; /* prevent wrap */
+  white-space: nowrap;
   flex-shrink: 0;
   font-size: 14px;
 }
-.tabs button.active { background: #22c55e; color: #0a0e1a; }
+.tabs button.active { background: #00c853; color: white; }
+
+.date-header { 
+  color: #3b82f6; 
+  font-weight: bold; 
+  margin: 25px 0 10px 0; 
+  font-size: 14px;
+  border-bottom: 1px solid #222;
+  padding-bottom: 8px;
+}
 
 .match-card { 
-  background: #1e293b; 
+  background: #111; 
   padding: 15px; 
   margin: 12px 0; 
-  border-radius: 12px; 
-  border: 1px solid #334155; 
+  border-radius: 10px; 
+  border: 1px solid #222; 
+}
+.league-name { 
+  color: #ff8c00; 
+  font-size: 13px; 
+  font-weight: bold; 
+  margin-bottom: 10px;
 }
 .teams { 
-  display: flex; 
-  justify-content: space-between; 
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center; 
   font-size: 16px; 
   font-weight: bold; 
-  gap: 8px;
+  gap: 15px;
+  margin-bottom: 5px;
 }
-.teams span { 
-  display: flex; 
-  align-items: center; 
-  gap: 6px; 
+.team-name { text-align: right; }
+.team-name.away { text-align: left; }
+.score { 
+  font-size: 22px; 
   text-align: center;
-  flex: 1;
 }
-.teams img { width: 22px; height: 22px; }
-.score { font-size: 20px; flex: 0 0 auto !important; }
-.time { color: #94a3b8; font-size: 12px; margin-top: 8px; text-align: center; }
-.status { text-align: center; color: #facc15; font-size: 12px; font-weight: bold; margin-top: 3px; }
-
-.buttons { 
-  margin-top: 12px; 
-  display: flex; 
-  gap: 10px; 
-}
-.btn, .watch-btn { 
-  flex: 1; /* buttons take 50% each */
+.match-datetime { 
+  color: #3b82f6; 
+  font-size: 12px; 
   text-align: center;
-  border: none; 
-  padding: 10px 0; 
-  cursor: pointer; 
-  border-radius: 6px; 
+  margin-bottom: 10px; 
+  font-weight: 600;
+}
+.status-badge { 
+  background: #2563eb; 
+  padding: 4px 10px; 
+  border-radius: 5px; 
+  color: white; 
+  font-size: 11px; 
   font-weight: bold; 
-  font-size: 14px;
-  text-decoration: none;
+  margin: 0 auto 10px auto;
+  display: block;
+  width: fit-content;
+  text-transform: uppercase;
 }
-.btn { background: #334155; color: white; }
-.btn:hover { background: #475569; }
-.watch-btn { background: #ef4444; color: white; }
-.watch-btn:hover { background: #dc2626; }
-
-.lineup { 
-  background: #0f172a; 
+.btn { 
+  background: #222; 
+  color: white; 
+  border: none; 
   padding: 12px; 
+  cursor: pointer; 
+  font-weight: bold; 
+  width: 100%; 
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.btn:hover { background: #333; }
+.watch-btn { 
+  background: #dc2626; 
+  text-decoration: none; 
+  color: white; 
+  padding: 12px; 
+  font-weight: bold; 
+  width: 100%; 
+  display: block; 
+  text-align: center; 
+  border-radius: 6px;
+  font-size: 15px;
+}
+.watch-btn:hover { background: #b91c1c; }
+.lineup { 
+  background: #0a0a0a; 
+  padding: 15px; 
   margin-top: 10px; 
   border-radius: 8px; 
   font-size: 13px; 
@@ -104,75 +138,117 @@ h1 {
 .hidden { display: none; }
 .loading { text-align: center; padding: 30px; color: #94a3b8; }
 
-/* MOBILE RESPONSIVE FIXES */
+/* MOBILE */
 @media (max-width: 600px) {
-  body { padding: 10px; }
-  h1 { font-size: 18px; }
-  .teams { font-size: 14px; flex-direction: column; gap: 10px; }
-  .score { font-size: 24px; order: -1; } /* score on top on mobile */
-  .teams span { justify-content: center; width: 100%; }
-  .buttons { flex-direction: column; } /* buttons stack */
-  .btn, .watch-btn { width: 100%; }
+  body { padding: 8px; }
+  h1 { font-size: 20px; }
+ .teams { font-size: 15px; gap: 10px; }
+ .score { font-size: 20px; }
 }
 </style>
 </head>
 <body>
-<h1>Premier League 2025/2026</h1>
+<h1>⚽ Football Scores</h1>
 
 <div class="tabs">
+  <button onclick="loadMatches('', event)">All Matches</button>
   <button onclick="loadMatches('today', event)" class="active">Today</button>
   <button onclick="loadMatches('upcoming', event)">Upcoming</button>
   <button onclick="loadMatches('finished', event)">Finished</button>
-  <button onclick="loadMatches('', event)">All Season</button>
 </div>
 
 <div id="matches"><div class="loading">Loading matches...</div></div>
 
 <script>
+const API_URL = "https://my-website-raymond.vercel.app";
+//http://localhost:8000
+//https://my-website-raymond.vercel.app
+// KILLS UNDEFINED FOREVER
+function safeText(value, fallback = '') {
+  if(value === null || value === undefined) return fallback;
+  if(String(value).toLowerCase() === 'undefined' || String(value).toLowerCase() === 'null') return fallback;
+  return value;
+}
+
+function getStatusText(match) {
+  let minute = safeText(match.minute);
+  if(minute) return minute;
+  
+  let status = safeText(match.status);
+  if(status === 'FINISHED') return 'FT';
+  if(status === 'SCHEDULED') return 'TIMED';
+  if(status === 'IN_PLAY') return 'LIVE';
+  if(status === 'PAUSED') return 'HT';
+  
+  // Fallback: if we have scores it's FT
+  if(match.homeGoals!== null && match.awayGoals!== null) return 'FT';
+  return 'TIMED';
+}
+
 async function loadMatches(tab, e){
   document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-  if(e) e.target.classList.add('active'); // fixed: won't crash if e is null
+  if(e) e.target.classList.add('active');
   
   const container = document.getElementById('matches');
   container.innerHTML = '<div class="loading">Loading matches...</div>';
 
   try{
-    const res = await fetch(`https://my-website-raymond.vercel.app/api/matches?tab=${tab}`);
-    if(!res.ok) throw new Error("Server error");
+    const res = await fetch(`${API_URL}/api/matches?tab=${tab}`);
     const matches = await res.json();
     container.innerHTML = '';
 
     if(matches.length === 0){
-      container.innerHTML = '<p style="text-align:center; padding:20px;">No matches found for this tab</p>';
+      container.innerHTML = '<p style="text-align:center; padding:20px;">No matches found</p>';
       return;
     }
 
+    let currentDate = "";
     matches.forEach(match => {
-      const time = new Date(match.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const matchDateObj = new Date(match.date);
+      const matchDate = matchDateObj.toISOString().split('T')[0];
+      const prettyDate = matchDateObj.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+      
+      if(matchDate!== currentDate){
+        currentDate = matchDate;
+        container.innerHTML += `<div class="date-header">📅 ${matchDate} - ${prettyDate}</div>`;
+      }
+
+      const matchTime = matchDateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const matchDateShort = matchDateObj.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+      
+      // SAFE EVERYTHING
+      const homeGoals = safeText(match.homeGoals, '-');
+      const awayGoals = safeText(match.awayGoals, '-');
+      const homeTeam = safeText(match.homeTeam, 'Home');
+      const awayTeam = safeText(match.awayTeam, 'Away');
+      const league = safeText(match.league, 'League');
+      
+      const scoreDisplay = (match.status === 'SCHEDULED')? matchTime : `${homeGoals} - ${awayGoals}`;
+      const statusText = getStatusText(match);
+
       container.innerHTML += `
         <div class="match-card">
+          <div class="league-name">${league}</div>
           <div class="teams">
-            <span><img src="${match.homeLogo}" onerror="this.src='https://via.placeholder.com/22'"> ${match.homeTeam}</span>
-            <span class="score"><b>${match.homeGoals ?? '-'}</b> : <b>${match.awayGoals ?? '-'}</b></span>
-            <span>${match.awayTeam} <img src="${match.awayLogo}" onerror="this.src='https://via.placeholder.com/22'"></span>
+            <span class="team-name">${homeTeam}</span>
+            <span class="score">${scoreDisplay}</span>
+            <span class="team-name away">${awayTeam}</span>
           </div>
-          <div class="time">${time}</div>
-          <div class="status">${match.status}</div>
+          <div class="match-datetime">${matchDateShort} - ${matchTime} WAT</div>
+          <span class="status-badge">${statusText}</span>
           
-          <div class="buttons">
-            <button class="btn" onclick="toggleLineup(${match.fixtureId})">Lineup</button>
-            <a href="${match.streamUrl}" target="_blank" class="watch-btn">Watch YouTube</a>
-          </div>
+          <button class="btn" onclick="toggleLineup(${match.fixtureId})">Show Details</button>
+          <a href="${match.streamUrl}" target="_blank" class="watch-btn">▶ Watch Live</a>
 
           <div id="lineup-${match.fixtureId}" class="lineup hidden">
-            <b style="color:#22c55e">${match.homeTeam}:</b> ${match.homeLineup.length ? match.homeLineup.join(', ') : 'TBA'} <br><br>
-            <b style="color:#22c55e">${match.awayTeam}:</b> ${match.awayLineup.length ? match.awayLineup.join(', ') : 'TBA'}
+            <b style="color:#22c55e">${homeTeam}:</b> ${match.homeLineup && match.homeLineup.length? match.homeLineup.join(', ') : 'TBA'} <br><br>
+            <b style="color:#22c55e">${awayTeam}:</b> ${match.awayLineup && match.awayLineup.length? match.awayLineup.join(', ') : 'TBA'}
           </div>
         </div>
       `;
     });
   }catch(err){
-    container.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Error: Check your API connection</p>';
+    container.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Error: Check API</p>';
   }
 }
 
@@ -180,7 +256,6 @@ function toggleLineup(id){
   document.getElementById(`lineup-${id}`).classList.toggle('hidden');
 }
 
-// Load today on start
 loadMatches('today');
 </script>
 </body>
