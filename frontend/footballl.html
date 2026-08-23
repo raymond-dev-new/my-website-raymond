@@ -1,187 +1,486 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
-  
-    <script>
-  /* const token = localStorage.getItem('token');
+<meta charset="UTF-8">
 
-    if (!token) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    } 
-   </script> 
+<meta
+ name="viewport"
+ content="width=device-width,
+ initial-scale=1.0">
 
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Football Scores</title>
+
 <style>
-  body { font-family: Arial; background: #0a0a0a; color: #fff; margin: 0; padding: 0; }
-  .header { text-align: center; padding: 15px; background: #111; }
-  .header h1 { color: #ff8800; font-size: 20px; margin: 0; }
-  
-  .tabs { display: flex; background: #111; padding: 10px; gap: 8px; overflow-x: auto; }
-  .tab { padding: 8px 14px; background: #222; border: none; color: #aaa; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
-  .tab.active { background: #00aa44; color: #fff; }
-  
-  .container { padding: 10px; }
-  .date-header { color: #4488ff; font-size: 15px; margin: 20px 5px 10px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 5px; }
-  
-  .match { background: #1a1a1a; margin: 10px 0; padding: 12px; border-radius: 10px; }
-  .league { color: #ff8800; font-size: 12px; margin-bottom: 5px; }
-  .teams { font-size: 16px; font-weight: bold; margin: 5px 0; }
-  .time { color: #4488ff; font-size: 13px; }
-  .status { background: #1e3a8a; color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 5px; }
-  
-  /* LINEUP STYLES */
-  .lineup { font-size: 12px; color: #ccc; margin: 8px 0; padding: 10px; background: #222; border-radius: 5px; display: none; }
-  .team-lineup { margin-bottom: 10px; }
-  .team-lineup b { color: #00ff88; }
-  .players { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 5px; }
-  
-  .btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 6px; }
-  .btn-details { background: #333; color: #fff; }
-  .btn-watch { background: #ff0000; color: #fff; }
-  .btn-watch:hover { background: #cc0000; }
-  .empty { text-align: center; color: #666; padding: 30px; }
-</style>
-</head>
-<body>
 
-<div class="header">
-  <h1>⚽ Football Scores</h1>
-</div>
+* {
+  box-sizing: border-box;
+}
 
-<div class="tabs">
-  <button class="tab" onclick="filterTab('all')">All Matches</button>
-  <button class="tab active" onclick="filterTab('today')">Today</button>
-  <button class="tab" onclick="filterTab('upcoming')">Upcoming</button>
-  <button class="tab" onclick="filterTab('finished')">Finished</button>
- 
-</div>
+body {
+  margin: 0;
+  background: #080808;
+  color: #fff;
+  font-family: Arial;
+}
 
-<div class="container" id="matches">Loading...</div>
+header {
+  text-align: center;
+  padding: 25px 10px;
+  color: orange;
+  font-size: 28px;
+  font-weight: bold;
+}
 
-<script>
-let allData = [];
-let currentFilter = 'today';
+nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  max-width: 900px;
+  margin: auto;
+  padding: 10px;
+}
 
-const API_URL = "https://my-website-raymond.vercel.app/api/matches";
+nav button {
+  min-width: 120px;
+  padding: 13px;
+  border: 0;
+  border-radius: 10px;
+  background: #222;
+  color: #aaa;
+  cursor: pointer;
+}
 
-async function getMatches() {
-  const container = document.getElementById("matches");
-  try {
-    const res = await fetch(API_URL);
-    allData = await res.json();
-    if(allData.error) throw new Error(allData.error);
-    renderMatches();
-  } catch(e) {
-    container.innerHTML = `<div class="empty">${e.message}</div>`;
+nav button.active {
+  background: #00c853;
+  color: #fff;
+}
+
+#matches {
+  max-width: 900px;
+  margin: auto;
+  padding: 10px;
+}
+
+.day {
+  color: #398cff;
+  font-weight: bold;
+  margin: 20px 5px 10px;
+}
+
+.card {
+  background: #111;
+  border: 1px solid #292929;
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.league {
+  color: orange;
+  font-weight: bold;
+}
+
+.date {
+  color: #999;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+.teams {
+  display: grid;
+  grid-template-columns:
+    1fr 80px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.team {
+  text-align: center;
+  font-weight: bold;
+}
+
+.team img {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  display: block;
+  margin: auto auto 8px;
+}
+
+.score {
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.status {
+  display: block;
+  margin-top: 5px;
+  padding: 4px;
+  border-radius: 6px;
+  background: #286be0;
+  font-size: 10px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.actions button,
+.watch {
+  padding: 13px;
+  border: 0;
+  border-radius: 9px;
+  background: #252525;
+  color: white;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.watch {
+  background: #e52525;
+}
+
+#loading,
+#error {
+  text-align: center;
+  padding: 35px;
+}
+
+@media(max-width:500px) {
+
+  header {
+    font-size: 24px;
+  }
+
+  .teams {
+    grid-template-columns:
+      1fr 65px 1fr;
+  }
+
+  .team {
+    font-size: 13px;
+  }
+
+  .team img {
+    width: 35px;
+    height: 35px;
+  }
+
+  .score {
+    font-size: 20px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
   }
 }
 
-function filterTab(type) {
-  currentFilter = type;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
-  renderMatches();
+</style>
+
+</head>
+
+<body>
+
+<header>
+⚽ Football Scores
+</header>
+
+<nav>
+
+<button
+ class="active"
+ onclick="loadMatches('all',this)">
+ All Matches
+</button>
+
+<button
+ onclick="loadMatches('today',this)">
+ Today
+</button>
+
+<button
+ onclick="loadMatches('upcoming',this)">
+ Upcoming
+</button>
+
+<button
+ onclick="loadMatches('finished',this)">
+ Finished
+</button>
+
+</nav>
+
+<div id="loading">
+Loading matches...
+</div>
+
+<div id="error"></div>
+
+<div id="matches"></div>
+
+<script>
+
+const box =
+  document.getElementById(
+    "matches"
+  );
+
+const loading =
+  document.getElementById(
+    "loading"
+  );
+
+const error =
+  document.getElementById(
+    "error"
+  );
+
+function dateText(value) {
+  return new Date(value)
+    .toLocaleDateString(
+      undefined,
+      {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }
+    );
 }
 
-function renderMatches() {
-  const container = document.getElementById("matches");
-  const now = new Date();
-  
-  let filtered = allData.filter(m => {
-    const matchDate = new Date(m.fixture.date);
-    if(currentFilter === 'live') return ["1H","2H","HT"].includes(m.fixture.status.short);
-    if(currentFilter === 'finished') return m.fixture.status.short === "FT";
-    if(currentFilter === 'today') return matchDate.toDateString() === now.toDateString();
-    if(currentFilter === 'upcoming') return matchDate > now && m.fixture.status.short === "NS";
-    return true;
-  });
+function timeText(value) {
+  return new Date(value)
+    .toLocaleTimeString(
+      undefined,
+      {
+        hour: "2-digit",
+        minute: "2-digit"
+      }
+    );
+}
 
-  if(filtered.length === 0) {
-    container.innerHTML = `<div class="empty">No matches</div>`;
+async function loadMatches(
+  type = "all",
+  button
+) {
+
+  document
+    .querySelectorAll("nav button")
+    .forEach(b =>
+      b.classList.remove("active")
+    );
+
+  if (button) {
+    button.classList.add("active");
+  }
+
+  box.innerHTML = "";
+
+  error.innerHTML = "";
+
+  loading.style.display =
+    "block";
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/matches?tab=${type}`
+      );
+
+    const data =
+      await response.json();
+
+    if (!data.success) {
+      throw new Error(
+        data.error
+      );
+    }
+
+    render(data.matches);
+
+  } catch (err) {
+
+    error.innerHTML =
+      "❌ " + err.message;
+
+  }
+
+  loading.style.display =
+    "none";
+}
+
+function render(matches) {
+
+  if (!matches.length) {
+    box.innerHTML =
+      "<p>No matches found.</p>";
     return;
   }
 
-  // GROUP BY DATE
-  const grouped = {};
-  filtered.forEach(m => {
-    const dateKey = new Date(m.fixture.date).toISOString().split('T')[0];
-    if(!grouped[dateKey]) grouped[dateKey] = [];
-    grouped[dateKey].push(m);
-  });
+  let lastDay = "";
 
-  let html = "";
-  
-  Object.keys(grouped).sort().forEach(dateKey => {
-    const dateObj = new Date(dateKey);
-    const prettyDate = dateObj.toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'});
-    html += `<div class="date-header">📅 ${dateKey} - ${prettyDate}</div>`;
-    
-    grouped[dateKey].forEach(m => {
-      const time = new Date(m.fixture.date).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-      const score = m.goals.home !== null ? `${m.goals.home} - ${m.goals.away}` : time + " WAT";
-      const statusText = m.fixture.status.short === "NS" ? "Scheduled" : m.fixture.status.short;
-      const yt = `https://www.youtube.com/results?search_query=${encodeURIComponent(m.teams.home.name+' vs '+m.teams.away.name+' live')}`;
-      
-      html += `<div class="match">
-        <div class="league">${m.league.name}</div>
-        <div class="teams">${m.teams.home.name} vs ${m.teams.away.name}</div>
-        <div class="time">${score} <span class="status">${statusText}</span></div>
-        
-        <div class="lineup" id="lineup-${m.fixture.id}">Loading lineup...</div>
-        
-        <button class="btn btn-details" onclick="toggleDetails(${m.fixture.id})">Show Details</button>
-        <a href="${yt}" target="_blank"><button class="btn btn-watch">▶ Watch Live</button></a>
-      </div>`;
-    });
+  matches.forEach(match => {
+
+    const day =
+      dateText(match.date);
+
+    if (day !== lastDay) {
+
+      box.innerHTML += `
+        <div class="day">
+          📅 ${day}
+        </div>
+      `;
+
+      lastDay = day;
+    }
+
+    const score =
+      match.homeScore === null
+        ? "VS"
+        : `${match.homeScore}
+           - ${match.awayScore}`;
+
+    const youtube =
+      "https://www.youtube.com/results?search_query="
+      +
+      encodeURIComponent(
+        `${match.home.name} vs
+         ${match.away.name} live`
+      );
+
+    box.innerHTML += `
+
+      <div class="card">
+
+        <div class="league">
+          ${match.league}
+        </div>
+
+        <div class="date">
+          ${day} •
+          ${timeText(match.date)}
+        </div>
+
+        <div class="teams">
+
+          <div class="team">
+
+            <img
+              src="${match.home.logo}"
+              alt=""
+            >
+
+            ${match.home.name}
+
+          </div>
+
+          <div class="score">
+
+            ${score}
+
+            <span class="status">
+              ${match.status}
+            </span>
+
+          </div>
+
+          <div class="team">
+
+            <img
+              src="${match.away.logo}"
+              alt=""
+            >
+
+            ${match.away.name}
+
+          </div>
+
+        </div>
+
+        <div class="actions">
+
+          <button
+            onclick="
+              details(${match.id})
+            "
+          >
+            Show Details
+          </button>
+
+          <a
+            class="watch"
+            href="${youtube}"
+            target="_blank"
+            rel="noopener"
+          >
+            ▶ Watch Live YouTube
+          </a>
+
+        </div>
+
+      </div>
+
+    `;
   });
-  
-  container.innerHTML = html;
-  filtered.forEach(m => fetchLineup(m.fixture.id));
 }
 
-function toggleDetails(id) {
-  const div = document.getElementById(`lineup-${id}`);
-  div.style.display = div.style.display === 'block' ? 'none' : 'block';
-}
+async function details(id) {
 
-// FULL LINEUP CODE ADDED HERE
-async function fetchLineup(fixtureId) {
   try {
-    const res = await fetch(`https://my-website-raymond.vercel.app/api/lineup/${fixtureId}`);
-    const data = await res.json();
-    const div = document.getElementById(`lineup-${fixtureId}`);
-    
-    if(!div) return;
-    if(data.length === 0) {
-      div.innerHTML = `<b>Lineup:</b> Not available yet`;
+
+    const response =
+      await fetch(
+        `/api/matches/${id}`
+      );
+
+    const data =
+      await response.json();
+
+    const m = data.match;
+
+    if (!m) {
+      alert("Match not found");
       return;
     }
-    
-    let html = `<b>Starting XI</b>`;
-    data.forEach(team => {
-      html += `<div class="team-lineup">
-        <b>${team.team.name} - ${team.formation}</b>
-        <div class="players">`;
-      
-      team.startXI.slice(0,11).forEach(p => {
-        html += `... ${p.player.name}</div>`;
-      });  
-      
-      html += `</div></div>`;
-    }); 
-    
-    div.innerHTML = html;
-  } catch(e) {
-    const div = document.getElementById(`lineup-${fixtureId}`);
-    if(div) div.innerHTML = `<b>Lineup:</b> Error loading`;
+
+    alert(
+      `${m.teams.home.name}
+vs
+${m.teams.away.name}
+
+${m.fixture.status.long}
+
+Date:
+${dateText(m.fixture.date)}
+
+Time:
+${timeText(m.fixture.date)}
+
+Venue:
+${m.fixture.venue?.name
+  || "Not available"}`
+    );
+
+  } catch (err) {
+
+    alert(err.message);
+
   }
 }
 
-getMatches();
-setInterval(getMatches, 60000);
+loadMatches();
+
 </script>
+
 </body>
+
 </html>

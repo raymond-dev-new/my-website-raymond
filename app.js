@@ -407,98 +407,110 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
   //football uytryuigddfijoiuytryuihxrtyuihguytrzyuihguytr8987ft
 
-app.use(express.static("public"));
+const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30"; // <-- YOUR API KEY
+const API_URL = "https://api.football-data.org/v4"; // football-data.org base
+const TIMEZONE = "Africa/Lagos";
+
+//const __filename = fileURLToPath(import.meta.url);
+//const __dirname = path.dirname(__filename);
+
+
 const MatchSchema = new mongoose.Schema({
-  fixtureId: { type: Number, unique: true },
-  date: Date, status: String, league: String,
-  homeTeam: String, awayTeam: String,
-  homeLogo: String, awayLogo: String,
-  homeGoals: Number, awayGoals: Number,
-  homeLineup: [String], 
-  awayLineup: [String], 
-  streamUrl: String,
-  lastUpdated: Date
+  _id: String,
+  date: Date,
+  status: String, // TIMED, IN_PLAY, FINISHED
+  league: String,
+  home: { name: String, logo: String },
+  away: { name: String, logo: String },
+  homeScore: Number,
+  awayScore: Number
 });
 const Match = mongoose.model("Match", MatchSchema);
 
-const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30"; 
-const API_HEADERS = { "X-Auth-Token": API_KEY }
-
-// FETCH PL 2025/2026
-async function fetchAndSaveMatches(){
-  console.log("Running Job: Fetching PL 2025/2026...");
-  try{
-    // FIX 1: Get next 50 matches + last 50 matches so upcoming is not empty
-    const response = await axios.get("https://api.football-data.org/v4/competitions/PL/matches", {
-      headers: API_HEADERS,
-      params: { season: 2025, limit: 100 } // get more matches
-    });
-
-    const matches = response.data.matches;
-    console.log(`Got ${matches.length} matches from API`);
-
-    for(let m of matches){
-      let homeLineup = [];
-      let awayLineup = [];
-
-      try{
-        const lineupRes = await axios.get(`https://api.football-data.org/v4/matches/${m.id}`, {headers: API_HEADERS});
-        homeLineup = lineupRes.data.homeTeam.lineup?.map(p => p.name) || [];
-        awayLineup = lineupRes.data.awayTeam.lineup?.map(p => p.name) || [];
-      }catch(e){}
-
-      await Match.updateOne(
-        { fixtureId: m.id },
-        { $set: {
-            fixtureId: m.id, 
-            date: m.utcDate, 
-            status: m.status,
-            league: "Premier League", 
-            homeTeam: m.homeTeam.name, 
-            awayTeam: m.awayTeam.name,
-            homeLogo: m.homeTeam.crest, 
-            awayLogo: m.awayTeam.crest,
-            homeGoals: m.score.fullTime.home, 
-            awayGoals: m.score.fullTime.away, 
-            homeLineup, awayLineup,
-            streamUrl: `https://www.youtube.com/results?search_query=${m.homeTeam.name}+vs+${m.awayTeam.name}+full+match`,
-            lastUpdated: new Date()
-          }
-        }, 
-        { upsert: true }
-      );
-    }
-    console.log(`✅ Saved ${matches.length} matches`);
-
-  }catch(err){
-    console.log("API Error:", err.response? err.response.data : err.message);
-  }
+function getDate(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().split("T")[0];
 }
 
-cron.schedule("0 */6 * * *", fetchAndSaveMatches); // every 6 hours
-fetchAndSaveMatches(); // run immediately on start
+// Helper: call football-data.org
+async function api(endpoint, params = {}) {
+  const url = new URL(API_URL + endpoint);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
 
-// API ROUTE - FIXED
-app.get("/api/matches", async (req,res)=>{
-  const {tab} = req.query;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const res = await fetch(url, {
+    headers: { "X-Auth-Token": API_KEY } // <-- football-data.org uses this
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.message);
+  return data.matches || []; // football-data returns data.matches
+}
 
-  let filter = { league: "Premier League" };
-  if(tab === "today") filter.date = {$gte: today, $lt: tomorrow};
-  if(tab === "upcoming") filter.status = "SCHEDULED"; // only scheduled matches
-  if(tab === "finished") filter.status = "FINISHED";
+// Format football-data.org response to match your frontend
+function format(m) {
+  return {
+    _id: String(m.id),
+    date: m.utcDate,
+    status: m.status, // TIMED, IN_PLAY, FINISHED
+    league: m.competition.name,
+    home: {
+      name: m.homeTeam.name,
+      logo: `https://crests.football-data.org/${m.homeTeam.id}.png` // crest url
+    },
+    away: {
+      name: m.awayTeam.name,
+      logo: `https://crests.football-data.org/${m.awayTeam.id}.png`
+    },
+    homeScore: m.score.fullTime.home,
+    awayScore: m.score.fullTime.away
+  };
+}
 
-  // FIX 2: Upcoming sorts ASC, others DESC
-  const sortOrder = (tab === "upcoming")? {date: 1} : {date: -1}; 
-  const matches = await Match.find(filter).sort(sortOrder).limit(50);
-  res.json(matches);
+async function getMatches(type) {
+  let matches = [];
+
+  if (type === "today") {
+    const today = getDate();
+    matches = await api("/matches", { dateFrom: today, dateTo: today });
+  }
+
+  if (type === "upcoming") {
+    matches = await api("/matches", { dateFrom: getDate(0), dateTo: getDate(7) });
+    matches = matches.filter(m =>!["FINISHED", "POSTPONED", "CANCELED"].includes(m.status));
+  }
+
+  if (type === "finished") {
+    matches = await api("/matches", { dateFrom: getDate(-7), dateTo: getDate() });
+    matches = matches.filter(m => ["FINISHED"].includes(m.status));
+  }
+
+  return matches.map(format).sort((a,b) => new Date(a.date) - new Date(b.date));
+}
+
+// ROUTES
+app.get("/api/matches", async (req, res) => {
+  try {
+    const matches = await getMatches(req.query.tab);
+    res.json({ success: true, matches });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.get("*", (req,res)=>{
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+app.get("/api/matches/:id", async (req, res) => {
+  try {
+    const result = await api(`/matches/${req.params.id}`);
+    res.json({ success: true, match: format(result) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
-//end iuytuiopioiuytruiooiuyftyuioiuy
+
+// SERVE FRONTEND
+app.use(express.static(path.join(__dirname, "../frontend")));
+app.get("*", (req, res) => res.sendFile(path.join(__dirname, "../frontend/football.html")));
+
+//kiuytrewertyuioiuytrertyui
   
 
   app.listen(port, console.log('server is running on port 8000'))
