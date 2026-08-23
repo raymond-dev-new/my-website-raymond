@@ -1,139 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <script>
-   const tokenN = localStorage.getItem('token');
-
-    if (!tokenN) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    }  
-    </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Football Scores</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#080808;color:#fff;font-family:Arial}
-button:hover{
-  background-color: green;
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+body { background: #000; color: #fff; padding: 15px; }
+
+.header-text { text-align: center; color: #fff; font-size: 15px; margin-bottom: 15px; }
+
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.tab { 
+  flex: 1; padding: 14px; border: none; border-radius: 12px; 
+  font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s;
 }
-p{
-  display: grid;
-  justify-content: center;
+.tab.upcoming { background: #16a34a; color: #fff; } /* GREEN */
+.tab.finished { background: #dc2626; color: #fff; } /* RED */
+.tab.inactive { opacity: 0.5; }
+
+.top-date { 
+  display: flex; align-items: center; gap: 8px; 
+  color: #3b82f6; font-size: 16px; font-weight: 600; 
+  margin-bottom: 15px; 
+} /* BLUE DATE */
+
+.match-card { 
+  background: #111; border: 1px solid #222; 
+  border-radius: 16px; padding: 15px; margin-bottom: 15px; 
 }
-header{text-align:center;padding:25px 10px;color:orange;font-size:28px;font-weight:bold}
-nav{display:flex;gap:8px;max-width:900px;margin:auto;padding:10px}
-nav button{flex:1;padding:13px;border:0;border-radius:10px;background:#e70707;color:#aaa;cursor:pointer;font-weight:bold;font-size:15px}
-#matches{max-width:900px;margin:auto;padding:10px}
-.day{color:#398cff;font-weight:bold;margin:20px 5px 10px}
-.card{background:#111;border:1px solid #292929;border-radius:16px;padding:15px;margin-bottom:15px}
-.league{color:orange;font-weight:bold}
-.date{color:#999;font-size:13px;margin-top:5px}
-.teams{display:grid;grid-template-columns:1fr 80px 1fr;align-items:center;gap:8px;margin:20px 0}
-.team{text-align:center;font-weight:bold}
-.team img{width:45px;height:45px;object-fit:contain;display:block;margin:auto auto 8px}
-.score{text-align:center;font-size:24px;font-weight:bold}
-.status{display:block;margin-top:5px;padding:4px;border-radius:6px;background:#286be0;font-size:10px;text-transform:uppercase}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.actions button,.watch{padding:13px;border:0;border-radius:9px;background:#252525;color:white;text-align:center;text-decoration:none;cursor:pointer;font-weight:600}
-.watch{background:#e52525}
-#loading,#error{text-align:center;padding:8px;color:#888}
-@media(max-width:500px){
-  header{font-size:24px}
-  .teams{grid-template-columns:1fr 65px 1fr}
-  .team{font-size:13px}
-  .team img{width:35px;height:35px}
-  .score{font-size:20px}
-  .actions{grid-template-columns:1fr}
+.league { color: #f59e0b; font-weight: 700; font-size: 15px; margin-bottom: 6px; } /* ORANGE */
+.match-date { color: #9ca3af; font-size: 13px; margin-bottom: 15px; }
+
+.teams { display: flex; align-items: center; justify-content: space-between; text-align: center; margin-bottom: 12px; }
+.team { flex: 1; }
+.team img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px; }
+.team-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
+
+.score-area { flex: 0 0 90px; }
+.score { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.badge { 
+  padding: 6px 14px; border-radius: 8px; font-size: 13px; 
+  font-weight: 700; display: inline-block; background: #2563eb; color: white;
+} /* BLUE LIVE BADGE */
+
+.btn { 
+  width: 100%; padding: 12px; margin-top: 10px; border: none; 
+  border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; 
 }
+.btn-details { background: #1f2937; color: #fff; }
+.btn-watch { background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px; } /* RED */
+
+.no-matches { text-align: center; color: #666; padding: 40px 0; }
+.loading { text-align: center; color: #888; padding: 30px; }
 </style>
 </head>
 <body>
 
-<header>⚽ Football Scores</header>
-<p> Tap upcoming to display match </p>
+<div class="header-text">Tap upcoming to display match</div>
 
-<nav>
-  <button onclick="loadMatches('upcoming')">Upcoming</button>
-  <button onclick="loadMatches('finished')">Finished</button>
-</nav>
+<div class="tabs">
+  <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming</button>
+  <button class="tab finished" onclick="loadMatches('finished', this)">Finished</button>
+</div>
 
-<div id="loading">Loading matches...</div>
-<div id="error"></div>
+<div class="top-date" id="topDate"></div>
+
 <div id="matches"></div>
 
 <script>
-const box = document.getElementById("matches");
-const loading = document.getElementById("loading");
-const error = document.getElementById("error");
+const API = "https://my-website-raymond.vercel.app/api/matches";
 
-function dateText(v){ return new Date(v).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"}) }
-function timeText(v){ return new Date(v).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"}) }
-
-async function loadMatches(type){
-  box.innerHTML = "";
-  error.innerHTML = "";
-  loading.style.display = "block";
-
-  try{
-    const res = await fetch(`https://my-website-raymond.vercel.app/api/matches?tab=${type}`);
-    const data = await res.json();
-    if(!data.success) throw new Error(data.error);
-    render(data.matches);
-  }catch(err){
-    error.innerHTML = "❌ " + err.message;
-  }
-  loading.style.display = "none";
+function formatTopDate(){
+  const d = new Date();
+  return `📅 ${d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}`;
+  // Output: 📅 Sunday, 23 August 2026
 }
 
-function render(matches){
-  if(!matches.length){
-    box.innerHTML = "<p>No matches found.</p>";
-    return;
-  }
+function formatFullDate(dateStr){
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) +
+  " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
+  // Output: Sunday, 23 August 2026 • 15:45
+}
 
-  let lastDay = "";
-  matches.forEach(match=>{
-    const day = dateText(match.date);
-    if(day !== lastDay){
-      box.innerHTML += `<div class="day">📅 ${day}</div>`;
-      lastDay = day;
+function getStatusBadge(match){
+  if(match.status === "IN_PLAY"){
+    const minute = match.minuteText || (match.minute? `${match.minute}'` : "");
+    return `<span class="badge">LIVE ${minute}</span>` // LIVE 23'
+  }
+  if(match.status === "PAUSED") return `<span class="badge">HT</span>`
+  if(match.status === "FINISHED") return `<span class="badge" style="background:#6b7280">FINISH</span>`
+  return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
+}
+
+function renderMatch(match){
+  return `
+  <div class="match-card">
+    <div class="league">${match.league}</div>
+    <div class="match-date">${formatFullDate(match.date)}</div>
+
+    <div class="teams">
+      <div class="team">
+        <img src="${match.home.logo}" onerror="this.src='https://via.placeholder.com/50'" alt="${match.home.name}">
+        <div class="team-name">${match.home.name}</div>
+      </div>
+      <div class="score-area">
+        <div class="score">${match.homeScore} - ${match.awayScore}</div>
+        ${getStatusBadge(match)}
+      </div>
+      <div class="team">
+        <img src="${match.away.logo}" onerror="this.src='https://via.placeholder.com/50'" alt="${match.away.name}">
+        <div class="team-name">${match.away.name}</div>
+      </div>
+    </div>
+
+    <button class="btn btn-details" onclick="showDetails('${match._id}')">Show Details</button>
+    <button class="btn btn-watch">▶ Watch Live</button>
+  </div>
+  `
+}
+
+async function loadMatches(tab, btn){
+  document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
+  btn.classList.remove('inactive');
+  
+  document.getElementById('topDate').innerText = formatTopDate();
+  const container = document.getElementById('matches');
+  container.innerHTML = `<div class="loading">Loading matches...</div>`;
+
+  try {
+    const res = await fetch(`${API}?tab=${tab}`, { cache: "no-store" });
+    const data = await res.json();
+
+    if(!data.success ||!data.matches || data.matches.length === 0){
+      container.innerHTML = `<div class="no-matches">No matches found</div>`;
+      return;
     }
-
-    const score = match.homeScore === null ? "VS" : `${match.homeScore} - ${match.awayScore}`;
-    const status = match.status === 'IN_PLAY' ? 'LIVE' : match.status === 'FT' ? 'FT' : 'SCHEDULED';
-    const youtube = `https://www.youtube.com/results?search_query=${encodeURIComponent(match.home.name + ' vs ' + match.away.name + ' live')}`;
-
-    box.innerHTML += `
-      <div class="card">
-        <div class="league">${match.league}</div>
-        <div class="date">${day} • ${timeText(match.date)}</div>
-        <div class="teams">
-          <div class="team"><img src="${match.home.logo}" alt="">${match.home.name}</div>
-          <div class="score">${score}<span class="status">${status}</span></div>
-          <div class="team"><img src="${match.away.logo}" alt="">${match.away.name}</div>
-        </div>
-        <div class="actions">
-          <button onclick="details('${match._id}')">Show Details</button>
-          <a class="watch" href="${youtube}" target="_blank" rel="noopener">▶ Watch Live</a>
-        </div>
-      </div>`;
-  });
+    container.innerHTML = data.matches.map(renderMatch).join('');
+  } catch(err) {
+    container.innerHTML = `<div class="no-matches">Could not load matches</div>`;
+  }
 }
 
-async function details(id){
-  try{
-    const res = await fetch(`https://my-website-raymond.vercel.app/api/matches/${id}`);
-    const data = await res.json();
-    const m = data.match;
-    if(!m) return alert("Match not found");
-    alert(`${m.home.name} vs ${m.away.name}\n\nStatus: ${m.status}\nDate: ${dateText(m.date)}\nTime: ${timeText(m.date)}\nLeague: ${m.league}`);
-  }catch(err){ alert(err.message); }
-}
+function showDetails(id){ alert("Show details for match: " + id) }
 
-// load today by default
-loadMatches('today');
+// REMOVED AUTO REFRESH - Only loads on click
+loadMatches('upcoming', document.querySelector('.tab.upcoming'));
 </script>
+
 </body>
 </html>

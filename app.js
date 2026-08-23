@@ -405,20 +405,17 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
   // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
 
 
-  //football uytryuigddfijoiuytryuihxrtyuihguytrzyuihguytr8987ft
+const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
+const API_URL = "https://api.football-data.org/v4";
 
-const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30"; // <-- YOUR API KEY
-const API_URL = "https://api.football-data.org/v4"; // football-data.org base
-const TIMEZONE = "Africa/Lagos";
-
-//const __filename = fileURLToPath(import.meta.url);
-//const __dirname = path.dirname(__filename);
 
 
 const MatchSchema = new mongoose.Schema({
   _id: String,
   date: Date,
-  status: String, // TIMED, IN_PLAY, FINISHED
+  status: String,
+  minute: Number,
+  minuteText: String,
   league: String,
   home: { name: String, logo: String },
   away: { name: String, logo: String },
@@ -427,88 +424,170 @@ const MatchSchema = new mongoose.Schema({
 });
 const Match = mongoose.model("Match", MatchSchema);
 
+/* =========================
+   DATE
+========================= */
 function getDate(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
   return d.toISOString().split("T")[0];
 }
 
-// Helper: call football-data.org
+/* =========================
+   FOOTBALL API
+========================= */
 async function api(endpoint, params = {}) {
   const url = new URL(API_URL + endpoint);
-  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
-
-  const res = await fetch(url, {
-    headers: { "X-Auth-Token": API_KEY } // <-- football-data.org uses this
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
   });
-  const data = await res.json();
-  if(data.error) throw new Error(data.message);
-  return data.matches || []; // football-data returns data.matches
+
+  const response = await fetch(url, {
+    headers: { "X-Auth-Token": API_KEY }
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || `Football API error: ${response.status}`);
+  }
+  return data;
 }
 
-// Format football-data.org response to match your frontend
+/* =========================
+   LIVE MINUTE CALCULATOR
+========================= */
+function calculateMinute(date, status, apiMinute) {
+  if (status === "PAUSED") return { minute: 45, minuteText: "HT" };
+  if (status!== "IN_PLAY") return { minute: null, minuteText: null };
+
+  // 1. Use real API minute if available
+  if (typeof apiMinute === "number" && apiMinute > 0) {
+    return { minute: apiMinute, minuteText: `${apiMinute}'` };
+  }
+
+  // 2. Fallback: Calculate from kickoff
+  const kickoff = new Date(date).getTime();
+  const now = Date.now();
+  let elapsed = Math.floor((now - kickoff) / 60000);
+  if (elapsed < 1) elapsed = 1;
+
+  if (elapsed <= 45) return { minute: elapsed, minuteText: `${elapsed}'` }; // 1H
+
+  const secondHalfMinute = elapsed - 15; // remove 15min HT
+  if (secondHalfMinute > 45 && secondHalfMinute <= 90) {
+    return { minute: secondHalfMinute, minuteText: `${secondHalfMinute}'` }; // 2H
+  }
+
+  if (elapsed > 105) return { minute: 90, minuteText: "FINISH" };
+  return { minute: 90, minuteText: "90+'" };
+}
+
+/* =========================
+   FORMAT MATCH
+========================= */
 function format(m) {
+  const liveClock = calculateMinute(m.utcDate, m.status, m.minute);
+
   return {
     _id: String(m.id),
     date: m.utcDate,
-    status: m.status, // TIMED, IN_PLAY, FINISHED
-    league: m.competition.name,
+    status: m.status,
+    minute: liveClock.minute,
+    minuteText: liveClock.minuteText,
+    league: m.competition?.name || "Football",
     home: {
-      name: m.homeTeam.name,
-      logo: `https://crests.football-data.org/${m.homeTeam.id}.png` // crest url
+      name: m.homeTeam?.name || "Home",
+      logo: m.homeTeam?.id? `https://crests.football-data.org/${m.homeTeam.id}.png` : "https://via.placeholder.com/40"
     },
     away: {
-      name: m.awayTeam.name,
-      logo: `https://crests.football-data.org/${m.awayTeam.id}.png`
+      name: m.awayTeam?.name || "Away",
+      logo: m.awayTeam?.id? `https://crests.football-data.org/${m.awayTeam.id}.png` : "https://via.placeholder.com/40"
     },
-    homeScore: m.score.fullTime.home,
-    awayScore: m.score.fullTime.away
+    homeScore: m.score?.fullTime?.home?? m.score?.halfTime?.home?? 0,
+    awayScore: m.score?.fullTime?.away?? m.score?.halfTime?.away?? 0
   };
 }
 
+/* =========================
+   GET SINGLE MATCH
+========================= */
+async function getMatchWithMinute(id) {
+  try {
+    const data = await api(`/matches/${id}`);
+    if (!data.match) return null;
+    return format(data.match);
+  } catch (error) {
+    return null;
+  }
+}
+
+/* =========================
+   GET MATCHES
+========================= */
 async function getMatches(type) {
   let matches = [];
 
   if (type === "today") {
     const today = getDate();
-    matches = await api("/matches", { dateFrom: today, dateTo: today });
+    const data = await api("/matches", { dateFrom: today, dateTo: today });
+    matches = data.matches || [];
   }
 
   if (type === "upcoming") {
-    matches = await api("/matches", { dateFrom: getDate(0), dateTo: getDate(7) });
-    matches = matches.filter(m =>!["FINISHED", "POSTPONED", "CANCELED"].includes(m.status));
+    const data = await api("/matches", { dateFrom: getDate(), dateTo: getDate(7) });
+    matches = (data.matches || []).filter(m =>!["FINISHED", "POSTPONED", "CANCELED"].includes(m.status));
   }
 
   if (type === "finished") {
-    matches = await api("/matches", { dateFrom: getDate(-7), dateTo: getDate() });
-    matches = matches.filter(m => ["FINISHED"].includes(m.status));
+    const data = await api("/matches", { dateFrom: getDate(-7), dateTo: getDate() });
+    matches = (data.matches || []).filter(m => m.status === "FINISHED");
   }
 
-  return matches.map(format).sort((a,b) => new Date(a.date) - new Date(b.date));
+  let formatted = matches.map(format);
+
+  // Update live matches with fresh data
+  const liveMatches = formatted.filter(m => m.status === "IN_PLAY" || m.status === "PAUSED");
+  if (liveMatches.length > 0) {
+    const updated = await Promise.all(liveMatches.map(m => getMatchWithMinute(m._id)));
+    updated.forEach(um => {
+      if (!um) return;
+      const index = formatted.findIndex(m => m._id === um._id);
+      if (index!== -1) formatted[index] = um;
+    });
+  }
+
+  // Sort: LIVE first
+  formatted.sort((a, b) => {
+    const liveA = a.status === "IN_PLAY" || a.status === "PAUSED";
+    const liveB = b.status === "IN_PLAY" || b.status === "PAUSED";
+    if (liveA &&!liveB) return -1;
+    if (!liveA && liveB) return 1;
+    return new Date(a.date) - new Date(b.date);
+  });
+
+  return formatted;
 }
 
-// ROUTES
+/* =========================
+   ROUTES
+========================= */
 app.get("/api/matches", async (req, res) => {
   try {
-    const matches = await getMatches(req.query.tab);
+    const tab = req.query.tab || "today";
+    const matches = await getMatches(tab);
     res.json({ success: true, matches });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.get("/api/matches/:id", async (req, res) => {
-  try {
-    const result = await api(`/matches/${req.params.id}`);
-    res.json({ success: true, match: format(result) });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// SERVE FRONTEND
+/* =========================
+   FRONTEND
+========================= */
 app.use(express.static(path.join(__dirname, "../frontend")));
-app.get("*", (req, res) => res.sendFile(path.join(__dirname, "../frontend/football.html")));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/football.html"));
+});
 
 //kiuytrewertyuioiuytrertyui
   
