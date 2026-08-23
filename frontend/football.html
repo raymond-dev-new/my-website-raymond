@@ -95,8 +95,8 @@ function getStatusBadge(match){
     const minute = match.minuteText || (match.minute? `${match.minute}'` : "");
     return `<span class="badge">LIVE<br>${minute}</span>`
   }
-  if(match.status === "PAUSED") return `<span class="badge">HT</span>`
-  if(match.status === "FINISHED") return `<span class="badge">LIVE<br>FINISH</span>`
+  if(match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
+  if(match.status === "FINISHED") return `<span class="badge">FINISH</span>`
   return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
 }
 
