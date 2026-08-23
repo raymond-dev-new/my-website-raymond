@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 
-  <script>
+ <script>
    const tokenN = localStorage.getItem('token');
 
     if (!tokenN) {
@@ -29,11 +29,11 @@ body { background: #000; color: #fff; padding: 15px; }
 .tab.finished { background: #dc2626; color: #fff; } /* RED */
 .tab.inactive { opacity: 0.5; }
 
-.top-date { 
+.date-header { 
   display: flex; align-items: center; gap: 8px; 
-  color: #3b82f6; font-size: 16px; font-weight: 600; 
-  margin-bottom: 15px; 
-} /* BLUE DATE */
+  color: #3b82f6; font-size: 16px; font-weight: 700; 
+  margin: 20px 0 12px 0; 
+} /* BLUE DATE HEADER FOR EACH DAY */
 
 .match-card { 
   background: #111; border: 1px solid #222; 
@@ -50,9 +50,10 @@ body { background: #000; color: #fff; padding: 15px; }
 .score-area { flex: 0 0 90px; }
 .score { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
 .badge { 
-  padding: 6px 14px; border-radius: 8px; font-size: 13px; 
+  padding: 6px 10px; border-radius: 8px; font-size: 12px; 
   font-weight: 700; display: inline-block; background: #2563eb; color: white;
-} /* BLUE LIVE BADGE */
+  line-height: 1.3;
+} /* BLUE LIVE/FINISH BADGE */
 
 .btn { 
   width: 100%; padding: 12px; margin-top: 10px; border: none; 
@@ -76,15 +77,13 @@ body { background: #000; color: #fff; padding: 15px; }
   <button class="tab finished" onclick="loadMatches('finished', this)">Finished</button>
 </div>
 
-<div class="top-date" id="topDate"></div>
-
 <div id="matches"></div>
 
 <script>
 const API = "https://my-website-raymond.vercel.app/api/matches";
 
-function formatTopDate(){
-  const d = new Date();
+function formatDateHeader(dateStr){
+  const d = new Date(dateStr);
   return `📅 ${d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}`;
   // Output: 📅 Sunday, 23 August 2026
 }
@@ -93,16 +92,15 @@ function formatFullDate(dateStr){
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) +
   " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
-  // Output: Sunday, 23 August 2026 • 15:45
 }
 
 function getStatusBadge(match){
   if(match.status === "IN_PLAY"){
     const minute = match.minuteText || (match.minute? `${match.minute}'` : "");
-    return `<span class="badge">LIVE ${minute}</span>` // LIVE 23'
+    return `<span class="badge">LIVE<br>${minute}</span>` // LIVE 23'
   }
   if(match.status === "PAUSED") return `<span class="badge">HT</span>`
-  if(match.status === "FINISHED") return `<span class="badge" style="background:#6b7280">FINISH</span>`
+  if(match.status === "FINISHED") return `<span class="badge">LIVE<br>FINISH</span>` // Like your screenshot
   return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
 }
 
@@ -133,11 +131,20 @@ function renderMatch(match){
   `
 }
 
+function groupMatchesByDate(matches){
+  const groups = {};
+  matches.forEach(match => {
+    const dateKey = new Date(match.date).toISOString().split('T')[0]; // 2026-08-23
+    if(!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(match);
+  });
+  return groups;
+}
+
 async function loadMatches(tab, btn){
   document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
   btn.classList.remove('inactive');
   
-  document.getElementById('topDate').innerText = formatTopDate();
   const container = document.getElementById('matches');
   container.innerHTML = `<div class="loading">Loading matches...</div>`;
 
@@ -149,7 +156,19 @@ async function loadMatches(tab, btn){
       container.innerHTML = `<div class="no-matches">No matches found</div>`;
       return;
     }
-    container.innerHTML = data.matches.map(renderMatch).join('');
+
+    const grouped = groupMatchesByDate(data.matches);
+    let html = '';
+
+    // Loop through each date and add blue header
+    Object.keys(grouped).sort().forEach(dateKey => {
+      html += `<div class="date-header">${formatDateHeader(grouped[dateKey][0].date)}</div>`;
+      grouped[dateKey].forEach(match => {
+        html += renderMatch(match);
+      });
+    });
+
+    container.innerHTML = html;
   } catch(err) {
     container.innerHTML = `<div class="no-matches">Could not load matches</div>`;
   }
@@ -157,7 +176,7 @@ async function loadMatches(tab, btn){
 
 function showDetails(id){ alert("Show details for match: " + id) }
 
-// REMOVED AUTO REFRESH - Only loads on click
+// NO AUTO REFRESH
 loadMatches('upcoming', document.querySelector('.tab.upcoming'));
 </script>
 
