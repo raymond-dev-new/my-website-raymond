@@ -60,15 +60,6 @@ body { background: #000; color: #fff; padding: 15px; }
 .btn-details { background: #1f2937; color: #fff; }
 .btn-watch { background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
-/* NEW: Lineup details */
-.lineup-box { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #222; }
-.lineup-box.show { display: block; }
-.lineup-grid { display: flex; gap: 15px; }
-.lineup-team { flex: 1; }
-.lineup-title { font-weight: 700; color: #f59e0b; margin-bottom: 8px; font-size: 14px; }
-.lineup-player { font-size: 13px; color: #d1d5db; padding: 4px 0; }
-.no-lineup { text-align: center; color: #666; padding: 10px 0; font-size: 13px; }
-
 .no-matches { text-align: center; color: #666; padding: 40px 0; }
 .loading { text-align: center; color: #888; padding: 30px; }
 </style>
@@ -119,39 +110,8 @@ function cleanLeagueName(name){
   return name;
 }
 
-function toggleDetails(id){
-  document.getElementById(`details-${id}`).classList.toggle('show');
-}
-
-function renderLineup(match, id){
-  const homeLineup = match.homeLineup || [];
-  const awayLineup = match.awayLineup || [];
-  const hasLineup = homeLineup.length > 0 || awayLineup.length > 0;
-
-  let lineupHtml = '';
-  if(hasLineup){
-    lineupHtml = `
-    <div class="lineup-grid">
-      <div class="lineup-team">
-        <div class="lineup-title">${match.home.name}</div>
-        ${homeLineup.map(p => `<div class="lineup-player">${p}</div>`).join('')}
-      </div>
-      <div class="lineup-team">
-        <div class="lineup-title">${match.away.name}</div>
-        ${awayLineup.map(p => `<div class="lineup-player">${p}</div>`).join('')}
-      </div>
-    </div>
-    `
-  } else {
-    lineupHtml = `<div class="no-lineup">Lineups not available yet</div>`
-  }
-
-  return `<div id="details-${id}" class="lineup-box">${lineupHtml}</div>`
-}
-
-function renderMatch(match, index){
+function renderMatch(match){
   const youtubeLink = getYouTubeLink(match);
-  const matchId = `${match.home.name}-${match.away.name}-${index}`.replace(/\s/g, '');
   return `
   <div class="match-card">
     <div class="league">${cleanLeagueName(match.league)}</div>
@@ -172,8 +132,7 @@ function renderMatch(match, index){
       </div>
     </div>
 
-    <button class="btn btn-details" onclick="toggleDetails('${matchId}')">Show Details</button>
-    ${renderLineup(match, matchId)}
+    <button class="btn btn-details" onclick="showDetails('line up not available yet')">Show Details</button>
     <button class="btn btn-watch" onclick="window.open('${youtubeLink}', '_blank')">▶ Watch Live</button>
   </div>
   `
@@ -207,7 +166,6 @@ async function loadMatches(tab, btn){
 
     const grouped = groupMatchesByDate(data.matches);
     let html = '';
-    let matchIndex = 0;
 
     let dates = Object.keys(grouped).sort();
     if(tab === 'finished') dates = dates.reverse(); // Recent finished matches at top
@@ -215,7 +173,7 @@ async function loadMatches(tab, btn){
     dates.forEach(dateKey => {
       html += `<div class="date-header">${formatDateHeader(grouped[dateKey][0].date)}</div>`;
       grouped[dateKey].forEach(match => {
-        html += renderMatch(match, matchIndex++);
+        html += renderMatch(match);
       });
     });
 
@@ -224,6 +182,8 @@ async function loadMatches(tab, btn){
     container.innerHTML = `<div class="no-matches">Could not load matches</div>`;
   }
 }
+
+function showDetails(id){ alert(id) }
 
 loadMatches('upcoming', document.querySelector('.tab.upcoming'));
 </script>
