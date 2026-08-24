@@ -199,77 +199,50 @@ html, body {
 
   <script>
 
-   const questions = [
+ const questions = [
   {
-    question: "Which country is known as the Land of the Rising Sun?",
+    question: "What is the largest mammal in the world?",
     answers: [
-      { text: "China", correct: false },
-      { text: "South Korea", correct: false },
-      { text: "Japan", correct: true },
-      { text: "Thailand", correct: false }
-    ]
-  },
-  {
-    question: "What is the largest internal organ in the human body?",
-    answers: [
-      { text: "Heart", correct: false },
-      { text: "Brain", correct: false },
-      { text: "Liver", correct: true },
-      { text: "Lungs", correct: false }
+      { text: "Elephant", correct: false },
+      { text: "Blue Whale", correct: true },
+      { text: "Giraffe", correct: false },
+      { text: "Polar Bear", correct: false },
     ]
   },
   {
     question: "Which metal is liquid at room temperature?",
     answers: [
       { text: "Iron", correct: false },
+      { text: "Gold", correct: false },
       { text: "Mercury", correct: true },
       { text: "Copper", correct: false },
-      { text: "Gold", correct: false }
     ]
   },
   {
-    question: "How many legs does a spider have?",
+    question: "How many bones does an adult human have?",
     answers: [
-      { text: "6", correct: false },
-      { text: "8", correct: true },
-      { text: "10", correct: false },
-      { text: "12", correct: false }
+      { text: "186", correct: false },
+      { text: "206", correct: true },
+      { text: "256", correct: false },
+      { text: "306", correct: false },
     ]
   },
   {
-    question: "What is the capital city of France?",
+    question: "What is the capital of Japan?",
     answers: [
-      { text: "London", correct: false },
-      { text: "Berlin", correct: false },
-      { text: "Paris", correct: true },
-      { text: "Madrid", correct: false }
+      { text: "Seoul", correct: false },
+      { text: "Beijing", correct: false },
+      { text: "Tokyo", correct: true },
+      { text: "Bangkok", correct: false },
     ]
   },
   {
-    question: "Which animal is the fastest on land?",
+    question: "Which animal has the longest neck?",
     answers: [
-      { text: "Lion", correct: false },
-      { text: "Cheetah", correct: true },
+      { text: "Camel", correct: false },
+      { text: "Giraffe", correct: true },
       { text: "Horse", correct: false },
-      { text: "Leopard", correct: false }
-    ]
-  },
-  {
-    question: "What do we call the study of stars and planets?",
-    answers: [
-      { text: "Biology", correct: false },
-      { text: "Chemistry", correct: false },
-      { text: "Astronomy", correct: true },
-      { text: "Geology", correct: false }
-    ]
-  },
-  {
-    question: "Which country gifted the Statue of Liberty to the USA?",
-    answers: [
-      { text: "England", correct: false },
-      { text: "France", correct: true },
-      { text: "Germany", correct: false },
-      { text: "Italy", correct: false }
+      { text: "Ostrich", correct: false },
     ]
   },
   {
@@ -278,106 +251,133 @@ html, body {
       { text: "Yuan", correct: false },
       { text: "Won", correct: false },
       { text: "Yen", correct: true },
-      { text: "Dollar", correct: false }
+      { text: "Dollar", correct: false },
     ]
   },
   {
-    question: "How many sides does a triangle have?",
+    question: "Which bird cannot fly?",
     answers: [
-      { text: "2", correct: false },
-      { text: "3", correct: true },
-      { text: "4", correct: false },
-      { text: "5", correct: false }
+      { text: "Eagle", correct: false },
+      { text: "Penguin", correct: true },
+      { text: "Sparrow", correct: false },
+      { text: "Parrot", correct: false },
     ]
   },
   {
-    question: "Which ocean is between Africa and Australia?",
+    question: "How many hours are in 2 days?",
     answers: [
-      { text: "Atlantic Ocean", correct: false },
-      { text: "Arctic Ocean", correct: false },
-      { text: "Indian Ocean", correct: true },
-      { text: "Pacific Ocean", correct: false }
+      { text: "24", correct: false },
+      { text: "36", correct: false },
+      { text: "48", correct: true },
+      { text: "60", correct: false },
     ]
   },
   {
-    question: "What is the main source of energy for the Earth?",
+    question: "Which country is famous for the Eiffel Tower?",
     answers: [
-      { text: "Wind", correct: false },
-      { text: "Sun", correct: true },
-      { text: "Moon", correct: false },
-      { text: "Oil", correct: false }
+      { text: "Italy", correct: false },
+      { text: "Spain", correct: false },
+      { text: "France", correct: true },
+      { text: "Germany", correct: false },
     ]
   },
   {
-    question: "Which country is both an island and a continent?",
+    question: "What do we call a baby kangaroo?",
     answers: [
-      { text: "New Zealand", correct: false },
-      { text: "Australia", correct: true },
-      { text: "Iceland", correct: false },
-      { text: "Madagascar", correct: false }
+      { text: "Cub", correct: false },
+      { text: "Joey", correct: true },
+      { text: "Pup", correct: false },
+      { text: "Calf", correct: false },
     ]
   },
   {
-    question: "What color is an emerald?",
+    question: "Which instrument has 6 strings?",
     answers: [
-      { text: "Red", correct: false },
-      { text: "Blue", correct: false },
+      { text: "Piano", correct: false },
+      { text: "Drum", correct: false },
+      { text: "Guitar", correct: true },
+      { text: "Violin", correct: false },
+    ]
+  },
+  {
+    question: "What color do you get when you mix blue and yellow?",
+    answers: [
+      { text: "Orange", correct: false },
+      { text: "Purple", correct: false },
       { text: "Green", correct: true },
-      { text: "Yellow", correct: false }
+      { text: "Brown", correct: false },
     ]
   },
   {
-    question: "Who wrote 'Romeo and Juliet'?",
+    question: "Which animal is known to sleep upside down?",
     answers: [
-      { text: "Charles Dickens", correct: false },
-      { text: "William Shakespeare", correct: true },
-      { text: "Jane Austen", correct: false },
-      { text: "Mark Twain", correct: false }
-    ]
-  },
-  {
-    question: "How many minutes are in one hour?",
-    answers: [
-      { text: "50", correct: false },
-      { text: "60", correct: true },
-      { text: "70", correct: false },
-      { text: "100", correct: false }
-    ]
-  },
-  {
-    question: "Which animal is known to carry its baby in a pouch?",
-    answers: [
-      { text: "Kangaroo", correct: true },
       { text: "Monkey", correct: false },
-      { text: "Bear", correct: false },
-      { text: "Fox", correct: false }
+      { text: "Bat", correct: true },
+      { text: "Sloth", correct: false },
+      { text: "Owl", correct: false },
     ]
   },
   {
-    question: "What is the largest desert in Asia?",
+    question: "How many days are in a week?",
     answers: [
-      { text: "Sahara Desert", correct: false },
-      { text: "Gobi Desert", correct: true },
-      { text: "Thar Desert", correct: false },
-      { text: "Arabian Desert", correct: false }
+      { text: "5", correct: false },
+      { text: "6", correct: false },
+      { text: "7", correct: true },
+      { text: "8", correct: false },
     ]
   },
   {
-    question: "Which holiday marks the beginning of a new year?",
+    question: "Which country is home to the Taj Mahal?",
     answers: [
-      { text: "Valentine's Day", correct: false },
-      { text: "New Year's Day", correct: true },
-      { text: "Halloween", correct: false },
-      { text: "Independence Day", correct: false }
+      { text: "Pakistan", correct: false },
+      { text: "India", correct: true },
+      { text: "Bangladesh", correct: false },
+      { text: "Nepal", correct: false },
     ]
   },
   {
-    question: "What is the name of the toy store in the movie 'Toy Story'?",
+    question: "What is the hardest natural substance?",
     answers: [
-      { text: "Al's Toy Barn", correct: false },
-      { text: "Pizza Planet", correct: false },
-      { text: "Andy's Room", correct: false },
-      { text: "Sid's House", correct: true }
+      { text: "Steel", correct: false },
+      { text: "Iron", correct: false },
+      { text: "Diamond", correct: true },
+      { text: "Granite", correct: false },
+    ]
+  },
+  {
+    question: "Which animal can change its color for camouflage?",
+    answers: [
+      { text: "Lion", correct: false },
+      { text: "Chameleon", correct: true },
+      { text: "Zebra", correct: false },
+      { text: "Fox", correct: false },
+    ]
+  },
+  {
+    question: "How many letters are in the English alphabet?",
+    answers: [
+      { text: "24", correct: false },
+      { text: "25", correct: false },
+      { text: "26", correct: true },
+      { text: "27", correct: false },
+    ]
+  },
+  {
+    question: "Which country is famous for sushi?",
+    answers: [
+      { text: "China", correct: false },
+      { text: "Thailand", correct: false },
+      { text: "Japan", correct: true },
+      { text: "Korea", correct: false },
+    ]
+  },
+  {
+    question: "What do bees make?",
+    answers: [
+      { text: "Milk", correct: false },
+      { text: "Honey", correct: true },
+      { text: "Cheese", correct: false },
+      { text: "Butter", correct: false },
     ]
   }
 ];
