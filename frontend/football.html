@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-   <script>
-   const tokenN = localStorage.getItem('token');
-
+ <script>
+  const tokenN = localStorage.getItem('token');
     if (!tokenN) {
-      // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    }  
+    }
     </script>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Football Scores</title>
@@ -20,9 +16,8 @@ body { background: #000; color: #fff; padding: 15px; }
 .header-text { text-align: center; color: #fff; font-size: 25px; margin-bottom: 15px; }
 .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
 .tab { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s; }
-.tab.live { background: #dc2626; color: #fff; }
 .tab.upcoming { background: #16a34a; color: #fff; }
-.tab.finished { background: #374151; color: #fff; }
+.tab.finished { background: #dc2626; color: #fff; }
 .tab.inactive { opacity: 0.5; }
 .date-header { display: flex; align-items: center; gap: 8px; color: #3b82f6; font-size: 16px; font-weight: 700; margin: 20px 0 12px 0; }
 .match-card { background: #111; border: 1px solid #222; border-radius: 16px; padding: 15px; margin-bottom: 15px; }
@@ -35,28 +30,34 @@ body { background: #000; color: #fff; padding: 15px; }
 .score-area { flex: 0 0 90px; }
 .score { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
 .badge { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; display: inline-block; background: #2563eb; color: white; line-height: 1.3; }
-.badge.live { background: #dc2626; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; }
 .btn-details { background: #1f2937; color: #fff; }
 .btn-watch { background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .no-matches { text-align: center; color: #666; padding: 40px 0; }
 .loading { text-align: center; color: #888; padding: 30px; }
+small{
+font-weight: 700;
+padding-bottom: 15px;
+display: grid;
+font-size: 13px;
+justify-content: center;
+}
 </style>
 </head>
 <body>
   <h1 class="header-text"> Live Football ⚽ </h1>
+  <small> Today Finish Live Match Will Show In Finish Tab The Next Day</small>
 
 <div class="tabs">
-  <button class="tab live active" onclick="loadMatches('today', this)">🔴 Live</button>
-  <button class="tab upcoming" onclick="loadMatches('upcoming', this)">Upcoming</button>
+  <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming</button>
   <button class="tab finished" onclick="loadMatches('finished', this)">Finished</button>
 </div>
 <div id="matches"></div>
 <script>
-// CHANGE THIS TO YOUR VERCEL URL WHEN DEPLOYING
-const API = "https://my-website-raymond.vercel.app/api/matches"; 
-let currentTab = 'today';
+  //http://localhost:8000
+  //https://my-website-raymond.vercel.app
+const API = "https://my-website-raymond.vercel.app/api/matches";
+let currentTab = 'upcoming';
 let currentBtn = null;
 
 function formatDateHeader(dateStr){
@@ -64,20 +65,30 @@ function formatDateHeader(dateStr){
   return `📅 ${d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}`;
 }
 
-// FIXED: Converts UTC to your local Nigeria time
 function formatFullDate(dateStr){
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) + " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
 }
 
 function getStatusBadge(match){
-  if(match.isLive){
-    if(match.minuteText === "HT") return `<span class="badge live">HALF<br>TIME</span>`
-    if(match.minuteText === "FT") return `<span class="badge">FINISH</span>`
-    return `<span class="badge live">LIVE<br>${match.minuteText}</span>`
+  if(match.status === "IN_PLAY"){
+    let minute = match.minute || 0;
+    if(minute === 45 || match.status === "PAUSED"){
+      return `<span class="badge">HALF<br>TIME</span>`
+    }
+    if(minute < 45){
+      return `<span class="badge">LIVE<br>${minute}'</span>`
+    }
+    if(minute > 45 && minute <= 90){
+      return `<span class="badge">LIVE<br>${minute}'</span>`
+    }
+    if(minute > 90){
+      return `<span class="badge">LIVE<br>${minute}'</span>`
+    } 
+    return `<span class="badge">LIVE<br>${minute}'</span>` 
   } 
+  if(match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
   if(match.status === "FINISHED") return `<span class="badge">FINISH</span>`
-  // Show local kickoff time
   return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
 }
 
@@ -145,6 +156,7 @@ async function loadMatches(tab, btn){
 
     const grouped = groupMatchesByDate(data.matches);
     let html = '';
+
     let dates = Object.keys(grouped).sort();
     if(tab === 'finished') dates = dates.reverse();
 
@@ -157,20 +169,19 @@ async function loadMatches(tab, btn){
 
     container.innerHTML = html;
   } catch(err) {
-    console.error(err)
     container.innerHTML = `<div class="no-matches">Could not load matches</div>`;
   }
 }
 
 function showDetails(id){ alert(id) }
 
-const firstBtn = document.querySelector('.tab.live');
-loadMatches('today', firstBtn);
+const firstBtn = document.querySelector('.tab.upcoming');
+loadMatches('upcoming', firstBtn);
 
-// AUTO REFRESH every 20s
+// AUTO REFRESH every 30s
 /*setInterval(() => {
   if(currentBtn) loadMatches(currentTab, currentBtn);
-}, 90000); */
+}, 30000); */
 
 </script>
 </body>

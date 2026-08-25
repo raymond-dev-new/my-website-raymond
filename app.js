@@ -302,7 +302,7 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
   // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
-/*
+
 
 const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
 const API_URL = "https://api.football-data.org/v4";
@@ -467,12 +467,12 @@ app.get("/api/matches", async (req, res) => {
 });
 
 
-//app.use(express.static(path.join(__dirname, "../frontend")));
+app.use(express.static(path.join(__dirname, "../frontend")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/football.html"));
 }); 
 
-*/
+
 
 //new ytresrtyuioiuytrertyuioiuytrertyu
 
@@ -524,177 +524,7 @@ app.get('/api/get-media', async (req, res) => {
 app.delete('/api/delete-media/:id', async (req, res) => {
   await Media.findByIdAndDelete(req.params.id);
   res.json({ success: true });
-});
-
-//new football iuytretyuiuytretyuiouytr
-
-
-
-
-
-const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
-const API_URL = "https://api.football-data.org/v4";
-
-// CONNECT MONGO
-
-const MatchSchema = new mongoose.Schema({
-  _id: String,
-  date: Date,
-  status: String,
-  minute: Number,
-  minuteText: String,
-  isLive: Boolean,
-  league: String,
-  home: { name: String, logo: String },
-  away: { name: String, logo: String },
-  homeScore: Number,
-  awayScore: Number
-});
-const Match = mongoose.model("Match", MatchSchema);
-
-
-function getDate(offset = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d.toISOString().split("T")[0];
-}
-
-async function api(endpoint, params = {}) {
-  const url = new URL(API_URL + endpoint);
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.set(key, value);
-  });
-  const response = await fetch(url, {
-    headers: { "X-Auth-Token": API_KEY }
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || `Football API error: ${response.status}`);
-  return data;
-}
-
-// FIXED: Calculate minute from UTC time
-function calculateMinute(utcDate, status, apiMinute) {
-  if (status === "PAUSED") return { minute: 45, minuteText: "HT" };
-  if (status!== "IN_PLAY") return { minute: null, minuteText: null };
-
-  if (typeof apiMinute === "number" && apiMinute > 0) {
-    return { minute: apiMinute, minuteText: `${apiMinute}'` };
-  }
-
-  const kickoff = new Date(utcDate).getTime(); // UTC
-  const now = Date.now(); // Local
-  let elapsed = Math.floor((now - kickoff) / 60000);
-  if (elapsed < 1) elapsed = 1;
-
-  if (elapsed <= 45) return { minute: elapsed, minuteText: `${elapsed}'` };
-  
-  const secondHalfMinute = elapsed - 15; // minus HT
-  if (secondHalfMinute > 45 && secondHalfMinute <= 90) {
-    return { minute: secondHalfMinute, minuteText: `${secondHalfMinute}'` };
-  }
-  if (elapsed > 105) return { minute: 90, minuteText: "FT" };
-  return { minute: 90, minuteText: "90+'" };
-}
-
-function format(m) {
-  const liveClock = calculateMinute(m.utcDate, m.status, m.minute);
-  
-  // FIXED: Get live score from 'current' field
-  const homeScore = m.score?.current?.home?? m.score?.fullTime?.home?? m.score?.halfTime?.home?? 0;
-  const awayScore = m.score?.current?.away?? m.score?.fullTime?.away?? m.score?.halfTime?.away?? 0;
-
-  return {
-    _id: String(m.id),
-    date: m.utcDate, // keep UTC, convert in frontend
-    status: m.status,
-    minute: liveClock.minute,
-    minuteText: liveClock.minuteText,
-    isLive: m.status === "IN_PLAY" || m.status === "PAUSED",
-    league: m.competition?.name || "Football",
-    home: {
-      name: m.homeTeam?.name || "Home",
-      logo: m.homeTeam?.crest || `https://crests.football-data.org/${m.homeTeam.id}.png`
-    },
-    away: {
-      name: m.awayTeam?.name || "Away", 
-      logo: m.awayTeam?.crest || `https://crests.football-data.org/${m.awayTeam.id}.png`
-    },
-    homeScore: homeScore,
-    awayScore: awayScore
-  };
-}
-
-async function getMatchWithMinute(id) {
-  try {
-    const data = await api(`/matches/${id}`);
-    if (!data.match) return null;
-    return format(data.match);
-  } catch (error) {
-    return null;
-  }
-}
-
-async function getMatches(type) {
-  let matches = [];
-
-  if (type === "today") {
-    const today = getDate();
-    const data = await api("/matches", { dateFrom: today, dateTo: today });
-    matches = data.matches || [];
-  }
-  if (type === "upcoming") {
-    const data = await api("/matches", { status: "SCHEDULED,TIMED", dateFrom: getDate(), dateTo: getDate(7) });
-    matches = data.matches || [];
-  }
-  if (type === "finished") {
-    const data = await api("/matches", { status: "FINISHED", dateFrom: getDate(-7), dateTo: getDate() });
-    matches = data.matches || [];
-  }
-
-  let formatted = matches.map(format);
-
-  // Refresh live match data
-  const liveMatches = formatted.filter(m => m.isLive);
-  if (liveMatches.length > 0) {
-    const updated = await Promise.all(liveMatches.map(m => getMatchWithMinute(m._id)));
-    updated.forEach(um => {
-      if (!um) return;
-      const index = formatted.findIndex(m => m._id === um._id);
-      if (index!== -1) formatted[index] = um;
-    });
-  }
-
-  // Sort: LIVE first
-  formatted.sort((a, b) => {
-    if (a.isLive &&!b.isLive) return -1;
-    if (!a.isLive && b.isLive) return 1;
-    return new Date(a.date) - new Date(b.date);
-  });
-
-  return formatted;
-}
-
-app.get("/api/matches", async (req, res) => {
-  try {
-    const tab = req.query.tab || "today";
-    const matches = await getMatches(tab);
-    res.json({ success: true, matches });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// SERVE FRONTEND
-app.use(express.static(path.join(__dirname, "../frontend")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/football.html"));
-});
-
-//kiuytrewertyuioiuytrertyui
-
-
-
-  
+});  
 
   app.listen(port, console.log('server is running on port 8000'))
   
