@@ -1,8 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+ 
+  <script>
+  const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    }
+   </script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Media Vault - Ban Proof</title>
+<title>Media Vault - MongoDB Only</title>
 <style>
   :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --primary: #007bff; --danger: #dc3545; --warn: #ffc107; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -25,17 +35,12 @@
   #viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 999; padding: 10px; }
   #viewerContent img { width: 100%; height: auto; max-height: 80vh; border-radius: 8px; }
   #closeBtn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-size: 28px; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
-  .p{
-    margin-bottom: 20px;
-    font-weight: 700;
-  }
 </style>
 </head>
 <body>
 <div class="container">
   <div id="loginBox" class="box">
     <h2>Login to Vault</h2>
-    <p class="p"> Picture Only No Upload Of Adult Videos/Porn <p>
     <input type="text" id="emailInput" placeholder="Enter your email" />
     <button onclick="login()">Enter</button>
   </div>
@@ -43,7 +48,7 @@
   <div id="appBox" class="hidden">
     <h2>📁 Vault - <span id="userEmail"></span></h2>
     <div class="box">
-      <p class="warning">⚠️ Picture Only No Upload Of Adult Videos/Porn </p>
+      <p class="warning">⚠️ Images Only. Saved to MongoDB Only.</p>
       <input type="file" id="fileInput" accept="image/*" multiple />
       <button id="uploadBtn">Upload Selected</button>
       <button onclick="logout()" style="background:#555;margin-top:8px;">Logout</button>
@@ -58,45 +63,8 @@
 </div>
 
 <script>
-const CLOUD_NAME = "psqrwylq";
-const UPLOAD_PRESET = "media_vault";
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
-const API_URL = "https://my-website-raymond.vercel.app";
-
+const API_URL = "https://my-website-raymond.vercel.app"; // CHANGE THIS
 let CURRENT_USER = "";
-const BANNED_WORDS = ['porn', 'xxx', 'nude', 'nsfw', 'sex', 'adult'];
-
-function getLocalKey() { return `vault_backup_${CURRENT_USER}`; }
-
-// COMPRESS FROM URL - THIS WORKS FOR BOTH PHONE + LAPTOP
-function compressFromUrl(url) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous"; // important for cloudinary
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let { width, height } = img;
-      const maxWidth = 1200;
-      if (width > maxWidth) {
-        height *= maxWidth / width;
-        width = maxWidth;
-      }
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7)); // 8MB -> 200KB
-    };
-    img.src = url;
-  });
-}
-
-function checkFile(file) {
-  if (!file.type.startsWith('image/')) { alert(`Blocked: "${file.name}" Only images allowed.`); return false; }
-  if (file.size > MAX_FILE_SIZE) { alert(`File too large! "${file.name}" Max 100MB`); return false; }
-  const name = file.name.toLowerCase();
-  if(BANNED_WORDS.some(word => name.includes(word))) { alert(`Blocked: "${file.name}" Banned word.`); return false; }
-  return true;
-}
 
 function login() {
   const email = document.getElementById('emailInput').value.trim();
@@ -114,106 +82,62 @@ function logout() {
   document.getElementById('loginBox').classList.remove('hidden');
 }
 
+// LOAD FROM MONGODB
 async function loadFromDB() {
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = `<div class="empty">Loading...</div>`;
-  const cached = localStorage.getItem(getLocalKey());
-  if(cached) renderGallery(JSON.parse(cached));
   try {
     const res = await fetch(`${API_URL}/api/get-media?userId=${encodeURIComponent(CURRENT_USER)}`);
     const mediaList = await res.json();
-    if(Array.isArray(mediaList)) {
-      try { localStorage.setItem(getLocalKey(), JSON.stringify(mediaList)); } catch(e){}
-      renderGallery(mediaList);
+    if(Array.isArray(mediaList) && mediaList.length > 0) {
+      gallery.innerHTML = mediaList.map(item => `
+        <div class="media-card">
+          <img src="${item.src}" loading="lazy" onclick="openViewer('${item.src}')" />
+          <button onclick="deleteMedia('${item._id}')">Delete</button>
+        </div>
+      `).join("");
+    } else {
+      gallery.innerHTML = `<div class="empty">No images yet.</div>`;
     }
-    if(mediaList.length === 0) gallery.innerHTML = `<div class="empty">No images yet.</div>`;
   } catch(err) {
-    console.error("Fetch failed, using cache", err);
-    if(!cached) gallery.innerHTML = `<div class="empty">Offline + No cache. Connect to internet once.</div>`;
+    gallery.innerHTML = `<div class="empty">Can't connect to server.</div>`;
   }
 }
 
-function renderGallery(mediaList) {
-  const gallery = document.getElementById('gallery');
-  gallery.innerHTML = mediaList.map(item => {
-    const imgUrl = item.dataUrl || getValidUrl(item);
-    return `
-    <div class="media-card">
-      <img src="${imgUrl}" loading="lazy" onclick="openViewer('${imgUrl}')" />
-      <button onclick="deleteMedia('${item._id}', '${item.public_id}')">Delete</button>
-    </div>
-  `}).join("");
-}
-
-function getValidUrl(item) {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto/${item.public_id}`;
-}
-
-// FIXED UPLOAD
+// UPLOAD DIRECT FILE TO MONGODB - NO BASE64
 document.getElementById('uploadBtn').onclick = async () => {
   const files = document.getElementById('fileInput').files;
   if (files.length === 0) return alert("Pick images first");
-  for(let i = 0; i < files.length; i++) { if (!checkFile(files[i])) return; }
 
   const btn = document.getElementById('uploadBtn');
   btn.disabled = true;
-  let uploaded = 0;
 
   for(let i = 0; i < files.length; i++) {
     const file = files[i];
     btn.innerText = `Uploading ${i+1}/${files.length}...`;
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('file', file); // SEND RAW FILE
+    formData.append('userId', CURRENT_USER);
 
     try {
-      // STEP 1: UPLOAD ORIGINAL TO CLOUDINARY - WORKS ON LAPTOP
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-      const result = await res.json();
-
-      if(res.ok && result.secure_url) {
-        btn.innerText = `Compressing ${i+1}/${files.length}...`;
-
-        // STEP 2: DOWNLOAD FROM CLOUDINARY AND COMPRESS - FIXES PHONE
-        const compressedDataUrl = await compressFromUrl(result.secure_url);
-
-        btn.innerText = `Saving ${i+1}/${files.length}...`;
-        // STEP 3: SAVE COMPRESSED BASE64 + CLOUD URL TO YOUR DB
-        await fetch(`${API_URL}/api/save-media`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            userId: CURRENT_USER,
-            url: result.secure_url,
-            dataUrl: compressedDataUrl,
-            type: 'image',
-            public_id: result.public_id
-          })
-        });
-        uploaded++;
-      } else {
-        console.error("Cloudinary error", result);
-        alert("Cloudinary upload failed: " + (result.error?.message || "Unknown"))
-      }
+      await fetch(`${API_URL}/api/save-media`, {
+        method: 'POST',
+        body: formData // NO JSON HEADERS
+      });
     } catch(err) { alert(`Error: ${err.message}`); }
   }
 
   document.getElementById('fileInput').value = "";
   btn.disabled = false;
   btn.innerText = "Upload Selected";
-  if(uploaded > 0) { alert(`${uploaded} images saved! ✅`); loadFromDB(); }
+  alert(`Upload done! ✅`);
+  loadFromDB();
 }
 
-async function deleteMedia(id, public_id) {
+async function deleteMedia(id) {
    if(!confirm('Delete this image?')) return;
   await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
-  const cached = localStorage.getItem(getLocalKey());
-  if(cached) {
-    let mediaList = JSON.parse(cached);
-    mediaList = mediaList.filter(item => item._id!== id);
-    try { localStorage.setItem(getLocalKey(), JSON.stringify(mediaList)); } catch(e){}
-  }
   loadFromDB();
 }
 

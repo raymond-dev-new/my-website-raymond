@@ -41,8 +41,8 @@ app.use(cors({ origin: "*",
 
 app.use(cors({ origin: "*" }));
 app.use(bordyparser.json()); // for metadata
-//app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-app.use(express.json({ limit: '10mb' })); // increase limit for big metadata
+app.use(express.json({ limit: '50mb' })); // important for base64
+//app.use(bodyParser())
  app.use(express.static(path.join(__dirname, 'frontend')))
 
  //start her sdfyuiopiuytrewrtyuiopoiuytretkjhgf
@@ -51,112 +51,6 @@ app.use(express.json({ limit: '10mb' })); // increase limit for big metadata
 mongoose.connect(url)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
-
-// 2. CLOUDINARY CONFIG - optional if you upload from frontend
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_API_SECRET
-});
-
-
-
-
-// SCHEMA
-const mediaSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  url: { type: String, required: true }, // cloudinary url - backup
-  dataUrl: { type: String, required: true }, // <-- ADD THIS LINE. Base64 image for ban-proof
-  type: { type: String, required: true, default: 'image' }, // force to image
-  public_id: { type: String, required: true },
-  moderation_status: { type: String, default: 'pending' },
-  createdAt: { type: Date, default: Date.now }
-});
-const Media = mongoose.model('Media', mediaSchema);
-
-
-// ROUTES
-
-// 1. GET ALL MEDIA FOR USER
-app.get('/api/get-media', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    if(!userId) return res.status(400).json({ error: 'userId required' });
-    
-    const mediaList = await Media.find({ userId }).sort({ createdAt: -1 });
-    res.json(mediaList);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-// 2. SAVE MEDIA - WITH LOCAL BACKUP
-app.post('/api/save-media', async (req, res) => {
-  try {
-    const { userId, url, dataUrl, type, public_id } = req.body; // ADDED dataUrl
-    if(!userId ||!url ||!dataUrl ||!type ||!public_id) { // ADDED dataUrl check
-      return res.status(400).json({ error: 'Missing fields' });
-    }
-
-    // CHECK CLOUDINARY MODERATION STATUS
-    try {
-      const resource = await cloudinary.api.resource(public_id, { resource_type: 'image' });
-      if(resource.moderation && resource.moderation[0].status === 'rejected'){
-        await cloudinary.uploader.destroy(public_id, { resource_type: 'image' });
-        return res.json({ blocked: true, reason: 'NSFW content detected by Cloudinary' });
-      }
-    } catch(cloudErr) { console.log("Cloudinary check failed") }
-
-    // SAVE TO DB WITH dataUrl
-    const newMedia = new Media({ 
-      userId, 
-      url, 
-      dataUrl, // <-- SAVE THE BASE64 HERE
-      type: 'image', // FORCE IMAGE
-      public_id, 
-      moderation_status: 'approved' 
-    });
-    await newMedia.save();
-    
-    res.json({ ok: 1, data: newMedia });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 2. SAVE MEDIA - WITH AUTO MODERATION CHECK
-
-// 3. DELETE FROM DB
-app.delete('/api/delete-media/:id', async (req, res) => {
-  try {
-    await Media.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-// 4. DELETE FROM CLOUDINARY - for flagged files
-app.post('/api/delete-cloudinary', async (req, res) => {
-  try {
-    const { public_id, type } = req.body;
-    if(!public_id) return res.status(400).json({ error: 'public_id required' });
-    
-    await cloudinary.uploader.destroy(public_id, { resource_type: type || 'image' });
-    res.json({ ok: 1 });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-}); 
-
-
- //end here kuytrewrtyuiyutrsdfgufdfguigfd
  
 
   let token = '';
@@ -573,10 +467,65 @@ app.get("/api/matches", async (req, res) => {
 });
 
 
-app.use(express.static(path.join(__dirname, "../frontend")));
+/*app.use(express.static(path.join(__dirname, "../frontend")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/football.html"));
-}); 
+}); */
+
+
+
+
+//new ytresrtyuioiuytrertyuioiuytrertyu
+
+
+// 1. SCHEMA: SAVE IMAGE AS BUFFER
+const MediaSchema = new mongoose.Schema({
+  userId: String,
+  img: { data: Buffer, contentType: String }, // THIS SAVES THE FILE
+  createdAt: { type: Date, default: Date.now }
+});
+const Media = mongoose.model('Media', MediaSchema);
+
+// 2. MULTER: SAVE TO MEMORY
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+
+// 3. UPLOAD ROUTE
+app.post('/api/save-media', upload.single('file'), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const newMedia = new Media({
+      userId,
+      img: {
+        data: req.file.buffer, // raw bytes
+        contentType: req.file.mimetype
+      }
+    });
+    await newMedia.save();
+    res.json({ success: true, id: newMedia._id });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. GET ROUTE - SEND AS BASE64
+app.get('/api/get-media', async (req, res) => {
+  const { userId } = req.query;
+  const media = await Media.find({ userId }).sort({ createdAt: -1 });
+  
+  // Convert buffer to base64 so frontend can display
+  const result = media.map(m => ({
+    _id: m._id,
+    src: `data:${m.img.contentType};base64,${m.img.data.toString('base64')}`
+  }));
+  res.json(result);
+});
+
+// 5. DELETE
+app.delete('/api/delete-media/:id', async (req, res) => {
+  await Media.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
+});
 
 
 //kiuytrewertyuioiuytrertyui
