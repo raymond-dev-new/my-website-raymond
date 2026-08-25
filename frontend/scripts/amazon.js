@@ -15,7 +15,7 @@ export function getProduct(productId) {
 export const products = [{
   id: 'rhrhur784754u-jkvh674784-kghg7t4y-4784764g',
   image: 'amazon-images/blackout-curtains-black.jpg',
-  name: 'Blackout Curtains Set 42 x 84-Inch - Black, 2 Panels',
+  name: 'Blackout Curtains Set 42 x 84-Inch - Black,',
   rating: {
     stars: 4.5,
     count:363
@@ -188,9 +188,8 @@ export const products = [{
 
     <span class="star-icon">&#9733&#9733&#9733&#9733&#9734 <span class="count-c">${product.rating.count}</span>
     </span>
-    
+    <a href=""> Wa. 08115614822 </a>
     <p class="price-cents"> $${(product.pricecents / 100).toFixed(2)}</p>
-
 
 
      <button class="add-button js-add-to-cart" data-product-id="${product.id}"> Add to Cart </button>

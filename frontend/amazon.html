@@ -4,7 +4,7 @@
 
       <script>
     // This runs before the page shows
-    const token = localStorage.getItem('token');
+   /* const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -16,7 +16,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-
+    
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+  
     <style>
      
 
@@ -346,12 +348,18 @@
   }
 }
 
+.icon{
+  font-size: 50px;
+  color: white;
+  margin-left: 15px;
+}
+
     </style>
   </head>
   <body>
     
     <div class="flex-direct">
-      <div class="left-section"> <img class="header-image" src="header/amazon-logo-white.png"> </div>
+      <div class="left-section"> <a href="mainpage.html"> <i class="ri-arrow-left-line icon"></i></a> </div>
 
       <div class="middle-section"> <input class="header-search" type="text" placeholder="Search"> 
         <div class="search-div"> <img class="search-icon" src="header/search-icon.png"> </div>
@@ -359,7 +367,7 @@
 
      
         <div class="right-section">
-          <div class="order-div">Returns & Order</div>
+          <div class="order-div">Orders</div>
 
           
           <div class="head-images">  <a href="checkout.html"> <img class="header-images" src="header/cart-icon.png">  </a> 

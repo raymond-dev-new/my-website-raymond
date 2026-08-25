@@ -3,245 +3,357 @@
 <head>
  
    <script>
-   // This runs before the page shows
-    const token = localStorage.getItem('token');
-
+   // uncomment when ready
+   /* const token = localStorage.getItem('token');
     if (!token) {
-      // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    } 
+    } */
   </script>
    
-    
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
- <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <title>MyPortal - Dashboard</title>
+ <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     
+   * { box-sizing: border-box; } /* FIX: makes padding not break layout */
+
    body {
   background-image: url("photo_2026-07-24_19-55-32.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  background-attachment: fixed;
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  font-family: Roboto;
 }
 
-.h11{
-  display: grid;
-  justify-content: center;
-  color: white;
-  font-size: 25px;
+/* TOP BAR FOR LOGOUT + INFO */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 15px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.left-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.left-buttons button {
+  width: auto;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 20px;
+}
+
+.info-link {
+  color: #87CEEB;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 8px;
+}
+
+/* GLASS CARD - CENTERED WITH MAX WIDTH */
+.container {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  border-radius: 20px;
+  margin: 10px auto; /* center on laptop */
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 1200px; /* stops it from getting too wide on laptop */
+  width: 95%;
+}
+
+/* MARKETPLACE BANNER */
+.market-banner {
+  background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+  color: #000;
+  padding: 12px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 13px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+.market-banner span {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  font-weight: 700;
 }
 
 .h1{
-  display: grid;
-  justify-content: center;
+  text-align: center;
   color: white;
-  font-size: 25px;
+  font-size: 28px;
+  font-weight: 900;
+  margin: 5px 0;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
 }
 
 .h22{
-  display: grid;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  margin-left: 12px;
-  font-size: 15px;
+  text-align: center;
+  color: rgba(255,255,255,0.9);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0 10px;
+  margin-bottom: 10px;
 }
 
 button {
-  font-size: 25px;
+  font-size: 16px;
   font-weight: 700;
-  margin: 7px;
-  padding: 10px;
-  border-radius: 17px;
+  padding: 15px;
+  border-radius: 15px;
   color: white;
-  background-color: rgb(27, 177, 27);
-  
+  background: linear-gradient(135deg, #1BB11B 0%, #0D8B0D 100%);
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: all 0.2s;
 }
 
 button:hover{
-  background-color: rgb(103, 103, 228);
+  transform: translateY(-2px);
 }
+
+/* ORANGE ADVERTISE BUTTON */
+.btn-advertise {
+  background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%) !important;
+}
+
+/* DEFAULT: 2 COLUMN GRID FOR PHONE */
 .grid {
   display: grid;
-  justify-self: center;
-  align-items: center;
-  margin-top: -10px;
-  
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 15px;
 }
 
-.para {
-  font-size: 35px;
-  font-weight: 700;
-  margin-top: 250px;
+.featured {
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 15px;
+}
+.featured h3 {
+  color: white;
   text-align: center;
-  padding: 0 5%;
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 900;
 }
-
-/* Laptop: 1024px and up - your original sizes */
-@media screen and (max-width: 1024px) {
-  button {
-    font-size: 22px;
-    padding: 9px;
-  }
-  .para {
-    font-size: 32px;
-    margin-top: 200px;
-  }
-
-  .h11{
+.featured-grid {
   display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 10px;
+}
+.featured-item {
+  background: white;
+  border-radius: 10px;
+  padding: 8px;
+  text-align: center;
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+}
+.featured-item img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 5px;
+}
+.featured-ad {
+  border: 2px dashed orange;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 25px;
-}
-}
-
-/* Tablet: 768px to 1023px */
-@media screen and (max-width: 768px) {
-  button {
-    font-size: 20px;
-    padding: 8px;
-    margin: 6px;
-  }
-  .para {
-    font-size: 28px;
-    margin-top: 150px;
-    padding: 0 8%;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-  font-size: 25px;
-}
-}
-
-/* Phone: 767px and below */
-@media screen and (max-width: 480px) {
-  button {
-    font-size: 18px;
-    padding: 8px;
-    margin: 5px;
-    width: 30%;
-    
-  }
-  .para {
-    font-size: 24px;
-    margin-top: 100px;
-    padding: 0 10%;
-  }
-  .grid {
-    width: 280px;
-    
-  }
-
-  .game, .quiz, .Calculator, .todo, .expense, .product{
-    margin-left: 40px;
-  }
-
-  .h11{
-  display: grid;
-  justify-content: center;
-  color: white;
-  font-size: 25px;
-}
+  background: rgba(255,165,0,0.2);
+  color: orange;
+  font-weight: 900;
 }
 
 .test{
-  display: flex;
-  padding: 15px;
-  justify-content: center;
-  align-items: baseline;
-  font-size: 20px;
+  text-align: center;
+  padding: 10px;
+  font-size: 18px;
   font-weight: 700;
   color: white;
-  height: 50px;
-  font-family: Roboto;
-  margin-top: -3px;
-  margin-left: 10px;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
 }
 
 .count{
-  font-size: 13px;
-  display: grid;
-  justify-content: center;
-  margin-top: -10px;
-  margin-bottom: px;
-  color: blue;
+  font-size: 14px;
+  text-align: center;
+  color: #FFD700;
+  font-weight: 700;
+  margin: 5px 0 10px 0;
 }
 
-.Calculator {
-    width: 75%;
-  margin-top: -3px;
-   margin-right: 70px;
+/* ========== RESPONSIVE BREAKPOINTS ========== */
+
+/* TABLET: 768px and up */
+@media screen and (min-width: 768px) {
+  .container {
+    padding: 25px;
+  }
+  .h1 {
+    font-size: 36px;
+  }
+  .market-banner {
+    font-size: 16px;
+  }
+  .market-banner span {
+    font-size: 14px;
+  }
+  button {
+    font-size: 18px;
+    padding: 18px;
+  }
+  .grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns on tablet */
+    gap: 15px;
+  }
+  .featured-grid {
+    grid-template-columns: repeat(4,1fr); /* 4 featured items */
+  }
+  .featured-item img {
+    height: 120px;
+  }
 }
 
-.Media{
-  width: 100%;
-   margin-right: 30px;
+/* LAPTOP: 1024px and up */
+@media screen and (min-width: 1024px) {
+  .container {
+    padding: 30px;
+    margin: 20px auto;
+  }
+  .h1 {
+    font-size: 42px;
+  }
+  .top-bar {
+    padding: 15px 30px;
+  }
+  .left-buttons button {
+    font-size: 15px;
+    padding: 10px 18px;
+  }
+  button {
+    font-size: 20px;
+    padding: 20px;
+  }
+  .grid {
+    grid-template-columns: repeat(4, 1fr); /* 4 columns on laptop */
+    gap: 20px;
+  }
+  .featured {
+    padding: 25px;
+  }
+  .featured h3 {
+    font-size: 24px;
+  }
+  .featured-item {
+    font-size: 14px;
+  }
+  .featured-item img {
+    height: 150px;
+  }
 }
 
- .a{
-  display: grid;
-  margin-left: 65%;
- }
-
- a{
- color: blue;
- font-size: 17px;
- font-weight: 600;
- margin-top: -15px;
- }
+/* SMALL PHONE: 480px and below */
+@media screen and (max-width: 480px) {
+  .h1 {
+    font-size: 24px;
+  }
+  button {
+    font-size: 15px;
+    padding: 14px;
+  }
+  .market-banner {
+    font-size: 12px;
+  }
+}
   </style>
 </head>
 <body>
 
-  <div class="move">
+<div class="container">
+
+  <!-- MARKETPLACE BANNER -->
+  <div class="market-banner">
+    🛍️ SHOP PRODUCTS FROM VENDORS | 📢 ADVERTISE YOUR PRODUCTS HERE
+    <span>Reach 500+ Active Users • From ₦5,000 for 7 Days</span>
+  </div>
+  
   <h2 class="h1"> WELCOME </h2>
-  <h2 class="h22"> We cannot see your data only you can : keep your password secured</h2>
-   <h2 class="count"> 1 </h2>
+
+   <div class="top-bar">
+    <div class="left-buttons">
+      <button class="logout"> Log out </button>
+      <button class="changep"> Change password </button>
+    </div>
+    <a href="info.html" class="info-link">Info/contact</a>
   </div>
-        
-    <div class="a"> <a href="info.html"> Info/contact </a> </div>
-       
-    <div> <button class="logout"> Log out </button> </div>
-   <div> <button class="changep"> Change password </button> </div>
 
-   <h2 class="test"></h2> 
+  <h2 class="count"> 1 </h2>
+  <h2 class="test"></h2> 
 
+  <!-- FEATURED PRODUCTS SECTION -->
+  <div class="featured">
+    <h3>🔥 Featured Products</h3>
+    <div class="featured-grid">
+      <div class="featured-item">
+        <img src="https://via.placeholder.com/150/FFD700/000?text=Shoe" alt="Product">
+        <div>Nike Air - ₦25,000</div>
+      </div>
+      <div class="featured-item">
+        <img src="https://via.placeholder.com/150/764ba2/FFF?text=Case" alt="Product">
+        <div>iPhone Case - ₦5,000</div>
+      </div>
+      <div class="featured-item featured-ad">
+        <div>Your Ad Here?<br>Tap "Advertise"</div>
+      </div>
+      <div class="featured-item featured-ad">
+        <div>Your Ad Here?<br>Tap "Advertise"</div>
+      </div>
+    </div>
+  </div>
+    <small style="color: white;">After payment we will upload ypur Products in shop product with your whatsapp number so u can be contacted by pur 500+ ursers</small>
+  <!-- RESPONSIVE BUTTON GRID -->
   <div class="grid">
-   <div>  <button class="Calculator"> Calculator </button> </div>
-
-   <div>  <button class="Media"> My private space </button> </div> 
-   
-    <div> <button class="game"> games </button> 
-    <span> <button class="product"> Product </button> </span>  </div>
-    
+   <div>  <button class="Calculator"> 🧮 Calculator </button> </div>
+   <div>  <button class="Media"> 🔒 Private Space </button> </div> 
+   <div> <button class="product"> 🛍️ Shop Products </button> </div>
+   <div> <button class="advertise btn-advertise"> 📢 Advertise </button> </div>
+   <div> <button class="game"> 🎮 Games </button> </div>
+   <div> </div>
   </div>
+
+</div>
 
   <script>
-
-
      const Autoken = localStorage.getItem('token');
-
     if (Autoken) {
       setTimeout(() => {
        const name = document.querySelector('.test')
        const localName = localStorage.getItem('Name')
        name.innerHTML = ` Welcome ${localName} nice having you! `
       }, 2000)
-
       setTimeout(() => {
        const name = document.querySelector('.test')
        name.innerHTML = ` Welcome Guest `
       }, 15000)
-       
-     
       setTimeout(() => {
        const name = document.querySelector('.test')
        name.innerHTML = ''
@@ -253,47 +365,37 @@ button:hover{
      countt.innerHTML = count
      count++
     }, 1000 )
+   
    const calculator = document.querySelector('.Calculator')
-      const product = document.querySelector('.product')
-         const quiz = document.querySelector('.quiz')
-            const todo = document.querySelector('.todo')
-               const expense = document.querySelector('.expense')
-                  const changep = document.querySelector('.changep')
-                     const game = document.querySelector('.game')
-                      const logout = document.querySelector('.logout')
-    const Note = document.querySelector('.Note')                  
-    const Media = document.querySelector('.Media') 
+   const product = document.querySelector('.product')
+   const changep = document.querySelector('.changep')
+   const game = document.querySelector('.game')
+   const logout = document.querySelector('.logout')                
+   const Media = document.querySelector('.Media') 
+   const advertise = document.querySelector('.advertise')
       
-     
-
    calculator.addEventListener('click', () => {
       window.location.href="calculate.html"
    })  
-     
    Media.addEventListener('click', () => {
       window.location.href="savemainpage.html"
    })  
-
    product.addEventListener('click', () => {
-    // here 
      window.location.href="amazon.html"
    })
-
+   advertise.addEventListener('click', () => {
+     window.location.href="https://wa.me/2348115614822?text=Hello%20I%20want%20to%20advertise%20my%20products%20on%20MyPortal"
+   })
    changep.addEventListener('click', () => {
      window.location.href="change.html"
    })
-
    game.addEventListener('click', () => {
      window.location.href="gamepage.html"
    })
-
-
    logout.addEventListener('click', () => {
      window.location.href="register.html"
      localStorage.removeItem('token')
-    
    })
-
   </script>
 </body>
 </html>
