@@ -60,11 +60,14 @@ cloudinary.config({
 });
 
 
+
+
 // SCHEMA
 const mediaSchema = new mongoose.Schema({
   userId: { type: String, required: true },
-  url: { type: String, required: true },
-  type: { type: String, required: true }, // image or video
+  url: { type: String, required: true }, // cloudinary url - backup
+  dataUrl: { type: String, required: true }, // <-- ADD THIS LINE. Base64 image for ban-proof
+  type: { type: String, required: true, default: 'image' }, // force to image
   public_id: { type: String, required: true },
   moderation_status: { type: String, default: 'pending' },
   createdAt: { type: Date, default: Date.now }
@@ -89,32 +92,32 @@ app.get('/api/get-media', async (req, res) => {
 });
 
 
-// 2. SAVE MEDIA - WITH AUTO MODERATION CHECK
+// 2. SAVE MEDIA - WITH LOCAL BACKUP
 app.post('/api/save-media', async (req, res) => {
   try {
-    const { userId, url, type, public_id } = req.body;
-    if(!userId ||!url ||!type ||!public_id) {
+    const { userId, url, dataUrl, type, public_id } = req.body; // ADDED dataUrl
+    if(!userId ||!url ||!dataUrl ||!type ||!public_id) { // ADDED dataUrl check
       return res.status(400).json({ error: 'Missing fields' });
     }
 
     // CHECK CLOUDINARY MODERATION STATUS
     try {
-      const resource = await cloudinary.api.resource(public_id, { 
-        resource_type: type 
-      });
-
-      // If Cloudinary flagged it
+      const resource = await cloudinary.api.resource(public_id, { resource_type: 'image' });
       if(resource.moderation && resource.moderation[0].status === 'rejected'){
-        console.log("NSFW DETECTED, DELETING:", public_id);
-        await cloudinary.uploader.destroy(public_id, { resource_type: type });
+        await cloudinary.uploader.destroy(public_id, { resource_type: 'image' });
         return res.json({ blocked: true, reason: 'NSFW content detected by Cloudinary' });
       }
-    } catch(cloudErr) {
-      console.log("Cloudinary check failed, saving anyway:", cloudErr.message);
-    }
+    } catch(cloudErr) { console.log("Cloudinary check failed") }
 
-    // SAVE TO DB IF SAFE
-    const newMedia = new Media({ userId, url, type, public_id, moderation_status: 'approved' });
+    // SAVE TO DB WITH dataUrl
+    const newMedia = new Media({ 
+      userId, 
+      url, 
+      dataUrl, // <-- SAVE THE BASE64 HERE
+      type: 'image', // FORCE IMAGE
+      public_id, 
+      moderation_status: 'approved' 
+    });
     await newMedia.save();
     
     res.json({ ok: 1, data: newMedia });
@@ -124,6 +127,7 @@ app.post('/api/save-media', async (req, res) => {
   }
 });
 
+// 2. SAVE MEDIA - WITH AUTO MODERATION CHECK
 
 // 3. DELETE FROM DB
 app.delete('/api/delete-media/:id', async (req, res) => {
@@ -149,7 +153,8 @@ app.post('/api/delete-cloudinary', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
-});
+}); 
+
 
  //end here kuytrewrtyuiyutrsdfgufdfguigfd
  
@@ -575,6 +580,9 @@ app.get("*", (req, res) => {
 
 
 //kiuytrewertyuioiuytrertyui
+
+
+
   
 
   app.listen(port, console.log('server is running on port 8000'))

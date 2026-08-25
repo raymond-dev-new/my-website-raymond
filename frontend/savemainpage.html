@@ -1,213 +1,185 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
- 
+
    <script>
-   // This runs before the page shows
-   const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    } 
-  </script>
-    
-  <meta charset="UTF-8">
+    }
+   </script> 
+
+  <title>Private Space </title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> Private Space </title>
- <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-  <style>
-    
-   body {
-  background-image: url("photo_2026-07-27_08-21-15.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
-
-h1{
-  display: grid;
-  justify-content: center;
-}
-
-h2{
-  display: grid;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-}
-
-button {
-  font-size: 25px;
-  font-weight: 700;
-  margin: 7px;
-  padding: 10px;
-  border-radius: 15px;
-  color: white;
-  background-color: blue;
-}
-
-button:hover{
-  background-color: green;
-}
-.grid {
-  display: grid;
-  align-items: center;
-  justify-content: center;
-}
-
-.para {
-  font-size: 35px;
-  font-weight: 700;
-  margin-top: 250px;
-  text-align: center;
-  padding: 0 5%;
-}
-
-/* Laptop: 1024px and up - your original sizes */
-@media screen and (max-width: 1024px) {
-  button {
-    font-size: 22px;
-    padding: 9px;
-  }
-  .para {
-    font-size: 32px;
-    margin-top: 200px;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-/* Tablet: 768px to 1023px */
-@media screen and (max-width: 768px) {
-  button {
-    font-size: 20px;
-    padding: 8px;
-    margin: 6px;
-  }
-  .para {
-    font-size: 28px;
-    margin-top: 150px;
-    padding: 0 8%;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-/* Phone: 767px and below */
-@media screen and (max-width: 480px) {
-  button {
-    font-size: 18px;
-    padding: 8px;
-    margin: 5px;
-    width: 30%;
-    
-  }
-  .para {
-    font-size: 24px;
-    margin-top: 100px;
-    padding: 0 10%;
-  }
-  .grid {
-    width: 100%;
-  }
-
-  .game, .quiz, .Calculator, .todo, .expense, .product{
-    margin-left: 13px;
-    font-size: 13px;
-    width: 70px;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-.test{
-  display: flex;
-  padding: 15px;
-  justify-content: center;
-  align-items: baseline;
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  height: 50px;
-  font-family: Roboto;
-}
-
-.count{
-  font-size: 10px;
-  display: grid;
-  justify-content: center;
-  margin-top: -15px;
-  margin-bottom: -15px;
-}
-
-.Note {
-  width: 100%;
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
   
-}
-
-.ball{
-  width: 100%;
-  margin-top: 8px;
-}
-
-.Media{
-  width: 100%;
-  margin-top: 210px;
-}
-
-.next{
-  display: grid;
-  justify-self: center;
-  width: 80px;
-}
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1080');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(180deg, rgba(0,50,20,0.7) 0%, rgba(0,0,0,0.8) 100%);
+      z-index: 0;
+    }
+    
+    .container {
+      position: relative; /* so back button can be absolute inside */
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+      min-height: 85vh; /* give height so we can center buttons */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center; /* center the grid vertically */
+      padding-top: 60px; /* space for back button */
+    }
+    
+    /* Back button EXACTLY in the corner you marked */
+    .back-btn {
+      position: absolute;
+      top: 20px; /* distance from top */
+      left: 20px; /* distance from left */
+      background: rgba(0, 255, 120, 0.15);
+      color: #00ff88;
+      border: 1px solid rgba(0, 255, 120, 0.3);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s;
+    }
+    .back-btn:hover {
+      background: rgba(0, 255, 120, 0.25);
+      transform: translateX(-2px);
+    }
+    
+    /* Button Grid - stays perfectly centered */
+    .btn-grid {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    
+    /* Main buttons */
+    .btn {
+      background: rgba(0, 255, 120, 0.1);
+      color: #00ff88;
+      border: 1px solid rgba(0, 255, 120, 0.3);
+      padding: 16px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+      width: 100%;
+    }
+    
+    .btn:hover {
+      background: rgba(0, 255, 120, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0, 255, 120, 0.3);
+    }
+    
+    .btn.next {
+      background: linear-gradient(135deg, #00ff88, #00cc66);
+      color: #000;
+      border: none;
+      font-weight: 800;
+    }
+    .btn.next:hover {
+      box-shadow: 0 0 20px rgba(0, 255, 120, 0.6);
+    }
+    
+    .icon { font-size: 18px; }
+    
+    /* LAPTOP / TABLET: 2 columns */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 700px;
+      }
+      .btn-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .btn.next {
+        grid-column: span 2; /* Next button takes full width */
+      }
+      .back-btn {
+        font-size: 16px;
+        padding: 12px 20px;
+        top: 30px;
+        left: 30px;
+      }
+      .btn {
+        font-size: 16px;
+        padding: 18px 24px;
+      }
+    }
+    
+    /* LARGE DESKTOP */
+    @media (min-width: 1200px) {
+      .container {
+        max-width: 800px;
+      }
+      .btn {
+        padding: 20px 28px;
+        font-size: 17px;
+      }
+    }
   </style>
 </head>
 <body>
-   
-  <div> <button class="logout"> Back </button> </div>
-
-  <div class="grid">
-    <span>
-    <button class="Media"> Save image/video </button>
-   </span> 
-   
-   <div><button class="Note"> Save Note </button></div>
-   
-    <span> <button class="ball"> Live Match </button> </span> 
-             <div><button class="next"> Next </button></div>
+  
+  <div class="container">
+      <button class="back-btn logout"><i class="ri-arrow-left-line icon"></i> Back</button>
+    
+      <div class="btn-grid">
+        <button class="btn Media"><i class="ri-download-2-line icon"></i> Save image/video</button>
+        <button class="btn Note"><i class="ri-sticky-note-line icon"></i> Save Note</button>
+        <button class="btn ball"><i class="ri-live-line icon"></i> Live Match</button>
+        <button class="btn next"><i class="ri-arrow-right-line icon"></i> Next</button>
+      </div>
   </div>
 
   <script>
-
-   const calculator = document.querySelector('.Calculator')
-      const product = document.querySelector('.product')
-         const next = document.querySelector('.next')
-            const todo = document.querySelector('.todo')
-               const expense = document.querySelector('.expense')
-                  const changep = document.querySelector('.changep')
-                     const game = document.querySelector('.game')
-                      const logout = document.querySelector('.logout')
-    const Note = document.querySelector('.Note')                  
-    const Media = document.querySelector('.Media') 
-    const ball = document.querySelector('.ball')
-    //const Medial = document.querySelector('.Medial')
+   const next = document.querySelector('.next')
+   const logout = document.querySelector('.logout')
+   const Note = document.querySelector('.Note')                  
+   const Media = document.querySelector('.Media') 
+   const ball = document.querySelector('.ball')
       
-     
-
-  
    ball.addEventListener('click', () => {
       window.location.href="football.html"
    })  
@@ -220,11 +192,11 @@ button:hover{
       window.location.href="note.html"
    })
 
-    logout.addEventListener('click', () => {
+   logout.addEventListener('click', () => {
      window.location.href="mainpage.html"
    })
 
-    next.addEventListener('click', () => {
+   next.addEventListener('click', () => {
       window.location.href="next.html"
    })
   </script>

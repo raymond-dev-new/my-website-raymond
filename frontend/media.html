@@ -2,49 +2,42 @@
 <html lang="en">
 <head>
 
-    <script>
+<script>
    const token = localStorage.getItem('token');
-
-    if (!token) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    } 
-   </script> 
-  
+    if (!token) window.location.replace('/login.html'); 
+</script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Media Vault</title>
+<title>Media Vault - Ban Proof</title>
 <style>
-  :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --primary: #007bff; --danger: #dc3545; --warn: #ffc107; --success: #28a745; }
+  :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --primary: #007bff; --danger: #dc3545; --warn: #ffc107; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
   body { background: var(--bg); color: var(--text); padding: 12px; }
- .container { max-width: 700px; margin: 0 auto; }
+.container { max-width: 700px; margin: 0 auto; }
   h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
- .box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+.box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
   input { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid #333; border-radius: 8px; background: #2a2a2a; color: var(--text); }
- .warning { font-size: 12px; color: var(--warn); margin-bottom: 10px; text-align: center; }
+.warning { font-size: 12px; color: var(--warn); margin-bottom: 10px; text-align: center; }
   button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
   button:hover { opacity: 0.85; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   #gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   @media(min-width: 768px){ #gallery { grid-template-columns: 1fr 1fr 1fr; } }
- .media-card { background: var(--card); border-radius: 10px; overflow: hidden; position: relative; }
- .media-card img,.media-card video { width: 100%; height: 150px; object-fit: cover; cursor: pointer; display: block; }
- .media-card button { background: var(--danger); border-radius: 0; padding: 8px; font-size: 13px; }
- .hidden { display: none; }
- .empty { text-align: center; color: #aaa; grid-column: 1/-1; padding: 40px 0; }
-  #viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; padding: 10px; }
-  #viewerContent { width: 100%; max-width: 900px; }
-  #viewerContent img, #viewerContent video { width: 100%; height: auto; max-height: 80vh; border-radius: 8px; }
+.media-card { background: var(--card); border-radius: 10px; overflow: hidden; position: relative; }
+.media-card img { width: 100%; height: 150px; object-fit: cover; cursor: pointer; display: block; }
+.media-card button { background: var(--danger); border-radius: 0; padding: 8px; font-size: 13px; }
+.hidden { display: none; }
+.empty { text-align: center; color: #aaa; grid-column: 1/-1; padding: 40px 0; }
+  #viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 999; padding: 10px; }
+  #viewerContent img { width: 100%; height: auto; max-height: 80vh; border-radius: 8px; }
   #closeBtn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-size: 28px; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
 </style>
 </head>
 <body>
 <div class="container">
-
   <div id="loginBox" class="box">
     <h2>Login to Vault</h2>
-    <h3> NO upload of adult video/porn else you will loose acces to your account </h3>
+    <h3> Picture Only No Upload Of Adult Videos/Porn </h3>
     <input type="text" id="emailInput" placeholder="Enter your email" />
     <button onclick="login()">Enter</button>
   </div>
@@ -52,14 +45,13 @@
   <div id="appBox" class="hidden">
     <h2>📁 Vault - <span id="userEmail"></span></h2>
     <div class="box">
-      <p class="warning">⚠️ No NSFW / Adult content. Max 100MB per file.</p>
-      <input type="file" id="fileInput" accept="image/*,video/*" multiple />
+      <p class="warning">⚠️ Images Only. Saved to your browser + DB. Works even if Cloudinary dies.</p>
+      <input type="file" id="fileInput" accept="image/*" multiple />
       <button id="uploadBtn">Upload Selected</button>
       <button onclick="logout()" style="background:#555;margin-top:8px;">Logout</button>
     </div>
     <div id="gallery"><div class="empty">Loading...</div></div>
   </div>
-
 </div>
 
 <div id="viewer">
@@ -68,39 +60,25 @@
 </div>
 
 <script>
-const CLOUD_NAME = "qggze1dd";
+  //qggze1dd
+  //psqrwylq
+  //http://localhost:8000
+const CLOUD_NAME = "psqrwylq";
 const UPLOAD_PRESET = "media_vault";
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const API_URL = "https://my-website-raymond.vercel.app";
 
 let CURRENT_USER = "";
-const BANNED_WORDS = ['porn', 'xxx', 'nude', 'nsfw', 'sex', 'adult', 'xxxvideo'];
+const BANNED_WORDS = ['porn', 'xxx', 'nude', 'nsfw', 'sex', 'adult'];
 
-function checkFileSize(file) {
-  if (file.size > MAX_FILE_SIZE) {
-    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
-    alert(`File too large! 😅\n\n"${file.name}"\nSize: ${sizeMB} MB\nMax allowed: 100 MB`);
-    return false;
-  }
-  return true;
-}
+function getLocalKey() { return `vault_backup_${CURRENT_USER}`; } // KEY FOR LOCALSTORAGE
 
-function checkFileName(file) {
+function checkFile(file) {
+  if (!file.type.startsWith('image/')) { alert(`Blocked: "${file.name}" Only images allowed.`); return false; }
+  if (file.size > MAX_FILE_SIZE) { alert(`File too large! "${file.name}" Max 100MB`); return false; }
   const name = file.name.toLowerCase();
-  if(BANNED_WORDS.some(word => name.includes(word))) {
-    alert(`Blocked: "${file.name}"\nFilename contains banned words. Upload rejected.`);
-    return false;
-  }
+  if(BANNED_WORDS.some(word => name.includes(word))) { alert(`Blocked: "${file.name}" Banned word.`); return false; }
   return true;
-}
-
-function getValidUrl(item) {
-  if(item.url && item.url.includes('cloudinary')) return item.url;
-  if(item.public_id) {
-    const resourceType = item.type === 'video'? 'video' : 'image';
-    return `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/upload/q_auto,f_auto/${item.public_id}`;
-  }
-  return "";
 }
 
 function login() {
@@ -119,49 +97,58 @@ function logout() {
   document.getElementById('loginBox').classList.remove('hidden');
 }
 
+// 1. LOAD: FIRST TRY LOCAL, THEN FETCH FROM DB AND UPDATE LOCAL
 async function loadFromDB() {
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = `<div class="empty">Loading...</div>`;
+
+  // STEP 1: SHOW FROM LOCAL FIRST FOR SPEED
+  const cached = localStorage.getItem(getLocalKey());
+  if(cached) renderGallery(JSON.parse(cached));
+
   try {
     const res = await fetch(`${API_URL}/api/get-media?userId=${encodeURIComponent(CURRENT_USER)}`);
     const mediaList = await res.json();
-    if(!Array.isArray(mediaList) || mediaList.length === 0) {
-      gallery.innerHTML = `<div class="empty">No media yet. Upload something!</div>`;
-      return;
+
+    // STEP 2: SAVE TO LOCALSTORAGE AFTER FETCH
+    if(Array.isArray(mediaList)) {
+      localStorage.setItem(getLocalKey(), JSON.stringify(mediaList));
+      renderGallery(mediaList); // UPDATE UI WITH FRESH DATA
     }
-    gallery.innerHTML = mediaList.map(item => {
-      const validUrl = getValidUrl(item);
-      if(!validUrl) return '';
-      return `
-      <div class="media-card">
-        ${item.type === 'video'
-         ? `<video src="${validUrl}" controls preload="metadata" onclick="openViewer('${validUrl}', 'video')"></video>`
-          : `<img src="${validUrl}" loading="lazy" onclick="openViewer('${validUrl}', 'image')" />`
-        }
-        <button onclick="deleteMedia('${item._id}', '${item.public_id}')">Delete</button>
-      </div>
-    `}).join("");
+    if(mediaList.length === 0) gallery.innerHTML = `<div class="empty">No images yet.</div>`;
   } catch(err) {
-    console.error(err);
-    gallery.innerHTML = `<div class="empty">Error loading. Check server.</div>`;
+    console.error("Fetch failed, using cache", err);
+    if(!cached) gallery.innerHTML = `<div class="empty">Offline + No cache. Connect to internet once.</div>`;
   }
 }
 
+function renderGallery(mediaList) {
+  const gallery = document.getElementById('gallery');
+  gallery.innerHTML = mediaList.map(item => {
+    // BAN-PROOF: USE item.dataUrl IF IT EXISTS, ELSE FALLBACK TO CLOUDINARY
+    const imgUrl = item.dataUrl || getValidUrl(item); 
+    return `
+    <div class="media-card">
+      <img src="${imgUrl}" loading="lazy" onclick="openViewer('${imgUrl}')" />
+      <button onclick="deleteMedia('${item._id}', '${item.public_id}')">Delete</button>
+    </div>
+  `}).join("");
+}
+
+function getValidUrl(item) {
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto/${item.public_id}`;
+}
+
+// 2. UPLOAD: UPLOAD TO CLOUDINARY -> DOWNLOAD IMAGE -> SAVE BASE64 TO DB + LOCAL
 document.getElementById('uploadBtn').onclick = async () => {
   const files = document.getElementById('fileInput').files;
-  if (files.length === 0) return alert("Pick files first");
+  if (files.length === 0) return alert("Pick images first");
 
-  // Check all files first
-  for(let i = 0; i < files.length; i++) {
-    if (!checkFileSize(files[i])) return;
-    if (!checkFileName(files[i])) return;
-  }
+  for(let i = 0; i < files.length; i++) { if (!checkFile(files[i])) return; }
 
   const btn = document.getElementById('uploadBtn');
   btn.disabled = true;
-
   let uploaded = 0;
-  let failed = 0;
 
   for(let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -170,80 +157,70 @@ document.getElementById('uploadBtn').onclick = async () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
-    // NO MODERATION HERE - IT BREAKS UNSIGNED UPLOADS
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { 
-        method: 'POST', 
-        body: formData,
-        signal: AbortSignal.timeout(120000) // 2min timeout
-      });
+      // STEP 1: UPLOAD TO CLOUDINARY
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
       const result = await res.json();
 
       if(res.ok && result.secure_url) {
-        // Send to backend to check if Cloudinary later flagged it
-        const saveRes = await fetch(`${API_URL}/api/save-media`, {
+        btn.innerText = `Saving to local ${i+1}/${files.length}...`;
+        
+        // STEP 2: DOWNLOAD IMAGE FROM CLOUDINARY AND CONVERT TO BASE64 <-- BAN PROOF
+        const imgRes = await fetch(result.secure_url);
+        const blob = await imgRes.blob();
+        const dataUrl = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+
+        // STEP 3: SEND BOTH CLOUD URL + BASE64 DATAURL TO YOUR DB
+        await fetch(`${API_URL}/api/save-media`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             userId: CURRENT_USER,
-            url: result.secure_url,
-            type: result.resource_type,
+            url: result.secure_url, // cloudinary backup
+            dataUrl: dataUrl, // <-- SAVE THIS IN DB. THIS IS THE BAN-PROOF COPY
+            type: 'image',
             public_id: result.public_id
           })
         });
-        const saveData = await saveRes.json();
-        if(saveData.blocked) {
-          failed++;
-          alert(`BLOCKED: "${file.name}"\nReason: ${saveData.reason}`);
-        } else {
-          uploaded++;
-        }
-      } else {
-        failed++;
-        const errMsg = result.error?.message || 'Upload failed';
-        alert(`"${file.name}" failed:\n${errMsg}`);
+        uploaded++;
       }
-    } catch(err) {
-      failed++;
-      console.error("Upload error", err);
-      alert(`Network/Timeout error uploading ${file.name}`);
-    }
+    } catch(err) { alert(`Error uploading ${file.name}`); }
   }
 
   document.getElementById('fileInput').value = "";
   btn.disabled = false;
   btn.innerText = "Upload Selected";
-
-  if(uploaded > 0) alert(`${uploaded} files uploaded! ✅`);
-  if(failed > 0) alert(`${failed} files failed/blocked ❌`);
-  if(uploaded > 0) loadFromDB();
+  if(uploaded > 0) { alert(`${uploaded} images saved! ✅`); loadFromDB(); }
 }
 
+// 3. DELETE: DELETE FROM DB + LOCAL
 async function deleteMedia(id, public_id) {
-   if(!confirm('Delete this file?')) return;
+   if(!confirm('Delete this image?')) return;
   await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
+
+  // DELETE FROM LOCAL TOO
+  const cached = localStorage.getItem(getLocalKey());
+  if(cached) {
+    let mediaList = JSON.parse(cached);
+    mediaList = mediaList.filter(item => item._id !== id);
+    localStorage.setItem(getLocalKey(), JSON.stringify(mediaList));
+  }
   loadFromDB();
 }
 
-function openViewer(url, type) {
-  const viewer = document.getElementById('viewer');
-  const content = document.getElementById('viewerContent');
-  if(type === 'video') {
-    content.innerHTML = `<video src="${url}" controls autoplay playsinline></video>`;
-  } else {
-    content.innerHTML = `<img src="${url}" />`;
-  }
-  viewer.style.display = 'flex';
+function openViewer(url) {
+  document.getElementById('viewerContent').innerHTML = `<img src="${url}" />`;
+  document.getElementById('viewer').style.display = 'flex';
 }
-
 function closeViewer() {
   document.getElementById('viewer').style.display = 'none';
   document.getElementById('viewerContent').innerHTML = "";
 }
-document.getElementById('viewer').addEventListener('click', (e) => {
-  if(e.target.id === 'viewer') closeViewer();
-})
 </script>
 </body>
 </html>
