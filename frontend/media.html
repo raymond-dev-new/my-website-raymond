@@ -3,7 +3,7 @@
 <head>
  
   <script>
-  const token = localStorage.getItem('token');
+ /* const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -63,7 +63,9 @@
 </div>
 
 <script>
-const API_URL = "https://my-website-raymond.vercel.app"; // CHANGE THIS
+  //https://my-website-raymond.vercel.app
+  //http://localhost:8000
+const API_URL = "http://localhost:8000"; // CHANGE THIS
 let CURRENT_USER = "";
 
 function login() {
@@ -100,7 +102,7 @@ async function loadFromDB() {
       gallery.innerHTML = `<div class="empty">No images yet.</div>`;
     }
   } catch(err) {
-    gallery.innerHTML = `<div class="empty">Can't connect to server.</div>`;
+    gallery.innerHTML = `<div class="empty">Check your internet connection.</div>`;
   }
 }
 
