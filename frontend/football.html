@@ -76,7 +76,7 @@ function getStatusBadge(match){
     if(match.minuteText === "FT") return `<span class="badge">FINISH</span>`
     return `<span class="badge live">LIVE<br>${match.minuteText}</span>`
   } 
-  if(match.status === "FINISHED") return `<span class="badge">FT</span>`
+  if(match.status === "FINISHED") return `<span class="badge">FINISH</span>`
   // Show local kickoff time
   return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
 }
