@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<script>
-   const token = localStorage.getItem('token');
-    if (!token) window.location.replace('/login.html'); 
-</script>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Media Vault - Ban Proof</title>
 <style>
@@ -31,13 +25,17 @@
   #viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 999; padding: 10px; }
   #viewerContent img { width: 100%; height: auto; max-height: 80vh; border-radius: 8px; }
   #closeBtn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-size: 28px; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; }
+  .p{
+    margin-bottom: 20px;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
 <div class="container">
   <div id="loginBox" class="box">
     <h2>Login to Vault</h2>
-    <h3> Picture Only No Upload Of Adult Videos/Porn </h3>
+    <p class="p"> Picture Only No Upload Of Adult Videos/Porn <p>
     <input type="text" id="emailInput" placeholder="Enter your email" />
     <button onclick="login()">Enter</button>
   </div>
@@ -45,7 +43,7 @@
   <div id="appBox" class="hidden">
     <h2>📁 Vault - <span id="userEmail"></span></h2>
     <div class="box">
-      <p class="warning">⚠️ Images Only. Saved to your browser + DB. Works even if Cloudinary dies.</p>
+      <p class="warning">⚠️ Picture Only No Upload Of Adult Videos/Porn </p>
       <input type="file" id="fileInput" accept="image/*" multiple />
       <button id="uploadBtn">Upload Selected</button>
       <button onclick="logout()" style="background:#555;margin-top:8px;">Logout</button>
@@ -60,18 +58,37 @@
 </div>
 
 <script>
-  //qggze1dd
-  //psqrwylq
-  //http://localhost:8000
 const CLOUD_NAME = "psqrwylq";
 const UPLOAD_PRESET = "media_vault";
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const API_URL = "https://my-website-raymond.vercel.app";
 
 let CURRENT_USER = "";
 const BANNED_WORDS = ['porn', 'xxx', 'nude', 'nsfw', 'sex', 'adult'];
 
-function getLocalKey() { return `vault_backup_${CURRENT_USER}`; } // KEY FOR LOCALSTORAGE
+function getLocalKey() { return `vault_backup_${CURRENT_USER}`; }
+
+// COMPRESS FROM URL - THIS WORKS FOR BOTH PHONE + LAPTOP
+function compressFromUrl(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous"; // important for cloudinary
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      const maxWidth = 1200;
+      if (width > maxWidth) {
+        height *= maxWidth / width;
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7)); // 8MB -> 200KB
+    };
+    img.src = url;
+  });
+}
 
 function checkFile(file) {
   if (!file.type.startsWith('image/')) { alert(`Blocked: "${file.name}" Only images allowed.`); return false; }
@@ -97,23 +114,17 @@ function logout() {
   document.getElementById('loginBox').classList.remove('hidden');
 }
 
-// 1. LOAD: FIRST TRY LOCAL, THEN FETCH FROM DB AND UPDATE LOCAL
 async function loadFromDB() {
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = `<div class="empty">Loading...</div>`;
-
-  // STEP 1: SHOW FROM LOCAL FIRST FOR SPEED
   const cached = localStorage.getItem(getLocalKey());
   if(cached) renderGallery(JSON.parse(cached));
-
   try {
     const res = await fetch(`${API_URL}/api/get-media?userId=${encodeURIComponent(CURRENT_USER)}`);
     const mediaList = await res.json();
-
-    // STEP 2: SAVE TO LOCALSTORAGE AFTER FETCH
     if(Array.isArray(mediaList)) {
-      localStorage.setItem(getLocalKey(), JSON.stringify(mediaList));
-      renderGallery(mediaList); // UPDATE UI WITH FRESH DATA
+      try { localStorage.setItem(getLocalKey(), JSON.stringify(mediaList)); } catch(e){}
+      renderGallery(mediaList);
     }
     if(mediaList.length === 0) gallery.innerHTML = `<div class="empty">No images yet.</div>`;
   } catch(err) {
@@ -125,8 +136,7 @@ async function loadFromDB() {
 function renderGallery(mediaList) {
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = mediaList.map(item => {
-    // BAN-PROOF: USE item.dataUrl IF IT EXISTS, ELSE FALLBACK TO CLOUDINARY
-    const imgUrl = item.dataUrl || getValidUrl(item); 
+    const imgUrl = item.dataUrl || getValidUrl(item);
     return `
     <div class="media-card">
       <img src="${imgUrl}" loading="lazy" onclick="openViewer('${imgUrl}')" />
@@ -139,11 +149,10 @@ function getValidUrl(item) {
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto/${item.public_id}`;
 }
 
-// 2. UPLOAD: UPLOAD TO CLOUDINARY -> DOWNLOAD IMAGE -> SAVE BASE64 TO DB + LOCAL
+// FIXED UPLOAD
 document.getElementById('uploadBtn').onclick = async () => {
   const files = document.getElementById('fileInput').files;
   if (files.length === 0) return alert("Pick images first");
-
   for(let i = 0; i < files.length; i++) { if (!checkFile(files[i])) return; }
 
   const btn = document.getElementById('uploadBtn');
@@ -159,37 +168,35 @@ document.getElementById('uploadBtn').onclick = async () => {
     formData.append('upload_preset', UPLOAD_PRESET);
 
     try {
-      // STEP 1: UPLOAD TO CLOUDINARY
+      // STEP 1: UPLOAD ORIGINAL TO CLOUDINARY - WORKS ON LAPTOP
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
       const result = await res.json();
 
       if(res.ok && result.secure_url) {
-        btn.innerText = `Saving to local ${i+1}/${files.length}...`;
-        
-        // STEP 2: DOWNLOAD IMAGE FROM CLOUDINARY AND CONVERT TO BASE64 <-- BAN PROOF
-        const imgRes = await fetch(result.secure_url);
-        const blob = await imgRes.blob();
-        const dataUrl = await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(blob);
-        });
+        btn.innerText = `Compressing ${i+1}/${files.length}...`;
 
-        // STEP 3: SEND BOTH CLOUD URL + BASE64 DATAURL TO YOUR DB
+        // STEP 2: DOWNLOAD FROM CLOUDINARY AND COMPRESS - FIXES PHONE
+        const compressedDataUrl = await compressFromUrl(result.secure_url);
+
+        btn.innerText = `Saving ${i+1}/${files.length}...`;
+        // STEP 3: SAVE COMPRESSED BASE64 + CLOUD URL TO YOUR DB
         await fetch(`${API_URL}/api/save-media`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             userId: CURRENT_USER,
-            url: result.secure_url, // cloudinary backup
-            dataUrl: dataUrl, // <-- SAVE THIS IN DB. THIS IS THE BAN-PROOF COPY
+            url: result.secure_url,
+            dataUrl: compressedDataUrl,
             type: 'image',
             public_id: result.public_id
           })
         });
         uploaded++;
+      } else {
+        console.error("Cloudinary error", result);
+        alert("Cloudinary upload failed: " + (result.error?.message || "Unknown"))
       }
-    } catch(err) { alert(`Error uploading ${file.name}`); }
+    } catch(err) { alert(`Error: ${err.message}`); }
   }
 
   document.getElementById('fileInput').value = "";
@@ -198,17 +205,14 @@ document.getElementById('uploadBtn').onclick = async () => {
   if(uploaded > 0) { alert(`${uploaded} images saved! ✅`); loadFromDB(); }
 }
 
-// 3. DELETE: DELETE FROM DB + LOCAL
 async function deleteMedia(id, public_id) {
    if(!confirm('Delete this image?')) return;
   await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
-
-  // DELETE FROM LOCAL TOO
   const cached = localStorage.getItem(getLocalKey());
   if(cached) {
     let mediaList = JSON.parse(cached);
-    mediaList = mediaList.filter(item => item._id !== id);
-    localStorage.setItem(getLocalKey(), JSON.stringify(mediaList));
+    mediaList = mediaList.filter(item => item._id!== id);
+    try { localStorage.setItem(getLocalKey(), JSON.stringify(mediaList)); } catch(e){}
   }
   loadFromDB();
 }
