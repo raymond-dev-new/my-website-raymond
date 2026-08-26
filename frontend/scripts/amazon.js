@@ -35,7 +35,7 @@ export const products = [{
 }, {
   id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
   image: 'amazon-images/men-cozy-fleece-zip-up-hoodie-red.jpg',
-  name: "Men's Full-Zip Hooded Fleece Sweatshirt",
+  name: "Men's Full-Zip Hooded Sweatshirt",
   rating:{
     stars: 4.5,
     count: 3157
@@ -188,9 +188,9 @@ export const products = [{
 
     <span class="star-icon">&#9733&#9733&#9733&#9733&#9734 <span class="count-c">${product.rating.count}</span>
     </span>
-    <a class="num" href="" >08127689541</a>
+    
     <p class="price-cents"> $${(product.pricecents / 100).toFixed(2)}</p>
-
+    <a class="num" href="" >08127689541</a>
 
      <button class="add-button js-add-to-cart" data-product-id="${product.id}"> Add to Cart </button>
     </div>
