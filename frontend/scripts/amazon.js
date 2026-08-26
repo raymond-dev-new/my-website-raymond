@@ -188,7 +188,7 @@ export const products = [{
 
     <span class="star-icon">&#9733&#9733&#9733&#9733&#9734 <span class="count-c">${product.rating.count}</span>
     </span>
-    <a href=""> Wa. 08115614822 </a>
+    <a class="count-c" href="" > Wa. 08115614822 </a>
     <p class="price-cents"> $${(product.pricecents / 100).toFixed(2)}</p>
 
 
