@@ -125,10 +125,7 @@ button:hover{
   transform: translateY(-2px);
 }
 
-/* ORANGE ADVERTISE BUTTON */
-.btn-advertise {
-  background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%) !important;
-}
+/* ORANGE ADVERTISE BUTTON *
 
 /* DEFAULT: 2 COLUMN GRID FOR PHONE */
 .grid {
@@ -313,7 +310,6 @@ button:hover{
    <div>  <button class="Calculator"> 🧮 Calculator </button> </div>
    <div>  <button class="Media"> Watch LIve Match </button> </div> 
    <div> <button class="product"> 🛍️ Shop Products </button> </div>
-   <div> <button class="advertise btn-advertise"> 📢 Advertise </button> </div>
    <div> <button class="game"> 🎮 Games </button> </div>
    <div> </div>
   </div>
@@ -350,7 +346,7 @@ button:hover{
    const game = document.querySelector('.game')
    const logout = document.querySelector('.logout')                
    const Media = document.querySelector('.Media') 
-   const advertise = document.querySelector('.advertise')
+   
       
    calculator.addEventListener('click', () => {
       window.location.href="calculate.html"
@@ -359,11 +355,9 @@ button:hover{
       window.location.href="savemainpage.html"
    })  
    product.addEventListener('click', () => {
-     window.location.href="amazon.html"
+     window.location.href="product.html"
    })
-   advertise.addEventListener('click', () => {
-     window.location.href="https://wa.me/2348115614822?text=Hello%20I%20want%20to%20advertise%20my%20products%20on%20MyPortal"
-   })
+   
    changep.addEventListener('click', () => {
      window.location.href="change.html"
    })

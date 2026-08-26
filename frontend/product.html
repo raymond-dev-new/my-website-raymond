@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ 
+   <script>
+   // This runs before the page shows
+  /* const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    }  */
+  </script>
+    
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Private Space </title>
+ <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <style>
+    
+   body {
+  background-image: url("photo_2026-07-27_08-21-15.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+h1{
+  display: grid;
+  justify-content: center;
+}
+
+h2{
+  display: grid;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  
+}
+
+button {
+  width: px;
+  font-size: 25px;
+  margin: 20px;
+  padding: 20px;
+  border-radius: 15px;
+  background-color: rgb(250, 213, 2);
+    color: white;
+    font-weight: 700;
+}
+
+button:hover{
+  background-color: rgb(103, 103, 228);
+}
+
+h1{
+  color: white;
+  font-size: 22px;
+  margin-top: 60px;
+}
+
+
+.btn-advertise {
+  background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%) !important;
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+  margin-left: 150px;
+}
+
+
+.grid {
+  display: grid;
+  align-items: center;
+  justify-content: center; 
+}
+
+.para {
+  font-size: 35px;
+  font-weight: 700;
+  margin-top: 250px;
+  text-align: center;
+  padding: 0 5%;
+}
+
+/* Laptop: 1024px and up - your original sizes */
+@media screen and (max-width: 1024px) {
+  button {
+    font-size: 22px;
+    padding: 9px;
+  }
+  .para {
+    font-size: 32px;
+    margin-top: 200px;
+  }
+
+  h1{
+  display: grid;
+  justify-content: center;
+}
+}
+
+/* Tablet: 768px to 1023px */
+@media screen and (max-width: 768px) {
+  button {
+    font-size: 20px;
+    padding: 8px;
+    margin: 6px;
+  }
+  .para {
+    font-size: 28px;
+    margin-top: 150px;
+    padding: 0 8%;
+  }
+
+  h1{
+  display: grid;
+  justify-content: center;
+}
+}
+
+/* Phone: 767px and below */
+@media screen and (max-width: 480px) {
+  button {
+    font-size: 18px;
+    padding: 8px;
+    margin: 5px;
+    width: 30%;
+    
+  }
+  .para {
+    font-size: 24px;
+    margin-top: 100px;
+    padding: 0 10%;
+  }
+  .grid {
+    width: 100%;
+  }
+
+  .buy1, .buy2, .quiz, .Calculator, .todo, .expense{
+    margin-left: 13px;
+    font-size: 16px;
+    width: 90px;
+    background-color: gold;
+    color: white;
+    font-weight: 700;
+  }
+
+  h1{
+  display: grid;
+  justify-content: center;
+}
+}
+
+.test{
+  display: flex;
+  padding: 15px;
+  justify-content: center;
+  align-items: baseline;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  height: 50px;
+  font-family: Roboto;
+}
+
+.count{
+  font-size: 10px;
+  display: grid;
+  justify-content: center;
+  margin-top: -15px;
+  margin-bottom: -15px;
+}
+
+.Note {
+  width: 100%;
+  
+}
+
+.ball{
+  width: 100%;
+  margin-top: 8px;
+}
+
+.Media{
+  width: 100%;
+  margin-top: 240px;
+}
+
+.Medial{
+  width: 90%;
+}
+
+.grid{
+  margin-top: 200px;
+}
+
+
+  </style>
+</head>
+<body>
+   
+  <div> <button class="logout"> Back </button> </div>
+ <h1> SHOP FROM US TODAY </h1>
+
+  <div class="grid">
+    
+   <span> 
+    <span> <button class="Calculator"> BUT ME </button> </span>
+   <span>  <button class="expense"> BUY ME </button> </span>
+   <span><button class="todo"> BUY ME </button></span>
+   </span>
+    
+   <span>
+    <span><button class="quiz"> BUY ME </button></span>
+    <span><button class="buy1"> BUY ME </button></span>
+    <span><button class="buy2"> BUY ME </button></span>   
+   </span>
+    
+  </div>
+     
+  
+    <div class="btn-ad"> <button class="advertise btn-advertise"> 📢 Click to place yours </button> </div>
+  
+
+  <script>
+
+   const calculator = document.querySelector('.Calculator')
+      
+         const quiz = document.querySelector('.quiz')
+            const todo = document.querySelector('.todo')
+               const expense = document.querySelector('.expense')
+                  const advertise = document.querySelector('.advertise')
+                     
+                      const logout = document.querySelector('.logout')
+    const buyo = document.querySelector('.buy1')                  
+    const buyt = document.querySelector('.buy2') 
+   
+    
+   buyo.addEventListener('click', () => {
+      window.location.href="pro1.html"
+   }) 
+
+   buyt.addEventListener('click', () => {
+      window.location.href="pro2.html"
+   }) 
+
+   quiz.addEventListener('click', () => {
+     window.location.href="pro3.html"
+   })
+
+   todo.addEventListener('click', () => {
+     window.location.href="pro4.html"
+   })
+
+   
+   expense.addEventListener('click', () => {
+     window.location.href="pro5.html"
+   })
+
+
+   calculator.addEventListener('click', () => {
+      window.location.href="pro6.html"
+   }) 
+
+   advertise.addEventListener('click', () => {
+     window.location.href="https://wa.me/2348115614822?text=Hello%20I%20want%20to%20advertise%20my%20products%20on%20MyPortal"
+   })
+
+    logout.addEventListener('click', () => {
+     window.location.href="mainpage.html"
+   })
+
+  </script>
+</body>
+</html>
