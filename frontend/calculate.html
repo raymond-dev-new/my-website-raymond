@@ -1,195 +1,177 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
    <script>
-  const token = localStorage.getItem('token');
+     const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    }
-   </script> 
-  
-  <meta charset="UTF-8">
+    } 
+   </script>
+  <title>Calculator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> CACULATOR </title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap" rel="stylesheet">
+  
   <style>
-    /* === MOBILE: 320px+ === */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background-color: #1a1a1a;
-  font-family: Arial, sans-serif;
-  padding: 20px 4%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100%;
-}
-
-html, body {
-  height: 100%;
-}
-
-.container {
-  margin-left: 0;
-  margin-top: 20px;
-  width: 100%;
-  max-width: 370px;
-}
-
-.display {
-  font-size: 28px;
-  color: white;
-  height: 70px;
-  width: 100%;
-  padding: 15px 5%;
-  border-radius: 10px;
-  background-color: rgb(39, 38, 38);
-  margin-bottom: 10px;
-  text-align: right;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
-.div {
-  width: 100%;
-  display: grid;
-  height: auto;
-  gap: 10px;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  background-color: rgb(17, 17, 17);
-  padding: 15px 4%;
-  margin-top: 0;
-  border-radius: 10px;
-  border: none;
-}
-
-button {
-  font-size: 24px;
-  background-color: rgb(56, 54, 54);
-  color: white;
-  height: 60px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
-}
-
-button:hover {
-  background-color: rgb(122, 116, 116);
-}
-
-button:active {
-  background-color: rgb(80, 78, 78);
-}
-
-.bu {
-  background-color: rgb(216, 216, 15);
-  color: #000;
-}
-
-.bu:hover {
-  background-color: rgb(240, 240, 50);
-}
-
-/* === TABLET: 600px+ === */
-@media (min-width: 600px) {
-  body {
-    align-items: center;
-  }
-
-  .container {
-    margin-top: 0;
-  }
-
-  .display {
-    font-size: 35px;
-    height: 85px;
-    padding: 18px 5%;
-  }
-
-  .div {
-    gap: 15px;
-    padding: 18px 4%;
-  }
-
-  button {
-    font-size: 32px;
-    height: 68px;
-  }
-}
-
-/* === DESKTOP: 1024px+ === */
-@media (min-width: 1024px) {
-  .display {
-    font-size: 45px;
-    height: 100px;
-    width: 374px;
-  }
-
-  .div {
-    width: 370px;
-    gap: 20px;
-    padding: 18px;
-  }
-
-  button {
-    font-size: 45px;
-    height: 75px;
-  }
-}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #000;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .calc {
+      background: #111;
+      padding: 20px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 350px;
+      margin-top: -200px;
+    }
+    
+    /* Display */
+    #display {
+      width: 100%;
+      height: 80px;
+      background: #1a1a1a;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 36px;
+      font-weight: 600;
+      text-align: right;
+      padding: 0 15px;
+      margin-bottom: 15px;
+    }
+    
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    
+    /* Buttons */
+    button {
+      height: 65px;
+      border: none;
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.1s;
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    
+    /* Numbers */
+    .num {
+      background: #2d2d2d;
+      color: white;
+    }
+    .num:hover {
+      background: #3d3d3d;
+    }
+    
+    /* Operators - Yellow */
+    .op {
+      background: #ffeb3b;
+      color: #000;
+    }
+    .op:hover {
+      background: #fdd835;
+    }
+    
+    /* Equals */
+    .eq {
+      background: #ffeb3b;
+      color: #000;
+    }
+    
+    /* Special buttons */
+    .clear, .del {
+      background: #ffeb3b;
+      color: #000;
+      font-size: 20px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-     <input class="display" readonly>
-    <div class="div">
-       <button class="bu" onclick="savebutton('+')">+</button>
-       <button onclick="savebutton('7')">7</button>
-       <button onclick="savebutton('8')">8</button>
-       <button onclick="savebutton('9')">9</button>
-       <button class="bu" onclick="savebutton('-')">-</button>
-       <button onclick="savebutton('4')">4</button>
-       <button onclick="savebutton('5')">5</button>
-       <button onclick="savebutton('6')">6</button>
-       <button class="bu" onclick="savebutton('*')">*</button>
-       <button onclick="savebutton('1')">1</button>
-       <button onclick="savebutton('2')">2</button>
-       <button onclick="savebutton('3')">3</button>
-       <button class="bu" onclick="savebutton('/')">/</button>
-       <button onclick="savebutton('0')">0</button>
-       <button onclick="savebutton('.')">.</button>
-       <button onclick="caculate()">=</button>
-       <button class="bu" onclick="cleared()">C</button>
-    </div> 
+  <div class="calc">
+    <input type="text" id="display" readonly>
+    
+    <div class="grid">
+      <button class="op" onclick="append('+')">+</button>
+      <button class="num" onclick="append('7')">7</button>
+      <button class="num" onclick="append('8')">8</button>
+      <button class="num" onclick="append('9')">9</button>
+      
+      <button class="op" onclick="append('-')">-</button>
+      <button class="num" onclick="append('4')">4</button>
+      <button class="num" onclick="append('5')">5</button>
+      <button class="num" onclick="append('6')">6</button>
+      
+      <button class="op" onclick="append('*')">*</button>
+      <button class="num" onclick="append('1')">1</button>
+      <button class="num" onclick="append('2')">2</button>
+      <button class="num" onclick="append('3')">3</button>
+      
+      <button class="op" onclick="append('/')">/</button>
+      <button class="num" onclick="append('0')">0</button>
+      <button class="num" onclick="append('.')">.</button>
+      <button class="eq" onclick="calculate()">=</button>
+      
+      <button class="del" onclick="deleteOne()">DEL</button>
+      <button class="clear" onclick="clearAll()">C</button>
+    </div>
   </div>
 
   <script>
-   const display = document.querySelector('.display')
-
-  function savebutton(input) {
-     display.value += input;
-  }
-
-   function cleared() {
-    display.value = "";
-  }
-
-  function caculate() {
-
-    try {
-      display.value = eval(display.value)
-    } catch (err) {
-      display.value = 'Error';
+    const display = document.getElementById('display');
+    
+    // LOAD from localStorage when page opens
+    window.onload = () => {
+      const saved = localStorage.getItem('calcValue');
+      if(saved) display.value = saved;
     }
-  
-  }
-
+    
+    function append(val) {
+      display.value += val;
+      saveToLocal();
+    }
+    
+    function calculate() {
+      try {
+        display.value = eval(display.value);
+        saveToLocal(); // SAVE result
+      } catch {
+        display.value = 'Error';
+        setTimeout(() => { display.value = ''; }, 1000);
+      }
+    }
+    
+    // NEW: Delete one character
+    function deleteOne() {
+      display.value = display.value.slice(0, -1);
+      saveToLocal();
+    }
+    
+    // NEW: Clear all
+    function clearAll() {
+      display.value = '';
+      localStorage.removeItem('calcValue'); // CLEAR storage too
+    }
+    
+    function saveToLocal() {
+      localStorage.setItem('calcValue', display.value);
+    }
   </script>
 </body>
 </html>
