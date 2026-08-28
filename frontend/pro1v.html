@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    // This runs before the page shows
+       const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    }
+  </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Video Ads - MyPortal</title>
