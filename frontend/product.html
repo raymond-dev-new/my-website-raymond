@@ -4,7 +4,7 @@
  
    <script>
    // This runs before the page shows
-   const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -65,7 +65,9 @@ h1{
   margin-bottom: -100px;
 }
 
-
+.div{
+  margin-top: 30px;
+}
 
 .btn-advertise {
   background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%) !important;
@@ -158,10 +160,6 @@ h1{
     
   }
 
-  .span{
-  margin-top: 30px;
-}
-
 .buy1, .buy2, .quiz{
    margin-left: 13px;
     font-size: 15px;
@@ -177,6 +175,16 @@ h1{
     font-size: 15px;
     width: 90px;
     background-color: blue;
+    color: white;
+    font-weight: 700;
+    margin-top: px;
+}
+
+.buy6, .buy7, .buy8{
+    margin-left: 13px;
+    font-size: 15px;
+    width: 90px;
+    background-color: green;
     color: white;
     font-weight: 700;
     margin-top: px;
@@ -259,6 +267,12 @@ h1{
     <span><button class="buy5"> FOR SALE </button></span>   
    </span>
     
+
+   <div class="div">
+    <span><button class="buy6"> Video Advert </button></span>
+    <span><button class="buy7"> Video Advert </button></span>
+    <span><button class="buy8"> Video Advert </button></span> 
+   </div>
   </div>
      
   
@@ -272,16 +286,32 @@ h1{
          const quiz = document.querySelector('.quiz')
             const todo = document.querySelector('.todo')
                const expense = document.querySelector('.expense')
-                  const advertise = document.querySelector('.advertise')
-                     
+                  const advertise = document.querySelector('.advertise')                     
                       const logout = document.querySelector('.logout')
     const buyo = document.querySelector('.buy1')                  
     const buyt = document.querySelector('.buy2') 
     const buyth = document.querySelector('.buy3')                  
     const buyf = document.querySelector('.buy4') 
     const buyfi = document.querySelector('.buy5') 
+     const buyv1 = document.querySelector('.buy6')                  
+    const buyv2 = document.querySelector('.buy7') 
+    const buyv3 = document.querySelector('.buy8') 
    
     
+
+
+     buyv1.addEventListener('click', () => {
+      window.location.href="prov1.html"
+   }) 
+
+   buyv2.addEventListener('click', () => {
+      window.location.href="prov2.html"
+   })
+   
+   buyv3.addEventListener('click', () => {
+      window.location.href="prov3.html"
+   }) 
+
    buyo.addEventListener('click', () => {
       window.location.href="pro1.html"
    }) 
@@ -322,7 +352,7 @@ h1{
    }) 
 
    advertise.addEventListener('click', () => {
-     window.location.href="https://wa.me/2348115614822?text=Hello%20I%20want%20to%20advertise%20my%20products%20on%2Your website"
+     window.location.href="https://wa.me/2347050472675?text=Hello%20I%20want%20to%20advertise%20my%20products%20on%2Your website"
    })
 
     logout.addEventListener('click', () => {

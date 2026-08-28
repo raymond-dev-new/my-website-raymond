@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Ads - MyPortal</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{
+  font-family:Roboto;
+  background:#000;
+  color:white;
+ }
+ h1{
+  text-align:center;
+  color:#FFD700;
+  padding:15px;
+  font-size:20px;
+  background:rgba(0,0,0,0.9);
+  position:sticky;
+  top:0;
+  z-index:10;
+ }
+ 
+ /* MOBILE: 90% width */
+ .grid{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  padding:15px 0;
+ }
+ .video-card{
+  width:90%; /* 90% on small screen */
+  max-width:500px;
+  background:#111;
+  border-radius:15px;
+  overflow:hidden;
+  box-shadow:0 4px 15px rgba(255,140,0,0.2);
+ }
+ 
+ /* PERFECT HEIGHT: 48vh */
+ video{
+  width:100%;
+  height: 48vh; /* CHANGED */
+  object-fit: cover;
+  display:block;
+  background:#000;
+ }
+ 
+ .info{
+  padding:15px;
+  background:#111;
+ }
+ .info h3{
+  margin:8px 0;
+  color:#FFD700;
+  font-size:20px;
+  font-weight:900;
+ }
+ .info p{
+  margin:5px 0;
+  font-size:14px;
+  color:#ddd;
+ }
+ .btn{
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
+  font-weight:900;
+  font-size:16px;
+  cursor:pointer;
+ }
+ .btn-whatsapp{
+  background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);
+  color:white
+ }
+ .btn-call{
+  background:linear-gradient(135deg,#1BB11B 0%,#0D8B0D 100%);
+  color:white
+ }
+
+ /* BIG SCREEN: 2 COLUMNS */
+ @media(min-width:900px){
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    max-width:1200px;
+    margin:0 auto;
+    padding:20px;
+    gap:25px;
+  }
+  .video-card{
+    width:100%;
+    max-width:100%;
+  }
+  video{
+    height: 35vh; /* desktop smaller */
+    border-radius:15px 15px 0 0;
+  }
+ }
+</style>
+</head>
+<body>
+
+<h1>🔥 Featured Product Videos</h1>
+<div id="videoGrid" class="grid"></div>
+
+<script>
+// ===== ONLY YOU EDIT THIS PART =====
+const videoList = [
+  {
+    title: "Nike Air Max Shoes",
+    vendor: "Emeka Stores",
+    desc: "Original Nike Air Max. Size 40-45. Very durable and comfortable.",
+    phone: "08115614822",
+    video: "https://res.cloudinary.com/demo/video/upload/dog.mp4"
+  }
+];
+// ===== STOP EDITING HERE =====
+
+const grid = document.getElementById('videoGrid');
+
+if(videoList.length === 0){
+  grid.innerHTML = "<p style='text-align:center;padding:30px;width:100%'>No videos yet. Check back later</p>"
+} else {
+  grid.innerHTML = videoList.map(v => `
+    <div class="video-card">
+      <video src="${v.video}" controls playsinline></video>
+      <div class="info">
+        <h3>${v.title}</h3>
+        <p><b>Vendor:</b> ${v.vendor}</p>
+        <p>${v.desc}</p>
+        <button class="btn btn-whatsapp" onclick="window.open('https://wa.me/234${v.phone.replace(/^0/,'')}','_blank')">
+          📲 WhatsApp ${v.vendor}
+        </button>
+        <button class="btn btn-call" onclick="window.location='tel:${v.phone}'">
+          📞 Call ${v.phone}
+        </button>
+      </div>
+    </div>
+  `).join('')
+}
+</script>
+</body>
+</html>
