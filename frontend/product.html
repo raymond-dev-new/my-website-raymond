@@ -351,10 +351,25 @@ h1{
       window.location.href="pro6.html"
    }) 
 
-   advertise.addEventListener('click', () => {
-     window.location.href="https://wa.me/2347050472675?text=Hello%20I%20want%20to%20advertise%20my%20products%20on%2Your website"
-   })
+ /*  advertise.addEventListener('click', () => {
+     window.location.href="https://wa.me/2349014805738?"
+   }) */
 
+ advertise.addEventListener('click', () => {
+  const phone = "2349014805738"; // Your manager number
+  const message = `Hello, Thanks for advertising with us
+    Make payment to this account NUM only
+    8115614822
+    Palmpay Progress
+    .............
+    This is my manager WhatsApp number, if you have any issues with my manager or delay to post your products this is my WhatsApp number message me directly +2347050472675
+    Thanks for running ads with us`;
+
+  const encodedMessage = encodeURIComponent(message);
+  window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`
+});
+
+//text=Hello%20I%20want%20to%20advertise%20my%20products%20on%2Your website
     logout.addEventListener('click', () => {
      window.location.href="mainpage.html"
    })
