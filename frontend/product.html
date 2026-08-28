@@ -357,13 +357,14 @@ h1{
 
  advertise.addEventListener('click', () => {
   const phone = "2349014805738"; // Your manager number
-  const message = `Hello, Thanks for advertising with us
-    Make payment to this account NUM only
-    8115614822
-    Palmpay Progress
-    .............
-    This is my manager WhatsApp number, if you have any issues with my manager or delay to post your products this is my WhatsApp number message me directly +2347050472675
-    Thanks for running ads with us`;
+  const message = `
+Hello, Thanks for advertising with us
+Make payment to this account NUM only
+8115614822
+Palmpay Progress
+.............
+This is my manager WhatsApp number, if you have any issues with my manager or delay to post your products this is my WhatsApp number message me directly +2347050472675
+Thanks for running ads with us`;
 
   const encodedMessage = encodeURIComponent(message);
   window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`
