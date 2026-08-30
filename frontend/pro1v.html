@@ -3,7 +3,7 @@
 <head>
   <script>
     // This runs before the page shows
-       const token = localStorage.getItem('token');
+      /* const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -127,6 +127,7 @@ const videoList = [
     desc: "Size 40-45. ",
     phone: "07050472675",
     video: "pictures/video_2026-08-30_16-51-05.mp4"
+
   }
 ];
 // ===== STOP EDITING HERE =====
@@ -143,6 +144,7 @@ if(videoList.length === 0){
         <h3>${v.title}</h3>
         <p><b>Vendor:</b> ${v.vendor}</p>
         <p>${v.desc}</p>
+        <div> {expired on: september 7} </div>
         <button class="btn btn-whatsapp" onclick="window.open('https/wa.me/234${v.phone.replace(/^0/,'')}','_blank')">
           📲 WhatsApp ${v.vendor}
         </button>
