@@ -33,7 +33,7 @@
 }
 
 .images-order {
-  height: 200px;
+  height: 250px;
   width: 230px;
   margin-bottom: 20px;
 }
@@ -42,13 +42,19 @@
   display: grid;
   font-family: Roboto;
   font-size: 15px;
-  width: 180px;
+  
   margin-left: 30px;
 }
 
+.date{
+  font-family: Roboto;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
 .order-name {
   margin: 0;
-  font-size: 30px;
+  font-size: 40px;
   font-weight: 700;
   font-family: Roboto;
   margin-bottom: 5px;
@@ -59,7 +65,7 @@
   margin: 0;
   margin-bottom: 5px;
   margin-top: 5px;
-   font-size: 30px;
+   font-size: 40px;
   font-weight: 700;
   font-family: Roboto;
 }
@@ -237,11 +243,11 @@
     row-gap: 40px;
   }
   .images-order {
-    height: 150px;
-    width: 175px;
+    height: 240px;
+    width: 100%px;
   }
   .paragraph-div {
-    width: 240px;
+    width: 300px;
     font-size: 14px;
     
   }
@@ -525,7 +531,7 @@
     </span>
     
     <p class="price-cents"> ${(product.pricecents).toFixed(3)}</p>
-    <div> {expired on: september 7} </div>
+    <div class="date"> {expired on: september 7} </div>
 
      <button class="add-button js-add-to-cart" data-product-id="${product.id}"> Shop Products </button>
     </div>
