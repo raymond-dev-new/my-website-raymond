@@ -1,397 +1,310 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SewLab Layering</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial;background:#2e333b;overflow-y:auto}
-header{height:40px;padding:0 3%;display:flex;align-items:center;background:#40454f;position:sticky;top:0;z-index:5}
-.logo{font-weight:bold;color:#e65a9d;font-size:13px}
-.section{padding:6px 3%}
-.glass{background:#40454f;border-radius:10px;padding:8px;margin-bottom:6px;border:1px solid #596071}
-h2{font-size:14px;color:#e65a9d;margin-bottom:4px}
-h3{font-size:11px;color:#bfc7db;margin:4px 0 3px;font-weight:600}
-.layout{display:flex;flex-direction:column;gap:6px}
-#designCanvas{width:100%;height:120px;max-height:22vh;background:#262a30;border:2px solid #596071;border-radius:8px;display:block;touch-action:none}
-input,select{width:100%;padding:7px;border:2px solid #666e8c;border-radius:6px;margin-bottom:4px;font-size:11px;background:#33373f;color:#d9e0ef}
-button{border:0;cursor:pointer;border-radius:6px;font-weight:bold;font-size:11px;padding:8px;width:100%;margin-bottom:4px}
-.btn-main{background:linear-gradient(90deg,#d94c99,#cc40d9);color:#fff}
-.btn-tool{padding:5px 1px;background:#4d525f;color:#bfc7db;font-size:7px;border:1px solid #666e8c;min-height:30px}
-.btn-tool:hover{background:#8cc4ff;color:#0d80cc}
-.toolbar{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
-.templates{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
-.template-btn{padding:6px;background:#4d525f;border:1px solid #666e8c;border-radius:6px;font-size:9px;text-align:center;cursor:pointer;color:#bfc7db}
-.template-btn:hover{background:#8cc4ff;color:#0d80cc}
-.color-row{display:flex;gap:4px}
-.color-row input{width:35px;height:30px;padding:1px;margin:0}
-.color-row button{flex:1}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:5px}
-.card{position:relative;background:#40454f;border-radius:8px;overflow:hidden;border:1px solid #596071}
-.card img{width:100%;height:100px;object-fit:cover;cursor:pointer}
-.card-actions{display:flex;gap:2px}
-.btn-add{background:#5abf66;color:#fff;font-size:6px;padding:2px;margin-bottom:0;flex:1}
-.btn-add2{background:#0da6e6;color:#fff;font-size:6px;padding:2px;margin-bottom:0;flex:1}
-.btn-cap{background:#cc40d9;color:#fff;font-size:6px;padding:2px;margin-bottom:0;flex:1}
-.delete-btn{position:absolute;top:2px;right:2px;width:18px;height:18px;padding:0;background:#e64c4c;color:#fff;border-radius:50%;z-index:2;font-size:8px}
-.empty{text-align:center;padding:10px;color:#99a1b3;font-size:10px}
-
-/* ADDED ONLY: WIDE SAVED ITEM */
-#wideView{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:12px}
-.wideBox{width:96vw;max-width:900px;background:#40454f;border:1px solid #596071;border-radius:10px;padding:10px}
-.wideBox img{width:100%;max-height:75vh;object-fit:contain;background:#262a30;border-radius:8px;display:block}
-.wideName{text-align:center;color:#e65a9d;font-size:13px;font-weight:bold;padding:6px}
-.wideClose{background:#e64c4c;color:#fff}
-</style>
-</head>
-<body>
-
-<header><div class="logo">SewLab Layering ✂️</div></header>
-
-<section class="section"><div class="glass">
-<h2>Design Studio</h2>
-<div class="layout">
-
-<div>
-<h3>Your Canvas</h3><canvas id="designCanvas"></canvas>
-</div>
-
-<div>
-<h3>1. Pick Type</h3>
-<select id="itemCategory">
-<option>Dress</option>
-<option>Top</option>
-<option>Bottom</option>
-<option>Cap</option>
-</select>
-
-<h3>2. Pick Template</h3>
-<div class="templates" id="templateArea"></div>
-
-<h3>3. Pick Color</h3>
-<div class="color-row">
-<input type="color" id="colorPicker" value="#ec4899">
-<button onclick="color()">APPLY</button>
-</div>
-
-<h3>4. Tools</h3>
-<div class="toolbar">
-<button class="btn-tool" data-t="recolor">Recolor</button>
-<button class="btn-tool" data-t="fabric">Fabric</button>
-<button class="btn-tool" data-t="pattern">Pattern</button>
-<button class="btn-tool" data-t="neck">Neck</button>
-<button class="btn-tool" data-t="length">Length</button>
-<button class="btn-tool" data-t="sleeve">Bubba</button>
-<button class="btn-tool" data-t="pocket">Pocket</button>
-<button class="btn-tool" data-t="belt">Belt</button>
-<button class="btn-tool" data-t="zipper">Zipper</button>
-<button class="btn-tool" data-t="lace">Lace</button>
-<button class="btn-tool" data-t="flower">Flower</button>
-<button class="btn-tool" data-t="frills">Frills</button>
-<button class="btn-tool" data-t="collar">Collar</button>
-<button class="btn-tool" data-t="buttons">Buttons</button>
-<button class="btn-tool" data-t="pleats">Pleats</button>
-<button class="btn-tool" data-t="ankara">Ankara</button>
-<button class="btn-tool" data-t="ruffle">Ruffle</button>
-<button class="btn-tool" data-t="bright">Bright</button>
-<button class="btn-tool" data-t="contrast">Contrast</button>
-<button class="btn-tool" data-t="blur">Blur</button>
-<button class="btn-tool" data-t="shadow">Shadow</button>
-<button class="btn-tool" data-t="glow">Glow</button>
-<button class="btn-tool" data-t="text">Text</button>
-<button class="btn-tool" data-t="clear">Clear</button>
-<button class="btn-tool" id="undo">Undo</button>
-</div>
-
-<input id="itemName" placeholder="Name: Royal Gown">
-<button class="btn-main" id="save">Save</button>
-<button class="btn-main" id="clear" style="background:#f27f33">CLEAR</button>
-
-</div></div></div></section>
-
-<section class="section"><div class="glass">
-<h2>My Collection</h2><div id="wardrobe" class="cards"></div>
-</div></section>
-
-<!-- ADDED ONLY: WIDE VIEW -->
-<div id="wideView" onclick="closeWide()">
-<div class="wideBox" onclick="event.stopPropagation()">
-<div class="wideName" id="wideName"></div>
-<img id="wideImage">
-<button class="wideClose" onclick="closeWide()">CLOSE</button>
-</div>
-</div>
+<!DOCTYPE html><html lang="en"><head>
+  <script>
+  const tokenN = localStorage.getItem('token');
+    if (!tokenN) {
+      window.location.replace('/login.html');
+    }
+    </script>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>SewLab Layering</title><style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:Arial;background:#252a31;color:#e8edf7;padding-bottom:12px}button,input,select{font:inherit;touch-action:manipulation}button{cursor:pointer}header{height:38px;background:#3c424c;display:flex;align-items:center;padding:0 9px;position:sticky;top:0;z-index:20;border-bottom:1px solid #555d6c}.logo,h2,.sel{color:#ed5da5;font-weight:bold}.logo{font-size:13px}.section{padding:5px 7px}.box{background:#373d47;border:1px solid #515969;border-radius:9px;padding:7px;margin-bottom:5px;box-shadow:0 2px 7px #0004}h2{font-size:13px;margin-bottom:5px}h3{font-size:9px;color:#b9c2d5;margin:5px 0 3px}#c{width:90%;height:145px;display:block;margin:auto;background:#20242a;border:2px solid #586174;border-radius:8px;touch-action:none}input,select{width:100%;height:29px;background:#2d323a;color:#eee;border:1px solid #606a80;border-radius:5px;padding:4px 6px;font-size:10px;margin-bottom:4px}.row{display:flex;gap:3px}.row input{width:38px;margin:0}.main{width:100%;height:30px;margin-bottom:4px;border-radius:5px;background:linear-gradient(90deg,#e64f9e,#c946dc);color:#fff;font-size:9px;border:0}.clear{background:#ef7438!important}.templates,.clothes,.controls,.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}.template,.cloth,.control,.tool{height:29px;padding:2px;background:linear-gradient(145deg,#515a69,#3e4551);color:#fff;border:1px solid #687286;border-radius:5px;font-size:7px}.template:active,.cloth:active,.control:active,.tool:active,.acts button:active,.main:active{background:#d94c99!important;transform:scale(.96)}.sel{text-align:center;font-size:9px;margin:4px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.card{background:#303640;border:1px solid #515a6b;border-radius:7px;overflow:hidden;position:relative}.card img{width:100%;height:80px;object-fit:cover;display:block;cursor:pointer}.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px}.acts button{height:21px;color:#fff;font-size:6px;border:0;border-radius:4px}.top{background:#54bd67}.bottom{background:#159fe0}.cap{background:#c344d2}.del{position:absolute;right:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#e84e50;color:#fff;font-size:10px;z-index:3;border:0}.empty{text-align:center;color:#929bad;font-size:9px;padding:10px}#wide{display:none;position:fixed;inset:0;background:#000e;z-index:9999;align-items:center;justify-content:center;padding:10px}.widebox{width:min(96vw,700px);max-height:96vh;background:#383e48;border:1px solid #626b7d;border-radius:10px;padding:8px;display:flex;flex-direction:column;overflow:hidden}.wname{text-align:center;color:#ed61a8;font-weight:bold;font-size:14px;padding:7px}.wideimg{width:100%;flex:1;min-height:0;background:#20242a;border-radius:7px;display:flex;align-items:center;justify-content:center;overflow:auto}.widebox img{display:block;width:100%;height:auto;max-height:78vh;object-fit:contain;border-radius:7px}.close{width:100%;height:32px;margin-top:7px;background:#e84d4d;color:#fff;font-size:10px;border:0;border-radius:5px}
+</style></head><body><header><div class="logo">✂️ SewLab Layering</div></header><section class="section"><div class="box"><h2>🎨 Design Studio</h2><h3>Your Canvas</h3><canvas id="c"></canvas><h3>1. Pick Type</h3><select id="cat"><option>Dress</option><option>Top</option><option>Bottom</option><option>Cap</option></select><h3>2. Pick Template</h3><div class="templates" id="temps"></div><h3>3. Pick Color</h3><div class="row"><input type="color" id="color" value="#ec4899"><button class="main" style="margin:0" onclick="applyColor()">🎨 APPLY</button></div><h3>4. Add Clothing</h3><div class="clothes"><button class="cloth" onclick="add('cap')">🧢 CAP</button><button class="cloth" onclick="add('shirt')">👕 SHIRT</button><button class="cloth" onclick="add('trousers')">👖 TROUSER</button><button class="cloth" onclick="add('nikka')">🩳 NIKKA</button><button class="cloth" onclick="add('gown')">👗 GOWN</button></div><div class="sel">Selected: <span id="selected">NONE</span></div><h3>5. Move / Resize Selected</h3><div class="controls"><button class="control" onclick="move(-5,0)">⬅ LEFT</button><button class="control" onclick="move(5,0)">RIGHT ➡</button><button class="control" onclick="move(0,-5)">⬆ UP</button><button class="control" onclick="move(0,5)">⬇ DOWN</button><button class="control" onclick="resize(-.1)">➖ SMALL</button><button class="control" onclick="resize(.1)">➕ BIG</button><button class="control" onclick="rotate(-5)">↶ ROTATE</button><button class="control" onclick="rotate(5)">↷ ROTATE</button></div><h3>6. Select Clothing</h3><div class="controls"><button class="control" onclick="selectPart('cap')">🧢 CAP</button><button class="control" onclick="selectPart('shirt')">👕 SHIRT</button><button class="control" onclick="selectPart('trousers')">👖 TROUSER</button><button class="control" onclick="selectPart('nikka')">🩳 NIKKA</button><button class="control" onclick="selectPart('gown')">👗 GOWN</button></div><h3>7. Design Tools</h3><div class="tools"><button class="tool" onclick="tool('recolor')">🎨 Color</button><button class="tool" onclick="tool('fabric')">🧵 Fabric</button><button class="tool" onclick="tool('pattern')">🔷 Pattern</button><button class="tool" onclick="tool('neck')">◯ Neck</button><button class="tool" onclick="tool('length')">↕ Length</button><button class="tool" onclick="tool('sleeve')">👕 Sleeve</button><button class="tool" onclick="tool('pocket')">▣ Pocket</button><button class="tool" onclick="tool('belt')">▱ Belt</button><button class="tool" onclick="tool('zipper')">│ Zipper</button><button class="tool" onclick="tool('lace')">〰 Lace</button><button class="tool" onclick="tool('flower')">🌸 Flower</button><button class="tool" onclick="tool('frills')">〰 Frills</button><button class="tool" onclick="tool('collar')">♢ Collar</button><button class="tool" onclick="tool('buttons')">⚪ Buttons</button><button class="tool" onclick="tool('pleats')">▥ Pleats</button><button class="tool" onclick="tool('ankara')">✦ Ankara</button><button class="tool" onclick="tool('ruffle')">〰 Ruffle</button><button class="tool" onclick="tool('bright')">☀ Bright</button><button class="tool" onclick="tool('contrast')">◐ Contrast</button><button class="tool" onclick="tool('blur')">◌ Blur</button><button class="tool" onclick="tool('shadow')">◒ Shadow</button><button class="tool" onclick="tool('glow')">✧ Glow</button><button class="tool" onclick="tool('text')">T Text</button><button class="tool" onclick="undo()">↩ Undo</button><button class="tool" onclick="clearTools()">✕ Clear</button></div><input id="name" placeholder="Name your design, e.g. Royal Gown"><button class="main" onclick="saveDesign()">💾 SAVE DESIGN</button><button class="main clear" onclick="clearAll()">🗑 CLEAR CANVAS</button></div></section><section class="section"><div class="box"><h2>👗 My Collection</h2><div id="wardrobe" class="cards"></div></div></section><div id="wide" onclick="closeWide()"><div class="widebox" onclick="event.stopPropagation()"><div class="wname" id="wname"></div><div class="wideimg"><img id="wimg" alt="Saved design"></div><button class="close" onclick="closeWide()">CLOSE</button></div></div>
 
 <script>
-const $=x=>document.getElementById(x),c=$("designCanvas"),x=c.getContext("2d");
-let hist=[],pos=-1,colorNow="#ec4899";
-const STORAGE_KEY = "sewlab_collection";
+const $=id=>document.getElementById(id),c=$("c"),x=c.getContext("2d"),KEY="sewlab_collection_v2";
+let col="#ec4899",sel=null,h=[],hp=-1,parts={cap:null,shirt:null,trousers:null,nikka:null,gown:null};
+const empty=()=>({cap:null,shirt:null,trousers:null,nikka:null,gown:null});
 
-function blank(){x.fillStyle="#262a30";x.fillRect(0,0,c.width,c.height)}
-function size(){c.width=c.offsetWidth;c.height=120;blank()}
-size();
-
-function saveH(){
- let a=c.toDataURL();
- if(hist[pos]===a)return;
- hist=hist.slice(0,pos+1);hist.push(a);
- if(hist.length>50)hist.shift();
- pos=hist.length-1;$("undo").disabled=pos<1;
+function getSaved(){
+ try{
+  const v=localStorage.getItem(KEY);
+  if(!v)return[];
+  const a=JSON.parse(v);
+  return Array.isArray(a)?a:[];
+ }catch(e){
+  console.log("LocalStorage error:",e);
+  return[]
+ }
 }
 
-function put(a){
- let i=new Image;
- i.onload=()=>{x.clearRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height)};
- i.src=a;
+function init(){
+ c.width=Math.max(1,c.clientWidth);c.height=145;
+ blank();templates();load();snap();
+}
+document.addEventListener("DOMContentLoaded",init); // Make sure DOM loads first
+
+window.addEventListener("load",load);
+window.addEventListener("pageshow",load);
+
+window.addEventListener("resize",()=>{
+ let a=c.toDataURL(),i=new Image;
+ c.width=Math.max(1,c.clientWidth);c.height=145;blank();
+ i.onload=()=>x.drawImage(i,0,0,c.width,c.height);i.src=a
+});
+
+function blank(){x.fillStyle="#20242a";x.fillRect(0,0,c.width,c.height)}
+
+function snap(){
+ let a=c.toDataURL();
+ if(h[hp]===a)return;
+ h=h.slice(0,hp+1);h.push(a);
+ if(h.length>40)h.shift();
+ hp=h.length-1
 }
 
 function undo(){
- if(pos<1)return alert("Nothing to undo");
- pos--;put(hist[pos]);$("undo").disabled=pos<1;
+ if(hp<1)return alert("Nothing to undo");
+ hp--;
+ let i=new Image;
+ i.onload=()=>{x.clearRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height)};
+ i.src=h[hp]
 }
 
-$("undo").onclick=undo;
-blank();saveH();
-
-$("colorPicker").oninput=e=>colorNow=e.target.value;
-
-function color(){
- saveH();
- x.globalCompositeOperation="source-atop";
- x.fillStyle=colorNow;
- x.fillRect(0,0,c.width,c.height);
- x.globalCompositeOperation="source-over";
- saveH();
-}
-
-/* CAP ADDED ONLY */
-const temps={
- Dress:[["Ball","ball"],["A-Line","aline"],["Mermaid","mermaid"],["Mumu","mumu"]],
- Top:[["Shirt","shirt"],["Crop","crop"],["Blouse","blouse"]],
- Bottom:[["Trouser","trouser"],["Nikka","nikka"],["Jeans","jeans"]],
- Cap:[["Cap","cap"],["Flat Cap","flatcap"],["Bucket Cap","bucket"]]
-};
-
-function templates(){
- $("templateArea").innerHTML=temps[$("itemCategory").value]
- .map(t=>`<div class="template-btn" onclick="template('${t[1]}')">${t[0]}</div>`).join("");
-}
-
-$("itemCategory").onchange=templates;
-templates();
-
-function template(t){
- saveH();blank();x.fillStyle=colorNow;let w=c.width/2;
-
- if(t==="ball"){x.beginPath();x.moveTo(w-16,16);x.quadraticCurveTo(w,13,w+16,16);x.lineTo(w+32,c.height-13);x.quadraticCurveTo(w,c.height-8,w-32,c.height-13);x.closePath();x.fill()}
- if(t==="aline"){x.beginPath();x.moveTo(w-13,16);x.quadraticCurveTo(w,13,w+13,16);x.lineTo(w+24,c.height-13);x.lineTo(w-24,c.height-13);x.closePath();x.fill()}
- if(t==="mermaid"){x.beginPath();x.moveTo(w-12,16);x.quadraticCurveTo(w,13,w+12,16);x.lineTo(w+14,c.height-40);x.lineTo(w+24,c.height-13);x.lineTo(w-24,c.height-13);x.lineTo(w-14,c.height-40);x.closePath();x.fill()}
- if(t==="mumu"){x.beginPath();x.moveTo(w-13,16);x.lineTo(w+13,16);x.lineTo(w+26,c.height-13);x.lineTo(w-26,c.height-13);x.closePath();x.fill()}
- if(t==="shirt"){x.fillRect(w-18,16,36,40);sleeves()}
- if(t==="crop")x.fillRect(w-16,16,32,22);
- if(t==="blouse")x.fillRect(w-20,16,40,35);
- if(t==="trouser"){x.fillRect(w-12,52,24,5);x.fillRect(w-11,57,7,40);x.fillRect(w+4,57,7,40)}
- if(t==="nikka"){x.fillRect(w-15,52,30,5);x.fillRect(w-14,57,10,33);x.fillRect(w+4,57,10,33)}
- if(t==="jeans"){x.fillRect(w-10,52,20,5);x.fillRect(w-9,57,5,40);x.fillRect(w+4,57,5,40)}
-
- /* CAP TEMPLATES ONLY */
- if(t==="cap"){
-  x.beginPath();
-  x.arc(w,40,22,Math.PI,0);
-  x.lineTo(w+22,40);
-  x.quadraticCurveTo(w,50,w-22,40);
-  x.closePath();
-  x.fill();
-  x.beginPath();
-  x.ellipse(w+15,46,23,6,0,0,Math.PI*2);
-  x.fill();
- }
-
- if(t==="flatcap"){
-  x.beginPath();
-  x.moveTo(w-23,40);
-  x.quadraticCurveTo(w,18,w+20,37);
-  x.quadraticCurveTo(w+23,44,w-23,40);
-  x.fill();
-  x.beginPath();
-  x.ellipse(w+13,45,21,5,0,0,Math.PI*2);
-  x.fill();
- }
-
- if(t==="bucket"){
-  x.beginPath();
-  x.moveTo(w-17,20);
-  x.lineTo(w+17,20);
-  x.lineTo(w+24,48);
-  x.lineTo(w-24,48);
-  x.closePath();
-  x.fill();
-  x.beginPath();
-  x.ellipse(w,49,27,6,0,0,Math.PI*2);
-  x.fill();
- }
-
- saveH();
-}
-
-function sleeves(){
+function pos(t){
  let w=c.width/2;
- x.beginPath();x.moveTo(w-18,16);x.lineTo(w-25,16);x.lineTo(w-32,52);x.lineTo(w-18,52);x.closePath();x.fill();
- x.beginPath();x.moveTo(w+18,16);x.lineTo(w+25,16);x.lineTo(w+32,52);x.lineTo(w+18,52);x.closePath();x.fill();
+ return{x:w,y:t==="cap"?38:t==="shirt"?50:72}
+}
+
+function add(t){
+ let p=pos(t);
+ parts[t]={type:t,x:p.x,y:p.y,s:1,r:0,color:col,decor:[]};
+ sel=t;update();render();snap()
+}
+
+function selectPart(t){
+ if(!parts[t])return alert("Add the "+t+" first");
+ sel=t;update()
+}
+
+function update(){$("selected").textContent=sel?sel.toUpperCase():"NONE"}
+
+function move(a,b){
+ if(!sel)return alert("Select clothing first");
+ parts[sel].x+=a;parts[sel].y+=b;render();snap()
+}
+
+function resize(v){
+ if(!sel)return alert("Select clothing first");
+ let p=parts[sel];p.s=Math.max(.25,Math.min(3,p.s+v));render();snap()
+}
+
+function rotate(v){
+ if(!sel)return alert("Select clothing first");
+ parts[sel].r+=v;render();snap()
+}
+
+function applyColor(){
+ col=$("color").value;
+ if(sel){parts[sel].color=col;render()}
+ else{x.fillStyle=col;x.fillRect(0,0,c.width,c.height)}
+ snap()
+}
+
+function drawBase(p){
+ x.fillStyle=p.color;x.strokeStyle="#ffffff44";x.lineWidth=1;
+ if(p.type==="cap"){
+  x.beginPath();x.arc(0,-10,22,Math.PI,0);x.lineTo(22,-10);x.quadraticCurveTo(0,3,-22,-10);x.closePath();x.fill();
+  x.beginPath();x.ellipse(14,-1,25,5,0,0,Math.PI*2);x.fill()
+ }
+ if(p.type==="shirt"){
+  x.fillRect(-27,-35,54,58);
+  x.beginPath();x.moveTo(-27,-32);x.lineTo(-43,-20);x.lineTo(-35,18);x.lineTo(-27,12);x.closePath();x.fill();
+  x.beginPath();x.moveTo(27,-32);x.lineTo(43,-20);x.lineTo(35,18);x.lineTo(27,12);x.closePath();x.fill()
+ }
+ if(p.type==="trousers"){
+  x.fillRect(-22,-5,44,9);x.fillRect(-20,4,17,78);x.fillRect(3,4,17,78)
+ }
+ if(p.type==="nikka"){
+  x.fillRect(-22,-5,44,8);x.fillRect(-20,3,18,40);x.fillRect(2,3,18,40)
+ }
+ if(p.type==="gown"){
+  x.beginPath();x.moveTo(-17,-48);x.quadraticCurveTo(0,-54,17,-48);x.lineTo(43,70);x.lineTo(-43,70);x.closePath();x.fill()
+ }
+}
+
+function decorations(p){
+ if(!p.decor)return;
+ p.decor.forEach(d=>{
+  x.save();
+  if(d.type==="fabric"){x.strokeStyle="#ffffff28";for(let i=-55;i<=55;i+=5){x.beginPath();x.moveTo(i,-75);x.lineTo(i,85);x.stroke()}}
+  if(d.type==="pattern"){x.strokeStyle=d.color||p.color;for(let i=-80;i<100;i+=12){x.beginPath();x.moveTo(i,-75);x.lineTo(i+70,75);x.stroke()}}
+  if(d.type==="neck"){x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.arc(0,-30,10,0,Math.PI);x.stroke()}
+  if(d.type==="sleeve"){x.fillStyle=d.color||p.color;x.fillRect(-45,-28,15,42);x.fillRect(30,-28,15,42)}
+  if(d.type==="pocket"){x.strokeStyle="#fff";x.lineWidth=2;x.strokeRect(-10,5,20,15)}
+  if(d.type==="belt"){x.fillStyle="#202020";x.fillRect(-34,5,68,7);x.strokeStyle="#ffd34d";x.strokeRect(-5,5,10,7)}
+  if(d.type==="zipper"){x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.moveTo(0,-30);x.lineTo(0,60);x.stroke();for(let yy=-20;yy<55;yy+=8){x.fillStyle="#fff";x.fillRect(-2,yy,4,2)}}
+  if(["lace","ruffle","frills"].includes(d.type)){x.strokeStyle=d.color||p.color;x.lineWidth=2;x.beginPath();for(let i=-45;i<=45;i+=8){x.moveTo(i,55);x.quadraticCurveTo(i+4,48,i+8,55)}x.stroke()}
+  if(d.type==="flower"){x.fillStyle="#ffd84a";for(let i=0;i<5;i++){let a=i*Math.PI*2/5;x.beginPath();x.arc(Math.cos(a)*10,Math.sin(a)*10,5,0,Math.PI*2);x.fill()}x.fillStyle="#fff";x.beginPath();x.arc(0,0,4,0,Math.PI*2);x.fill()}
+  if(d.type==="collar"){x.strokeStyle="#fff";x.lineWidth=2;x.beginPath();x.moveTo(-16,-32);x.lineTo(0,-20);x.lineTo(16,-32);x.stroke()}
+  if(d.type==="buttons"){x.fillStyle="#fff";for(let yy=-18;yy<45;yy+=12){x.beginPath();x.arc(0,yy,3,0,Math.PI*2);x.fill()}}
+  if(d.type==="pleats"){x.strokeStyle="#ffffff77";for(let i=-28;i<=28;i+=8){x.beginPath();x.moveTo(i,-15);x.lineTo(i+3,58);x.stroke()}}
+  if(d.type==="ankara"){x.strokeStyle="#fff8";for(let i=-45;i<=45;i+=15){x.beginPath();x.arc(i,0,7,0,Math.PI*2);x.stroke()}}
+  if(d.type==="bright"){x.fillStyle="#fff3";x.fillRect(-60,-75,120,150)}
+  if(d.type==="shadow"){x.fillStyle="#0004";x.fillRect(-55,-65,110,130)}
+  if(d.type==="glow"){x.fillStyle=(p.color||col)+"44";x.fillRect(-60,-75,120,150)}
+  if(d.type==="contrast"){x.strokeStyle="#fff";x.lineWidth=2;x.strokeRect(-35,-40,70,80)}
+  if(d.type==="blur"){x.globalAlpha=.12;x.drawImage(c,-2,0);x.drawImage(c,2,0);x.globalAlpha=1}
+  if(d.type==="text"){x.fillStyle=d.color||col;x.font="bold 11px Arial";x.textAlign="center";x.fillText(d.text,0,0)}
+  x.restore()
+ })
+}
+
+function drawPart(p){
+ x.save();x.translate(p.x,p.y);x.rotate((p.r||0)*Math.PI/180);x.scale(p.s,p.s);
+ drawBase(p);decorations(p);x.restore()
+}
+
+function render(){
+ blank();
+ Object.values(parts).forEach(p=>{
+  if(!p)return;
+  if(p.img){
+   x.save();x.translate(p.x,p.y);x.rotate((p.r||0)*Math.PI/180);x.scale(p.s,p.s);
+   x.drawImage(p.img,-50,-50,100,100);decorations(p);x.restore()
+  }else drawPart(p)
+ })
 }
 
 function tool(t){
- let w=c.width/2;
- if(t==="recolor")return color();
- if(t==="sleeve"){x.fillStyle=colorNow;sleeves()}
- if(t==="fabric"){x.globalAlpha=0.08;x.fillStyle=colorNow;for(let i=0;i<c.width;i+=3)x.fillRect(i,0,1,c.height);x.globalAlpha=1}
- if(t==="pattern"){x.globalAlpha=0.15;x.fillStyle=colorNow;for(let i=0;i<c.width;i+=10)x.fillRect(i,0,2,c.height);x.globalAlpha=1}
- if(t==="neck")x.clearRect(w-8,14,16,6);
- if(t==="length"){let z=document.createElement("canvas");z.width=c.width;z.height=c.height;z.getContext("2d").drawImage(c,0,0);x.clearRect(0,0,c.width,c.height);x.drawImage(z,0,0,c.width,c.height*.92,0,0,c.width,c.height)}
- if(t==="pocket"){x.fillStyle="#d9d9d9";x.fillRect(w-6,63,12,7)}
- if(t==="belt"){x.fillStyle="#262626";x.fillRect(w-15,57,30,3);x.fillStyle="#ffd700";x.fillRect(w-2,56,4,4)}
- if(t==="zipper"){x.fillStyle="#bfbfbf";for(let i=24;i<62;i+=3){x.beginPath();x.arc(w,i,1,0,Math.PI*2);x.fill()}}
- if(t==="lace"){x.strokeStyle="#fff";for(let i=0;i<c.width;i+=5){x.beginPath();x.moveTo(i,c.height-15);x.quadraticCurveTo(i+2,c.height-12,i+5,c.height-15);x.stroke()}}
- if(t==="flower"){x.fillStyle="#ffd700";for(let i=0;i<2;i++)for(let a=0;a<4;a++){let q=a*Math.PI/2;x.beginPath();x.arc(20+i*13+Math.cos(q)*1.5,42+Math.sin(q)*1.5,1,0,Math.PI*2);x.fill()}}
- if(t==="frills"){x.fillStyle=colorNow;for(let i=0;i<c.width;i+=5){x.beginPath();x.moveTo(i,c.height-15);x.quadraticCurveTo(i+2,c.height-12,i+5,c.height-15);x.fill()}}
- if(t==="collar"){x.fillStyle=colorNow;x.beginPath();x.moveTo(w-5,16);x.lineTo(w+5,16);x.lineTo(w+1,12);x.lineTo(w-1,12);x.closePath();x.fill()}
- if(t==="buttons"){x.fillStyle="#fff";for(let i=26;i<58;i+=6){x.beginPath();x.arc(w,i,1,0,Math.PI*2);x.fill()}}
- if(t==="pleats"){x.fillStyle="#e6e6e6";for(let i=0;i<c.width;i+=5)x.fillRect(i,65,1,16)}
- if(t==="ankara"){x.fillStyle="#ff6666";for(let i=0;i<3;i++){x.beginPath();x.arc(18+i*12,40,1.5,0,Math.PI*2);x.fill()}}
- if(t==="ruffle"){x.fillStyle=colorNow;for(let i=0;i<c.width;i+=5){x.beginPath();x.arc(i,c.height-13,2.5,Math.PI,0);x.fill()}}
- if(t==="bright"||t==="contrast"){let d=x.getImageData(0,0,c.width,c.height);for(let i=0;i<d.data.length;i+=4)for(let j=0;j<3;j++)d.data[i+j]=Math.max(0,Math.min(255,t==="bright"?d.data[i+j]+25:(d.data[i+j]-128)*1.15+128));x.putImageData(d,0,0)}
- if(t==="blur"){x.globalAlpha=0.2;x.drawImage(c,1,0);x.drawImage(c,-1,0);x.globalAlpha=1}
- if(t==="shadow"){x.globalAlpha=0.15;x.fillStyle="#000";x.fillRect(1,1,c.width,c.height);x.globalAlpha=1}
- if(t==="glow"){x.globalAlpha=0.2;x.fillStyle=colorNow;x.fillRect(0,0,c.width,c.height);x.globalAlpha=1}
- if(t==="text"){let q=prompt("Text:");if(q){x.font="bold 10px Arial";x.fillStyle=colorNow;x.fillText(q,10,35)}}
- if(t==="clear"){blank()}
+ if(!sel)return alert("Select clothing first");
+ let p=parts[sel];
+ if(t==="recolor")return applyColor();
+ if(t==="text"){
+  let q=prompt("Enter text");
+  if(q&&q.trim())p.decor.push({type:"text",text:q.trim(),color:col})
+ }else if(t==="fabric")p.decor.push({type:"fabric"});
+ else if(t==="pattern")p.decor.push({type:"pattern",color:col});
+ else if(t==="neck")p.decor.push({type:"neck"});
+ else if(t==="length")p.s=Math.min(3,p.s+.15);
+ else if(t==="sleeve")p.decor.push({type:"sleeve",color:col});
+ else if(t==="pocket")p.decor.push({type:"pocket"});
+ else if(t==="belt")p.decor.push({type:"belt"});
+ else if(t==="zipper")p.decor.push({type:"zipper"});
+ else if(t==="lace")p.decor.push({type:"lace",color:col});
+ else if(t==="flower")p.decor.push({type:"flower"});
+ else if(t==="frills")p.decor.push({type:"frills",color:col});
+ else if(t==="collar")p.decor.push({type:"collar"});
+ else if(t==="buttons")p.decor.push({type:"buttons"});
+ else if(t==="pleats")p.decor.push({type:"pleats"});
+ else if(t==="ankara")p.decor.push({type:"ankara"});
+ else if(t==="ruffle")p.decor.push({type:"ruffle",color:col});
+ else if(t==="bright")p.decor.push({type:"bright"});
+ else if(t==="contrast")p.decor.push({type:"contrast"});
+ else if(t==="blur")p.decor.push({type:"blur"});
+ else if(t==="shadow")p.decor.push({type:"shadow"});
+ else if(t==="glow")p.decor.push({type:"glow"});
+ render();snap()
 }
 
-document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{
- let t=b.dataset.t;
- if(t==="recolor")return color();
- saveH();tool(t);saveH();
-});
-
-$("clear").onclick=()=>{saveH();blank();saveH()};
-
-$("save").onclick=()=>{
- let name=$("itemName").value.trim();if(!name)return alert("Name it");
- let b=$("save");b.disabled=true;b.textContent="Saving...";
- let collection=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
-
- let item={
-  _id:Date.now().toString(),
-  name:name,
-  category:$("itemCategory").value,
-  color:colorNow,
-  image:c.toDataURL()
- };
-
- collection.push(item);
- localStorage.setItem(STORAGE_KEY,JSON.stringify(collection));
-
- alert("Saved!");
- $("itemName").value="";
- b.disabled=false;
- b.textContent="Save";
- load();
-
- /* OPEN SAVED ITEM WIDE */
- openWide(item);
+const T={
+ Dress:[["Ball","ball"],["A-Line","aline"],["Mermaid","mermaid"],["Menu","menu"]],
+ Top:[["Shirt","shirt"],["Crop","crop"],["Blouse","blouse"]],
+ Bottom:[["Trouser","trouser"],["Nikka","nikka"],["Jeans","jeans"]],
+ Cap:[["Cap","cap"],["Flat","flat"],["Bucket","bucket"]]
 };
 
-// NO GAP
-function addTop(image){
- saveH();
- let i=new Image();
- i.onload=()=>{
-  let nw=c.width*0.52;
-  let nh=c.height*0.30;
-  let xp=(c.width-nw)/2;
-  let yp=2;
-  x.drawImage(i,xp,yp,nw,nh);
-  saveH();
- };
- i.src=image;
+function templates(){
+ let a=T[$("cat").value]||[];
+ $("temps").innerHTML=a.map(v=>`<button class="template" onclick="template('${v[1]}')">${v[0]}</button>`).join("")
 }
 
-function addBottom(image){
- saveH();
- let i=new Image();
- i.onload=()=>{
-  let nw=c.width*0.52;
-  let nh=c.height*0.36;
-  let xp=(c.width-nw)/2;
-  let yp=c.height*0.30;
-  x.drawImage(i,xp,yp,nw,nh);
-  saveH();
- };
- i.src=image;
+$("cat").addEventListener("change",templates);
+
+function template(t){
+ parts=empty();sel=null;
+ let type=["ball","aline","mermaid","menu"].includes(t)?"gown":["shirt","crop","blouse"].includes(t)?"shirt":["trouser","nikka","jeans"].includes(t)?(t==="nikka"?"nikka":"trousers"):"cap";
+ let p=pos(type);
+ parts[type]={type:type,x:p.x,y:p.y,s:.8,r:0,color:col,decor:[]};
+ sel=type;render();update();snap()
 }
 
-/* CAP ADDED ONLY */
-function addCap(image){
- saveH();
- let i=new Image();
- i.onload=()=>{
-  let nw=c.width*0.42;
-  let nh=c.height*0.30;
-  let xp=(c.width-nw)/2;
-  let yp=0;
-  x.drawImage(i,xp,yp,nw,nh);
-  saveH();
- };
- i.src=image;
+function clearTools(){
+ if(!sel)return alert("Select clothing first");
+ parts[sel].decor=[];render();snap()
 }
 
-/* WIDE SAVED ITEM */
-function openWide(item){
- $("wideName").textContent=item.name+" • "+item.category;
- $("wideImage").src=item.image;
- $("wideView").style.display="flex";
+function clearAll(){
+ if(!confirm("Clear the canvas?"))return;
+ parts=empty();sel=null;blank();update();snap()
 }
 
-function closeWide(){
- $("wideView").style.display="none";
-}
+function saveDesign(){
+ let n=$("name").value.trim();
+ if(!n)return alert("Name your design first");
 
-function del(id){
- if(!confirm("Delete?"))return;
- let collection=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
- collection=collection.filter(item=>item._id!==id);
- localStorage.setItem(STORAGE_KEY,JSON.stringify(collection));
+ let a=getSaved();
+ let newItem={_id:Date.now(),name:n,image:c.toDataURL("image/png")};
+ a.push(newItem);
+
+ try{
+  localStorage.setItem(KEY,JSON.stringify(a));
+  console.log("Saved to localStorage",a.length,"items")
+ }catch(e){
+  return alert("Could not save. Local storage may be full.")
+ }
+
+ $("name").value="";
  load();
+ alert("Design saved successfully!")
 }
 
 function load(){
- let list=$("wardrobe");
- let collection=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+ let a=getSaved(),w=$("wardrobe");
+ console.log("Loading collection:",a.length,"items");
 
- if(!collection.length)return list.innerHTML='<div class="empty">Empty</div>';
+ if(!a.length){
+  w.innerHTML='<div class="empty">No clothes saved yet.</div>';
+  return
+ }
 
- list.innerHTML=collection.map(a=>`
+ w.innerHTML=a.map(i=>`
  <div class="card">
- <button class="delete-btn" onclick="del('${a._id}')">X</button>
-
- <img src="${a.image}" onclick='openWide(${JSON.stringify(a)})'>
-
- <div style="padding:3px">
- <h3 style="font-size:9px;margin-bottom:2px">${a.name}</h3>
-
- <div class="card-actions">
- <button class="btn-add" onclick="addTop('${a.image}')">TOP</button>
- <button class="btn-add2" onclick="addBottom('${a.image}')">BOTTOM</button>
- <button class="btn-cap" onclick="addCap('${a.image}')">CAP</button>
- </div>
-
- </div>
- </div>
- `).join("");
+  <button class="del" onclick="del(${Number(i._id)})">×</button>
+  <img src="${esc(i.image)}" alt="${esc(i.name)}" onclick="openSaved(${Number(i._id)})">
+  <div class="acts">
+   <button class="top" onclick="addImageById(${Number(i._id)},'shirt')">TOP</button>
+   <button class="bottom" onclick="addImageById(${Number(i._id)},'trousers')">BOTTOM</button>
+   <button class="cap" onclick="addImageById(${Number(i._id)},'cap')">CAP</button>
+  </div>
+ </div>`).join("")
 }
 
-load();
-</script>
-</body>
-</html>
+function esc(v){
+ return String(v??"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+}
+
+function openSaved(id){
+ let a=getSaved(),i=a.find(v=>Number(v._id)===Number(id));
+ if(!i)return;
+ $("wname").textContent=i.name||"Saved Design";
+ $("wimg").src=i.image;
+ $("wide").style.display="flex";
+ document.body.style.overflow="hidden"
+}
+
+function closeWide(){
+ $("wide").style.display="none";
+ document.body.style.overflow=""
+}
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape")closeWide()
+});
+
+function addImageById(id,t){
+ let a=getSaved(),v=a.find(i=>Number(i._id)===Number(id));
+ if(!v)return;
+ let im=new Image;
+ im.onload=()=>{
+  let p=pos(t);
+  parts[t]={type:t,x:p.x,y:p.y,s:.8,r:0,color:col,img:im,decor:[]};
+  sel=t;render();update();snap()
+ };
+ im.src=v.image
+}
+
+function del(id){
+ let a=getSaved().filter(i=>Number(i._id)!==Number(id));
+ try{localStorage.setItem(KEY,JSON.stringify(a))}catch(e){}
+ load()
+}
+</script></body></html>
