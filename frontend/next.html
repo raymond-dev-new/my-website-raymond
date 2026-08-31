@@ -188,9 +188,16 @@ button:hover{
    
    <div> <button class="quiz"> Quiz </button>  
    <span> <button class="todo"> Todo </button> </span> </div>
+
+    <div>
+      <div> 
+         <button class="cacu" style="background-color: blue; width: 100%;"> Caculator </button>
+      </div>
+    
+    <button class="design" style="background-color: green; width: 100%"> Design </button>
   </div>
-  
   </div>
+
 
   <script>
 
@@ -205,9 +212,19 @@ button:hover{
     const Note = document.querySelector('.Note')                  
     const Media = document.querySelector('.Media') 
     const ball = document.querySelector('.ball')
+    const cal = document.querySelector('.cacu') 
+    const design = document.querySelector('.design')
     //const Medial = document.querySelector('.Medial')
       
      
+
+   cal.addEventListener('click', () => {
+     window.location.href="calculate.html"
+   })
+
+   design.addEventListener('click', () => {
+     window.location.href="design.html"
+   })
 
    calculator.addEventListener('click', () => {
       window.location.href="mycorner.html"
