@@ -13,84 +13,305 @@ header{height:40px;padding:0 3%;display:flex;align-items:center;background:#4045
 .glass{background:#40454f;border-radius:10px;padding:8px;margin-bottom:6px;border:1px solid #596071}
 h2{font-size:14px;color:#e65a9d;margin-bottom:4px}
 h3{font-size:11px;color:#bfc7db;margin:4px 0 3px;font-weight:600}
-#designCanvas{width:100%;height:120px;background:#262a30;border:2px solid #596071;border-radius:8px;display:block}
+.layout{display:flex;flex-direction:column;gap:6px}
+#designCanvas{width:100%;height:120px;max-height:22vh;background:#262a30;border:2px solid #596071;border-radius:8px;display:block;touch-action:none}
 input,select{width:100%;padding:7px;border:2px solid #666e8c;border-radius:6px;margin-bottom:4px;font-size:11px;background:#33373f;color:#d9e0ef}
 button{border:0;cursor:pointer;border-radius:6px;font-weight:bold;font-size:11px;padding:8px;width:100%;margin-bottom:4px}
 .btn-main{background:linear-gradient(90deg,#d94c99,#cc40d9);color:#fff}
 .btn-tool{padding:5px 1px;background:#4d525f;color:#bfc7db;font-size:7px;border:1px solid #666e8c;min-height:30px}
+.btn-tool:hover{background:#8cc4ff;color:#0d80cc}
 .toolbar{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
 .templates{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
 .template-btn{padding:6px;background:#4d525f;border:1px solid #666e8c;border-radius:6px;font-size:9px;text-align:center;cursor:pointer;color:#bfc7db}
+.template-btn:hover{background:#8cc4ff;color:#0d80cc}
 .color-row{display:flex;gap:4px}
 .color-row input{width:35px;height:30px;padding:1px;margin:0}
 .color-row button{flex:1}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:5px}
 .card{position:relative;background:#40454f;border-radius:8px;overflow:hidden;border:1px solid #596071}
-.card img{width:100%;height:100px;object-fit:cover}
+.card img{width:100%;height:100px;object-fit:cover;cursor:pointer}
 .card-actions{display:flex;gap:2px}
 .btn-add{background:#5abf66;color:#fff;font-size:6px;padding:2px;margin-bottom:0;flex:1}
 .btn-add2{background:#0da6e6;color:#fff;font-size:6px;padding:2px;margin-bottom:0;flex:1}
+.btn-cap{background:#cc40d9;color:#fff;font-size:6px;padding:2px;margin-bottom:0;flex:1}
 .delete-btn{position:absolute;top:2px;right:2px;width:18px;height:18px;padding:0;background:#e64c4c;color:#fff;border-radius:50%;z-index:2;font-size:8px}
+.empty{text-align:center;padding:10px;color:#99a1b3;font-size:10px}
+
+/* ADDED ONLY: WIDE SAVED ITEM */
+#wideView{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;padding:12px}
+.wideBox{width:96vw;max-width:900px;background:#40454f;border:1px solid #596071;border-radius:10px;padding:10px}
+.wideBox img{width:100%;max-height:75vh;object-fit:contain;background:#262a30;border-radius:8px;display:block}
+.wideName{text-align:center;color:#e65a9d;font-size:13px;font-weight:bold;padding:6px}
+.wideClose{background:#e64c4c;color:#fff}
 </style>
 </head>
 <body>
+
 <header><div class="logo">SewLab Layering ✂️</div></header>
+
 <section class="section"><div class="glass">
 <h2>Design Studio</h2>
-<canvas id="designCanvas"></canvas>
-<select id="itemCategory"><option>Dress</option><option>Top</option><option>Bottom</option></select>
+<div class="layout">
+
+<div>
+<h3>Your Canvas</h3><canvas id="designCanvas"></canvas>
+</div>
+
+<div>
+<h3>1. Pick Type</h3>
+<select id="itemCategory">
+<option>Dress</option>
+<option>Top</option>
+<option>Bottom</option>
+<option>Cap</option>
+</select>
+
+<h3>2. Pick Template</h3>
 <div class="templates" id="templateArea"></div>
-<div class="color-row"><input type="color" id="colorPicker" value="#ec4899"><button onclick="color()">APPLY</button></div>
-<input id="itemName" placeholder="Name"><button class="btn-main" id="save">Save</button><button class="btn-main" id="clear" style="background:#f27f33">CLEAR</button>
+
+<h3>3. Pick Color</h3>
+<div class="color-row">
+<input type="color" id="colorPicker" value="#ec4899">
+<button onclick="color()">APPLY</button>
+</div>
+
+<h3>4. Tools</h3>
+<div class="toolbar">
+<button class="btn-tool" data-t="recolor">Recolor</button>
+<button class="btn-tool" data-t="fabric">Fabric</button>
+<button class="btn-tool" data-t="pattern">Pattern</button>
+<button class="btn-tool" data-t="neck">Neck</button>
+<button class="btn-tool" data-t="length">Length</button>
+<button class="btn-tool" data-t="sleeve">Bubba</button>
+<button class="btn-tool" data-t="pocket">Pocket</button>
+<button class="btn-tool" data-t="belt">Belt</button>
+<button class="btn-tool" data-t="zipper">Zipper</button>
+<button class="btn-tool" data-t="lace">Lace</button>
+<button class="btn-tool" data-t="flower">Flower</button>
+<button class="btn-tool" data-t="frills">Frills</button>
+<button class="btn-tool" data-t="collar">Collar</button>
+<button class="btn-tool" data-t="buttons">Buttons</button>
+<button class="btn-tool" data-t="pleats">Pleats</button>
+<button class="btn-tool" data-t="ankara">Ankara</button>
+<button class="btn-tool" data-t="ruffle">Ruffle</button>
+<button class="btn-tool" data-t="bright">Bright</button>
+<button class="btn-tool" data-t="contrast">Contrast</button>
+<button class="btn-tool" data-t="blur">Blur</button>
+<button class="btn-tool" data-t="shadow">Shadow</button>
+<button class="btn-tool" data-t="glow">Glow</button>
+<button class="btn-tool" data-t="text">Text</button>
+<button class="btn-tool" data-t="clear">Clear</button>
+<button class="btn-tool" id="undo">Undo</button>
+</div>
+
+<input id="itemName" placeholder="Name: Royal Gown">
+<button class="btn-main" id="save">Save</button>
+<button class="btn-main" id="clear" style="background:#f27f33">CLEAR</button>
+
+</div></div></div></section>
+
+<section class="section"><div class="glass">
+<h2>My Collection</h2><div id="wardrobe" class="cards"></div>
 </div></section>
-<section class="section"><div class="glass"><h2>My Collection</h2><div id="wardrobe" class="cards"></div></div></section>
+
+<!-- ADDED ONLY: WIDE VIEW -->
+<div id="wideView" onclick="closeWide()">
+<div class="wideBox" onclick="event.stopPropagation()">
+<div class="wideName" id="wideName"></div>
+<img id="wideImage">
+<button class="wideClose" onclick="closeWide()">CLOSE</button>
+</div>
+</div>
 
 <script>
 const $=x=>document.getElementById(x),c=$("designCanvas"),x=c.getContext("2d");
 let hist=[],pos=-1,colorNow="#ec4899";
 const STORAGE_KEY = "sewlab_collection";
+
 function blank(){x.fillStyle="#262a30";x.fillRect(0,0,c.width,c.height)}
 function size(){c.width=c.offsetWidth;c.height=120;blank()}
 size();
-function saveH(){let a=c.toDataURL();if(hist[pos]===a)return;hist=hist.slice(0,pos+1);hist.push(a);if(hist.length>50)hist.shift();pos=hist.length-1}
-function put(a){let i=new Image;i.onload=()=>{x.clearRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height)};i.src=a}
+
+function saveH(){
+ let a=c.toDataURL();
+ if(hist[pos]===a)return;
+ hist=hist.slice(0,pos+1);hist.push(a);
+ if(hist.length>50)hist.shift();
+ pos=hist.length-1;$("undo").disabled=pos<1;
+}
+
+function put(a){
+ let i=new Image;
+ i.onload=()=>{x.clearRect(0,0,c.width,c.height);x.drawImage(i,0,0,c.width,c.height)};
+ i.src=a;
+}
+
+function undo(){
+ if(pos<1)return alert("Nothing to undo");
+ pos--;put(hist[pos]);$("undo").disabled=pos<1;
+}
+
+$("undo").onclick=undo;
+blank();saveH();
+
 $("colorPicker").oninput=e=>colorNow=e.target.value;
-function color(){saveH();x.globalCompositeOperation="source-atop";x.fillStyle=colorNow; x.fillRect(0,0,c.width,c.height);x.globalCompositeOperation="source-over";saveH()}
 
-const temps={Dress:[["Ball","ball"],["A-Line","aline"],["Mumu","mumu"]],Top:[["Shirt","shirt"],["Crop","crop"]],Bottom:[["Trouser","trouser"],["Jeans","jeans"]]};
-function templates(){$("templateArea").innerHTML=temps[$("itemCategory").value].map(t=>`<div class="template-btn" onclick="template('${t[1]}')">${t[0]}</div>`).join("")}
-$("itemCategory").onchange=templates;templates();
-
-function template(t){
- saveH();blank();x.fillStyle=colorNow;let w=c.width/2;
- if(t==="ball"){x.beginPath();x.moveTo(w-16,16);x.quadraticCurveTo(w,13,w+16,16);x.lineTo(w+32,c.height-13);x.quadraticCurveTo(w,c.height-8,w-32,c.height-13);x.closePath();x.fill()}
- if(t==="aline"){x.beginPath();x.moveTo(w-13,16);x.quadraticCurveTo(w,13,w+13,16);x.lineTo(w+24,c.height-13);x.lineTo(w-24,c.height-13);x.closePath();x.fill()}
- if(t==="mumu"){x.beginPath();x.moveTo(w-13,16);x.lineTo(w+13,16);x.lineTo(w+26,c.height-13);x.lineTo(w-26,c.height-13);x.closePath();x.fill()}
- if(t==="shirt"){x.fillRect(w-18,16,36,40)}
- if(t==="crop")x.fillRect(w-16,16,32,22);
- if(t==="trouser"){x.fillRect(w-12,52,24,5);x.fillRect(w-11,57,7,40);x.fillRect(w+4,57,7,40)}
- if(t==="jeans"){x.fillRect(w-10,52,20,5);x.fillRect(w-9,57,5,40);x.fillRect(w+4,57,5,40)}
+function color(){
+ saveH();
+ x.globalCompositeOperation="source-atop";
+ x.fillStyle=colorNow;
+ x.fillRect(0,0,c.width,c.height);
+ x.globalCompositeOperation="source-over";
  saveH();
 }
 
-$("clear").onclick=()=>{saveH();blank();saveH()};
-$("save").onclick=()=>{
- let name=$("itemName").value.trim();if(!name)return alert("Name it");
- let collection = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
- collection.push({_id:Date.now().toString(),name:name,category:$("itemCategory").value,color:colorNow,image:c.toDataURL()});
- localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
- alert("Saved!");$("itemName").value="";load();
+/* CAP ADDED ONLY */
+const temps={
+ Dress:[["Ball","ball"],["A-Line","aline"],["Mermaid","mermaid"],["Mumu","mumu"]],
+ Top:[["Shirt","shirt"],["Crop","crop"],["Blouse","blouse"]],
+ Bottom:[["Trouser","trouser"],["Nikka","nikka"],["Jeans","jeans"]],
+ Cap:[["Cap","cap"],["Flat Cap","flatcap"],["Bucket Cap","bucket"]]
 };
 
-// NO SPACE BETWEEN TOP AND BOTTOM
+function templates(){
+ $("templateArea").innerHTML=temps[$("itemCategory").value]
+ .map(t=>`<div class="template-btn" onclick="template('${t[1]}')">${t[0]}</div>`).join("");
+}
+
+$("itemCategory").onchange=templates;
+templates();
+
+function template(t){
+ saveH();blank();x.fillStyle=colorNow;let w=c.width/2;
+
+ if(t==="ball"){x.beginPath();x.moveTo(w-16,16);x.quadraticCurveTo(w,13,w+16,16);x.lineTo(w+32,c.height-13);x.quadraticCurveTo(w,c.height-8,w-32,c.height-13);x.closePath();x.fill()}
+ if(t==="aline"){x.beginPath();x.moveTo(w-13,16);x.quadraticCurveTo(w,13,w+13,16);x.lineTo(w+24,c.height-13);x.lineTo(w-24,c.height-13);x.closePath();x.fill()}
+ if(t==="mermaid"){x.beginPath();x.moveTo(w-12,16);x.quadraticCurveTo(w,13,w+12,16);x.lineTo(w+14,c.height-40);x.lineTo(w+24,c.height-13);x.lineTo(w-24,c.height-13);x.lineTo(w-14,c.height-40);x.closePath();x.fill()}
+ if(t==="mumu"){x.beginPath();x.moveTo(w-13,16);x.lineTo(w+13,16);x.lineTo(w+26,c.height-13);x.lineTo(w-26,c.height-13);x.closePath();x.fill()}
+ if(t==="shirt"){x.fillRect(w-18,16,36,40);sleeves()}
+ if(t==="crop")x.fillRect(w-16,16,32,22);
+ if(t==="blouse")x.fillRect(w-20,16,40,35);
+ if(t==="trouser"){x.fillRect(w-12,52,24,5);x.fillRect(w-11,57,7,40);x.fillRect(w+4,57,7,40)}
+ if(t==="nikka"){x.fillRect(w-15,52,30,5);x.fillRect(w-14,57,10,33);x.fillRect(w+4,57,10,33)}
+ if(t==="jeans"){x.fillRect(w-10,52,20,5);x.fillRect(w-9,57,5,40);x.fillRect(w+4,57,5,40)}
+
+ /* CAP TEMPLATES ONLY */
+ if(t==="cap"){
+  x.beginPath();
+  x.arc(w,40,22,Math.PI,0);
+  x.lineTo(w+22,40);
+  x.quadraticCurveTo(w,50,w-22,40);
+  x.closePath();
+  x.fill();
+  x.beginPath();
+  x.ellipse(w+15,46,23,6,0,0,Math.PI*2);
+  x.fill();
+ }
+
+ if(t==="flatcap"){
+  x.beginPath();
+  x.moveTo(w-23,40);
+  x.quadraticCurveTo(w,18,w+20,37);
+  x.quadraticCurveTo(w+23,44,w-23,40);
+  x.fill();
+  x.beginPath();
+  x.ellipse(w+13,45,21,5,0,0,Math.PI*2);
+  x.fill();
+ }
+
+ if(t==="bucket"){
+  x.beginPath();
+  x.moveTo(w-17,20);
+  x.lineTo(w+17,20);
+  x.lineTo(w+24,48);
+  x.lineTo(w-24,48);
+  x.closePath();
+  x.fill();
+  x.beginPath();
+  x.ellipse(w,49,27,6,0,0,Math.PI*2);
+  x.fill();
+ }
+
+ saveH();
+}
+
+function sleeves(){
+ let w=c.width/2;
+ x.beginPath();x.moveTo(w-18,16);x.lineTo(w-25,16);x.lineTo(w-32,52);x.lineTo(w-18,52);x.closePath();x.fill();
+ x.beginPath();x.moveTo(w+18,16);x.lineTo(w+25,16);x.lineTo(w+32,52);x.lineTo(w+18,52);x.closePath();x.fill();
+}
+
+function tool(t){
+ let w=c.width/2;
+ if(t==="recolor")return color();
+ if(t==="sleeve"){x.fillStyle=colorNow;sleeves()}
+ if(t==="fabric"){x.globalAlpha=0.08;x.fillStyle=colorNow;for(let i=0;i<c.width;i+=3)x.fillRect(i,0,1,c.height);x.globalAlpha=1}
+ if(t==="pattern"){x.globalAlpha=0.15;x.fillStyle=colorNow;for(let i=0;i<c.width;i+=10)x.fillRect(i,0,2,c.height);x.globalAlpha=1}
+ if(t==="neck")x.clearRect(w-8,14,16,6);
+ if(t==="length"){let z=document.createElement("canvas");z.width=c.width;z.height=c.height;z.getContext("2d").drawImage(c,0,0);x.clearRect(0,0,c.width,c.height);x.drawImage(z,0,0,c.width,c.height*.92,0,0,c.width,c.height)}
+ if(t==="pocket"){x.fillStyle="#d9d9d9";x.fillRect(w-6,63,12,7)}
+ if(t==="belt"){x.fillStyle="#262626";x.fillRect(w-15,57,30,3);x.fillStyle="#ffd700";x.fillRect(w-2,56,4,4)}
+ if(t==="zipper"){x.fillStyle="#bfbfbf";for(let i=24;i<62;i+=3){x.beginPath();x.arc(w,i,1,0,Math.PI*2);x.fill()}}
+ if(t==="lace"){x.strokeStyle="#fff";for(let i=0;i<c.width;i+=5){x.beginPath();x.moveTo(i,c.height-15);x.quadraticCurveTo(i+2,c.height-12,i+5,c.height-15);x.stroke()}}
+ if(t==="flower"){x.fillStyle="#ffd700";for(let i=0;i<2;i++)for(let a=0;a<4;a++){let q=a*Math.PI/2;x.beginPath();x.arc(20+i*13+Math.cos(q)*1.5,42+Math.sin(q)*1.5,1,0,Math.PI*2);x.fill()}}
+ if(t==="frills"){x.fillStyle=colorNow;for(let i=0;i<c.width;i+=5){x.beginPath();x.moveTo(i,c.height-15);x.quadraticCurveTo(i+2,c.height-12,i+5,c.height-15);x.fill()}}
+ if(t==="collar"){x.fillStyle=colorNow;x.beginPath();x.moveTo(w-5,16);x.lineTo(w+5,16);x.lineTo(w+1,12);x.lineTo(w-1,12);x.closePath();x.fill()}
+ if(t==="buttons"){x.fillStyle="#fff";for(let i=26;i<58;i+=6){x.beginPath();x.arc(w,i,1,0,Math.PI*2);x.fill()}}
+ if(t==="pleats"){x.fillStyle="#e6e6e6";for(let i=0;i<c.width;i+=5)x.fillRect(i,65,1,16)}
+ if(t==="ankara"){x.fillStyle="#ff6666";for(let i=0;i<3;i++){x.beginPath();x.arc(18+i*12,40,1.5,0,Math.PI*2);x.fill()}}
+ if(t==="ruffle"){x.fillStyle=colorNow;for(let i=0;i<c.width;i+=5){x.beginPath();x.arc(i,c.height-13,2.5,Math.PI,0);x.fill()}}
+ if(t==="bright"||t==="contrast"){let d=x.getImageData(0,0,c.width,c.height);for(let i=0;i<d.data.length;i+=4)for(let j=0;j<3;j++)d.data[i+j]=Math.max(0,Math.min(255,t==="bright"?d.data[i+j]+25:(d.data[i+j]-128)*1.15+128));x.putImageData(d,0,0)}
+ if(t==="blur"){x.globalAlpha=0.2;x.drawImage(c,1,0);x.drawImage(c,-1,0);x.globalAlpha=1}
+ if(t==="shadow"){x.globalAlpha=0.15;x.fillStyle="#000";x.fillRect(1,1,c.width,c.height);x.globalAlpha=1}
+ if(t==="glow"){x.globalAlpha=0.2;x.fillStyle=colorNow;x.fillRect(0,0,c.width,c.height);x.globalAlpha=1}
+ if(t==="text"){let q=prompt("Text:");if(q){x.font="bold 10px Arial";x.fillStyle=colorNow;x.fillText(q,10,35)}}
+ if(t==="clear"){blank()}
+}
+
+document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{
+ let t=b.dataset.t;
+ if(t==="recolor")return color();
+ saveH();tool(t);saveH();
+});
+
+$("clear").onclick=()=>{saveH();blank();saveH()};
+
+$("save").onclick=()=>{
+ let name=$("itemName").value.trim();if(!name)return alert("Name it");
+ let b=$("save");b.disabled=true;b.textContent="Saving...";
+ let collection=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+
+ let item={
+  _id:Date.now().toString(),
+  name:name,
+  category:$("itemCategory").value,
+  color:colorNow,
+  image:c.toDataURL()
+ };
+
+ collection.push(item);
+ localStorage.setItem(STORAGE_KEY,JSON.stringify(collection));
+
+ alert("Saved!");
+ $("itemName").value="";
+ b.disabled=false;
+ b.textContent="Save";
+ load();
+
+ /* OPEN SAVED ITEM WIDE */
+ openWide(item);
+};
+
+// NO GAP
 function addTop(image){
  saveH();
  let i=new Image();
  i.onload=()=>{
   let nw=c.width*0.52;
-  let nh=c.height*0.48;
+  let nh=c.height*0.30;
   let xp=(c.width-nw)/2;
-  x.drawImage(i,xp,0,nw,nh); // starts at 0
+  let yp=2;
+  x.drawImage(i,xp,yp,nw,nh);
   saveH();
  };
  i.src=image;
@@ -101,39 +322,75 @@ function addBottom(image){
  let i=new Image();
  i.onload=()=>{
   let nw=c.width*0.52;
-  let nh=c.height*0.52;
+  let nh=c.height*0.36;
   let xp=(c.width-nw)/2;
-  x.drawImage(i,xp,c.height*0.48,nw,nh); // starts where top ends
+  let yp=c.height*0.30;
+  x.drawImage(i,xp,yp,nw,nh);
   saveH();
  };
  i.src=image;
 }
 
+/* CAP ADDED ONLY */
+function addCap(image){
+ saveH();
+ let i=new Image();
+ i.onload=()=>{
+  let nw=c.width*0.42;
+  let nh=c.height*0.30;
+  let xp=(c.width-nw)/2;
+  let yp=0;
+  x.drawImage(i,xp,yp,nw,nh);
+  saveH();
+ };
+ i.src=image;
+}
+
+/* WIDE SAVED ITEM */
+function openWide(item){
+ $("wideName").textContent=item.name+" • "+item.category;
+ $("wideImage").src=item.image;
+ $("wideView").style.display="flex";
+}
+
+function closeWide(){
+ $("wideView").style.display="none";
+}
+
 function del(id){
- let collection = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
- collection = collection.filter(item => item._id!== id);
- localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
+ if(!confirm("Delete?"))return;
+ let collection=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+ collection=collection.filter(item=>item._id!==id);
+ localStorage.setItem(STORAGE_KEY,JSON.stringify(collection));
  load();
 }
 
 function load(){
  let list=$("wardrobe");
- let collection = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
- if(!collection.length)return list.innerHTML='<div style="text-align:center;padding:10px;color:#99a1b3">Empty</div>';
+ let collection=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+
+ if(!collection.length)return list.innerHTML='<div class="empty">Empty</div>';
+
  list.innerHTML=collection.map(a=>`
-    <div class="card">
-      <button class="delete-btn" onclick="del('${a._id}')">X</button>
-      <img src="${a.image}">
-      <div style="padding:3px">
-        <h3 style="font-size:9px">${a.name}</h3>
-        <div class="card-actions">
-          <button class="btn-add" onclick="addTop('${a.image}')">TOP</button>
-          <button class="btn-add2" onclick="addBottom('${a.image}')">BOTTOM</button>
-        </div>
-      </div>
-    </div>
-  `).join("");
+ <div class="card">
+ <button class="delete-btn" onclick="del('${a._id}')">X</button>
+
+ <img src="${a.image}" onclick='openWide(${JSON.stringify(a)})'>
+
+ <div style="padding:3px">
+ <h3 style="font-size:9px;margin-bottom:2px">${a.name}</h3>
+
+ <div class="card-actions">
+ <button class="btn-add" onclick="addTop('${a.image}')">TOP</button>
+ <button class="btn-add2" onclick="addBottom('${a.image}')">BOTTOM</button>
+ <button class="btn-cap" onclick="addCap('${a.image}')">CAP</button>
+ </div>
+
+ </div>
+ </div>
+ `).join("");
 }
+
 load();
 </script>
 </body>
