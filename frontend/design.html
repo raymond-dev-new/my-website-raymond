@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
-  
-  <script>
+
+   <script>
    // This runs before the page shows
     const token = localStorage.getItem('token');
 
@@ -9,69 +9,23 @@
       window.location.replace('/login.html');
     } 
   </script>
+   
   
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>SewLab Layering</title><style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:Arial;background:#252a31;color:#e8edf7;padding-bottom:8px;font-size:9px}
-button,input,select{font:inherit;touch-action:manipulation}
-button{cursor:pointer;border:0;outline:0}
-header{height:32px;background:#3c424c;display:flex;align-items:center;padding:0 7px;position:sticky;top:0;z-index:20;border-bottom:1px solid #555d6c}
-.logo{color:#ed5da5;font-weight:bold;font-size:11px}
-.section{padding:3px 4px}
-.box{background:#373d47;border:1px solid #515969;border-radius:7px;padding:5px;margin-bottom:3px;box-shadow:0 1px 5px #0004}
-h2{color:#ed5da5;font-size:11px;margin-bottom:3px}
-h3{font-size:7px;color:#b9c2d5;margin:3px 0 2px}
-#c{width:100%;height:145px;display:block;margin:auto;background:#20242a;border:1px solid #586174;border-radius:6px;touch-action:none}
-input,select{width:100%;height:25px;background:#2d323a;color:#eee;border:1px solid #606a80;border-radius:4px;padding:2px 4px;font-size:8px;margin-bottom:2px}
-.row{display:flex;gap:2px}
-.row input{width:34px;margin:0}
-.main{width:100%;height:26px;margin-bottom:2px;border-radius:4px;background:linear-gradient(90deg,#e64f9e,#c946dc);color:#fff;font-size:8px}
-.clear{background:#ef7438!important}
-.templates,.clothes,.controls,.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
-.template,.cloth,.control,.tool{height:25px;padding:1px;background:linear-gradient(145deg,#515a69,#3e4551);color:#fff;border-radius:4px;font-size:6px;line-height:1.05}
-.template:active,.cloth:active,.control:active,.tool:active,.acts button:active,.main:active{background:#d94c99!important;transform:scale(.96)}
-.sel{text-align:center;font-size:7px;margin:2px;color:#ed5da5;font-weight:bold}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
-.card{background:#303640;border:1px solid #515a6b;border-radius:5px;overflow:hidden;position:relative}
-.card img{width:100%;height:62px;object-fit:cover;display:block}
-.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;padding:2px}
-.acts button{height:18px;color:#fff;font-size:5px;border-radius:3px}
-.top{background:#54bd67}.bottom{background:#159fe0}.cap{background:#c344d2}
-.del{position:absolute;right:1px;top:1px;width:15px;height:15px;border-radius:50%;background:#e84e50;color:#fff;font-size:8px;z-index:3}
-.empty{text-align:center;color:#929bad;font-size:8px;padding:7px}
-#wide{display:none;position:fixed;inset:0;background:#000e;z-index:9999;align-items:center;justify-content:center;padding:6px}
-.widebox{width:96vw;max-height:96vh;background:#383e48;border:1px solid #626b7d;border-radius:7px;padding:5px;display:flex;flex-direction:column;overflow:hidden}
-.wname{text-align:center;color:#ed61a8;font-weight:bold;font-size:11px;padding:4px}
-.wideimg{width:100%;flex:1;min-height:0;background:#20242a;border-radius:5px;display:flex;align-items:center;justify-content:center;overflow:auto}
-.widebox img{display:block;width:100%;height:auto;max-height:80vh;object-fit:contain;border-radius:5px}
-.close{width:100%;height:27px;margin-top:4px;background:#e84d4d;color:#fff;font-size:8px;border-radius:4px}
-@media(max-width:360px){
-header{height:29px}.logo{font-size:10px}.section{padding:2px 3px}.box{padding:4px}
-h2{font-size:10px}h3{font-size:6px}#c{height:130px}
-.template,.cloth,.control,.tool{height:23px;font-size:5.5px}
-.main{height:24px;font-size:7px}input,select{height:23px;font-size:7px}.card img{height:55px}
-}
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>SewLab Layering</title><style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:Arial;background:#252a31;color:#e8edf7;padding-bottom:8px;font-size:9px}button,input,select{font:inherit;touch-action:manipulation}button{cursor:pointer;border:0;outline:0}header{height:32px;background:#3c424c;display:flex;align-items:center;padding:0 7px;position:sticky;top:0;z-index:20;border-bottom:1px solid #555d6c}.logo{color:#ed5da5;font-weight:bold;font-size:11px}.section{padding:3px 4px}.box{background:#373d47;border:1px solid #515969;border-radius:8px;padding:5px;margin-bottom:3px;box-shadow:0 2px 7px #0006}h2{color:#ed5da5;font-size:11px;margin-bottom:3px}h3{font-size:7px;color:#b9c2d5;margin:3px 0 2px}#c{width:90%;height:145px;display:block;margin:auto;background:#20242a;border:1px solid #586174;border-radius:7px;touch-action:none}input,select{width:100%;height:25px;background:#2d323a;color:#eee;border:1px solid #606a80;border-radius:5px;padding:2px 4px;font-size:8px;margin-bottom:2px}.row{display:flex;gap:2px}.row input{width:34px;margin:0}.main{width:100%;height:27px;margin-bottom:2px;border-radius:6px;background:linear-gradient(135deg,#f05ca8,#c63be0);color:#fff;font-size:8px;font-weight:bold;box-shadow:0 3px 6px #0006}.clear{background:linear-gradient(135deg,#f05252,#b82f38)!important}.templates,.clothes,.controls,.tools{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}.template,.cloth,.control,.tool{height:25px;padding:1px;color:#fff;border-radius:6px;font-size:6px;line-height:1.05;border:1px solid #697386;box-shadow:0 2px 4px #0006,inset 0 1px #ffffff22}.template,.cloth,.control{background:linear-gradient(145deg,#596375,#3b4350)}.tool{background:linear-gradient(145deg,#806a45,#51432c);border-color:#9b8255}.template:active,.cloth:active,.control:active,.tool:active,.main:active{transform:scale(.95);filter:brightness(1.25)}.template.active{background:linear-gradient(135deg,#ed4d9f,#c73bdb)!important;border-color:#ff83c2}.sel{text-align:center;font-size:7px;margin:2px;color:#ed5da5;font-weight:bold}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}.card{background:#303640;border:1px solid #515a6b;border-radius:6px;overflow:hidden;position:relative}.card img{width:100%;height:62px;object-fit:cover;display:block}.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;padding:2px}.acts button{height:18px;color:#fff;font-size:5px;border-radius:4px}.top{background:#3b9f4e}.bottom{background:#087fc0}.cap{background:#9b2ead}.del{position:absolute;right:1px;top:1px;width:15px;height:15px;border-radius:50%;background:#c73840;color:#fff;font-size:8px;z-index:3}.empty{text-align:center;color:#929bad;font-size:8px;padding:7px}#wide{display:none;position:fixed;inset:0;background:#000e;z-index:9999;align-items:center;justify-content:center;padding:6px}.widebox{width:96vw;max-height:96vh;background:#383e48;border-radius:8px;padding:5px;display:flex;flex-direction:column;overflow:hidden}.wname{text-align:center;color:#ed61a8;font-weight:bold;font-size:11px;padding:4px}.wideimg{width:100%;flex:1;min-height:0;background:#20242a;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:auto}.widebox img{display:block;width:100%;height:auto;max-height:80vh;object-fit:contain;border-radius:5px}.close{width:100%;height:27px;margin-top:4px;background:#c73840;color:#fff;font-size:8px;font-weight:bold;border-radius:6px}@media(max-width:360px){header{height:29px}.logo{font-size:10px}.section{padding:2px 3px}.box{padding:4px}h2{font-size:10px}h3{font-size:6px}#c{height:130px}.template,.cloth,.control,.tool{height:23px;font-size:5.5px}.main{height:24px;font-size:7px}input,select{height:23px;font-size:7px}.card img{height:55px}}
 </style></head><body>
 
 <header><div class="logo">✂️ SewLab Layering</div></header>
-
-<section class="section"><div class="box">
-
-<canvas id="c"></canvas>
+<section class="section"><div class="box"><canvas id="c"></canvas>
 
 <h3>1. Pick Type</h3>
-<select id="cat">
-<option>Dress</option><option>Top</option><option>Bottom</option><option>Cap</option><option>Head</option>
-</select>
+<select id="cat"><option>Dress</option><option>Top</option><option>Bottom</option><option>Cap</option><option>Head</option></select>
 
 <h3>2. Pick Template</h3>
 <div class="templates" id="temps"></div>
 
 <h3>3. Pick Color</h3>
-<div class="row">
-<input type="color" id="color" value="#ec4899">
-<button class="main" id="apply">🎨 APPLY</button>
-</div>
+<div class="row"><input type="color" id="color" value="#ec4899"><button class="main" id="apply">🎨 APPLY</button></div>
 
 <h3>4. Add Clothing</h3>
 <div class="clothes">
@@ -87,7 +41,7 @@ h2{font-size:10px}h3{font-size:6px}#c{height:130px}
 <div class="sel">Selected: <span id="selected">NONE</span></div>
 
 <h3>5. Move / Resize Selected</h3>
-<div class="controls">
+<div class="controls" id="controls">
 <button class="control" data-m="-5,0">⬅ LEFT</button>
 <button class="control" data-m="5,0">RIGHT ➡</button>
 <button class="control" data-m="0,-5">⬆ UP</button>
@@ -100,7 +54,7 @@ h2{font-size:10px}h3{font-size:6px}#c{height:130px}
 </div>
 
 <h3>6. Select Clothing</h3>
-<div class="controls">
+<div class="controls" id="selectClothes">
 <button class="control" data-sel="maleHead">👨 HEAD</button>
 <button class="control" data-sel="femaleHead">👩 HEAD</button>
 <button class="control" data-sel="cap">🧢 CAP</button>
@@ -111,983 +65,307 @@ h2{font-size:10px}h3{font-size:6px}#c{height:130px}
 </div>
 
 <h3>7. Design Tools</h3>
-<div class="tools">
-<button class="tool" data-t="recolor">🎨 Color</button>
-<button class="tool" data-t="fabric">🧵 Fabric</button>
-<button class="tool" data-t="pattern">🔷 Pattern</button>
-<button class="tool" data-t="neck">◯ Neck</button>
-<button class="tool" data-t="necklace">📿 Necklace</button>
-<button class="tool" data-t="length">↕ Length</button>
-<button class="tool" data-t="sleeve">👕 Sleeve</button>
-<button class="tool" data-t="pocket">▣ Pocket</button>
-<button class="tool" data-t="belt">▱ Belt</button>
-<button class="tool" data-t="zipper">│ Zipper</button>
-<button class="tool" data-t="lace">〰 Lace</button>
-<button class="tool" data-t="flower">🌸 Flower</button>
-<button class="tool" data-t="frills">〰 Frills</button>
-<button class="tool" data-t="collar">♢ Collar</button>
-<button class="tool" data-t="buttons">⚪ Buttons</button>
-<button class="tool" data-t="pleats">▥ Pleats</button>
-<button class="tool" data-t="ankara">✦ Ankara</button>
-<button class="tool" data-t="ruffle">〰 Ruffle</button>
-<button class="tool" data-t="bright">☀ Bright</button>
-<button class="tool" data-t="contrast">◐ Contrast</button>
-<button class="tool" data-t="blur">◌ Blur</button>
-<button class="tool" data-t="shadow">◒ Shadow</button>
-<button class="tool" data-t="glow">✧ Glow</button>
-<button class="tool" data-t="text">T Text</button>
-<button class="tool" id="undo">↩ Undo</button>
-<button class="tool" id="ct">✕ Clear</button>
+<div class="tools" id="tools">
+<button class="tool" data-t="recolor">🎨 Color</button><button class="tool" data-t="fabric">🧵 Fabric</button><button class="tool" data-t="pattern">🔷 Pattern</button><button class="tool" data-t="neck">◯ Neck</button><button class="tool" data-t="necklace">📿 Necklace</button><button class="tool" data-t="length">↕ Length</button><button class="tool" data-t="sleeve">👕 Sleeve</button><button class="tool" data-t="pocket">▣ Pocket</button><button class="tool" data-t="belt">▱ Belt</button><button class="tool" data-t="zipper">│ Zipper</button><button class="tool" data-t="lace">〰 Lace</button><button class="tool" data-t="flower">🌸 Flower</button><button class="tool" data-t="frills">〰 Frills</button><button class="tool" data-t="collar">♢ Collar</button><button class="tool" data-t="buttons">⚪ Buttons</button><button class="tool" data-t="pleats">▥ Pleats</button><button class="tool" data-t="ankara">✦ Ankara</button><button class="tool" data-t="ruffle">〰 Ruffle</button><button class="tool" data-t="bright">☀ Bright</button><button class="tool" data-t="contrast">◐ Contrast</button><button class="tool" data-t="blur">◌ Blur</button><button class="tool" data-t="shadow">◒ Shadow</button><button class="tool" data-t="glow">✧ Glow</button><button class="tool" data-t="text">T Text</button><button class="tool" id="undo">↩ Undo</button>
 </div>
 
-<input id="name" placeholder="Name your design, e.g. Royal Gown">
+<button class="main clear" id="clear">🗑 CLEAR ALL</button>
 <button class="main" id="save">💾 SAVE DESIGN</button>
-<button class="main clear" id="clear">🗑 CLEAR CANVAS</button>
-
 </div></section>
 
-<section class="section"><div class="box">
-<h2>👗 My Collection</h2>
-<div id="wardrobe" class="cards"></div>
-</div></section>
+<section class="section"><div class="box"><h2>👗 My Collection</h2><div id="wardrobe" class="cards"></div></div></section>
 
-<div id="wide">
-<div class="widebox">
-<div class="wname" id="wname"></div>
-<div class="wideimg"><img id="wimg"></div>
-<button class="close" id="close">CLOSE</button>
-</div>
-</div>
+<div id="wide"><div class="widebox"><div class="wname" id="wname"></div><div class="wideimg"><img id="wimg"></div><button class="close" id="close">CLOSE</button></div></div>
 
 <script>
-const $=i=>document.getElementById(i),
-c=$("c"),
-x=c.getContext("2d"),
-KEY="sewlab_collection_v2";
+const $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),KEY="sewlab_collection_v2";
+let col="#ec4899",sel=null,H=[],hp=-1,parts={},gownStyle="ball";
 
-let col="#ec4899",sel=null,H=[],hp=-1,parts={};
-
-const reset=()=>parts={
-cap:null,
-shirt:null,
-trousers:null,
-nikka:null,
-gown:null,
-maleHead:null,
-femaleHead:null
-};
-
+function reset(){parts={cap:null,shirt:null,trousers:null,nikka:null,gown:null,maleHead:null,femaleHead:null}}
 reset();
 
-function blank(){
-x.fillStyle="#20242a";
-x.fillRect(0,0,c.width,c.height)
-}
-
-function snap(){
-let a=c.toDataURL();
-if(H[hp]===a)return;
-H=H.slice(0,hp+1);
-H.push(a);
-if(H.length>40)H.shift();
-hp=H.length-1
-}
-
-function update(){
-$("selected").textContent=sel?sel.toUpperCase():"NONE"
-}
-
-function pos(t){
-return{
-x:c.width/2,
-y:t==="maleHead"||t==="femaleHead"?35:
-t==="cap"?30:
-t==="shirt"?60:
-t==="trousers"?78:
-t==="nikka"?70:68
-}
-}
-
-function part(t,s=1){
-let p=pos(t);
-return{
-type:t,
-x:p.x,
-y:p.y,
-s:s,
-r:0,
-color:col,
-decor:[]
-}
-}
+function blank(){x.clearRect(0,0,c.width,c.height);x.fillStyle="#20242a";x.fillRect(0,0,c.width,c.height)}
+function clone(){return JSON.parse(JSON.stringify(parts))}
+function snap(){H=H.slice(0,hp+1);H.push({parts:clone(),sel,col,gownStyle});if(H.length>40)H.shift();hp=H.length-1}
+function restore(s){parts=JSON.parse(JSON.stringify(s.parts));sel=s.sel;col=s.col;gownStyle=s.gownStyle||"ball";$("color").value=col;update();render()}
+function update(){$("selected").textContent=sel?sel.toUpperCase():"NONE"}
+function pos(t){return{x:c.width/2,y:t.includes("Head")?35:t==="cap"?30:t==="shirt"?60:t==="trousers"?78:t==="nikka"?70:68}}
+function part(t,s){let p=pos(t);return{type:t,x:p.x,y:p.y,s:s||.75,r:0,color:col,decor:[]}}
 
 function add(t){
-if(t==="maleHead"){
-parts.maleHead=part(t,.65);
-parts.femaleHead=null
-}else if(t==="femaleHead"){
-parts.femaleHead=part(t,.65);
-parts.maleHead=null
-}else{
-parts[t]=part(t,.75)
-}
-sel=t;
-update();
-render();
-snap()
+if(t==="maleHead"){parts.maleHead=part(t,.65);parts.femaleHead=null}
+else if(t==="femaleHead"){parts.femaleHead=part(t,.65);parts.maleHead=null}
+else parts[t]=part(t,.75);
+sel=t;update();render();snap()
 }
 
 function choose(t){
 if(!parts[t])return alert("Add the "+t+" first");
-sel=t;
-update();
-render()
+sel=t;update();render()
 }
 
 function move(a,b){
 if(!sel||!parts[sel])return alert("Select clothing first");
-parts[sel].x+=a;
-parts[sel].y+=b;
-render();
-snap()
+parts[sel].x+=a;parts[sel].y+=b;render();snap()
 }
 
 function size(v){
 if(!sel||!parts[sel])return alert("Select clothing first");
-parts[sel].s=Math.max(.2,Math.min(4,parts[sel].s+v));
-render();
-snap()
+parts[sel].s=Math.max(.2,Math.min(4,parts[sel].s+v));render();snap()
 }
 
 function rot(v){
 if(!sel||!parts[sel])return alert("Select clothing first");
-parts[sel].r+=v;
-render();
-snap()
+parts[sel].r+=v;render();snap()
 }
 
 function apply(){
-col=$("color").value;
-if(sel&&parts[sel])parts[sel].color=col;
-render();
-snap()
+if(!sel||!parts[sel])return alert("Select clothing first");
+col=$("color").value;parts[sel].color=col;render();snap()
 }
 
 function head(t){
-
 x.fillStyle=t==="maleHead"?"#b87552":"#c98b6b";
-x.beginPath();
-x.ellipse(0,0,25,31,0,0,7);
-x.fill();
-
-x.fillStyle=t==="maleHead"?"#352019":"#3a211b";
-x.beginPath();
-x.arc(0,-14,27,Math.PI,0);
-x.fill();
-
-x.fillStyle="#171717";
-x.beginPath();
-x.arc(-9,-2,2.5,0,7);
-x.arc(9,-2,2.5,0,7);
-x.fill();
-
-x.strokeStyle="#69352c";
-x.lineWidth=1.5;
-x.beginPath();
-x.moveTo(-6,11);
-x.quadraticCurveTo(0,15,6,11);
-x.stroke();
-
+x.beginPath();x.ellipse(0,0,25,31,0,0,7);x.fill();
+x.fillStyle="#352019";x.beginPath();x.arc(0,-14,27,Math.PI,0);x.fill();
+x.fillStyle="#171717";x.beginPath();x.arc(-9,-2,2.5,0,7);x.arc(9,-2,2.5,0,7);x.fill();
 if(t==="femaleHead"){
-x.fillStyle="#3a211b";
+x.fillStyle="#3a211b";x.beginPath();x.moveTo(-25,-16);x.quadraticCurveTo(-35,15,-25,48);x.lineTo(-15,25);x.lineTo(-20,0);x.closePath();x.fill();
+x.beginPath();x.moveTo(25,-16);x.quadraticCurveTo(35,15,25,48);x.lineTo(15,25);x.lineTo(20,0);x.closePath();x.fill()
+}
+}
 
-x.beginPath();
-x.moveTo(-25,-16);
-x.quadraticCurveTo(-35,15,-25,48);
-x.lineTo(-15,25);
-x.lineTo(-20,0);
-x.closePath();
-x.fill();
-
-x.beginPath();
-x.moveTo(25,-16);
-x.quadraticCurveTo(35,15,25,48);
-x.lineTo(15,25);
-x.lineTo(20,0);
-x.closePath();
-x.fill()
+function drawGown(){
+x.fillStyle=col;
+if(gownStyle==="ball"){
+x.beginPath();x.moveTo(-12,-43);x.quadraticCurveTo(0,-50,12,-43);x.lineTo(45,65);x.lineTo(-45,65);x.closePath();x.fill();
+}
+else if(gownStyle==="aline"){
+x.beginPath();x.moveTo(-14,-43);x.quadraticCurveTo(0,-49,14,-43);x.lineTo(35,65);x.lineTo(-35,65);x.closePath();x.fill();
+}
+else if(gownStyle==="mermaid"){
+x.beginPath();x.moveTo(-14,-43);x.quadraticCurveTo(0,-49,14,-43);x.lineTo(18,25);x.lineTo(30,65);x.lineTo(-30,65);x.lineTo(-18,25);x.closePath();x.fill();
+}
+else if(gownStyle==="long"){
+x.beginPath();x.moveTo(-16,-43);x.quadraticCurveTo(0,-49,16,-43);x.lineTo(20,65);x.lineTo(-20,65);x.closePath();x.fill();
+}
+else{
+x.beginPath();x.moveTo(-16,-43);x.quadraticCurveTo(0,-49,16,-43);x.lineTo(40,65);x.lineTo(-40,65);x.closePath();x.fill();
 }
 }
 
 function base(p){
-
 x.fillStyle=p.color||col;
-
-if(p.type==="maleHead"||p.type==="femaleHead")
-return head(p.type);
+if(p.type.includes("Head"))return head(p.type);
 
 if(p.type==="cap"){
-x.beginPath();
-x.arc(0,-8,21,Math.PI,0);
-x.lineTo(21,-8);
-x.quadraticCurveTo(0,3,-21,-8);
-x.closePath();
-x.fill();
-
-x.beginPath();
-x.ellipse(13,0,24,4,0,0,7);
-x.fill()
+x.beginPath();x.arc(0,-8,21,Math.PI,0);x.lineTo(21,-8);x.quadraticCurveTo(0,3,-21,-8);x.closePath();x.fill();
+x.beginPath();x.ellipse(13,0,24,4,0,0,7);x.fill()
 }
 
 if(p.type==="shirt"){
-x.fillRect(-25,-30,50,52);
-
-x.beginPath();
-x.moveTo(-25,-28);
-x.lineTo(-40,-18);
-x.lineTo(-33,17);
-x.lineTo(-25,11);
-x.closePath();
-x.fill();
-
-x.beginPath();
-x.moveTo(25,-28);
-x.lineTo(40,-18);
-x.lineTo(33,17);
-x.lineTo(25,11);
-x.closePath();
-x.fill()
+x.beginPath();x.moveTo(-24,-30);x.lineTo(-10,-35);x.quadraticCurveTo(0,-22,10,-35);x.lineTo(24,-30);x.lineTo(40,-17);x.lineTo(32,18);x.lineTo(24,13);x.lineTo(22,35);x.lineTo(-22,35);x.lineTo(-24,13);x.lineTo(-32,18);x.lineTo(-40,-17);x.closePath();x.fill();
+x.fillStyle="#ffffff22";x.beginPath();x.arc(0,-25,10,0,Math.PI);x.fill()
 }
 
 if(p.type==="trousers"){
-x.fillRect(-20,-4,40,8);
-x.fillRect(-18,4,16,70);
-x.fillRect(2,4,16,70)
+x.fillRect(-20,-4,40,8);x.fillRect(-18,4,16,70);x.fillRect(2,4,16,70)
 }
 
 if(p.type==="nikka"){
-x.fillRect(-20,-4,40,7);
-x.fillRect(-18,3,16,38);
-x.fillRect(2,3,16,38)
+x.fillRect(-20,-4,40,7);x.fillRect(-18,3,16,38);x.fillRect(2,3,16,38)
 }
 
 if(p.type==="gown"){
-x.beginPath();
-x.moveTo(-16,-43);
-x.quadraticCurveTo(0,-49,16,-43);
-x.lineTo(40,65);
-x.lineTo(-40,65);
-x.closePath();
-x.fill()
+drawGown()
 }
-}
-
-function drawBelt(p){
-
-let y=5,w=32,h=7;
-
-if(p.type==="shirt"){
-y=2;
-w=30;
-h=7
-}
-
-if(p.type==="gown"){
-y=-2;
-w=34;
-h=8
-}
-
-if(p.type==="trousers"){
-y=0;
-w=23;
-h=7
-}
-
-if(p.type==="nikka"){
-y=0;
-w=23;
-h=7
-}
-
-x.save();
-
-x.shadowColor="#0008";
-x.shadowBlur=3;
-
-x.fillStyle="#17191d";
-x.beginPath();
-x.roundRect(-w,y,w*2,h,3);
-x.fill();
-
-x.shadowBlur=0;
-
-/* belt stitching */
-x.strokeStyle="#777";
-x.lineWidth=.8;
-x.beginPath();
-x.moveTo(-w+3,y+2);
-x.lineTo(w-3,y+2);
-x.stroke();
-
-x.beginPath();
-x.moveTo(-w+3,y+h-2);
-x.lineTo(w-3,y+h-2);
-x.stroke();
-
-/* buckle */
-x.fillStyle="#e5bd4b";
-x.strokeStyle="#fff0a0";
-x.lineWidth=1;
-
-x.beginPath();
-x.roundRect(-5,y-2,10,h+4,2);
-x.fill();
-x.stroke();
-
-x.fillStyle="#17191d";
-x.fillRect(-2,y,4,h);
-
-/* belt holes */
-x.fillStyle="#d8c58b";
-
-for(let i=-w+8;i<=w-8;i+=6){
-if(Math.abs(i)>7){
-x.beginPath();
-x.arc(i,y+h/2,1,0,Math.PI*2);
-x.fill()
-}
-}
-
-x.restore()
 }
 
 function deco(p){
-
 (p.decor||[]).forEach(d=>{
-
-x.save();
-
-x.strokeStyle=d.color||p.color||col;
-x.fillStyle=d.color||p.color||col;
-
-if(d.type==="fabric")
-for(let i=-50;i<=50;i+=6){
-x.beginPath();
-x.moveTo(i,-70);
-x.lineTo(i,75);
-x.stroke()
-}
-
-if(d.type==="pattern")
-for(let i=-70;i<90;i+=12){
-x.beginPath();
-x.moveTo(i,-70);
-x.lineTo(i+60,70);
-x.stroke()
-}
-
-if(d.type==="neck"){
-x.strokeStyle="#fff";
-x.lineWidth=3;
-x.beginPath();
-x.arc(0,-25,11,0,Math.PI);
-x.stroke();
-
-x.strokeStyle=d.color||p.color||col;
-x.lineWidth=2;
-x.beginPath();
-x.arc(0,-25,9,0,Math.PI);
-x.stroke()
-}
-
-if(d.type==="necklace"){
-
-x.strokeStyle="#f4c542";
-x.lineWidth=2;
-
-x.beginPath();
-x.arc(0,-8,15,0,Math.PI);
-x.stroke();
-
-x.fillStyle="#f4c542";
-
-x.beginPath();
-x.arc(0,8,4,0,7);
-x.fill();
-
-for(let a=0;a<=Math.PI;a+=Math.PI/6){
-x.beginPath();
-x.arc(
-Math.cos(a)*15,
--8+Math.sin(a)*15,
-1.8,0,7
-);
-x.fill()
-}
-}
-
-if(d.type==="sleeve"){
-x.fillRect(-42,-24,13,38);
-x.fillRect(29,-24,13,38)
-}
-
-if(d.type==="pocket"){
-x.strokeStyle=d.color||p.color||col;
-x.lineWidth=2;
-x.strokeRect(-9,4,18,14)
-}
-
-if(d.type==="belt"){
-drawBelt(p)
-}
-
-if(d.type==="zipper"){
-x.lineWidth=2;
-x.beginPath();
-x.moveTo(0,-27);
-x.lineTo(0,55);
-x.stroke()
-}
-
-if(["lace","ruffle","frills"].includes(d.type)){
-x.lineWidth=2;
-x.beginPath();
-
-for(let i=-40;i<=40;i+=8){
-x.moveTo(i,50);
-x.quadraticCurveTo(i+4,44,i+8,50)
-}
-
-x.stroke()
-}
-
-if(d.type==="flower"){
-x.fillStyle="#ffd84a";
-
-for(let i=0;i<5;i++){
-let a=i*Math.PI*2/5;
-x.beginPath();
-x.arc(
-Math.cos(a)*9,
-Math.sin(a)*9,
-4,0,7
-);
-x.fill()
-}
-}
-
-if(d.type==="collar"){
-x.lineWidth=2;
-x.beginPath();
-x.moveTo(-15,-28);
-x.lineTo(0,-18);
-x.lineTo(15,-28);
-x.stroke()
-}
-
-if(d.type==="buttons"){
-
-for(let y=-15;y<40;y+=11){
-
-x.fillStyle="#fff";
-x.beginPath();
-x.arc(0,y,3.5,0,7);
-x.fill();
-
-x.strokeStyle="#555";
-x.lineWidth=1;
-x.stroke();
-
-x.fillStyle="#777";
-x.beginPath();
-x.arc(-1,y-1,1,0,7);
-x.fill()
-}
-}
-
-if(d.type==="pleats")
-for(let i=-25;i<=25;i+=8){
-x.beginPath();
-x.moveTo(i,-12);
-x.lineTo(i+3,55);
-x.stroke()
-}
-
-if(d.type==="ankara")
-for(let i=-40;i<=40;i+=14){
-x.beginPath();
-x.arc(i,0,6,0,7);
-x.stroke()
-}
-
-if(d.type==="bright"){
-x.fillStyle="#fff3";
-x.fillRect(-55,-70,110,140)
-}
-
-if(d.type==="shadow"){
-x.fillStyle="#0004";
-x.fillRect(-50,-60,100,120)
-}
-
-if(d.type==="glow"){
-x.fillStyle=(p.color||col)+"44";
-x.fillRect(-55,-70,110,140)
-}
-
-if(d.type==="contrast"){
-x.lineWidth=2;
-x.strokeRect(-32,-35,64,70)
-}
-
-if(d.type==="blur"){
-x.globalAlpha=.35;
-x.fillRect(-45,-60,90,120)
-}
-
-if(d.type==="text"){
-x.fillStyle=d.color||col;
-x.font="bold 10px Arial";
-x.textAlign="center";
-x.fillText(d.text,0,0)
-}
-
+x.save();x.strokeStyle=d.color||p.color;x.fillStyle=d.color||p.color;
+if(d.type==="fabric")for(let i=-50;i<=50;i+=6){x.beginPath();x.moveTo(i,-70);x.lineTo(i,75);x.stroke()}
+if(d.type==="pattern")for(let i=-70;i<90;i+=12){x.beginPath();x.moveTo(i,-70);x.lineTo(i+60,70);x.stroke()}
+if(d.type==="neck"){x.strokeStyle="#fff";x.lineWidth=3;x.beginPath();x.arc(0,-25,11,0,Math.PI);x.stroke()}
+if(d.type==="necklace"){x.strokeStyle="#f4c542";x.lineWidth=2;x.beginPath();x.arc(0,-8,15,0,Math.PI);x.stroke();x.beginPath();x.arc(0,8,4,0,7);x.fill()}
+if(d.type==="sleeve"){x.fillRect(-42,-24,13,38);x.fillRect(29,-24,13,38)}
+if(d.type==="pocket")x.strokeRect(-9,4,18,14);
+if(d.type==="belt"){x.fillStyle="#17191d";x.fillRect(-34,2,68,7);x.fillStyle="#e5bd4b";x.fillRect(-5,0,10,11)}
+if(d.type==="zipper"){x.lineWidth=2;x.beginPath();x.moveTo(0,-27);x.lineTo(0,55);x.stroke()}
+if(["lace","ruffle","frills"].includes(d.type)){x.lineWidth=2;x.beginPath();for(let i=-40;i<=40;i+=8){x.moveTo(i,50);x.quadraticCurveTo(i+4,44,i+8,50)}x.stroke()}
+if(d.type==="flower"){x.fillStyle="#ffd84a";for(let i=0;i<5;i++){let a=i*Math.PI*2/5;x.beginPath();x.arc(Math.cos(a)*9,Math.sin(a)*9,4,0,7);x.fill()}}
+if(d.type==="collar"){x.lineWidth=2;x.beginPath();x.moveTo(-15,-28);x.lineTo(0,-18);x.lineTo(15,-28);x.stroke()}
+if(d.type==="buttons")for(let y=-15;y<40;y+=11){x.fillStyle="#fff";x.beginPath();x.arc(0,y,3.5,0,7);x.fill()}
+if(d.type==="pleats")for(let i=-25;i<=25;i+=8){x.beginPath();x.moveTo(i,-12);x.lineTo(i+3,55);x.stroke()}
+if(d.type==="ankara")for(let i=-40;i<=40;i+=14){x.beginPath();x.arc(i,0,6,0,7);x.stroke()}
+if(d.type==="bright"){x.fillStyle="#fff4";x.fillRect(-55,-70,110,140)}
+if(d.type==="shadow"){x.fillStyle="#0005";x.fillRect(-50,-60,100,120)}
+if(d.type==="glow"){x.fillStyle="#ffe06655";x.fillRect(-55,-70,110,140)}
+if(d.type==="contrast"){x.lineWidth=2;x.strokeRect(-32,-35,64,70)}
+if(d.type==="blur"){x.globalAlpha=.35;x.fillRect(-45,-60,90,120)}
+if(d.type==="text"){x.font="bold 10px Arial";x.textAlign="center";x.fillText(d.text,0,0)}
 x.restore()
 })
 }
 
 function draw(p){
-
-x.save();
-
-x.translate(p.x,p.y);
-x.rotate((p.r||0)*Math.PI/180);
-x.scale(p.s,p.s);
-
-base(p);
-deco(p);
-
-x.restore()
+x.save();x.translate(p.x,p.y);x.rotate((p.r||0)*Math.PI/180);x.scale(p.s,p.s);base(p);deco(p);x.restore()
 }
 
 function render(){
-
 blank();
-
-[
-"gown",
-"shirt",
-"trousers",
-"nikka",
-"maleHead",
-"femaleHead",
-"cap"
-].forEach(k=>{
-if(parts[k])draw(parts[k])
-})
+["gown","shirt","trousers","nikka","maleHead","femaleHead","cap"].forEach(k=>{if(parts[k])draw(parts[k])})
 }
 
 const T={
-Dress:[
-["Ball","gown"],
-["A-Line","gown"],
-["Mermaid","gown"],
-["Menu","gown"]
-],
-Top:[
-["Shirt","shirt"],
-["Crop","shirt"],
-["Blouse","shirt"]
-],
-Bottom:[
-["Trouser","trousers"],
-["Nikka","nikka"],
-["Jeans","trousers"]
-],
-Cap:[
-["Cap","cap"],
-["Flat","cap"],
-["Bucket","cap"]
-],
-Head:[
-["Male Head","maleHead"],
-["Female Head","femaleHead"]
-]
+Dress:[["Ball Gown","ball"],["A-Line","aline"],["Mermaid","mermaid"],["Long Gown","long"]],
+Top:[["T-Shirt","shirt"],["Crop Top","shirt"],["Blouse","shirt"],["Polo Shirt","shirt"],["Long Shirt","shirt"]],
+Bottom:[["Trouser","trousers"],["Nikka","nikka"],["Jeans","trousers"],["Shorts","nikka"]],
+Cap:[["Baseball","cap"],["Flat Cap","cap"],["Bucket","cap"]],
+Head:[["Male Head","maleHead"],["Female Head","femaleHead"]]
 };
 
 function templates(){
-
-$("temps").innerHTML=(T[$("cat").value]||[]).map(v=>
-`<button type="button" class="template" data-temp="${v[1]}">${v[0]}</button>`
-).join("")
+let list=T[$("cat").value]||[];
+$("temps").innerHTML=list.map(v=>`<button type="button" class="template" data-temp="${v[1]}">${v[0]}</button>`).join("")
 }
 
 function useTemplate(t){
+document.querySelectorAll(".template").forEach(q=>q.classList.remove("active"));
+event.target.classList.add("active");
 
-reset();
+if(t==="maleHead"){parts.maleHead=part(t,.65);parts.femaleHead=null;sel=t}
+else if(t==="femaleHead"){parts.femaleHead=part(t,.65);parts.maleHead=null;sel=t}
+else if(["ball","aline","mermaid","long"].includes(t)){
+gownStyle=t;parts.gown=part("gown",.85);sel="gown"
+}
+else parts[t]=part(t,.75);
+update();render();snap()
+}
 
-sel=t;
-
-parts[t]=part(
-t,
-(t==="maleHead"||t==="femaleHead")?.65:.75
-);
-
-update();
-render();
-snap()
+function toolColor(t){
+return{
+fabric:"#8ecae6",pattern:"#ff9f1c",neck:"#b8f2e6",necklace:"#f4c542",
+sleeve:"#a8dadc",pocket:"#90be6d",belt:"#8d6e63",zipper:"#d9d9d9",
+lace:"#f7b2d8",flower:"#ffd166",frills:"#cdb4db",collar:"#74c69d",
+buttons:"#f1faee",pleats:"#ffafcc",ankara:"#00b4d8",ruffle:"#e5989b",
+bright:"#fff3b0",contrast:"#f77f00",blur:"#adb5bd",shadow:"#343a40",
+glow:"#ffe66d"
+}[t]||"#ffd166"
 }
 
 function tool(t){
-
-if(!sel||!parts[sel])
-return alert("Select clothing first");
-
+if(!sel||!parts[sel])return alert("Select clothing first");
 let p=parts[sel];
-
-if(t==="recolor")
-return apply();
-
-if(t==="text"){
-
-let q=prompt("Enter text");
-
-if(q)
-p.decor.push({
-type:"text",
-text:q,
-color:col
-});
-
-}
-
-else if(t==="length"){
-
-p.s=Math.min(4,p.s+.15)
-
-}
-
+if(t==="recolor"){col=$("color").value;p.color=col}
+else if(t==="text"){let q=prompt("Enter text");if(q)p.decor.push({type:"text",text:q,color:"#ffd166"})}
+else if(t==="length")p.s=Math.min(4,p.s+.15);
 else{
-
-/* prevent duplicate belt, necklace and neck */
-if(["belt","necklace","neck"].includes(t)){
-p.decor=p.decor.filter(d=>d.type!==t)
+if(["belt","necklace","neck"].includes(t))p.decor=p.decor.filter(d=>d.type!==t);
+p.decor.push({type:t,color:toolColor(t)})
+}
+render();snap()
 }
 
-p.decor.push({
-type:t,
-color:col
-});
-
-}
-
-render();
-snap()
-}
-
-function clearTools(){
-
-if(!sel||!parts[sel])
-return alert("Select clothing first");
-
-parts[sel].decor=[];
-
-render();
-snap()
-}
-
-function clearAll(){
-
-if(!confirm("Clear the canvas?"))return;
-
-reset();
-sel=null;
-blank();
-update();
-snap()
-}
-
-function saved(){
-
-try{
-return JSON.parse(localStorage.getItem(KEY)||"[]")
-}catch(e){
-return[]
-}
-}
+function saved(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
 
 function load(){
-
 let a=saved();
-
-$("wardrobe").innerHTML=a.length?a.map(i=>
-`<div class="card">
-<button type="button" class="del" data-del="${i._id}">×</button>
-<img src="${i.image}" data-open="${i._id}">
-<div class="acts">
-<button type="button" class="top" data-addsaved="${i._id}" data-type="shirt">TOP</button>
-<button type="button" class="bottom" data-addsaved="${i._id}" data-type="trousers">BOTTOM</button>
-<button type="button" class="cap" data-addsaved="${i._id}" data-type="cap">CAP</button>
-</div>
-</div>`
-).join(""):'<div class="empty">No clothes saved yet.</div>'
+$("wardrobe").innerHTML=a.length?a.map(i=>`<div class="card"><button type="button" class="del" data-del="${i._id}">×</button><img src="${i.image}" data-open="${i._id}"><div class="acts"><button type="button" class="top" data-addsaved="${i._id}" data-type="shirt">TOP</button><button type="button" class="bottom" data-addsaved="${i._id}" data-type="trousers">BOTTOM</button><button type="button" class="cap" data-addsaved="${i._id}" data-type="cap">CAP</button></div></div>`).join(""):'<div class="empty">No clothes saved yet.</div>'
 }
 
 function save(){
-
-let n=$("name").value.trim();
-
-if(!n)
-return alert("Name your design first");
-
 let a=saved();
-
-a.push({
-_id:Date.now(),
-name:n,
-image:c.toDataURL()
-});
-
-try{
-
-localStorage.setItem(KEY,JSON.stringify(a));
-$("name").value="";
-load();
-
-alert("Design saved successfully!")
-
-}catch(e){
-
-alert("Could not save. Local storage may be full.")
-
-}
+a.push({_id:Date.now(),name:"Design "+(a.length+1),image:c.toDataURL()});
+try{localStorage.setItem(KEY,JSON.stringify(a));load();alert("Design saved successfully!")}catch(e){alert("Could not save.")}
 }
 
 function openSaved(id){
-
-let i=saved().find(v=>+v._id===+id);
-
-if(!i)return;
-
-$("wname").textContent=i.name;
-$("wimg").src=i.image;
-$("wide").style.display="flex"
+let i=saved().find(v=>+v._id===+id);if(!i)return;
+$("wname").textContent=i.name;$("wimg").src=i.image;$("wide").style.display="flex"
 }
 
+// FIXED: BIGGER + CONTINUOUS EDITING
 function addSaved(id,t){
-
-let v=saved().find(i=>+i._id===+id);
-
-if(!v)return;
-
+let v=saved().find(i=>+i._id===+id);if(!v)return;
 let im=new Image;
-
 im.onload=()=>{
-
-let p=part(t,.75);
-
+let p=part(t,1.3); // BIGGER: 1.3 instead of.75
 p.img=im;
-
 parts[t]=p;
-sel=t;
-
+sel=t; // AUTO SELECT IT FOR CONTINUOUS EDITING
 update();
 renderSaved();
 snap()
-
 };
-
 im.src=v.image
 }
 
 function renderSaved(){
-
 blank();
-
-[
-"gown",
-"shirt",
-"trousers",
-"nikka",
-"maleHead",
-"femaleHead",
-"cap"
-].forEach(k=>{
-
-let p=parts[k];
-
-if(!p)return;
-
-x.save();
-
-x.translate(p.x,p.y);
-x.rotate((p.r||0)*Math.PI/180);
-x.scale(p.s,p.s);
-
-if(p.img)
-x.drawImage(p.img,-50,-50,100,100);
-else
-base(p);
-
-deco(p);
-
-x.restore()
-
+["gown","shirt","trousers","nikka","maleHead","femaleHead","cap"].forEach(k=>{
+let p=parts[k];if(!p)return;
+x.save();x.translate(p.x,p.y);x.rotate((p.r||0)*Math.PI/180);x.scale(p.s,p.s);
+p.img?x.drawImage(p.img,-50,-50,100,100):base(p);deco(p);x.restore()
 })
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
-
-c.width=c.clientWidth;
-c.height=innerWidth<=360?130:145;
-
-blank();
-templates();
-load();
-snap();
+c.width=c.clientWidth;c.height=innerWidth<=360?130:145;
+blank();templates();load();snap();
 
 $("cat").addEventListener("change",templates);
 $("apply").addEventListener("click",apply);
 $("save").addEventListener("click",save);
-$("clear").addEventListener("click",clearAll);
-$("ct").addEventListener("click",clearTools);
-
 $("rs").addEventListener("click",()=>size(.25));
+$("close").addEventListener("click",()=>$("wide").style.display="none");
 
-$("close").addEventListener(
-"click",
-()=>$("wide").style.display="none"
-);
+$("clear").addEventListener("click",()=>{
+if(!confirm("Clear everything from the canvas?"))return;
+reset();sel=null;H=[];hp=-1;gownStyle="ball";update();blank();snap()
+});
 
 $("undo").addEventListener("click",()=>{
-
-if(hp<=0)
-return alert("Nothing to undo");
-
-hp--;
-
-let im=new Image;
-
-im.onload=()=>{
-blank();
-x.drawImage(im,0,0)
-};
-
-im.src=H[hp]
-
+if(hp<=0)return alert("Nothing to undo");
+hp--;restore(H[hp])
 });
 
 $("temps").addEventListener("click",e=>{
-
 let b=e.target.closest("[data-temp]");
-
-if(b)
+if(!b)return;
 useTemplate(b.dataset.temp)
-
 });
 
 document.querySelector(".clothes").addEventListener("click",e=>{
-
-let b=e.target.closest("[data-add]");
-
-if(b)
-add(b.dataset.add)
-
+let b=e.target.closest("[data-add]");if(b)add(b.dataset.add)
 });
 
-document.querySelector(".controls").addEventListener("click",e=>{
-
-let b=e.target.closest("button");
-
-if(!b)return;
-
-if(b.dataset.m){
-
-let v=b.dataset.m.split(",").map(Number);
-
-move(v[0],v[1]);
-
-return
-}
-
-if(b.dataset.s){
-
-size(+b.dataset.s);
-
-return
-}
-
-if(b.dataset.r){
-
-rot(+b.dataset.r);
-
-return
-}
-
-if(b.dataset.sel){
-
-choose(b.dataset.sel);
-
-return
-}
-
+$("selectClothes").addEventListener("click",e=>{
+let b=e.target.closest("[data-sel]");if(b)choose(b.dataset.sel)
 });
 
-document.querySelector(".tools").addEventListener("click",e=>{
+$("controls").addEventListener("click",e=>{
+let b=e.target.closest("button");if(!b)return;
+if(b.dataset.m){let v=b.dataset.m.split(",").map(Number);move(v[0],v[1])}
+else if(b.dataset.s)size(+b.dataset.s);
+else if(b.dataset.r)rot(+b.dataset.r)
+});
 
-let b=e.target.closest("[data-t]");
-
-if(b)
-tool(b.dataset.t)
-
+$("tools").addEventListener("click",e=>{
+let b=e.target.closest("[data-t]");if(b)tool(b.dataset.t)
 });
 
 $("wardrobe").addEventListener("click",e=>{
-
 let b=e.target.closest("[data-del]");
-
-if(b){
-
-localStorage.setItem(
-KEY,
-JSON.stringify(
-saved().filter(
-i=>+i._id!==+b.dataset.del
-)
-)
-);
-
-load();
-
-return
-}
-
+if(b){localStorage.setItem(KEY,JSON.stringify(saved().filter(i=>+i._id!==+b.dataset.del)));load();return}
 b=e.target.closest("[data-open]");
-
-if(b){
-
-openSaved(b.dataset.open);
-
-return
-}
-
+if(b){openSaved(b.dataset.open);return}
 b=e.target.closest("[data-addsaved]");
-
-if(b)
-addSaved(
-b.dataset.addsaved,
-b.dataset.type
-)
-
+if(b)addSaved(b.dataset.addsaved,b.dataset.type)
 });
 
 $("wide").addEventListener("click",e=>{
-
-if(e.target===$("wide"))
-$("wide").style.display="none"
-
-});
-
+if(e.target===$("wide"))$("wide").style.display="none"
+})
 });
 </script></body></html>
