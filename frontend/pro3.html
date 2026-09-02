@@ -4,7 +4,7 @@
 
       <script>
     // This runs before the page shows
-       const token = localStorage.getItem('token');
+     const token = localStorage.getItem('token');
 
     if (!token) {
       // Not logged in? Kick out immediately
@@ -25,7 +25,7 @@
       body {
   font-family: Roboto;
   color: rgb(33, 33, 33);
-  margin: 0;
+  margin-bottom: 100px;
 }
 
 .p {
@@ -33,7 +33,8 @@
 }
 
 .images-order {
-  height: 200px;
+  margin-top: 20px;
+  height: 250px;
   width: 230px;
   margin-bottom: 20px;
 }
@@ -42,13 +43,26 @@
   display: grid;
   font-family: Roboto;
   font-size: 15px;
-  width: 180px;
-  margin-left: 30px;
+  margin-left: 15px;
+  margin-right: 45px;
 }
 
+.date{
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.daten{
+  font-family: Roboto;
+  font-size: 25px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
 .order-name {
   margin: 0;
-  font-size: 30px;
+  font-size: 42px;
   font-weight: 700;
   font-family: Roboto;
   margin-bottom: 5px;
@@ -59,7 +73,7 @@
   margin: 0;
   margin-bottom: 5px;
   margin-top: 5px;
-   font-size: 30px;
+   font-size: 42px;
   font-weight: 700;
   font-family: Roboto;
 }
@@ -81,22 +95,15 @@
   background-color: rgb(253, 245, 88);
 }
 
-.num{
-  margin-bottom: 45px;
-  font-weight: 700;
-  font-size: 28px;
-  stop-color: blue;
-  text-decoration-line: none;
-}
 .star-icon {
   color: orange;
-  font-size: 30px;
+  font-size: 35px;
 }
 
 .count-c {
   font-family: Roboto;
   color: blue;
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .grid-co {
@@ -104,14 +111,14 @@
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
   row-gap: 50px;
   padding-bottom: 50px;
-  margin-top: 30px;
+  margin-top: 70px;
 }
 
 .flex-direct {
   background-color: rgb(5, 5, 5);
   display: flex;
   flex-direction: row;
-  height: 90px;
+  height: 120px;
   position: fixed;
   top: 0;
   left: 0;
@@ -237,17 +244,17 @@
     row-gap: 40px;
   }
   .images-order {
-    height: 150px;
-    width: 175px;
+    height: 300px;
+    width: 100%;
   }
   .paragraph-div {
-    width: 240px;
+    width: 310px;
     font-size: 14px;
     
   }
   .add-button {
-    width: 200px;
-     font-size: 18px;
+    width: 75%;
+     font-size: 22px;
       font-weight: 700;
       font-family: Roboto;
   }
@@ -384,7 +391,7 @@
           <div class="head-images">  <a href=""> <img class="header-images" src="header/cart-icon.png">  </a> 
          </div>
         
-        <div class="cart-quantity js-cart-quantity"> 0 </div>
+        <div class="cart-quantity js-cart-quantity">  </div>
      </div>
     </div>
 
@@ -418,152 +425,93 @@
 
  const products = [{
   id: 'rhrhur784754u-jkvh674784-kghg7t4y-4784764g',
-  image: 'amazon-images/blackout-curtains-black.jpg',
-  name: 'Blackout Curtains Set 42 x 84-Inch - Black,',
+  image: 'pictures2/photo_2026-09-02_14-53-40.jpg',
+  name: '',
   rating: {
     stars: 4.5,
     count:363
   },
-  pricecents: 3099
+  pricecents: 13
 
 }, {
   id: 'uifg46764-hr46464g-jfg4rt764r-hfgytr4t7r4',
-  image: 'amazon-images/countertop-blender-64-oz.jpg',
-  name: 'Countertop Blender 64oz, 1400 Watts',
+  image: 'pictures2/photo_2026-09-02_14-54-04.jpg',
+  name: '',
   rating: {
     stars: 4.5,
     count: 3
   }, 
-  pricecents: 1047
+  pricecents: 16
 
 }, {
   id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
-  image: 'amazon-images/men-cozy-fleece-zip-up-hoodie-red.jpg',
-  name: "Men's Full-Zip Hooded Sweatshirt",
+  image: 'pictures2/photo_2026-09-02_14-54-11.jpg',
+  name: "",
   rating:{
     stars: 4.5,
     count: 3157
   }, 
-  pricecents: 2400
+  pricecents: 27
 
   }, {
     id: 'urfghrf6767-jhfhr4764-jrfhr87478-jfwghr367',
-   image: 'amazon-images/luxury-tower-set-6-piece.jpg',
-   name: 'Luxury Towel Set - Graphite Gray pairs',
+   image: 'pictures2/photo_2026-09-02_14-54-17.jpg',
+   name: '',
    rating: {
     stars: 4.5,
     count: 144
    },
-   pricecents: 3599 
+   pricecents: 18
 
   }, {
     id: 'efgdgr4674y-fhur476-bhdght7648-jhfrh4r7624',
-    image: 'amazon-images/straw-sunhat.webp',
-    name: 'Straw Lifeguard Sun Hat Fabrical -',
+    image: 'pictures2/photo_2026-09-02_14-54-22.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 215
     },
-    pricecents: 2200
+    pricecents: 32
 
   }, {
     id: 'yteftf78-fh3877hr-rjhut4765u-jvhjeugr4764',
-    image: 'amazon-images/round-sunglasses-black (1).jpg',
-    name: "Women's Chiffon Beachwear Cover Up -",
+    image: 'pictures2/photo_2026-09-02_14-54-27.jpg',
+    name: "",
     rating: {
       stars: 4.5,
       count: 235
     },
-    pricecents: 2070
+    pricecents: 18
 
   }, {
     id: '7t476yghrfh-fvhjfgr7r4-rfjry467-fvhjrgr4ty',
-    image: 'amazon-images/6-piece-non-stick-baking-set (1).webp',
-    name: '6-Piece Nonstick, Carbon Steel Oven items',
+    image: 'pictures2/photo_2026-09-02_14-54-32.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 175
     },
-    pricecents: 3499
+    pricecents: 22
 
   }, {
     id: 'hrfghgr4764r-hjey74ry74rb-brgrf74-r4hjr467674r',
-    image: 'amazon-images/6-piece-white-dinner-plate-set.jpg',
-    name: '6 Piece White Dinner Plate Set of items',
+    image: 'pictures2/photo_2026-09-02_14-54-36.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 37
     },
-    pricecents: 2067
+    pricecents: 18
 
   }, {
     id: 'hrghreyr4yr-rhr78474gh4-rfjyfr67r4ghrf-hjryufr674yu',
-    image: 'amazon-images/intermediate-composite-basketball.jpg',
-    name: 'Intermediate Size Basketball in pairs',
+    image: 'pictures2/photo_2026-09-02_14-54-41.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 127
     },
-    pricecents: 2095
-
-  }, {
-    id: 'kjher674-67464gyhg-rfjrftyr467r-hjfrytf674r',
-    image: 'amazon-images/adults-plain-cotton-tshirt-2-pack-teal.jpg',
-    name: 'Adults Plain Cotton T-Shirt - 2 Pack',
-    rating: {
-      stars: 4.5,
-      count: 56
-    },
-    pricecents: 799
-
-  }, {
-    id: 'jkruhr86r4yr4-fjhrf76r47r4h-nfrgtfr64yr-jfyr67r4',
-    image: 'amazon-images/athletic-cotton-socks-6-pairs (1).jpg',
-    name: 'Black and Gray Athletic Cotton Socks - 6 Pairs',
-    rating: {
-      stars: 4.5,
-      count: 87
-    },
-    pricecents: 1090
-
-  }, {
-    id: 'jkeur67ry8r4-fjrhu467-crbt464j3-ehuey76r4563',
-    image: 'amazon-images/black-2-slot-toaster.jpg',
-    name: '2 Slot Toaster - Black Orders available in pairs ',
-    rating: {
-      stars: 4.5,
-      count: 2187
-    },
-   pricecents: 1899
-  } , {
-  id: 'uifg46764-hr46464g-jfg4rt764r-hfgytr4t7r4',
-  image: 'amazon-images/countertop-blender-64-oz.jpg',
-  name: 'Countertop Blender 64oz, 1400 Watts',
-  rating: {
-    stars: 4.5,
-    count: 3
-  }, 
-  pricecents: 1047
-
-}, {
-  id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
-  image: 'amazon-images/men-cozy-fleece-zip-up-hoodie-red.jpg',
-  name: "Men's Full-Zip Hooded Fleece Sweatshirt",
-  rating:{
-    stars: 4.5,
-    count: 3157
-  }, 
-  pricecents: 2400
-
-  }, {
-    id: 'urfghrf6767-jhfhr4764-jrfhr87478-jfwghr367',
-   image: 'amazon-images/luxury-tower-set-6-piece.jpg',
-   name: 'Luxury Towel Set - Graphite Gray pairs',
-   rating: {
-    stars: 4.5,
-    count: 144
-   },
-   pricecents: 3599 
+    pricecents: 15
 
   }];
 
@@ -583,8 +531,9 @@
     <span class="star-icon">&#9733&#9733&#9733&#9733&#9734 <span class="count-c">${product.rating.count}</span>
     </span>
     
-    <p class="price-cents"> $${(product.pricecents / 100).toFixed(2)}</p>
-    <a class="num" href="" >08127689541</a>
+    <p class="price-cents"> ${(product.pricecents).toFixed(3)}</p>
+    <div class="date"> {expired on: september 16} </div>
+    <div class="daten"> 08127689541 </div>  
 
      <button class="add-button js-add-to-cart" data-product-id="${product.id}"> Shop Products </button>
     </div>
