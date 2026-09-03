@@ -79,7 +79,7 @@
          <p> I'm into documents formatting I writes and edits document 📃. </p>
          <p class="p"> I'm also a Forex trader </p> 
     </div>
-    <div> FOR BUSINESS DEALS : +2348055630387 that my WhatsApp number 
+    <div> FOR BUSINESS DEALS : <span class="num"> +2348115614822 </span> that my WhatsApp number 
           no call 🤙 pls write me on WhatsApp for jobs only
     </div>
 </div>
@@ -87,6 +87,18 @@
 <script>
 
    const logout = document.querySelector('.logout')
+
+    const num = document.querySelector('.num')
+
+//https://wa.me/${phone}?text=${encodedMessage}
+
+   num.addEventListener('click', () => {
+     const phone = "2348115614822"; //Your manager number
+     const message = `Hello`;
+
+  const encodedMessage = encodeURIComponent(message);
+  window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`
+   })
 
    logout.addEventListener('click', () => {
      window.location.href="mainpage.html"
