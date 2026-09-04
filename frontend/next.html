@@ -1,264 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- 
-   <script>
-   // This runs before the page shows
-   const token = localStorage.getItem('token');
 
-    if (!token) {
+  <script>
+   // This runs before the page shows
+    const tokenn = localStorage.getItem('token');
+
+    if (!tokenn) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
-    }  
+    } 
   </script>
-    
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> Private Space </title>
- <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-  <style>
-    
-   body {
-  background-image: url("photo_2026-07-27_08-21-15.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
-
-h1{
-  display: grid;
-  justify-content: center;
-}
-
-
-
-h2{
-  display: grid;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-}
-
-button {
-  font-size: 25px;
-  font-weight: 700;
-  margin: 7px;
-  padding: 10px;
-  border-radius: 15px;
-}
-
-button:hover{
-  background-color: rgb(103, 103, 228);
-}
-.grid {
-  display: grid;
-  align-items: center;
-  justify-content: center;
-}
-
-.para {
-  font-size: 35px;
-  font-weight: 700;
-  margin-top: 250px;
-  text-align: center;
-  padding: 0 5%;
-}
-
-/* Laptop: 1024px and up - your original sizes */
-@media screen and (max-width: 1024px) {
-  button {
-    font-size: 22px;
-    padding: 9px;
-  }
-  .para {
-    font-size: 32px;
-    margin-top: 200px;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-/* Tablet: 768px to 1023px */
-@media screen and (max-width: 768px) {
-  button {
-    font-size: 20px;
-    padding: 8px;
-    margin: 6px;
-  }
-  .para {
-    font-size: 28px;
-    margin-top: 150px;
-    padding: 0 8%;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-/* Phone: 767px and below */
-@media screen and (max-width: 480px) {
-  button {
-    font-size: 18px;
-    padding: 8px;
-    margin: 5px;
-    width: 30%;
-    
-  }
-  .para {
-    font-size: 24px;
-    margin-top: 100px;
-    padding: 0 10%;
-  }
-  .grid {
-    width: 100%;
-  }
-
-  .game, .quiz, .Calculator, .todo, .expense, .product{
-    margin-left: 13px;
-    font-size: 13px;
-    width: 70px;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-.test{
-  display: flex;
-  padding: 15px;
-  justify-content: center;
-  align-items: baseline;
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  height: 50px;
-  font-family: Roboto;
-}
-
-.count{
-  font-size: 10px;
-  display: grid;
-  justify-content: center;
-  margin-top: -15px;
-  margin-bottom: -15px;
-}
-
-.Note {
-  width: 100%;
+  <title>Private Space</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   
-}
+  <script>
+  // Auth check runs first
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.replace('/login.html');
+  }  
+  </script>
 
-.ball{
-  width: 100%;
-  margin-top: 8px;
-}
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                  url("photo_2026-07-27_08-21-15.jpg") center/cover no-repeat fixed;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-.Media{
-  width: 100%;
-  margin-top: 240px;
-}
+    /* HEADER */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
 
-.Medial{
-  width: 90%;
-}
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #4b75ff, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-.grid{
-  margin-top: 200px;
-}
+    .btn-logout {
+      background: #ff4757;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover {
+      background: #e84118;
+      transform: translateY(-2px);
+    }
+
+    /* MAIN GRID */
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .welcome {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .welcome h2 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .welcome p {
+      font-size: 16px;
+      opacity: 0.8;
+    }
+
+    /* BUTTON GRID */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    /* COLORS BY CATEGORY */
+    .card.diary { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .card.expense { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .card.quiz { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .card.todo { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .card.calc { background: linear-gradient(135deg, #fa709a, #fee140); }
+    .card.design { background: linear-gradient(135deg, #30cfd0, #330867); }
+    .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
+
+    /* MOBILE */
+    @media (max-width: 480px) {
+      header h1 { font-size: 20px; }
+      .welcome h2 { font-size: 24px; }
+      .dashboard { gap: 12px; }
+      .card { padding: 18px 12px; font-size: 14px; }
+    }
   </style>
 </head>
 <body>
-   
-  <div> <button class="logout"> Back </button> </div>
 
-  <div class="grid">
-    
-   <span> 
-    <button class="Calculator"> Diary </button> 
-   <span>  <button class="expense"> Expense </button> </span> 
-   </span>
-   
-   <div> <button class="quiz"> Quiz </button>  
-   <span> <button class="todo"> Todo </button> </span> </div>
+  <header>
+    <h1>Private Space</h1>
+    <button class="btn-logout logout">← Back</button>
+  </header>
 
-    <div>
-      <div> 
-         <button class="cacu" style="background-color: rgb(75, 75, 201); width: 80%; color: white; margin-left: 22px;"> Caculator </button>
-      </div>
+  <div class="container">
+    <div class="welcome">
+      <h2>Welcome Back 👋</h2>
+      <p>Choose what you want to do today</p>
+    </div>
 
-    <button class="design" style="background-color: rgb(75, 190, 90); width: 90%; color: white; margin-left: 14px;"> Designers </button>
-    <div> 
-         <button class="drat" style="background-color: rgb(255, 166, 0); width: 100%;"> Draughts </button>
-      </div>
-  </div>
+    <div class="dashboard">
+      <div class="card diary">📓 Diary</div>
+      <div class="card expense">💰 Expense</div>
+      <div class="card quiz">🧠 Quiz</div>
+      <div class="card todo">✅ Todo</div>
+      <div class="card calc">🧮 Calculator</div>
+      <div class="card design">🎨 Designers</div>
+      <div class="card game">♟ Draughts</div>
+    </div>
   </div>
 
+  <footer>
+    © 2026 Private Space. All your tools in one place.
+  </footer>
 
   <script>
-
-   const calculator = document.querySelector('.Calculator')
-      const product = document.querySelector('.product')
-         const quiz = document.querySelector('.quiz')
-            const todo = document.querySelector('.todo')
-               const expense = document.querySelector('.expense')
-                  const changep = document.querySelector('.changep')
-                     const game = document.querySelector('.game')
-                      const logout = document.querySelector('.logout')
-    const Note = document.querySelector('.Note')                  
-    const Media = document.querySelector('.Media') 
-    const ball = document.querySelector('.ball')
-    const cal = document.querySelector('.cacu') 
-    const design = document.querySelector('.design')
-    const drat = document.querySelector('.drat')
-    //const Medial = document.querySelector('.Medial')
-      
-     
-
-
-    drat.addEventListener('click', () => {
-     window.location.href="drat.html"
-   })
-
-   cal.addEventListener('click', () => {
-     window.location.href="calculate.html"
-   })
-
-   design.addEventListener('click', () => {
-     window.location.href="design.html"
-   })
-
-   calculator.addEventListener('click', () => {
-      window.location.href="mycorner.html"
-   })  
-
-   quiz.addEventListener('click', () => {
-     window.location.href="quiz.html"
-   })
-
-   todo.addEventListener('click', () => {
-     window.location.href="todo.html"
-   })
-
-   
-   expense.addEventListener('click', () => {
-     window.location.href="expense.html"
-   })
-
-
-    logout.addEventListener('click', () => {
-     window.location.href="mainpage.html"
-   })
-
+    // Button navigation - clean and ordered
+    document.querySelector('.diary').onclick = () => window.location.href = "mycorner.html";
+    document.querySelector('.expense').onclick = () => window.location.href = "expense.html";
+    document.querySelector('.quiz').onclick = () => window.location.href = "quiz.html";
+    document.querySelector('.todo').onclick = () => window.location.href = "todo.html";
+    document.querySelector('.calc').onclick = () => window.location.href = "calculate.html";
+    document.querySelector('.design').onclick = () => window.location.href = "design.html";
+    document.querySelector('.game').onclick = () => window.location.href = "drat.html";
+    document.querySelector('.logout').onclick = () => window.location.href = "mainpage.html";
   </script>
 </body>
 </html>

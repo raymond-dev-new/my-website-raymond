@@ -1,5 +1,6 @@
 <!DOCTYPE html><html><head>
-<script>
+
+   <script>
    // This runs before the page shows
     const token = localStorage.getItem('token');
 
@@ -8,21 +9,21 @@
       window.location.replace('/login.html');
     } 
   </script>
-     
+
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Real Draughts vs CPU</title><style>
 *{box-sizing:border-box}body{margin:0;background:#151515;color:#fff;font:16px Arial;text-align:center}h2{margin:12px 0 5px}.turn{font-weight:bold;font-size:18px}.score{display:flex;justify-content:center;gap:35px;margin:8px}.red{color:#f44}.white{color:#fff}.board{width:94vw;max-width:480px;margin:12px auto;display:grid;grid-template-columns:repeat(8,1fr);border:5px solid #555}.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center}.light{background:#dbc297}.dark{background:#765334}.piece{width:76%;height:76%;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -5px 7px #0008,0 3px 5px #000;cursor:pointer;font-size:24px}.rp{background:#d83232}.wp{background:#eee;color:#222}.king:after{content:"♛";font-size:25px;color:#FFD700}.selected{outline:4px solid #ffe500}.can{box-shadow:inset 0 0 0 5px #38e638}.msg{min-height:24px;margin:8px;font-weight:bold}.btn{padding:11px 22px;border:0;border-radius:8px;font-weight:bold;margin:5px;background:#FF4500;color:white;cursor:pointer}.note{font-size:12px;color:#aaa;margin:8px}
 </style></head><body>
 
-<h2>♟ YOU vs HUNTER CPU</h2>
+<h2>♟ REAL DRAUGHTS vs CPU</h2>
 <div class="turn" id="turn"></div>
 <div class="score"><span class="red">🔴 You: <b id="rc">12</b></span><span class="white">🤖 CPU: <b id="wc">12</b></span></div>
 <div class="msg" id="msg"></div>
 <div class="board" id="board"></div>
 <button class="btn" onclick="newGame()">🔄 New Game</button>
-<div class="note">Flying Kings • CPU Must Capture • You are 🔴 Red • CPU is ⚪ White</div>
+<div class="note">Flying Kings • CPU Multi-Capture • You are 🔴 Red • CPU is ⚪ White</div>
 
 <script>
-const KEY="draughts_vs_cpu_v5_3";
+const KEY="draughts_v5_9";
 const B=document.getElementById("board"),T=document.getElementById("turn"),M=document.getElementById("msg"),RC=document.getElementById("rc"),WC=document.getElementById("wc");
 
 let a=[],p="r",sel=null,over=false,multi=false,thinking=false;
@@ -42,53 +43,21 @@ function newGame(){
 function allDirs(){return[[-1,-1],[-1,1],[1,-1],[1,1]];}
 function moveDirs(x){if(x.k)return allDirs();return x.p=="r"?[[-1,-1],[-1,1]]:[[1,-1],[1,1]];}
 
-/* FLYING KING MOVES */
 function moves(i,board=a){
  let x=board[i],out=[];if(!x)return out;
  let r=Math.floor(i/8),c=i%8;
-
- if(!x.k){
-  moveDirs(x).forEach(d=>{
-   let rr=r+d[0],cc=c+d[1];
-   if(rr>=0&&rr<8&&cc>=0&&cc<8){let j=rr*8+cc;if(!board[j])out.push({to:j,cap:-1});}
-  });
- }
- if(x.k){
-  allDirs().forEach(d=>{
-   for(let step=1;step<8;step++){
-    let rr=r+d[0]*step,cc=c+d[1]*step;
-    if(rr<0||rr>7||cc<0||cc>7)break;
-    let j=rr*8+cc;
-    if(!board[j])out.push({to:j,cap:-1});
-    else break;
-   }
-  });
- }
-
+ if(!x.k){moveDirs(x).forEach(d=>{let rr=r+d[0],cc=c+d[1];if(rr>=0&&rr<8&&cc>=0&&cc<8){let j=rr*8+cc;if(!board[j])out.push({to:j,cap:-1});}});}
+ if(x.k){allDirs().forEach(d=>{for(let step=1;step<8;step++){let rr=r+d[0]*step,cc=c+d[1]*step;if(rr<0||rr>7||cc<0||cc>7)break;let j=rr*8+cc;if(!board[j])out.push({to:j,cap:-1});else break;}});}
  allDirs().forEach(d=>{
-  if(x.k){
-   let foundEnemy=-1;
-   for(let step=1;step<8;step++){
-    let rr=r+d[0]*step,cc=c+d[1]*step;
-    if(rr<0||rr>7||cc<0||cc>7)break;
-    let j=rr*8+cc;
-    if(!board[j]){if(foundEnemy>=0)out.push({to:j,cap:foundEnemy});}
-    else if(board[j].p!=x.p){if(foundEnemy<0)foundEnemy=j;else break;}
-    else break;
-   }
-  }else{
-   let r1=r+d[0],c1=c+d[1];let r2=r+d[0]*2,c2=c+d[1]*2;
-   if(r1<0||r1>7||c1<0||c1>7)return;if(r2<0||r2>7||c2<0||c2>7)return;
-   let middle=r1*8+c1;let landing=r2*8+c2;
-   if(board[middle]&&board[middle].p!=x.p&&!board[landing])out.push({to:landing,cap:middle});
-  }
+  if(x.k){let found=-1;for(let step=1;step<8;step++){let rr=r+d[0]*step,cc=c+d[1]*step;if(rr<0||rr>7||cc<0||cc>7)break;let j=rr*8+cc;if(!board[j]){if(found>=0)out.push({to:j,cap:found});}else if(board[j].p!=x.p){if(found<0)found=j;else break;}else break;}}
+  else{let r1=r+d[0],c1=c+d[1];let r2=r+d[0]*2,c2=c+d[1]*2;if(r1<0||r1>7||c1<0||c1>7)return;if(r2<0||r2>7||c2<0||c2>7)return;let m=r1*8+c1;let l=r2*8+c2;if(board[m]&&board[m].p!=x.p&&!board[l])out.push({to:l,cap:m});}
  });
  return out;
 }
 
 function allCaptures(pl,board=a){
  let z=[];
- board.forEach((x,i)=>{if(x&&x.p==pl){moves(i,board).forEach(m=>{if(m.cap>=0)z.push({from:i,to:m.to,cap:m.cap});});}});
+ for(let i=0;i<64;i++){let x=board[i];if(x&&x.p==pl){moves(i,board).forEach(m=>{if(m.cap>=0)z.push({from:i,to:m.to,cap:m.cap});});}}
  return z;
 }
 
@@ -136,15 +105,24 @@ function executeMove(from,to,capIndex){
  if(capIndex>=0)a[capIndex]=null;
  let row=Math.floor(to/8);if((piece.p=="r"&&row==0)||(piece.p=="w"&&row==7))piece.k=true;
 
+ // CHECK FOR ANOTHER CAPTURE
  if(capIndex>=0){
   let next=moves(to).filter(x=>x.cap>=0);
-  if(next.length){sel=to;multi=true;M.textContent="Another capture available!";save();draw();return;}
- }
+  if(next.length){
+   sel=to;multi=true;M.textContent="Another capture available!";
+   save();draw();
+   if(p==CPU){setTimeout(cpuContinueCapture, 400);} // CPU AUTO CONTINUES
+   return;
+  }
+ } // <-- THIS WAS MISSING
+ endTurn();
+}
 
+function endTurn(){
  sel=null;multi=false;
  let enemy=p=="r"?"w":"r";
  if(!a.some(x=>x&&x.p==enemy)){finish(p);return;}
- let enemyMoves=[];a.forEach((x,n)=>{if(x&&x.p==enemy)enemyMoves.push(...moves(n));});
+ let enemyMoves=[];for(let i=0;i<64;i++){if(a[i]&&a[i].p==enemy)enemyMoves.push(...moves(i));}
  if(enemyMoves.length==0){finish(p);return;}
 
  p=enemy;M.textContent=allCaptures(p).length?"CPU must capture!":"CPU is thinking...";save();draw();
@@ -152,43 +130,36 @@ function executeMove(from,to,capIndex){
  else {thinking=false;draw();}
 }
 
-/* HUNTER CPU - MUST CAPTURE IF POSSIBLE */
+function cpuContinueCapture(){
+ let nextCaps=moves(sel).filter(x=>x.cap>=0);
+ if(nextCaps.length==0){endTurn();return;}
+ let chosen=nextCaps[Math.floor(Math.random()*nextCaps.length)];
+ executeMove(sel,chosen.to,chosen.cap);
+}
+
 function cpuMove(){
  thinking=true;draw();
  setTimeout(()=>{
   let caps=allCaptures(CPU);
   let possibleMoves=[];
-
-  a.forEach((x,i)=>{
+  for(let i=0;i<64;i++){
+   let x=a[i];
    if(x&&x.p==CPU){
     moves(i).forEach(m=>{
-     possibleMoves.push({from:i,to:m.to,cap:m.cap});
+     let score=0;
+     if(m.cap>=0)score+=300;
+     score+=Math.random()*20;
+     let row=Math.floor(m.to/8);if(row==7)score+=50;
+     let c=m.to%8;if(c>=2&&c<=5&&row>=2&&row<=5)score+=10;
+     possibleMoves.push({from:i,to:m.to,cap:m.cap,score});
     });
    }
-  });
-
-  let chosenMove;
-
-  // RULE 1: IF CAPTURE EXISTS, MUST CAPTURE
-  if(caps.length>0){
-   // Pick best capture randomly from available captures
-   chosenMove = caps[Math.floor(Math.random()*caps.length)];
-   M.textContent="CPU CAPTURES! 🎯";
-  }else{
-   // No captures, pick normal move with some strategy
-   possibleMoves.forEach(m=>{
-    m.score = Math.random()*30; // randomness
-    let row=Math.floor(m.to/8);
-    if(row==7)m.score+=20; // likes king
-    let c=m.to%8;
-    if(c>=2&&c<=5&&row>=2&&row<=5)m.score+=10; // center
-   });
-   possibleMoves.sort((a,b)=>b.score-a.score);
-   chosenMove = possibleMoves[0];
   }
-
-  if(chosenMove){executeMove(chosenMove.from,chosenMove.to,chosenMove.cap);}
-  else{finish(YOU);}
+  if(possibleMoves.length==0){thinking=false;finish(YOU);return;}
+  if(caps.length>0){possibleMoves=possibleMoves.filter(m=>m.cap>=0);}
+  possibleMoves.sort((a,b)=>b.score-a.score);
+  let chosenMove=possibleMoves[0];
+  executeMove(chosenMove.from,chosenMove.to,chosenMove.cap);
   thinking=false;draw();
  }, 500);
 }
