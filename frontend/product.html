@@ -23,21 +23,20 @@
       color: white;
       min-height: 100vh;
       padding: 20px;
-      display: flex; /* ADDED */
-      flex-direction: column; /* ADDED */
-      align-items: center; /* ADDED - centers everything */
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* centers everything */
     }
 
-    /* HEADER */
+    /* HEADER - ONLY BACK BUTTON */
   .topbar {
+      width: 100%;
+      max-width: 600px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      width: 100%; /* ADDED */
-      max-width: 600px; /* ADDED */
+      justify-content: flex-start; /* back button to left */
+      margin-bottom: 15px;
     }
-  .btn-back {
+ .btn-back {
       background: #ff4757;
       color: white;
       border: none;
@@ -46,28 +45,32 @@
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      transition: 0.2s;
     }
+ .btn-back:hover { background: #e84118; }
+
+    /* TITLE */
     h1 {
       color: white;
       font-size: 22px;
       font-weight: 700;
       text-align: center;
-      flex: 1;
+      margin-bottom: 25px; /* space below title */
     }
 
-    /* SHOP GRID - NOW CENTERED */
-  .shop-grid {
+    /* SHOP GRID - CENTERED */
+ .shop-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       width: 100%;
-      max-width: 420px; /* SMALLER WIDTH SO IT CENTERS BETTER */
-      margin: 0 auto 30px; /* ADDED margin auto */
-      justify-items: center; /* ADDED */
+      max-width: 420px;
+      margin: 0 auto 30px;
+      justify-items: center;
     }
 
-    /* BUTTONS - SMALL & CENTERED */
-  .btn {
+    /* BUTTONS - SMALL */
+ .btn {
       font-size: 12px;
       font-weight: 700;
       padding: 14px 8px;
@@ -75,22 +78,22 @@
       border: none;
       cursor: pointer;
       transition: all 0.2s;
-      width: 100%; /* fills grid cell */
-      max-width: 130px; /* ADDED - so buttons don't get too wide */
+      width: 100%;
+      max-width: 130px;
     }
-  .btn:hover {
+ .btn:hover {
       transform: translateY(-3px);
       opacity: 0.9;
     }
 
     /* COLORS */
-  .sale { background: gold; color: #000; }
-  .sale-alt { background: #00c853; color: white; }
-  .sale-blue { background: #2962ff; color: white; }
-  .video { background: #ff6d00; color: white; }
+ .sale { background: gold; color: #000; }
+ .sale-alt { background: #00c853; color: white; }
+ .sale-blue { background: #2962ff; color: white; }
+ .video { background: #ff6d00; color: white; }
 
     /* ADVERTISE BUTTON - CENTERED */
-  .btn-advertise {
+ .btn-advertise {
       background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%);
       color: white;
       font-size: 14px;
@@ -100,33 +103,32 @@
       border: none;
       width: 100%;
       max-width: 300px;
-      margin: 0 auto; /* ADDED */
-      display: block; /* ADDED */
+      margin: 0 auto;
+      display: block;
       cursor: pointer;
     }
-  .btn-advertise:hover {
-      transform: scale(1.03);
-    }
+ .btn-advertise:hover { transform: scale(1.03); }
 
     /* MOBILE */
     @media (max-width: 480px) {
       h1 { font-size: 18px; }
-    .shop-grid {
-        max-width: 340px; /* SMALLER ON MOBILE */
+   .shop-grid {
+        max-width: 340px;
         gap: 8px;
       }
-    .btn { font-size: 11px; padding: 12px 6px; max-width: 100px; }
-    .btn-advertise { font-size: 13px; padding: 12px 16px; }
+   .btn { font-size: 11px; padding: 12px 6px; max-width: 100px; }
+   .btn-advertise { font-size: 13px; padding: 12px 16px; }
     }
   </style>
 </head>
 <body>
 
+  <!-- ONLY BACK BUTTON AT TOP -->
   <div class="topbar">
     <button class="btn-back logout">← Back</button>
-    <h1>SHOP FROM US TODAY</h1>
-    <div style="width: 60px;"></div>
   </div>
+
+  <h1>SHOP FROM US TODAY</h1>
 
   <div class="shop-grid">
     <button class="btn sale">FOR SALE *</button>
