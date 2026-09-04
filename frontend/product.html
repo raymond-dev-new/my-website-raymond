@@ -1,381 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- 
-   <script>
-   // This runs before the page shows
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    }  
+  <script>
+   const token = localStorage.getItem('token');
+   if (!token) {
+     window.location.replace('/login.html');
+   }
   </script>
-    
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> Private Space </title>
- <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <title>Private Space Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
-    
-   body {
-  background-image: url("photo_2026-07-27_08-21-15.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-h1{
-  display: grid;
-  justify-content: center;
-}
+    body {
+      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+                  url("photo_2026-07-27_08-21-15.jpg") center/cover no-repeat fixed;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex; /* ADDED */
+      flex-direction: column; /* ADDED */
+      align-items: center; /* ADDED - centers everything */
+    }
 
-h2{
-  display: grid;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  
-}
+    /* HEADER */
+  .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      width: 100%; /* ADDED */
+      max-width: 600px; /* ADDED */
+    }
+  .btn-back {
+      background: #ff4757;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    h1 {
+      color: white;
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      flex: 1;
+    }
 
-button {
-  width: px;
-  font-size: 25px;
-  margin: 20px;
-  padding: 20px;
-  border-radius: 15px;
-  background-color: rgb(250, 213, 2);
-    color: white;
-    font-weight: 700;
-}
+    /* SHOP GRID - NOW CENTERED */
+  .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 420px; /* SMALLER WIDTH SO IT CENTERS BETTER */
+      margin: 0 auto 30px; /* ADDED margin auto */
+      justify-items: center; /* ADDED */
+    }
 
-button:hover{
-  background-color: rgb(103, 103, 228);
-}
+    /* BUTTONS - SMALL & CENTERED */
+  .btn {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 14px 8px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%; /* fills grid cell */
+      max-width: 130px; /* ADDED - so buttons don't get too wide */
+    }
+  .btn:hover {
+      transform: translateY(-3px);
+      opacity: 0.9;
+    }
 
+    /* COLORS */
+  .sale { background: gold; color: #000; }
+  .sale-alt { background: #00c853; color: white; }
+  .sale-blue { background: #2962ff; color: white; }
+  .video { background: #ff6d00; color: white; }
 
+    /* ADVERTISE BUTTON - CENTERED */
+  .btn-advertise {
+      background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: none;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto; /* ADDED */
+      display: block; /* ADDED */
+      cursor: pointer;
+    }
+  .btn-advertise:hover {
+      transform: scale(1.03);
+    }
 
-h1{
-  color: white;
-  font-size: 22px;
-  margin-top: 60px;
-  margin-bottom: -100px;
-}
-
-.div{
-  margin-top: 30px;
-}
-
-.btn-advertise {
-  background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%) !important;
-  display: grid;
-  justify-content: center;
-  align-items: center;
-  margin-top: 40px;
-  width: 170px;
-  margin-left: 80px; 
-}
-
-
-.grid {
-  margin-top: -300px;
-  display: grid;
-  align-items: center;
-  justify-content: center; 
-}
-
-.para {
-  font-size: 35px;
-  font-weight: 700;
-  margin-top: 250px;
-  text-align: center;
-  padding: 0 5%;
-}
-
-/* Laptop: 1024px and up - your original sizes */
-@media screen and (max-width: 1024px) {
-  button {
-    font-size: 22px;
-    padding: 9px;
-  }
-  .para {
-    font-size: 32px;
-    margin-top: 200px;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-/* Tablet: 768px to 1023px */
-@media screen and (max-width: 768px) {
-  button {
-    font-size: 20px;
-    padding: 8px;
-    margin: 6px;
-  }
-  .para {
-    font-size: 28px;
-    margin-top: 150px;
-    padding: 0 8%;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-/* Phone: 767px and below */
-@media screen and (max-width: 480px) {
-  button {
-    font-size: 18px;
-    padding: 8px;
-    margin: 5px;
-    width: 30%;
-    
-  }
-  .para {
-    font-size: 24px;
-    margin-top: 100px;
-    padding: 0 10%;
-  }
-  .grid {
-    width: 100%;
-  }
-
-  .Calculator, .todo, .expense{
-    margin-left: 13px;
-    font-size: 15px;
-    width: 90px;
-    background-color: gold;
-    color: white;
-    font-weight: 700;
-    margin-top: px;
-    
-  }
-
-.buy1, .buy2, .quiz{
-   margin-left: 13px;
-    font-size: 15px;
-    width: 90px;
-    background-color: green;
-    color: white;
-    font-weight: 700;
-    margin-top: px;
-}
-
-  .buy3, .buy4, .buy5{
-    margin-left: 13px;
-    font-size: 15px;
-    width: 90px;
-    background-color: blue;
-    color: white;
-    font-weight: 700;
-    margin-top: px;
-}
-
-.buy6, .buy7, .buy8{
-    margin-left: 13px;
-    font-size: 15px;
-    width: 90px;
-    background-color: green;
-    color: white;
-    font-weight: 700;
-    margin-top: px;
-}
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-.test{
-  display: flex;
-  padding: 15px;
-  justify-content: center;
-  align-items: baseline;
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  height: 50px;
-  font-family: Roboto;
-}
-
-.count{
-  font-size: 10px;
-  display: grid;
-  justify-content: center;
-  margin-top: -15px;
-  margin-bottom: -15px;
-}
-
-.Note {
-  width: 100%;
-  
-}
-
-.ball{
-  width: 100%;
-  margin-top: 8px;
-}
-
-.Media{
-  width: 100%;
-  margin-top: 240px;
-}
-
-.Medial{
-  width: 90%;
-}
-
-.grid{
-  margin-top: 200px;
-}
-
-
+    /* MOBILE */
+    @media (max-width: 480px) {
+      h1 { font-size: 18px; }
+    .shop-grid {
+        max-width: 340px; /* SMALLER ON MOBILE */
+        gap: 8px;
+      }
+    .btn { font-size: 11px; padding: 12px 6px; max-width: 100px; }
+    .btn-advertise { font-size: 13px; padding: 12px 16px; }
+    }
   </style>
 </head>
 <body>
-   
-  <div> <button class="logout"> Back </button> </div>
- <h1> SHOP FROM US TODAY </h1>
 
-  <div class="grid">
-    
-   <span> 
-    <span><button class="buy1"> FOR SALE *</button></span>
-   <span>  <button class="expense"> FOR SALE </button> </span>
-   <span><button class="quiz"> FOR SALE * </button></span>
-   
-   </span>
-    
-   <span>
-    <span> <button class="Calculator"> FOR SALE </button> </span>
-    <span><button class="todo"> FOR SALE </button></span>
-    <span><button class="buy2"> FOR SALE </button></span>   
-   </span>
-
-   <span class="span">
-    <span><button class="buy3"> FOR SALE </button></span>
-    <span><button class="buy4"> FOR SALE </button></span>
-    <span><button class="buy5"> FOR SALE </button></span>   
-   </span>
-    
-
-   <div class="div">
-    <span><button class="buy6"> Video Advert * </button></span>
-    <span><button class="buy7"> Video Advert </button></span>
-    <span><button class="buy8"> Video Advert </button></span> 
-   </div>
+  <div class="topbar">
+    <button class="btn-back logout">← Back</button>
+    <h1>SHOP FROM US TODAY</h1>
+    <div style="width: 60px;"></div>
   </div>
-     
-  
-    <div class="btn-ad"> <button class="advertise btn-advertise"> 📢 Click to place yours </button> </div>
-  
+
+  <div class="shop-grid">
+    <button class="btn sale">FOR SALE *</button>
+    <button class="btn sale">FOR SALE</button>
+    <button class="btn sale">FOR SALE *</button>
+
+    <button class="btn sale">FOR SALE</button>
+    <button class="btn sale">FOR SALE</button>
+    <button class="btn sale-alt">FOR SALE</button>
+
+    <button class="btn sale-blue">FOR SALE</button>
+    <button class="btn sale-blue">FOR SALE</button>
+    <button class="btn sale-blue">FOR SALE</button>
+
+    <button class="btn video">Video Advert *</button>
+    <button class="btn video">Video Advert</button>
+    <button class="btn video">Video Advert</button>
+  </div>
+
+  <button class="btn-advertise advertise">📢 Click to place yours</button>
 
   <script>
+    const btns = document.querySelectorAll('.btn');
+    btns[0].onclick = () => window.location.href="pro1.html"
+    btns[1].onclick = () => window.location.href="pro5.html"
+    btns[2].onclick = () => window.location.href="pro3.html"
+    btns[3].onclick = () => window.location.href="pro6.html"
+    btns[4].onclick = () => window.location.href="pro4.html"
+    btns[5].onclick = () => window.location.href="pro2.html"
+    btns[6].onclick = () => window.location.href="pro7.html"
+    btns[7].onclick = () => window.location.href="pro8.html"
+    btns[8].onclick = () => window.location.href="pro9.html"
+    btns[9].onclick = () => window.location.href="pro1v.html"
+    btns[10].onclick = () => window.location.href="pro2v.html"
+    btns[11].onclick = () => window.location.href="pro3v.html"
 
-   const calculator = document.querySelector('.Calculator')
-      
-         const quiz = document.querySelector('.quiz')
-            const todo = document.querySelector('.todo')
-               const expense = document.querySelector('.expense')
-                  const advertise = document.querySelector('.advertise')                     
-                      const logout = document.querySelector('.logout')
-    const buyo = document.querySelector('.buy1')                  
-    const buyt = document.querySelector('.buy2') 
-    const buyth = document.querySelector('.buy3')                  
-    const buyf = document.querySelector('.buy4') 
-    const buyfi = document.querySelector('.buy5') 
-     const buyv1 = document.querySelector('.buy6')                  
-    const buyv2 = document.querySelector('.buy7') 
-    const buyv3 = document.querySelector('.buy8') 
-   
-    
+    document.querySelector('.advertise').onclick = () => {
+      const phone = "2348115614822";
+      const message = `Hello, Thanks for advertising with us`;
+      window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    };
 
-
-     buyv1.addEventListener('click', () => {
-      window.location.href="pro1v.html"
-   }) 
-
-   buyv2.addEventListener('click', () => {
-      window.location.href="pro2v.html"
-   })
-   
-   buyv3.addEventListener('click', () => {
-      window.location.href="pro3v.html"
-   }) 
-
-   buyo.addEventListener('click', () => {
-      window.location.href="pro1.html"
-   }) 
-
-   buyth.addEventListener('click', () => {
-      window.location.href="pro7.html"
-   })
-   
-   buyf.addEventListener('click', () => {
-      window.location.href="pro8.html"
-   }) 
-
-   buyfi.addEventListener('click', () => {
-      window.location.href="pro9.html"
-   })
-    
-    buyt.addEventListener('click', () => {
-      window.location.href="pro2.html"
-   })
-
-
-   quiz.addEventListener('click', () => {
-     window.location.href="pro3.html"
-   })
-
-   todo.addEventListener('click', () => {
-     window.location.href="pro4.html"
-   })
-
-   
-   expense.addEventListener('click', () => {
-     window.location.href="pro5.html"
-   })
-
-
-   calculator.addEventListener('click', () => {
-      window.location.href="pro6.html"
-   }) 
-
- /*  advertise.addEventListener('click', () => {
-     window.location.href="https://wa.me/2349014805738?"
-   }) */
-
- advertise.addEventListener('click', () => {
-  const phone = "2348115614822"; //Your manager number
-const message = `Hello, Thanks for advertising with us`;
-
-  const encodedMessage = encodeURIComponent(message);
-  window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`
-});
-
-/*Hello, Thanks for advertising with us
-Make payment to this account Mumber
-8115614822
-Palmpay Progress
-............
-This is my manager WhatsApp number, if you have any issues with my manager or delay to post your products this is my WhatsApp number message me directly +2347050472675
-Thanks for running advert with us */
-//text=Hello%20I%20want%20to%20advertise%20my%20products%20on%2Your website
-    logout.addEventListener('click', () => {
-     window.location.href="mainpage.html"
-   })
-
+    document.querySelector('.logout').onclick = () => window.location.href="mainpage.html"
   </script>
 </body>
 </html>
