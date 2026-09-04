@@ -193,8 +193,11 @@ button:hover{
       <div> 
          <button class="cacu" style="background-color: blue; width: 100%;"> Caculator </button>
       </div>
-    
+
     <button class="design" style="background-color: green; width: 100%"> Designers </button>
+    <div> 
+         <button class="drat" style="background-color: blue; width: 100%;"> Draughts </button>
+      </div>
   </div>
   </div>
 
@@ -214,9 +217,15 @@ button:hover{
     const ball = document.querySelector('.ball')
     const cal = document.querySelector('.cacu') 
     const design = document.querySelector('.design')
+    const drat = document.querySelector('.drat')
     //const Medial = document.querySelector('.Medial')
       
      
+
+
+    drat.addEventListener('click', () => {
+     window.location.href="drat.html"
+   })
 
    cal.addEventListener('click', () => {
      window.location.href="calculate.html"

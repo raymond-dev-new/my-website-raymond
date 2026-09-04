@@ -1,0 +1,200 @@
+<!DOCTYPE html><html><head>
+<script>
+   // This runs before the page shows
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    } 
+  </script>
+     
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Real Draughts vs CPU</title><style>
+*{box-sizing:border-box}body{margin:0;background:#151515;color:#fff;font:16px Arial;text-align:center}h2{margin:12px 0 5px}.turn{font-weight:bold;font-size:18px}.score{display:flex;justify-content:center;gap:35px;margin:8px}.red{color:#f44}.white{color:#fff}.board{width:94vw;max-width:480px;margin:12px auto;display:grid;grid-template-columns:repeat(8,1fr);border:5px solid #555}.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center}.light{background:#dbc297}.dark{background:#765334}.piece{width:76%;height:76%;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -5px 7px #0008,0 3px 5px #000;cursor:pointer;font-size:24px}.rp{background:#d83232}.wp{background:#eee;color:#222}.king:after{content:"♛";font-size:25px;color:#FFD700}.selected{outline:4px solid #ffe500}.can{box-shadow:inset 0 0 0 5px #38e638}.msg{min-height:24px;margin:8px;font-weight:bold}.btn{padding:11px 22px;border:0;border-radius:8px;font-weight:bold;margin:5px;background:#FF4500;color:white;cursor:pointer}.note{font-size:12px;color:#aaa;margin:8px}
+</style></head><body>
+
+<h2>♟ YOU vs HUNTER CPU</h2>
+<div class="turn" id="turn"></div>
+<div class="score"><span class="red">🔴 You: <b id="rc">12</b></span><span class="white">🤖 CPU: <b id="wc">12</b></span></div>
+<div class="msg" id="msg"></div>
+<div class="board" id="board"></div>
+<button class="btn" onclick="newGame()">🔄 New Game</button>
+<div class="note">Flying Kings • CPU Must Capture • You are 🔴 Red • CPU is ⚪ White</div>
+
+<script>
+const KEY="draughts_vs_cpu_v5_3";
+const B=document.getElementById("board"),T=document.getElementById("turn"),M=document.getElementById("msg"),RC=document.getElementById("rc"),WC=document.getElementById("wc");
+
+let a=[],p="r",sel=null,over=false,multi=false,thinking=false;
+const YOU="r", CPU="w";
+
+function save(){localStorage.setItem(KEY,JSON.stringify({board:a,player:p,selected:sel,gameOver:over,multiple:multi}));}
+function load(){let s=localStorage.getItem(KEY);if(!s)return false;try{s=JSON.parse(s);a=s.board||[];p=s.player||"r";sel=s.selected??null;over=!!s.gameOver;multi=!!s.multiple;if(a.length!==64)return false;return true;}catch(e){return false}}
+
+function newGame(){
+ localStorage.removeItem(KEY);
+ a=Array(64).fill(null);p="r";sel=null;over=false;multi=false;thinking=false;
+ for(let r=0;r<3;r++)for(let c=0;c<8;c++)if((r+c)%2)a[r*8+c]={p:"w",k:false};
+ for(let r=5;r<8;r++)for(let c=0;c<8;c++)if((r+c)%2)a[r*8+c]={p:"r",k:false};
+ M.textContent="Your turn: Select a piece";save();draw();
+}
+
+function allDirs(){return[[-1,-1],[-1,1],[1,-1],[1,1]];}
+function moveDirs(x){if(x.k)return allDirs();return x.p=="r"?[[-1,-1],[-1,1]]:[[1,-1],[1,1]];}
+
+/* FLYING KING MOVES */
+function moves(i,board=a){
+ let x=board[i],out=[];if(!x)return out;
+ let r=Math.floor(i/8),c=i%8;
+
+ if(!x.k){
+  moveDirs(x).forEach(d=>{
+   let rr=r+d[0],cc=c+d[1];
+   if(rr>=0&&rr<8&&cc>=0&&cc<8){let j=rr*8+cc;if(!board[j])out.push({to:j,cap:-1});}
+  });
+ }
+ if(x.k){
+  allDirs().forEach(d=>{
+   for(let step=1;step<8;step++){
+    let rr=r+d[0]*step,cc=c+d[1]*step;
+    if(rr<0||rr>7||cc<0||cc>7)break;
+    let j=rr*8+cc;
+    if(!board[j])out.push({to:j,cap:-1});
+    else break;
+   }
+  });
+ }
+
+ allDirs().forEach(d=>{
+  if(x.k){
+   let foundEnemy=-1;
+   for(let step=1;step<8;step++){
+    let rr=r+d[0]*step,cc=c+d[1]*step;
+    if(rr<0||rr>7||cc<0||cc>7)break;
+    let j=rr*8+cc;
+    if(!board[j]){if(foundEnemy>=0)out.push({to:j,cap:foundEnemy});}
+    else if(board[j].p!=x.p){if(foundEnemy<0)foundEnemy=j;else break;}
+    else break;
+   }
+  }else{
+   let r1=r+d[0],c1=c+d[1];let r2=r+d[0]*2,c2=c+d[1]*2;
+   if(r1<0||r1>7||c1<0||c1>7)return;if(r2<0||r2>7||c2<0||c2>7)return;
+   let middle=r1*8+c1;let landing=r2*8+c2;
+   if(board[middle]&&board[middle].p!=x.p&&!board[landing])out.push({to:landing,cap:middle});
+  }
+ });
+ return out;
+}
+
+function allCaptures(pl,board=a){
+ let z=[];
+ board.forEach((x,i)=>{if(x&&x.p==pl){moves(i,board).forEach(m=>{if(m.cap>=0)z.push({from:i,to:m.to,cap:m.cap});});}});
+ return z;
+}
+
+function draw(){
+ B.innerHTML="";
+ for(let i=0;i<64;i++){
+  let s=document.createElement("div");
+  s.className="sq "+((Math.floor(i/8)+i%8)%2?"dark":"light");
+  if(sel===i)s.classList.add("selected");
+  if(sel!==null&&moves(sel).some(m=>m.to===i))s.classList.add("can");
+  if(a[i]){
+   let q=document.createElement("div");
+   q.className="piece "+(a[i].p=="r"?"rp":"wp")+(a[i].k?" king":"");
+   if(p==YOU &&!thinking)q.onclick=e=>{e.stopPropagation();tap(i);};
+   s.appendChild(q);
+  }
+  if(p==YOU &&!thinking)s.onclick=()=>tap(i);
+  B.appendChild(s);
+ }
+ RC.textContent=a.filter(x=>x&&x.p=="r").length;
+ WC.textContent=a.filter(x=>x&&x.p=="w").length;
+ T.textContent=over?"GAME OVER":(p==YOU?"🔴 Your Turn":"🤖 CPU is thinking...");
+}
+
+function tap(i){
+ if(over||thinking||p!=YOU)return;
+ if(sel===null){
+  if(!a[i]||a[i].p!=p)return;
+  let caps=allCaptures(p);
+  if(caps.length&&!caps.some(x=>x.from==i)){M.textContent="You must select a piece that can capture!";return;}
+  sel=i;M.textContent=caps.length?"Capture an opponent!":"Choose a move.";save();draw();return;
+ }
+ let m=moves(sel).find(x=>x.to==i);
+ if(!m){
+  if(a[i]&&a[i].p==p&&!multi){let caps=allCaptures(p);if(!caps.length||caps.some(x=>x.from==i)){sel=i;save();draw();}return;}
+  M.textContent="Invalid move.";return;
+ }
+ let globalCaps=allCaptures(p);
+ if(globalCaps.length&&m.cap<0){M.textContent="You must capture!";return;}
+ executeMove(sel,i,m.cap);
+}
+
+function executeMove(from,to,capIndex){
+ let piece=a[from];a[to]=piece;a[from]=null;
+ if(capIndex>=0)a[capIndex]=null;
+ let row=Math.floor(to/8);if((piece.p=="r"&&row==0)||(piece.p=="w"&&row==7))piece.k=true;
+
+ if(capIndex>=0){
+  let next=moves(to).filter(x=>x.cap>=0);
+  if(next.length){sel=to;multi=true;M.textContent="Another capture available!";save();draw();return;}
+ }
+
+ sel=null;multi=false;
+ let enemy=p=="r"?"w":"r";
+ if(!a.some(x=>x&&x.p==enemy)){finish(p);return;}
+ let enemyMoves=[];a.forEach((x,n)=>{if(x&&x.p==enemy)enemyMoves.push(...moves(n));});
+ if(enemyMoves.length==0){finish(p);return;}
+
+ p=enemy;M.textContent=allCaptures(p).length?"CPU must capture!":"CPU is thinking...";save();draw();
+ if(p==CPU &&!over)setTimeout(cpuMove,500);
+ else {thinking=false;draw();}
+}
+
+/* HUNTER CPU - MUST CAPTURE IF POSSIBLE */
+function cpuMove(){
+ thinking=true;draw();
+ setTimeout(()=>{
+  let caps=allCaptures(CPU);
+  let possibleMoves=[];
+
+  a.forEach((x,i)=>{
+   if(x&&x.p==CPU){
+    moves(i).forEach(m=>{
+     possibleMoves.push({from:i,to:m.to,cap:m.cap});
+    });
+   }
+  });
+
+  let chosenMove;
+
+  // RULE 1: IF CAPTURE EXISTS, MUST CAPTURE
+  if(caps.length>0){
+   // Pick best capture randomly from available captures
+   chosenMove = caps[Math.floor(Math.random()*caps.length)];
+   M.textContent="CPU CAPTURES! 🎯";
+  }else{
+   // No captures, pick normal move with some strategy
+   possibleMoves.forEach(m=>{
+    m.score = Math.random()*30; // randomness
+    let row=Math.floor(m.to/8);
+    if(row==7)m.score+=20; // likes king
+    let c=m.to%8;
+    if(c>=2&&c<=5&&row>=2&&row<=5)m.score+=10; // center
+   });
+   possibleMoves.sort((a,b)=>b.score-a.score);
+   chosenMove = possibleMoves[0];
+  }
+
+  if(chosenMove){executeMove(chosenMove.from,chosenMove.to,chosenMove.cap);}
+  else{finish(YOU);}
+  thinking=false;draw();
+ }, 500);
+}
+
+function finish(x){over=true;sel=null;thinking=false;M.textContent=(x==YOU?"🔴 YOU WIN! 🎉":"🤖 CPU WINS! 😭");save();draw();}
+
+if(!load())newGame();
+else draw();
+</script></body></html>
