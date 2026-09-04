@@ -11,144 +11,144 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Private Space Shop</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
-                  url("photo_2026-07-27_08-21-15.jpg") center/cover no-repeat fixed;
+      background: url("photo_2026-07-27_08-21-15.jpg") center/cover no-repeat fixed;
       font-family: 'Poppins', sans-serif;
       color: white;
       min-height: 100vh;
       padding: 20px;
+      position: relative;
+    }
+
+    /* YELLOW BACK BUTTON TOP LEFT */
+.btn-back {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #FFD700; /* YELLOW */
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    /* CENTER CONTENT */
+.wrapper {
       display: flex;
       flex-direction: column;
-      align-items: center; /* centers everything */
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding-top: 60px; /* space for back button */
     }
 
-    /* HEADER - ONLY BACK BUTTON */
-  .topbar {
-      width: 100%;
-      max-width: 600px;
-      display: flex;
-      justify-content: flex-start; /* back button to left */
-      margin-bottom: 15px;
-    }
- .btn-back {
-      background: #ff4757;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
-    }
- .btn-back:hover { background: #e84118; }
-
-    /* TITLE */
     h1 {
       color: white;
-      font-size: 22px;
-      font-weight: 700;
+      font-size: 20px;
+      font-weight: 800;
       text-align: center;
-      margin-bottom: 25px; /* space below title */
+      margin-bottom: 25px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     }
 
-    /* SHOP GRID - CENTERED */
- .shop-grid {
+    /* 3x4 GRID */
+.shop-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       width: 100%;
-      max-width: 420px;
-      margin: 0 auto 30px;
-      justify-items: center;
+      max-width: 380px;
+      margin-bottom: 20px;
     }
 
-    /* BUTTONS - SMALL */
- .btn {
+    /* BUTTONS */
+.btn {
       font-size: 12px;
       font-weight: 700;
-      padding: 14px 8px;
-      border-radius: 12px;
+      padding: 16px 8px;
+      border-radius: 14px;
       border: none;
       cursor: pointer;
       transition: all 0.2s;
       width: 100%;
-      max-width: 130px;
+      color: white;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
     }
- .btn:hover {
-      transform: translateY(-3px);
-      opacity: 0.9;
-    }
+.btn:hover { transform: translateY(-2px); }
 
-    /* COLORS */
- .sale { background: gold; color: #000; }
- .sale-alt { background: #00c853; color: white; }
- .sale-blue { background: #2962ff; color: white; }
- .video { background: #ff6d00; color: white; }
+    /* COLORS LIKE YOUR SCREENSHOT */
+.green { background: #00c853; }
+.yellow { background: #FFD700; color: #000; }
+.purple { background: #7e57c2; }
+.blue { background: #2962ff; }
 
-    /* ADVERTISE BUTTON - CENTERED */
- .btn-advertise {
+    /* ORANGE ADVERT BUTTON */
+.btn-advertise {
       background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%);
       color: white;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       padding: 14px 20px;
       border-radius: 14px;
       border: none;
       width: 100%;
-      max-width: 300px;
+      max-width: 250px;
       margin: 0 auto;
       display: block;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255,140,0,0.4);
     }
- .btn-advertise:hover { transform: scale(1.03); }
 
     /* MOBILE */
     @media (max-width: 480px) {
       h1 { font-size: 18px; }
-   .shop-grid {
-        max-width: 340px;
-        gap: 8px;
-      }
-   .btn { font-size: 11px; padding: 12px 6px; max-width: 100px; }
-   .btn-advertise { font-size: 13px; padding: 12px 16px; }
+  .shop-grid { gap: 10px; max-width: 340px; }
+  .btn { font-size: 11px; padding: 14px 6px; }
+  .btn-back { padding: 10px 20px; font-size: 15px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ONLY BACK BUTTON AT TOP -->
-  <div class="topbar">
-    <button class="btn-back logout">← Back</button>
+  <button class="btn-back logout">Back</button>
+
+  <div class="wrapper">
+    <h1>SHOP FROM US TODAY</h1>
+
+    <div class="shop-grid">
+      <!-- ROW 1 -->
+      <button class="btn green">FOR SALE *</button>
+      <button class="btn yellow">FOR SALE</button>
+      <button class="btn purple">FOR SALE *</button>
+
+      <!-- ROW 2 -->
+      <button class="btn yellow">FOR SALE</button>
+      <button class="btn yellow">FOR SALE</button>
+      <button class="btn green">FOR SALE</button>
+
+      <!-- ROW 3 -->
+      <button class="btn blue">FOR SALE</button>
+      <button class="btn blue">FOR SALE</button>
+      <button class="btn blue">FOR SALE</button>
+
+      <!-- ROW 4 -->
+      <button class="btn green">Video<br>Advert *</button>
+      <button class="btn green">Video<br>Advert</button>
+      <button class="btn green">Video<br>Advert</button>
+    </div>
+
+    <button class="btn-advertise advertise">📢 Click to place yours</button>
   </div>
-
-  <h1>SHOP FROM US TODAY</h1>
-
-  <div class="shop-grid">
-    <button class="btn sale">FOR SALE *</button>
-    <button class="btn sale">FOR SALE</button>
-    <button class="btn sale">FOR SALE *</button>
-
-    <button class="btn sale">FOR SALE</button>
-    <button class="btn sale">FOR SALE</button>
-    <button class="btn sale-alt">FOR SALE</button>
-
-    <button class="btn sale-blue">FOR SALE</button>
-    <button class="btn sale-blue">FOR SALE</button>
-    <button class="btn sale-blue">FOR SALE</button>
-
-    <button class="btn video">Video Advert *</button>
-    <button class="btn video">Video Advert</button>
-    <button class="btn video">Video Advert</button>
-  </div>
-
-  <button class="btn-advertise advertise">📢 Click to place yours</button>
 
   <script>
     const btns = document.querySelectorAll('.btn');
