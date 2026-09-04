@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <script>
-   // This runs before the page shows
-    const tokenn = localStorage.getItem('token');
-
-    if (!tokenn) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    } 
+   const tokenn = localStorage.getItem('token');
+   if (!tokenn) {
+     window.location.replace('/login.html');
+   } 
   </script>
 
   <meta charset="UTF-8">
@@ -17,14 +13,6 @@
   <title>Private Space</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   
-  <script>
-  // Auth check runs first
-  const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.replace('/login.html');
-  }  
-  </script>
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -38,19 +26,19 @@
       flex-direction: column;
     }
 
-    /* HEADER */
+    /* HEADER - SMALLER */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 24px;
+      padding: 12px 20px; /* was 16px 24px */
       backdrop-filter: blur(10px);
       background: rgba(255,255,255,0.05);
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     header h1 {
-      font-size: 24px;
+      font-size: 20px; /* was 24px */
       font-weight: 700;
       background: linear-gradient(90deg, #4b75ff, #8b5cf6);
       -webkit-background-clip: text;
@@ -61,9 +49,10 @@
       background: #ff4757;
       color: white;
       border: none;
-      padding: 10px 18px;
-      border-radius: 12px;
+      padding: 8px 14px; /* was 10px 18px */
+      border-radius: 10px; /* was 12px */
       font-weight: 600;
+      font-size: 14px; /* ADDED */
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -72,55 +61,55 @@
       transform: translateY(-2px);
     }
 
-    /* MAIN GRID */
+    /* MAIN GRID - SMALLER */
     .container {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 20px;
+      padding: 30px 16px; /* was 40px 20px */
     }
 
     .welcome {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 30px; /* was 40px */
     }
     .welcome h2 {
-      font-size: 32px;
+      font-size: 24px; /* was 32px */
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .welcome p {
-      font-size: 16px;
+      font-size: 14px; /* was 16px */
       opacity: 0.8;
     }
 
-    /* BUTTON GRID */
+    /* BUTTON GRID - SMALLER CARDS */
     .dashboard {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* was 140px */
+      gap: 14px; /* was 20px */
       width: 100%;
-      max-width: 600px;
+      max-width: 500px; /* was 600px */
     }
 
     .card {
       background: rgba(255,255,255,0.08);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
-      padding: 24px 16px;
+      border-radius: 16px; /* was 20px */
+      padding: 18px 12px; /* was 24px 16px */
       text-align: center;
       cursor: pointer;
       transition: all 0.3s ease;
       font-weight: 600;
-      font-size: 16px;
+      font-size: 14px; /* was 16px */
     }
     .card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-4px); /* was -5px */
       background: rgba(255,255,255,0.15);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3); /* was 8px 20px */
     }
 
     /* COLORS BY CATEGORY */
@@ -135,17 +124,18 @@
     /* FOOTER */
     footer {
       text-align: center;
-      padding: 20px;
-      font-size: 12px;
+      padding: 16px; /* was 20px */
+      font-size: 11px; /* was 12px */
       opacity: 0.6;
     }
 
-    /* MOBILE */
+    /* MOBILE - EVEN SMALLER */
     @media (max-width: 480px) {
-      header h1 { font-size: 20px; }
-      .welcome h2 { font-size: 24px; }
-      .dashboard { gap: 12px; }
-      .card { padding: 18px 12px; font-size: 14px; }
+      header h1 { font-size: 18px; }
+      .welcome h2 { font-size: 20px; }
+      .dashboard { gap: 10px; grid-template-columns: repeat(2, 1fr); }
+      .card { padding: 14px 10px; font-size: 13px; border-radius: 14px; }
+      .card.game { grid-column: span 2; }
     }
   </style>
 </head>
@@ -173,9 +163,7 @@
     </div>
   </div>
 
-  
   <script>
-    // Button navigation - clean and ordered
     document.querySelector('.diary').onclick = () => window.location.href = "mycorner.html";
     document.querySelector('.expense').onclick = () => window.location.href = "expense.html";
     document.querySelector('.quiz').onclick = () => window.location.href = "quiz.html";
