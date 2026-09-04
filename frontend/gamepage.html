@@ -1,214 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Zone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
-     <script>
-     // This runs before the page shows
+  <script>
     const token = localStorage.getItem('token');
-
     if (!token) {
-      // Not logged in? Kick out immediately
       window.location.replace('/login.html');
     } 
   </script>
-   
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
- <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     
-   body {
-  background-image: url("photo_2026-07-27_07-52-03.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
+    body {
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), 
+                  url("photo_2026-07-27_07-52-03.jpg") center/cover no-repeat fixed;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-h1{
-  display: grid;
-  justify-content: center;
-}
+    /* HEADER */
+    header {
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,0.3);
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #ff8a00, #e52e71);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .btn-back {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-back:hover { background: rgb(103, 103, 228); }
 
-button {
-  font-size: 25px;
-  font-weight: 700;
-  margin: 7px;
-  padding: 10px;
-  border-radius: 17px;
-}
+    /* MAIN */
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .subtitle {
+      font-size: 18px;
+      opacity: 0.8;
+      margin-bottom: 30px;
+      text-align: center;
+    }
 
-button:hover{
-  background-color: rgb(103, 103, 228);
-}
-.grid {
-  display: grid;
-  justify-self: center;
-  align-items: center;
-  margin-top: -10px;
-}
+    /* GAME GRID */
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
 
-.para {
-  font-size: 35px;
-  font-weight: 700;
-  margin-top: 250px;
-  text-align: center;
-  padding: 0 5%;
-}
+    .game-card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .game-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
 
-/* Laptop: 1024px and up - your original sizes */
-@media screen and (max-width: 1024px) {
-  button {
-    font-size: 22px;
-    padding: 9px;
-  }
-  .para {
-    font-size: 32px;
-    margin-top: 200px;
-  }
+    /* GAME COLORS */
+    .brick { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+    .wave { background: linear-gradient(135deg, #00c9ff, #92fe9d); }
+    .rps { background: linear-gradient(135deg, #f7971e, #ffd200); }
+    .snake { background: linear-gradient(135deg, #56ab2f, #a8e063); }
+    .city { background: linear-gradient(135deg, #4776E6, #8E54E9); }
 
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
 
-/* Tablet: 768px to 1023px */
-@media screen and (max-width: 768px) {
-  button {
-    font-size: 20px;
-    padding: 8px;
-    margin: 6px;
-  }
-  .para {
-    font-size: 28px;
-    margin-top: 150px;
-    padding: 0 8%;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-/* Phone: 767px and below */
-@media screen and (max-width: 480px) {
-  button {
-    font-size: 18px;
-    padding: 8px;
-    margin: 5px;
-    width: 30%;
-    
-  }
-  .para {
-    font-size: 24px;
-    margin-top: 100px;
-    padding: 0 10%;
-  }
-  .grid {
-    width: 100%;
-  }
-
-  .game, .quiz, .Calculator, .todo, .expense, .city, .product{
-    margin-left: 40px;
-  }
-
-  h1{
-  display: grid;
-  justify-content: center;
-}
-}
-
-.test{
-  display: flex;
-  padding: 15px;
-  justify-content: center;
-  align-items: baseline;
-  font-size: 20px;
-  font-weight: 700;
-  color: white;
-  height: 50px;
-  font-family: Roboto;
-}
-
-.count{
-  font-size: 10px;
-  display: grid;
-  justify-content: center;
-  margin-top: -15px;
-  margin-bottom: -15px;
-}
-
-.Note {
-  margin-left: 30px;
-   margin-top: 200px;
-}
-
-.Media{
-  width: 170px;
-}
+    @media (max-width: 480px) {
+      header h1 { font-size: 20px; }
+      .game-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .game-card { padding: 20px 12px; font-size: 15px; }
+    }
   </style>
 </head>
 <body>
 
+  <header>
+    <h1>🎮 GAME ZONE</h1>
+    <button class="btn-back logout">← Back</button>
+  </header>
+
+  <div class="container">
+    <p class="subtitle">Pick a game and have fun!</p>
     
-    <div> <button class="logout"> Back </button> </div>
-
-  <div class="grid">
-   <span><button class="Note"> Brick </button> <span>
-    <button class="Media"> Wave Defender V2 </button>
-   </span> </span>  
-
-   <span> <button class="Calculator"> Rock Paper Scissor </button> 
-  <span>  <button class="expense"> Snake </button> </span> </span>
-   <button class="city"> City Drive </button>
+    <div class="game-grid">
+      <div class="game-card brick">🧱 Brick Breaker</div>
+      <div class="game-card wave">🌊 Wave Defender V2</div>
+      <div class="game-card rps">✊ Rock Paper Scissor</div>
+      <div class="game-card snake">🐍 Snake</div>
+      <div class="game-card city">🚗 City Drive</div>
+    </div>
   </div>
 
+  <footer>
+    More games coming soon...
+  </footer>
+
   <script>
-
-
-   const calculator = document.querySelector('.Calculator')
-      const city = document.querySelector('.city')
-         const quiz = document.querySelector('.quiz')
-            const todo = document.querySelector('.todo')
-               const expense = document.querySelector('.expense')
-                  const changep = document.querySelector('.changep')
-                     const game = document.querySelector('.game')
-                      const logout = document.querySelector('.logout')
-    const Note = document.querySelector('.Note')                  
-    const Media = document.querySelector('.Media') 
-      
-     
-
-   calculator.addEventListener('click', () => {
-      window.location.href="rockpaper.html"
-   })  
-     
-   Media.addEventListener('click', () => {
-      window.location.href="draginggame.html"
-   })  
-
-   Note.addEventListener('click', () => {
-      window.location.href="brickgame.html"
-   })
-
-
-
-   logout.addEventListener('click', () => {
-     window.location.href="mainpage.html"
-   })
-
-   city.addEventListener('click', () => {
-     window.location.href="cityg.html"
-   })
-
-   expense.addEventListener('click', () => {
-     window.location.href="snakegame.html"
-   })
+    // Clean button navigation
+    document.querySelector('.brick').onclick = () => window.location.href = "brickgame.html";
+    document.querySelector('.wave').onclick = () => window.location.href = "draginggame.html";
+    document.querySelector('.rps').onclick = () => window.location.href = "rockpaper.html";
+    document.querySelector('.snake').onclick = () => window.location.href = "snakegame.html";
+    document.querySelector('.city').onclick = () => window.location.href = "cityg.html";
+    document.querySelector('.logout').onclick = () => window.location.href = "mainpage.html";
   </script>
 </body>
 </html>

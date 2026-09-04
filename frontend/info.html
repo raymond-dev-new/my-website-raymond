@@ -1,109 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <script>
-   // This runs before the page shows
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    } 
-  </script>
-   
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> Info </title>
-   <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <title>About Raymond</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+   const token = localStorage.getItem('token');
+   if (!token) {
+     window.location.replace('/login.html');
+   } 
+  </script>
+
   <style>
-    body{
-      background-image: url('photo_2026-07-27_07-52-04.jpg');
-       background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      min-height: 100%;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+                  url('photo_2026-07-27_07-52-04.jpg') center/cover no-repeat fixed;
+      font-family: 'Poppins', sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
     }
 
-     button {
-  font-size: 25px;
-  font-weight: 700;
-  margin: 7px;
-  padding: 10px;
-    border-radius: 15px;
-  }
-
-  button:hover{
-    background-color: rgb(103, 103, 228);
-  }
-
-    h2{
-    padding-left: 30px;
-      color: bisque;
+    /* TOP BAR */
+    .topbar {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 20px;
     }
 
-    .container{
-      padding: 35px;
-    }
-
-    div{
-      font-family: Roboto;
-      font-size: 18px;
+    .btn-back {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      font-size: 16px;
       font-weight: 600;
-      padding: 10px;
+      padding: 10px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-back:hover {
+      background: rgb(103, 103, 228);
+      transform: translateX(-3px);
+    }
+
+    /* MAIN CARD */
+    .card {
+      width: 100%;
+      max-width: 700px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px;
+      padding: 35px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card h2 {
+      font-size: 28px;
+      font-weight: 700;
+      color: bisque;
+      text-align: center;
+      margin-bottom: 25px;
+      letter-spacing: 1px;
+    }
+
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .info-item {
+      background: rgba(255,255,255,0.05);
+      padding: 16px 20px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.6;
       color: rgb(218, 207, 207);
+      border-left: 3px solid #4b75ff;
     }
 
-    p{
-      margin-top: px;
-       margin: 3px;
+    .info-item strong {
+      color: #fff;
+      font-weight: 700;
+      margin-right: 8px;
     }
 
-    .p{
-      margin-top: -7px;
-      margin: 0;
-     
+    /* WHATSAPP BUTTON */
+    .whatsapp-btn {
+      margin-top: 25px;
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .whatsapp-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+    }
+
+    .note {
+      font-size: 13px;
+      opacity: 0.7;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* MOBILE */
+    @media (max-width: 480px) {
+      .card { padding: 24px; }
+      .card h2 { font-size: 22px; }
+      .info-item { font-size: 15px; }
     }
   </style>
 </head>
 <body>
 
-  <div> <button class="logout"> Back </button> </div>
+  <div class="topbar">
+    <button class="btn-back logout">← Back</button>
+  </div>
+
+  <div class="card">
+    <h2>INFO ABOUT DEVELOPER</h2>
     
- <h2> INFO ABOUT DEVELOPER  </h2>
-<div class="container">
-    <div> NAME: I'm RAyMoNd </div>
-    <div> LOCATION: Based in Benin</div>
-    <div> OCCUPATION: I'm a web developer, I build all kind of website.
-         <p> I'm into documents formatting I writes and edits document 📃. </p>
-         <p class="p"> I'm also a Forex trader </p> 
+    <div class="info-row">
+      <div class="info-item">
+        <strong>NAME:</strong> I'm RAyMoNd
+      </div>
+      
+      <div class="info-item">
+        <strong>LOCATION:</strong> Based in Benin 🇧🇯
+      </div>
+      
+      <div class="info-item">
+        <strong>OCCUPATION:</strong> Web Developer. I build all kinds of websites.
+        <p>📃 I also do document formatting, writing and editing.</p>
+        <p>📈 Plus I'm a Forex trader</p>
+      </div>
+    </div>
+
+    <button class="whatsapp-btn num">
+      💬 Chat on WhatsApp: +234 811 561 4822
+    </button>
+    <p class="note">For business deals only. No calls please 🤙</p>
   </div>
-  <div>
-    FOR BUSINESS DEALS : <span class="num" style="color: rgb(89, 89, 179);"> +2348115614822 </span> that my WhatsApp number 
-    no call 🤙 pls write me on WhatsApp for jobs only
-  </div>
-</div>
 
 <script>
+  const logout = document.querySelector('.logout')
+  const num = document.querySelector('.num')
 
-   const logout = document.querySelector('.logout')
+  num.addEventListener('click', () => {
+    const phone = "2348115614822"; 
+    const message = `Hello Raymond, I saw your portfolio.`;
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank')
+  })
 
-    const num = document.querySelector('.num')
-
-//https://wa.me/${phone}?text=${encodedMessage}
-
-   num.addEventListener('click', () => {
-     const phone = "2348115614822"; 
-     const message = `Hello`;
-
-  const encodedMessage = encodeURIComponent(message);
-  window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`
-   })
-
-   logout.addEventListener('click', () => {
-     window.location.href="mainpage.html"
-   })
+  logout.addEventListener('click', () => {
+    window.location.href="mainpage.html"
+  })
 </script>
 
 </body>
