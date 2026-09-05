@@ -24,21 +24,22 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      padding: 0; /* REMOVED extra padding */
     }
 
-    /* HEADER - SMALLER */
+    /* HEADER - EVEN SMALLER */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 20px; /* was 16px 24px */
+      padding: 8px 12px; /* SMALLER: was 12px 20px */
       backdrop-filter: blur(10px);
       background: rgba(255,255,255,0.05);
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     header h1 {
-      font-size: 20px; /* was 24px */
+      font-size: 16px; /* SMALLER: was 20px */
       font-weight: 700;
       background: linear-gradient(90deg, #4b75ff, #8b5cf6);
       -webkit-background-clip: text;
@@ -49,10 +50,10 @@
       background: #ff4757;
       color: white;
       border: none;
-      padding: 8px 14px; /* was 10px 18px */
-      border-radius: 10px; /* was 12px */
+      padding: 6px 10px; /* SMALLER: was 8px 14px */
+      border-radius: 8px; /* SMALLER */
       font-weight: 600;
-      font-size: 14px; /* ADDED */
+      font-size: 12px; /* SMALLER */
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -61,55 +62,56 @@
       transform: translateY(-2px);
     }
 
-    /* MAIN GRID - SMALLER */
+    /* MAIN GRID - NO TOP SPACE */
     .container {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 30px 16px; /* was 40px 20px */
+      justify-content: flex-start; /* START FROM TOP */
+      padding: 15px 12px; /* SMALLER: was 30px 16px */
     }
 
     .welcome {
       text-align: center;
-      margin-bottom: 30px; /* was 40px */
+      margin-bottom: 15px; /* SMALLER: was 30px */
+      margin-top: 8px; /* TIGHT TO TOP */
     }
     .welcome h2 {
-      font-size: 24px; /* was 32px */
+      font-size: 20px; /* SMALLER: was 24px */
       font-weight: 700;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .welcome p {
-      font-size: 14px; /* was 16px */
+      font-size: 12px; /* SMALLER: was 14px */
       opacity: 0.8;
     }
 
-    /* BUTTON GRID - SMALLER CARDS */
+    /* BUTTON GRID - NOW TAKES HALF WIDTH */
     .dashboard {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* was 140px */
-      gap: 14px; /* was 20px */
+      grid-template-columns: repeat(2, 1fr); /* 2 per row like your screenshot */
+      gap: 10px; /* SMALLER: was 14px */
       width: 100%;
-      max-width: 500px; /* was 600px */
+      max-width: 50%; /* KEY: TAKES HALF OF SCREEN */
     }
 
     .card {
       background: rgba(255,255,255,0.08);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px; /* was 20px */
-      padding: 18px 12px; /* was 24px 16px */
+      border-radius: 12px; /* SMALLER: was 16px */
+      padding: 12px 8px; /* SMALLER: was 18px 12px */
       text-align: center;
       cursor: pointer;
       transition: all 0.3s ease;
       font-weight: 600;
-      font-size: 14px; /* was 16px */
+      font-size: 12px; /* SMALLER: was 14px */
     }
     .card:hover {
-      transform: translateY(-4px); /* was -5px */
+      transform: translateY(-3px);
       background: rgba(255,255,255,0.15);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.3); /* was 8px 20px */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
     /* COLORS BY CATEGORY */
@@ -119,23 +121,24 @@
     .card.todo { background: linear-gradient(135deg, #43e97b, #38f9d7); }
     .card.calc { background: linear-gradient(135deg, #fa709a, #fee140); }
     .card.design { background: linear-gradient(135deg, #30cfd0, #330867); }
-    .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; }
+    .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; } /* full width */
 
     /* FOOTER */
     footer {
       text-align: center;
-      padding: 16px; /* was 20px */
-      font-size: 11px; /* was 12px */
+      padding: 10px; /* SMALLER */
+      font-size: 10px; /* SMALLER */
       opacity: 0.6;
     }
 
-    /* MOBILE - EVEN SMALLER */
+    /* MOBILE - STILL 50% WIDTH */
     @media (max-width: 480px) {
-      header h1 { font-size: 18px; }
-      .welcome h2 { font-size: 20px; }
-      .dashboard { gap: 10px; grid-template-columns: repeat(2, 1fr); }
-      .card { padding: 14px 10px; font-size: 13px; border-radius: 14px; }
+      header h1 { font-size: 15px; }
+      .welcome h2 { font-size: 18px; }
+      .dashboard { gap: 8px; max-width: 90%; grid-template-columns: repeat(2, 1fr); } /* 90% on phone */
+      .card { padding: 10px 8px; font-size: 11px; border-radius: 10px; }
       .card.game { grid-column: span 2; }
+      .container { padding: 12px 10px; }
     }
   </style>
 </head>
@@ -148,7 +151,7 @@
 
   <div class="container">
     <div class="welcome">
-      <h2>Welcome Back 👋</h2>
+      <h2 style="margin-top: 150px;">Welcome Back 👋</h2>
       <p>Choose what you want to do today</p>
     </div>
 
