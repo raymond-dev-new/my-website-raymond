@@ -1,171 +1,138 @@
-<!DOCTYPE html><html><head>
-
-   <script>
-   // This runs before the page shows
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    } 
-  </script>
-
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Real Draughts vs CPU</title><style>
-*{box-sizing:border-box}body{margin:0;background:#151515;color:#fff;font:16px Arial;text-align:center}h2{margin:12px 0 5px}.turn{font-weight:bold;font-size:18px}.score{display:flex;justify-content:center;gap:35px;margin:8px}.red{color:#f44}.white{color:#fff}.board{width:94vw;max-width:480px;margin:12px auto;display:grid;grid-template-columns:repeat(8,1fr);border:5px solid #555}.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center}.light{background:#dbc297}.dark{background:#765334}.piece{width:76%;height:76%;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -5px 7px #0008,0 3px 5px #000;cursor:pointer;font-size:24px}.rp{background:#d83232}.wp{background:#eee;color:#222}.king:after{content:"♛";font-size:25px;color:#FFD700}.selected{outline:4px solid #ffe500}.can{box-shadow:inset 0 0 0 5px #38e638}.msg{min-height:24px;margin:8px;font-weight:bold}.btn{padding:11px 22px;border:0;border-radius:8px;font-weight:bold;margin:5px;background:#FF4500;color:white;cursor:pointer}.note{font-size:12px;color:#aaa;margin:8px}
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Real Draughts vs Defensive CPU</title><style>
+*{box-sizing:border-box}body{margin:0;background:#151515;color:#fff;font:16px Arial;text-align:center}h2{margin:12px 0 5px}.turn{font-weight:bold;font-size:18px}.score{display:flex;justify-content:center;gap:35px;margin:8px}.red{color:#f44}.board{width:94vw;max-width:480px;margin:12px auto;display:grid;grid-template-columns:repeat(8,1fr);border:5px solid #555}.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center}.light{background:#dbc297}.dark{background:#765334}.piece{width:76%;height:76%;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -5px 7px #0008,0 3px 5px #000;cursor:pointer;font-size:24px}.rp{background:#d83232}.wp{background:#eee;color:#222}.king:after{content:"♛";font-size:25px;color:#FFD700}.selected{outline:4px solid #ffe500}.can{box-shadow:inset 0 0 0 5px #38e638}.msg{min-height:24px;margin:8px;font-weight:bold}.btn{padding:11px 22px;border:0;border-radius:8px;font-weight:bold;margin:5px;background:#f45010;color:white;cursor:pointer}.note{font-size:12px;color:#aaa;margin:8px}
 </style></head><body>
-
-<h2>♟ REAL DRAUGHTS vs CPU</h2>
-<div class="turn" id="turn"></div>
-<div class="score"><span class="red">🔴 You: <b id="rc">12</b></span><span class="white">🤖 CPU: <b id="wc">12</b></span></div>
-<div class="msg" id="msg"></div>
-<div class="board" id="board"></div>
-<button class="btn" onclick="newGame()">🔄 New Game</button>
-<div class="note">Flying Kings • CPU Multi-Capture • You are 🔴 Red • CPU is ⚪ White</div>
-
+<h2>♟ REAL DRAUGHTS vs DEFENSIVE CPU</h2><div class="turn" id="turn"></div><div class="score"><span class="red">🔴 You: <b id="rc">12</b></span><span>🤖 CPU: <b id="wc">12</b></span></div><div class="msg" id="msg"></div><div class="board" id="board"></div><button class="btn" onclick="newGame()">🔄 New Game</button><div class="note">Flying Kings • Backward Captures • Smart Trap-Avoiding CPU</div>
 <script>
-const KEY="draughts_v5_9";
-const B=document.getElementById("board"),T=document.getElementById("turn"),M=document.getElementById("msg"),RC=document.getElementById("rc"),WC=document.getElementById("wc");
+const KEY="draughts_v9_defensive",B=board,T=turn,M=msg,RC=rc,WC=wc,YOU="r",CPU="w",D=[[-1,-1],[-1,1],[1,-1],[1,1]];
+let a=[],p=YOU,sel=null,over=0,multi=0,thinking=0;
 
-let a=[],p="r",sel=null,over=false,multi=false,thinking=false;
-const YOU="r", CPU="w";
+function save(){localStorage.setItem(KEY,JSON.stringify({a,p,over,multi}))}
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY));if(!x||!Array.isArray(x.a)||x.a.length!=64)return 0;a=x.a;p=x.p||YOU;over=!!x.over;multi=!!x.multi;sel=null;return 1}catch(e){return 0}}
+function newGame(){localStorage.removeItem(KEY);a=Array(64).fill(null);p=YOU;sel=null;over=multi=thinking=0;for(let r=0;r<3;r++)for(let c=0;c<8;c++)if((r+c)%2)a[r*8+c]={p:"w",k:0};for(let r=5;r<8;r++)for(let c=0;c<8;c++)if((r+c)%2)a[r*8+c]={p:"r",k:0};M.textContent="Your turn: Select a piece";save();draw()}
+function dirs(x){return x.k?D:x.p=="r"?D.slice(0,2):D.slice(2)}
+function moves(i,b=a){let x=b[i],o=[];if(!x)return o;let r=i>>3,c=i&7;
+if(x.k)D.forEach(d=>{for(let n=1;n<8;n++){let R=r+d[0]*n,C=c+d[1]*n;if(R<0||R>7||C<0||C>7)break;let j=R*8+C;if(!b[j])o.push({to:j,cap:-1});else break}})
+else dirs(x).forEach(d=>{let R=r+d[0],C=c+d[1];if(R>=0&&R<8&&C>=0&&C<8&&!b[R*8+C])o.push({to:R*8+C,cap:-1})});
+D.forEach(d=>{if(x.k){let hit=-1;for(let n=1;n<8;n++){let R=r+d[0]*n,C=c+d[1]*n;if(R<0||R>7||C<0||C>7)break;let j=R*8+C;if(!b[j]){if(hit>=0)o.push({to:j,cap:hit})}else if(b[j].p!=x.p&&hit<0)hit=j;else break}}
+else{let R=r+d[0],C=c+d[1],R2=r+d[0]*2,C2=c+d[1]*2;if(R>=0&&R<8&&C>=0&&C<8&&R2>=0&&R2<8&&C2>=0&&C2<8){let q=R*8+C,j=R2*8+C2;if(b[q]&&b[q].p!=x.p&&!b[j])o.push({to:j,cap:q})}}});return o}
 
-function save(){localStorage.setItem(KEY,JSON.stringify({board:a,player:p,selected:sel,gameOver:over,multiple:multi}));}
-function load(){let s=localStorage.getItem(KEY);if(!s)return false;try{s=JSON.parse(s);a=s.board||[];p=s.player||"r";sel=s.selected??null;over=!!s.gameOver;multi=!!s.multiple;if(a.length!==64)return false;return true;}catch(e){return false}}
+function caps(pl,b=a){let o=[];for(let i=0;i<64;i++)if(b[i]&&b[i].p==pl)moves(i,b).forEach(m=>{if(m.cap>=0)o.push({from:i,to:m.to,cap:m.cap})});return o}
 
-function newGame(){
- localStorage.removeItem(KEY);
- a=Array(64).fill(null);p="r";sel=null;over=false;multi=false;thinking=false;
- for(let r=0;r<3;r++)for(let c=0;c<8;c++)if((r+c)%2)a[r*8+c]={p:"w",k:false};
- for(let r=5;r<8;r++)for(let c=0;c<8;c++)if((r+c)%2)a[r*8+c]={p:"r",k:false};
- M.textContent="Your turn: Select a piece";save();draw();
-}
+function apply(b,m){let z=b.slice(),x={...z[m.from]};z[m.from]=null;z[m.to]=x;if(m.cap>=0)z[m.cap]=null;let r=m.to>>3;if((x.p=="r"&&r==0)||(x.p=="w"&&r==7))x.k=1;return z}
 
-function allDirs(){return[[-1,-1],[-1,1],[1,-1],[1,1]];}
-function moveDirs(x){if(x.k)return allDirs();return x.p=="r"?[[-1,-1],[-1,1]]:[[1,-1],[1,1]];}
+function danger(i,b,pl=YOU){return caps(pl,b).some(m=>m.to==i)}
+function captureCount(pl,b){return caps(pl,b).length}
+function pieceCount(pl,b){return b.filter(x=>x&&x.p==pl).length}
+function mobility(pl,b){let n=0;for(let i=0;i<64;i++)if(b[i]&&b[i].p==pl)n+=moves(i,b).length;return n}
 
-function moves(i,board=a){
- let x=board[i],out=[];if(!x)return out;
- let r=Math.floor(i/8),c=i%8;
- if(!x.k){moveDirs(x).forEach(d=>{let rr=r+d[0],cc=c+d[1];if(rr>=0&&rr<8&&cc>=0&&cc<8){let j=rr*8+cc;if(!board[j])out.push({to:j,cap:-1});}});}
- if(x.k){allDirs().forEach(d=>{for(let step=1;step<8;step++){let rr=r+d[0]*step,cc=c+d[1]*step;if(rr<0||rr>7||cc<0||cc>7)break;let j=rr*8+cc;if(!board[j])out.push({to:j,cap:-1});else break;}});}
- allDirs().forEach(d=>{
-  if(x.k){let found=-1;for(let step=1;step<8;step++){let rr=r+d[0]*step,cc=c+d[1]*step;if(rr<0||rr>7||cc<0||cc>7)break;let j=rr*8+cc;if(!board[j]){if(found>=0)out.push({to:j,cap:found});}else if(board[j].p!=x.p){if(found<0)found=j;else break;}else break;}}
-  else{let r1=r+d[0],c1=c+d[1];let r2=r+d[0]*2,c2=c+d[1]*2;if(r1<0||r1>7||c1<0||c1>7)return;if(r2<0||r2>7||c2<0||c2>7)return;let m=r1*8+c1;let l=r2*8+c2;if(board[m]&&board[m].p!=x.p&&!board[l])out.push({to:l,cap:m});}
+function trapScore(m,b,x){
+ let s=0,n=apply(b,m);
+
+ /* IMMEDIATE CAPTURE TEST */
+ let enemyCaps=caps(YOU,n);
+ if(enemyCaps.length){
+  let lose=0;
+  enemyCaps.forEach(q=>{
+   let after=apply(n,q);
+   let more=caps(CPU,after).length;
+   lose+=1+more*4;
+  });
+  s-=lose*180;
+ }
+
+ /* CHECK IF THE MOVED PIECE ITSELF IS OFFERED */
+ if(danger(m.to,n,YOU))s-=700;
+
+ /* DON'T SACRIFICE A KING */
+ if(x.k&&danger(m.to,n,YOU))s-=900;
+
+ /* PROTECT FRIENDLY PIECES */
+ let protectedN=0;
+ for(let i=0;i<64;i++)if(n[i]&&n[i].p==CPU){
+  if(caps(YOU,n).some(q=>q.to==i))s-=100;
+  else protectedN++;
+ }
+ s+=protectedN*8;
+
+ /* FAVOR SAFE CAPTURES */
+ if(m.cap>=0){
+  s+=danger(m.to,n,YOU)?30:450;
+  let follow=caps(CPU,n).length;
+  s+=follow*100;
+ }
+
+ /* KEEP CPU BACK */
+ let r=m.to>>3,c=m.to&7;
+ if(!x.k)s+=(7-r)*9;
+
+ /* CENTER, BUT NOT IF IT IS A TRAP */
+ if(r>=2&&r<=5&&c>=2&&c<=5&&!danger(m.to,n,YOU))s+=18;
+
+ /* KEEP PIECES TOGETHER */
+ D.forEach(d=>{
+  let j=m.to+d[0]*8+d[1];
+  if(j>=0&&j<64&&n[j]&&n[j].p==CPU)s+=18;
  });
- return out;
+
+ /* BACK ROW DEFENSE */
+ if(r<3)s+=15;
+
+ /* MATERIAL */
+ s+=(pieceCount(CPU,n)-pieceCount(YOU,n))*25;
+
+ /* MOBILITY */
+ s+=Math.min(40,mobility(CPU,n)*2);
+
+ return s;
 }
 
-function allCaptures(pl,board=a){
- let z=[];
- for(let i=0;i<64;i++){let x=board[i];if(x&&x.p==pl){moves(i,board).forEach(m=>{if(m.cap>=0)z.push({from:i,to:m.to,cap:m.cap});});}}
- return z;
+/* DEEP TRAP CHECK:
+   CPU imagines its move, then your best capture,
+   then checks whether another CPU capture is available. */
+function deepScore(m,b,x){
+ let s=trapScore(m,b,x),n=apply(b,m),ec=caps(YOU,n);
+ if(!ec.length)return s+80;
+
+ let worst=99999;
+ ec.forEach(e=>{
+  let after=apply(n,e),v=0;
+  let cc=caps(CPU,after);
+  v+=cc.length*90;
+  v+=(pieceCount(YOU,after)-pieceCount(CPU,after))*180;
+  for(let i=0;i<64;i++)if(after[i]&&after[i].p==CPU&&danger(i,after,YOU))v-=120;
+  worst=Math.min(worst,v);
+ });
+ return s-worst*1.7;
 }
 
-function draw(){
- B.innerHTML="";
- for(let i=0;i<64;i++){
-  let s=document.createElement("div");
-  s.className="sq "+((Math.floor(i/8)+i%8)%2?"dark":"light");
-  if(sel===i)s.classList.add("selected");
-  if(sel!==null&&moves(sel).some(m=>m.to===i))s.classList.add("can");
-  if(a[i]){
-   let q=document.createElement("div");
-   q.className="piece "+(a[i].p=="r"?"rp":"wp")+(a[i].k?" king":"");
-   if(p==YOU &&!thinking)q.onclick=e=>{e.stopPropagation();tap(i);};
-   s.appendChild(q);
-  }
-  if(p==YOU &&!thinking)s.onclick=()=>tap(i);
-  B.appendChild(s);
- }
- RC.textContent=a.filter(x=>x&&x.p=="r").length;
- WC.textContent=a.filter(x=>x&&x.p=="w").length;
- T.textContent=over?"GAME OVER":(p==YOU?"🔴 Your Turn":"🤖 CPU is thinking...");
-}
+function draw(){B.innerHTML="";for(let i=0;i<64;i++){let s=document.createElement("div");s.className="sq "+(((i>>3)+(i&7))%2?"dark":"light");if(sel==i)s.classList.add("selected");if(sel!=null&&moves(sel).some(m=>m.to==i))s.classList.add("can");if(a[i]){let q=document.createElement("div");q.className="piece "+(a[i].p=="r"?"rp":"wp")+(a[i].k?" king":"");q.onclick=e=>{e.stopPropagation();if(p==YOU&&!thinking)tap(i)};s.appendChild(q)}s.onclick=()=>{if(p==YOU&&!thinking)tap(i)};B.appendChild(s)}RC.textContent=a.filter(x=>x&&x.p=="r").length;WC.textContent=a.filter(x=>x&&x.p=="w").length;T.textContent=over?"GAME OVER":p==YOU?"🔴 Your Turn":"🤖 CPU is thinking..."}
 
-function tap(i){
- if(over||thinking||p!=YOU)return;
- if(sel===null){
-  if(!a[i]||a[i].p!=p)return;
-  let caps=allCaptures(p);
-  if(caps.length&&!caps.some(x=>x.from==i)){M.textContent="You must select a piece that can capture!";return;}
-  sel=i;M.textContent=caps.length?"Capture an opponent!":"Choose a move.";save();draw();return;
- }
- let m=moves(sel).find(x=>x.to==i);
- if(!m){
-  if(a[i]&&a[i].p==p&&!multi){let caps=allCaptures(p);if(!caps.length||caps.some(x=>x.from==i)){sel=i;save();draw();}return;}
-  M.textContent="Invalid move.";return;
- }
- let globalCaps=allCaptures(p);
- if(globalCaps.length&&m.cap<0){M.textContent="You must capture!";return;}
- executeMove(sel,i,m.cap);
-}
+function tap(i){if(over||thinking||p!=YOU)return;if(sel==null){if(!a[i]||a[i].p!=p)return;let c=caps(p);if(c.length&&!c.some(x=>x.from==i)){M.textContent="You must select a piece that can capture!";return}sel=i;M.textContent=c.length?"Capture an opponent!":"Choose a move";save();draw();return}
+let m=moves(sel).find(x=>x.to==i);if(!m){if(a[i]&&a[i].p==p&&!multi){let c=caps(p);if(!c.length||c.some(x=>x.from==i)){sel=i;save();draw();return}}M.textContent="Invalid move.";return}
+if(caps(p).length&&m.cap<0){M.textContent="You must capture!";return}play(sel,m.to,m.cap)}
 
-function executeMove(from,to,capIndex){
- let piece=a[from];a[to]=piece;a[from]=null;
- if(capIndex>=0)a[capIndex]=null;
- let row=Math.floor(to/8);if((piece.p=="r"&&row==0)||(piece.p=="w"&&row==7))piece.k=true;
+function play(from,to,cap){let x=a[from];a[from]=null;a[to]=x;if(cap>=0)a[cap]=null;let r=to>>3;if((x.p=="r"&&r==0)||(x.p=="w"&&r==7))x.k=1;
+if(cap>=0){let n=moves(to).filter(z=>z.cap>=0);if(n.length){sel=to;multi=1;M.textContent="Another capture available!";save();draw();if(p==CPU)setTimeout(cpuChain,350);return}}endTurn()}
 
- // CHECK FOR ANOTHER CAPTURE
- if(capIndex>=0){
-  let next=moves(to).filter(x=>x.cap>=0);
-  if(next.length){
-   sel=to;multi=true;M.textContent="Another capture available!";
-   save();draw();
-   if(p==CPU){setTimeout(cpuContinueCapture, 400);} // CPU AUTO CONTINUES
-   return;
-  }
- } // <-- THIS WAS MISSING
- endTurn();
-}
+function endTurn(){sel=null;multi=0;let e=p=="r"?"w":"r";if(!a.some(x=>x&&x.p==e)||!a.some((x,i)=>x&&x.p==e&&moves(i).length)){finish(p);return}p=e;M.textContent=caps(p).length?"CPU must capture!":"CPU is thinking...";save();draw();if(p==CPU)setTimeout(cpuMove,500)}
 
-function endTurn(){
- sel=null;multi=false;
- let enemy=p=="r"?"w":"r";
- if(!a.some(x=>x&&x.p==enemy)){finish(p);return;}
- let enemyMoves=[];for(let i=0;i<64;i++){if(a[i]&&a[i].p==enemy)enemyMoves.push(...moves(i));}
- if(enemyMoves.length==0){finish(p);return;}
+function cpuChain(){if(p!=CPU||over)return;let z=moves(sel).filter(x=>x.cap>=0);if(!z.length){endTurn();return}let x=a[sel],best=z[0],bs=-Infinity;z.forEach(m=>{m.from=sel;let q=deepScore(m,a,x);if(q>bs){bs=q;best=m}});play(sel,best.to,best.cap)}
 
- p=enemy;M.textContent=allCaptures(p).length?"CPU must capture!":"CPU is thinking...";save();draw();
- if(p==CPU &&!over)setTimeout(cpuMove,500);
- else {thinking=false;draw();}
-}
+function cpuMove(){if(over||p!=CPU)return;thinking=1;draw();setTimeout(()=>{
+ let list=[];for(let i=0;i<64;i++)if(a[i]&&a[i].p==CPU)moves(i).forEach(m=>{m.from=i;m.score=deepScore(m,a,a[i]);list.push(m)});
+ let c=caps(CPU);if(c.length)list=list.filter(m=>m.cap>=0);
+ if(!list.length){finish(YOU);return}
+ list.sort((x,y)=>y.score-x.score);
 
-function cpuContinueCapture(){
- let nextCaps=moves(sel).filter(x=>x.cap>=0);
- if(nextCaps.length==0){endTurn();return;}
- let chosen=nextCaps[Math.floor(Math.random()*nextCaps.length)];
- executeMove(sel,chosen.to,chosen.cap);
-}
+ /* CPU usually chooses one of the safest top moves,
+    but will not randomly choose a clearly bad trap. */
+ let safe=list.filter(x=>x.score>=list[0].score-35);
+ let top=safe.slice(0,Math.min(3,safe.length));
+ let m=top[Math.random()*top.length|0];
 
-function cpuMove(){
- thinking=true;draw();
- setTimeout(()=>{
-  let caps=allCaptures(CPU);
-  let possibleMoves=[];
-  for(let i=0;i<64;i++){
-   let x=a[i];
-   if(x&&x.p==CPU){
-    moves(i).forEach(m=>{
-     let score=0;
-     if(m.cap>=0)score+=300;
-     score+=Math.random()*20;
-     let row=Math.floor(m.to/8);if(row==7)score+=50;
-     let c=m.to%8;if(c>=2&&c<=5&&row>=2&&row<=5)score+=10;
-     possibleMoves.push({from:i,to:m.to,cap:m.cap,score});
-    });
-   }
-  }
-  if(possibleMoves.length==0){thinking=false;finish(YOU);return;}
-  if(caps.length>0){possibleMoves=possibleMoves.filter(m=>m.cap>=0);}
-  possibleMoves.sort((a,b)=>b.score-a.score);
-  let chosenMove=possibleMoves[0];
-  executeMove(chosenMove.from,chosenMove.to,chosenMove.cap);
-  thinking=false;draw();
- }, 500);
-}
+ thinking=0;play(m.from,m.to,m.cap);if(!over)draw()
+},550)}
 
-function finish(x){over=true;sel=null;thinking=false;M.textContent=(x==YOU?"🔴 YOU WIN! 🎉":"🤖 CPU WINS! 😭");save();draw();}
-
-if(!load())newGame();
-else draw();
+function finish(w){over=1;sel=null;thinking=0;M.textContent=w==YOU?"🔴 YOU WIN! 🎉":"🤖 CPU WINS!";save();draw()}
+if(!load())newGame();else draw();
 </script></body></html>
