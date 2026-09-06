@@ -121,7 +121,8 @@
     .card.todo { background: linear-gradient(135deg, #43e97b, #38f9d7); }
     .card.calc { background: linear-gradient(135deg, #fa709a, #fee140); }
     .card.design { background: linear-gradient(135deg, #30cfd0, #330867); }
-    .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; } /* full width */
+    .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; }
+    .whot { background: linear-gradient(135deg, #1b02ff, #52a35f); grid-column: span 2; } /* full width */
 
     /* FOOTER */
     footer {
@@ -137,7 +138,7 @@
       .welcome h2 { font-size: 18px; }
       .dashboard { gap: 8px; max-width: 90%; grid-template-columns: repeat(2, 1fr); } /* 90% on phone */
       .card { padding: 10px 8px; font-size: 11px; border-radius: 10px; }
-      .card.game { grid-column: span 2; }
+      .card.game, .whot { grid-column: span 2; }
       .container { padding: 12px 10px; }
     }
   </style>
@@ -163,10 +164,12 @@
       <div class="card calc">🧮 Calculator</div>
       <div class="card design">🎨 Designers</div>
       <div class="card game">♟ Draughts</div>
+      <div class="card whot">♟ Draughts</div>
     </div>
   </div>
 
   <script>
+    document.querySelector('.whot').onclick = () => window.location.href = "whot.html";
     document.querySelector('.diary').onclick = () => window.location.href = "mycorner.html";
     document.querySelector('.expense').onclick = () => window.location.href = "expense.html";
     document.querySelector('.quiz').onclick = () => window.location.href = "quiz.html";

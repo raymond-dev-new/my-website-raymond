@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <script>
+  const token = localStorage.getItem('token');
+
+    if (!token) {
+      // Not logged in? Kick out immediately
+      window.location.replace('/login.html');
+    }
+   </script> 
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WHOT - Real Card Game</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(circle,#0a5c36,#063d24);font-family:Arial;color:#fff;min-height:100vh;overflow:hidden}
+.table{width:100%;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px}
+.start,.picker,.result{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99}
+.picker,.result{display:none}
+.start h1{color:#ffd700;font-size:27px;margin-bottom:10px}
+.start p{text-align:center;font-size:14px;margin:0 20px 14px}
+.stats{background:#123b29;padding:12px 22px;border-radius:14px;text-align:center;margin-bottom:13px}
+.stats b{color:#ffd700}
+.statsrow{display:flex;gap:35px;margin-top:7px}
+.w{color:#55efc4}.l{color:#ff7675}
+button{cursor:pointer;border:0}
+.startbtn,.sharebtn{width:190px;padding:11px;border-radius:11px;color:#fff;font-weight:bold;font-size:15px;margin:4px}
+.startbtn{background:#ff4500}.sharebtn{background:#25d366}
+.reset{margin-top:9px;padding:6px 12px;border-radius:7px;background:#555;color:#fff}
+.picker h2{color:#ffd700;margin-bottom:18px}
+.shapes{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.shapebtn{width:65px;height:65px;background:#fff;border:3px solid #000;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:34px}
+.cross{position:relative;width:35px;height:35px}
+.cross:before,.cross:after{content:"";position:absolute;background:#f9a825;border-radius:3px}
+.cross:before{width:100%;height:10px;top:12px}
+.cross:after{height:100%;width:10px;left:12px}
+.top{width:100%;min-height:90px;display:flex;justify-content:center;gap:3px;flex-wrap:wrap}
+.alert{position:fixed;top:38%;left:50%;transform:translate(-50%,-50%) scale(.9);max-width:90%;padding:14px 20px;background:rgba(255,215,0,.98);border-radius:15px;color:#000;font-weight:900;font-size:16px;text-align:center;display:none;box-shadow:0 0 30px #ffd700,0 4px 20px #000;border:3px solid #fff;z-index:1000;transition:transform .2s ease-out;pointer-events:none}
+.center{display:flex;align-items:center;gap:12px}
+.deck,.pile{width:64px;height:90px;border-radius:10px;box-shadow:0 4px 12px #000}
+.deck{background:linear-gradient(135deg,#1a3a52,#2c5f7f);border:3px solid #fff;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:bold;font-size:13px}
+.pile{background:#fff;border:3px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pile.shape{font-size:40px}
+.hand{width:100%;min-height:125px;display:flex;justify-content:center;gap:5px;flex-wrap:wrap;padding:7px;background:#0006;border-radius:14px;overflow-x:auto}
+.card{width:58px;height:85px;background:#fff;color:#000;border:2px solid #000;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:4px 0;font-weight:900;font-size:12px;box-shadow:0 3px 8px #000}
+.card.shape{font-size:29px;line-height:1}
+.back{background:linear-gradient(135deg,#1a3a52,#2c5f7f);color:#fff;justify-content:center}
+.red{color:#c62828}
+.circle{color:#c62828}.triangle{color:#1565c0}.star{color:#c62828}.square{color:#2e7d32}.crossc{color:#f9a825}
+.info{position:absolute;top:6px;left:6px;background:#000e;padding:7px 10px;border-radius:9px;font-size:11px;z-index:5}
+.turn{font-size:14px;font-weight:bold;color:#ffd700}
+.new{position:absolute;right:6px;bottom:6px;background:#ff4500;color:#fff;padding:8px 14px;border-radius:9px;font-weight:bold}
+.resultbox{background:#123b29;border:2px solid #ffd700;border-radius:18px;padding:25px;text-align:center}
+.resultbox h2{color:#ffd700;margin-bottom:12px}
+.playagain{margin-top:15px;background:#ff4500;color:#fff;padding:10px 20px;border-radius:9px;font-weight:bold}
+@media(max-width:400px){
+.card{width:52px;height:78px;font-size:11px}
+.card.shape{font-size:26px}
+.deck,.pile{width:60px;height:85px}
+.alert{font-size:14px;padding:12px 16px;top:35%}
+}
+</style>
+</head>
+<body>
+
+<div class="start" id="start">
+<h1>♟ WHOT GAME</h1>
+<p>Play WHOT against the CPU.</p>
+<div class="stats">
+<div>🏆 YOUR RECORD</div>
+<div class="statsrow">
+<div class="w">WINS<br><b id="wins">0</b></div>
+<div class="l">LOSSES<br><b id="losses">0</b></div>
+</div>
+<button class="reset" id="reset">♻ Reset Records</button>
+</div>
+<button class="startbtn" id="startBtn">▶ START GAME</button>
+<button class="sharebtn" id="shareBtn">📤 SHARE GAME</button>
+</div>
+
+<div class="picker" id="picker">
+<h2>Choose a Shape</h2>
+<div class="shapes">
+<button class="shapebtn circle" data-shape="circle">●</button>
+<button class="shapebtn triangle" data-shape="triangle">▲</button>
+<button class="shapebtn star" data-shape="star">★</button>
+<button class="shapebtn square" data-shape="square">■</button>
+<button class="shapebtn crossc" data-shape="cross"><i class="cross"></i></button>
+</div>
+</div>
+
+<div class="result" id="result">
+<div class="resultbox">
+<h2 id="resultText"></h2>
+<div>🏆 Wins: <span id="rw">0</span></div>
+<div>❌ Losses: <span id="rl">0</span></div>
+<button class="playagain" id="again">🔄 PLAY AGAIN</button>
+</div>
+</div>
+
+<div class="info">
+<div class="turn" id="turn">Your Turn</div>
+<div>You: <span id="pc">7</span> | CPU: <span id="cc">7</span></div>
+<div>Needed: <span id="needed">-</span></div>
+</div>
+
+<div class="table">
+<div class="top" id="cpuHand"></div>
+<div class="alert" id="alert"></div>
+<div class="center">
+<button class="deck" id="deck">DECK<br><span id="deckCount">0</span></button>
+<div class="pile" id="pile"></div>
+</div>
+<div class="hand" id="playerHand"></div>
+</div>
+
+<button class="new" id="newGame">🔄 New Game</button>
+
+<script>
+(function(){
+'use strict';
+
+const SHAPES=['circle','triangle','star','square','cross'];
+const EMOJI={circle:'●',triangle:'▲',star:'★',square:'■'};
+const NAME={circle:'Circle',triangle:'Triangle',star:'Star',square:'Square',cross:'Cross'};
+
+/* NEW SAVE KEY SO OLD DUPLICATE GAMES ARE NOT LOADED */
+const SAVE='whot_save_v13';
+const STATS='whot_stats_v12';
+
+let deck=[],player=[],cpu=[],pile=[];
+let currentShape='',currentNumber=0;
+let turn='player',pick2=0,general=0,waiting=false;
+let started=false,over=false,recorded=false;
+let stats={wins:0,losses:0};
+let timer=null,alertTimer=null,audio=null;
+
+const $=id=>document.getElementById(id);
+
+function sound(type){
+try{
+if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();
+if(audio.state==='suspended')audio.resume();
+let o=audio.createOscillator(),g=audio.createGain();
+let f=500,d=.08;
+if(type==='pick'){f=250;d=.13}
+if(type==='special'){f=700;d=.16}
+if(type==='whot'){f=900;d=.22}
+if(type==='win'){f=1000;d=.45}
+if(type==='lose'){f=180;d=.4}
+o.frequency.value=f;o.type='sine';
+o.connect(g);g.connect(audio.destination);
+g.gain.setValueAtTime(.001,audio.currentTime);
+g.gain.exponentialRampToValueAtTime(.15,audio.currentTime+.01);
+g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
+o.start();o.stop(audio.currentTime+d+.02);
+}catch(e){}
+}
+
+function loadStats(){
+try{
+let x=JSON.parse(localStorage.getItem(STATS));
+if(x){
+stats.wins=Math.max(0,Number(x.wins)||0);
+stats.losses=Math.max(0,Number(x.losses)||0);
+}
+}catch(e){}
+updateStats();
+}
+
+function saveStats(){
+try{localStorage.setItem(STATS,JSON.stringify(stats));}catch(e){}
+updateStats();
+}
+
+function updateStats(){
+$('wins').textContent=stats.wins;
+$('losses').textContent=stats.losses;
+$('rw').textContent=stats.wins;
+$('rl').textContent=stats.losses;
+}
+
+function resetStats(){
+if(confirm('Reset Wins and Losses to 0?')){
+stats={wins:0,losses:0};
+saveStats();
+sound('pick');
+}
+}
+
+function record(winner){
+if(recorded)return;
+recorded=true;
+if(winner==='player'){stats.wins++;sound('win')}
+else{stats.losses++;sound('lose')}
+saveStats();
+}
+
+function shuffle(a){
+for(let i=a.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]];
+}
+}
+
+/* FIXED DECK
+   ONE OF EACH SHAPE + NUMBER
+   NO DUPLICATE 5s, 2s, etc.
+*/
+function createDeck(){
+deck=[];
+
+const nums=[1,2,3,4,5,7,10,11,12,13,14];
+
+SHAPES.forEach(s=>{
+nums.forEach(n=>{
+deck.push({shape:s,number:n});
+});
+});
+
+/* FIVE WHOT 20 CARDS */
+for(let i=0;i<5;i++){
+deck.push({shape:'whot',number:20});
+}
+
+shuffle(deck);
+}
+
+function deal(){
+player=[];
+cpu=[];
+pile=[];
+
+for(let i=0;i<7;i++){
+player.push(deck.pop());
+cpu.push(deck.pop());
+}
+
+let first;
+
+do{
+first=deck.pop();
+
+if(first.shape==='whot'){
+deck.unshift(first);
+shuffle(deck);
+}
+}while(first.shape==='whot');
+
+pile.push(first);
+currentShape=first.shape;
+currentNumber=first.number;
+}
+
+function canPlay(card){
+if(!card)return false;
+if(pick2>0)return card.number===2;
+if(general>0)return false;
+return card.shape==='whot'||
+card.shape===currentShape||
+card.number===currentNumber;
+}
+
+function recycle(){
+if(deck.length)return true;
+if(pile.length<=1)return false;
+
+let top=pile[pile.length-1];
+deck=pile.slice(0,-1);
+pile=[top];
+shuffle(deck);
+
+return deck.length>0;
+}
+
+function takeCards(hand,n){
+let got=0;
+
+for(let i=0;i<n;i++){
+if(!recycle())break;
+
+let c=deck.pop();
+
+if(c){
+hand.push(c);
+got++;
+}
+}
+
+return got;
+}
+
+function shapeHTML(s){
+if(s==='cross')return '<i class="cross"></i>';
+return '<span class="shape '+s+'">'+EMOJI[s]+'</span>';
+}
+
+function cardHTML(c,hide){
+if(hide)return '<div class="card back">WHOT</div>';
+
+if(c.shape==='whot'){
+return '<div class="card"><b>WHOT</b><span class="shape star">★</span><b>20</b></div>';
+}
+
+let red=c.shape==='circle'||c.shape==='star';
+
+return '<div class="card '+(red?'red':'')+'"><b>'+
+c.number+'</b>'+shapeHTML(c.shape)+'<b>'+c.number+'</b></div>';
+}
+
+function needed(){
+if(pick2>0)return 'PICK '+pick2+' — PLAY 2 OR PICK';
+if(general>0)return 'GENERAL MARKET — PICK 1';
+return NAME[currentShape]+' OR '+currentNumber;
+}
+
+function update(){
+$('deckCount').textContent=deck.length;
+$('pc').textContent=player.length;
+$('cc').textContent=cpu.length;
+$('needed').textContent=needed();
+
+$('turn').textContent=
+turn==='player'?'Your Turn':
+turn==='cpu'?'CPU Thinking...':
+'Game Over';
+
+let ch='';
+cpu.forEach(()=>{
+ch+=cardHTML(null,true);
+});
+$('cpuHand').innerHTML=ch;
+
+let ph='';
+
+player.forEach((c,i)=>{
+let valid=canPlay(c);
+
+ph+='<div data-card="'+i+'" style="opacity:'+
+(valid?1:.35)+'">'+cardHTML(c,false)+'</div>';
+});
+
+$('playerHand').innerHTML=ph;
+
+let top=pile[pile.length-1];
+$('pile').innerHTML=top?cardHTML(top,false):'';
+}
+
+function saveGame(){
+if(!started||over)return;
+
+try{
+localStorage.setItem(SAVE,JSON.stringify({
+deck,player,cpu,pile,currentShape,currentNumber,
+turn,pick2,general,waiting
+}));
+}catch(e){}
+}
+
+function loadGame(){
+try{
+let raw=localStorage.getItem(SAVE);
+if(!raw)return false;
+
+let d=JSON.parse(raw);
+
+if(!d||
+!Array.isArray(d.deck)||
+!Array.isArray(d.player)||
+!Array.isArray(d.cpu)||
+!Array.isArray(d.pile))return false;
+
+deck=d.deck;
+player=d.player;
+cpu=d.cpu;
+pile=d.pile;
+
+currentShape=d.currentShape||'';
+currentNumber=Number(d.currentNumber)||0;
+turn=d.turn||'player';
+pick2=Number(d.pick2)||0;
+general=Number(d.general)||0;
+waiting=!!d.waiting;
+
+return true;
+}catch(e){
+localStorage.removeItem(SAVE);
+return false;
+}
+}
+
+function message(t){
+clearTimeout(alertTimer);
+
+let el=$('alert');
+
+el.textContent=t;
+el.style.display='block';
+el.style.transform='translate(-50%,-50%) scale(1)';
+
+sound('special');
+
+alertTimer=setTimeout(()=>{
+el.style.transform='translate(-50%,-50%) scale(.9)';
+
+setTimeout(()=>{
+el.style.display='none';
+},200);
+
+},4000);
+}
+
+function startGame(){
+$('start').style.display='none';
+
+started=true;
+over=false;
+recorded=false;
+
+if(loadGame()){
+update();
+
+if(waiting)$('picker').style.display='flex';
+
+if(turn==='cpu'&&!waiting){
+clearTimeout(timer);
+timer=setTimeout(cpuTurn,700);
+}
+
+}else{
+newGame();
+}
+
+try{
+if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();
+if(audio.state==='suspended')audio.resume();
+}catch(e){}
+}
+
+function shareGame(){
+if(navigator.share){
+navigator.share({
+title:'WHOT Game',
+text:'Come play WHOT with me!',
+url:location.href
+}).catch(()=>{});
+}else{
+if(navigator.clipboard){
+navigator.clipboard.writeText(location.href)
+.then(()=>alert('Game link copied!'))
+.catch(()=>alert('Sharing is not supported.'));
+}else{
+alert('Sharing is not supported.');
+}
+}
+}
+
+function playCard(i){
+if(!started||over||turn!=='player'||waiting)return;
+
+let c=player[i];
+if(!c)return;
+
+if(!canPlay(c)){
+if(pick2>0)
+message('PICK '+pick2+' — PLAY A 2 OR PICK '+pick2);
+else if(general)
+message('GENERAL MARKET — YOU MUST PICK 1');
+else
+message('YOU NEED '+NAME[currentShape].toUpperCase()+' OR '+currentNumber);
+
+return;
+}
+
+sound('play');
+
+player.splice(i,1);
+pile.push(c);
+
+if(c.shape==='whot'){
+waiting=true;
+sound('whot');
+$('picker').style.display='flex';
+update();
+saveGame();
+return;
+}
+
+currentShape=c.shape;
+currentNumber=c.number;
+
+if(c.number===2){
+pick2+=2;
+general=0;
+sound('special');
+
+if(!player.length){
+endGame('YOU WIN! 🎉','player');
+return;
+}
+
+turn='cpu';
+update();
+saveGame();
+timer=setTimeout(cpuTurn,750);
+return;
+}
+
+if(c.number===14){
+general=1;
+pick2=0;
+sound('special');
+
+if(!player.length){
+endGame('YOU WIN! 🎉','player');
+return;
+}
+
+turn='cpu';
+update();
+saveGame();
+timer=setTimeout(cpuTurn,750);
+return;
+}
+
+if(c.number===1){
+sound('special');
+
+if(!player.length){
+endGame('YOU WIN! 🎉','player');
+return;
+}
+
+turn='player';
+message('1 — HOLD ON! YOU PLAY AGAIN');
+update();
+saveGame();
+return;
+}
+
+if(!player.length){
+endGame('YOU WIN! 🎉','player');
+return;
+}
+
+turn='cpu';
+update();
+saveGame();
+
+timer=setTimeout(cpuTurn,750);
+}
+
+function chooseShape(s){
+if(!waiting)return;
+
+waiting=false;
+$('picker').style.display='none';
+
+currentShape=s;
+currentNumber=20;
+
+sound('whot');
+
+if(!player.length){
+endGame('YOU WIN! 🎉','player');
+return;
+}
+
+turn='cpu';
+update();
+saveGame();
+
+timer=setTimeout(cpuTurn,800);
+}
+
+function drawCard(){
+if(!started||over||turn!=='player'||waiting)return;
+
+let amount=1;
+
+if(pick2>0){
+amount=pick2;
+pick2=0;
+}else if(general){
+amount=1;
+general=0;
+}
+
+let got=takeCards(player,amount);
+
+sound('pick');
+
+if(!got){
+message('NO CARDS LEFT');
+return;
+}
+
+message(got===1?'YOU PICKED 1 CARD':'YOU PICKED '+got+' CARDS');
+
+turn='cpu';
+update();
+saveGame();
+
+timer=setTimeout(cpuTurn,800);
+}
+
+function cpuOptions(){
+return cpu
+.map((c,i)=>({card:c,index:i}))
+.filter(x=>canPlay(x.card));
+}
+
+function cpuChoose(options){
+if(!options.length)return null;
+
+if(pick2>0)
+return options.find(x=>x.card.number===2)||null;
+
+let best=null,score=-999;
+
+options.forEach(x=>{
+let c=x.card,s=0;
+
+if(c.shape===currentShape)s+=10;
+if(c.number===currentNumber)s+=5;
+if(c.number===2)s+=7;
+if(c.number===14)s+=6;
+if(c.number===1)s+=6;
+if(c.shape==='whot')s+=5;
+if(cpu.length<=3)s+=20;
+
+s+=Math.random()*4;
+
+if(s>score){
+score=s;
+best=x;
+}
+});
+
+return best;
+}
+
+function cpuTurn(){
+if(!started||over||turn!=='cpu')return;
+
+if(pick2>0){
+let choice=cpuChoose(cpuOptions());
+
+if(choice){
+let c=choice.card;
+
+cpu.splice(choice.index,1);
+pile.push(c);
+
+currentShape=c.shape;
+currentNumber=c.number;
+
+pick2+=2;
+
+sound('play');
+sound('special');
+
+if(!cpu.length){
+endGame('CPU WINS! 😭','cpu');
+return;
+}
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED 2 — YOU MUST PLAY 2 OR PICK '+pick2);
+return;
+}
+
+let amount=pick2;
+pick2=0;
+
+let got=takeCards(cpu,amount);
+
+sound('pick');
+
+message(got+' CARD'+(got===1?'':'S')+' PICKED BY CPU');
+
+turn='player';
+update();
+saveGame();
+
+return;
+}
+
+if(general){
+general=0;
+
+let got=takeCards(cpu,1);
+
+sound('pick');
+
+message('CPU PICKED '+got+' CARD — GENERAL MARKET');
+
+turn='player';
+update();
+saveGame();
+
+return;
+}
+
+let options=cpuOptions();
+
+if(!options.length){
+
+let got=takeCards(cpu,1);
+
+if(got){
+sound('pick');
+message('CPU PICKED 1 CARD');
+}else{
+message('CPU HAS NO CARD TO PLAY');
+}
+
+turn='player';
+update();
+saveGame();
+
+return;
+}
+
+let choice=cpuChoose(options);
+if(!choice)return;
+
+let c=choice.card;
+
+cpu.splice(choice.index,1);
+pile.push(c);
+
+sound('play');
+
+if(c.shape==='whot'){
+sound('whot');
+
+let count={};
+
+SHAPES.forEach(s=>count[s]=0);
+
+cpu.forEach(x=>{
+if(x.shape!=='whot')count[x.shape]++;
+});
+
+let best=SHAPES[0];
+
+SHAPES.forEach(s=>{
+if(count[s]>count[best])best=s;
+});
+
+currentShape=best;
+currentNumber=20;
+
+if(!cpu.length){
+endGame('CPU WINS! 😭','cpu');
+return;
+}
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED WHOT — NEED '+NAME[best].toUpperCase());
+
+return;
+}
+
+currentShape=c.shape;
+currentNumber=c.number;
+
+if(c.number===2){
+pick2=2;
+
+sound('special');
+
+if(!cpu.length){
+endGame('CPU WINS! 😭','cpu');
+return;
+}
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED 2 — YOU MUST PLAY 2 OR PICK 2');
+
+return;
+}
+
+if(c.number===14){
+general=1;
+sound('special');
+
+if(!cpu.length){
+endGame('CPU WINS! 😭','cpu');
+return;
+}
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED 14 — GENERAL MARKET • PICK 1');
+
+return;
+}
+
+if(c.number===1){
+sound('special');
+
+if(!cpu.length){
+endGame('CPU WINS! 😭','cpu');
+return;
+}
+
+turn='cpu';
+update();
+saveGame();
+
+message('CPU PLAYED 1 — HOLD ON! CPU PLAYS AGAIN');
+
+timer=setTimeout(cpuTurn,750);
+return;
+}
+
+if(!cpu.length){
+endGame('CPU WINS! 😭','cpu');
+return;
+}
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED '+c.number+
+' — NEED '+NAME[currentShape].toUpperCase()+
+' OR '+currentNumber);
+}
+
+function endGame(text,winner){
+if(over)return;
+
+over=true;
+turn='over';
+
+clearTimeout(timer);
+clearTimeout(alertTimer);
+
+record(winner);
+
+localStorage.removeItem(SAVE);
+
+$('resultText').textContent=text;
+
+updateStats();
+
+$('result').style.display='flex';
+
+update();
+}
+
+function newGame(){
+clearTimeout(timer);
+clearTimeout(alertTimer);
+
+$('result').style.display='none';
+$('picker').style.display='none';
+$('alert').style.display='none';
+
+createDeck();
+deal();
+
+turn='player';
+pick2=0;
+general=0;
+waiting=false;
+over=false;
+recorded=false;
+started=true;
+
+update();
+saveGame();
+}
+
+$('startBtn').addEventListener('click',startGame);
+$('shareBtn').addEventListener('click',shareGame);
+$('reset').addEventListener('click',resetStats);
+$('newGame').addEventListener('click',newGame);
+$('again').addEventListener('click',newGame);
+$('deck').addEventListener('click',drawCard);
+
+document.querySelectorAll('[data-shape]').forEach(btn=>{
+btn.addEventListener('click',function(){
+chooseShape(this.dataset.shape);
+});
+});
+
+$('playerHand').addEventListener('click',function(e){
+let box=e.target.closest('[data-card]');
+if(!box)return;
+
+playCard(Number(box.dataset.card));
+});
+
+loadStats();
+
+})();
+</script>
+</body>
+</html>
