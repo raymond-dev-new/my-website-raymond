@@ -1,14 +1,14 @@
 <!DOCTYPE html><html lang="en"><head>
   
-   <script>
+ <script>
     const token = localStorage.getItem('token');
 
-    if (!token) {
+     if (!token) {
       // Not logged in? Kick out immediately
       window.location.replace('/login.html');
     }
-   </script>   
-  
+   </script>  
+
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>WHOT - Real Card Game</title><style>
 *{box-sizing:border-box;margin:0;padding:0}html,body{width:100%;height:100%;overflow:hidden}body{background:radial-gradient(circle,#0a5c36,#063d24);font-family:Arial;color:#fff;touch-action:manipulation}button{border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}.table{width:100%;height:100dvh;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;overflow:hidden}
 
@@ -48,27 +48,197 @@
 <script>
 (function(){
 'use strict';
-const S=['circle','triangle','star','square','cross'],E={circle:'●',triangle:'▲',star:'★',square:'■'},N={circle:'Circle',triangle:'Triangle',star:'Star',square:'Square',cross:'Cross'},SAVE='whot_save_v23',STATS='whot_stats_v22';
-let deck=[],player=[],cpu=[],pile=[],currentShape='',currentNumber=0,turn='player',pick2=0,general=0,waiting=false,started=false,over=false,recorded=false,stats={wins:0,losses:0},timer=null,alertTimer=null,audio=null,lastCardAlerted=false;
+
+const S=['circle','triangle','star','square','cross'],
+E={circle:'●',triangle:'▲',star:'★',square:'■'},
+N={circle:'Circle',triangle:'Triangle',star:'Star',square:'Square',cross:'Cross'},
+SAVE='whot_save_v23',STATS='whot_stats_v22';
+
+let deck=[],player=[],cpu=[],pile=[],currentShape='',currentNumber=0,turn='player',pick2=0,general=0,waiting=false,started=false,over=false,recorded=false,stats={wins:0,losses:0},timer=null,alertTimer=null,audio=null;
+
+/* SEPARATE LAST-CARD FLAGS FOR PLAYER AND CPU */
+let lastCardAlerted={
+    player:false,
+    cpu:false
+};
+
 const $=id=>document.getElementById(id);
 
-function sound(t){try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),g=audio.createGain(),f=500,d=.08;if(t==='pick'){f=250;d=.13}if(t==='special'){f=700;d=.16}if(t==='whot'){f=900;d=.22}if(t==='win'){f=1000;d=.45}if(t==='lose'){f=180;d=.4}o.frequency.value=f;o.type='sine';o.connect(g);g.connect(audio.destination);g.gain.setValueAtTime(.001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.15,audio.currentTime+.01);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.start();o.stop(audio.currentTime+d+.02)}catch(e){}}
+function sound(t){
+try{
+if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();
+if(audio.state==='suspended')audio.resume();
+let o=audio.createOscillator(),g=audio.createGain(),f=500,d=.08;
+if(t==='pick'){f=250;d=.13}
+if(t==='special'){f=700;d=.16}
+if(t==='whot'){f=900;d=.22}
+if(t==='win'){f=1000;d=.45}
+if(t==='lose'){f=180;d=.4}
+o.frequency.value=f;o.type='sine';o.connect(g);g.connect(audio.destination);
+g.gain.setValueAtTime(.001,audio.currentTime);
+g.gain.exponentialRampToValueAtTime(.15,audio.currentTime+.01);
+g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
+o.start();o.stop(audio.currentTime+d+.02)
+}catch(e){}
+}
 
-function loadStats(){try{let x=JSON.parse(localStorage.getItem(STATS));if(x){stats.wins=Math.max(0,+x.wins||0);stats.losses=Math.max(0,+x.losses||0)}}catch(e){}updateStats()}
-function saveStats(){try{localStorage.setItem(STATS,JSON.stringify(stats))}catch(e){}updateStats()}
-function updateStats(){$('wins').textContent=stats.wins;$('losses').textContent=stats.losses;$('rw').textContent=stats.wins;$('rl').textContent=stats.losses}
-function resetStats(){if(confirm('Reset Wins and Losses to 0?')){stats={wins:0,losses:0};saveStats();sound('pick')}}
-function record(w){if(recorded)return;recorded=true;if(w==='player'){stats.wins++;sound('win')}else{stats.losses++;sound('lose')}saveStats()}
-function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
-function createDeck(){deck=[];[1,2,3,4,5,7,10,11,12,13,14].forEach(n=>S.forEach(s=>deck.push({shape:s,number:n})));for(let i=0;i<5;i++)deck.push({shape:'whot',number:20});shuffle(deck)}
-function deal(){player=[];cpu=[];pile=[];lastCardAlerted=false;for(let i=0;i<7;i++){player.push(deck.pop());cpu.push(deck.pop())}let f;do{f=deck.pop();if(f.shape==='whot'){deck.unshift(f);shuffle(deck)}}while(f.shape==='whot');pile.push(f);currentShape=f.shape;currentNumber=f.number}
-function canPlay(c){if(!c)return false;if(pick2>0)return c.number===2;if(general>0)return false;return c.shape==='whot'||c.shape===currentShape||c.number===currentNumber}
-function recycle(){if(deck.length)return true;if(pile.length<=1)return false;let t=pile[pile.length-1];deck=pile.slice(0,-1);pile=[t];shuffle(deck);return!!deck.length}
-function takeCards(h,n){let g=0;for(let i=0;i<n;i++){if(!recycle())break;let c=deck.pop();if(c){h.push(c);g++}}return g}
-function shapeHTML(s){return s==='cross'?'<i class="cross"></i>':'<span class="shape '+s+'">'+E[s]+'</span>'}
-function cardHTML(c,hide){if(hide)return'<div class="card back">WHOT</div>';if(c.shape==='whot')return'<div class="card"><b>WHOT</b><span class="shape star">★</span><b>20</b></div>';return'<div class="card '+((c.shape==='circle'||c.shape==='star')?'red':'')+'"><b>'+c.number+'</b>'+shapeHTML(c.shape)+'<b>'+c.number+'</b></div>'}
-function needed(){if(pick2>0)return'PICK '+pick2+' — PLAY 2 OR PICK';if(general>0)return'GENERAL MARKET — PICK 1';return N[currentShape]+' OR '+currentNumber}
-function checkLastCard(){if(!lastCardAlerted){if(player.length===1){message('⚠️ LAST CARD!');lastCardAlerted=true}else if(cpu.length===1){message('⚠️ CPU HAS LAST CARD!');lastCardAlerted=true}}if(player.length>1&&cpu.length>1)lastCardAlerted=false}
+function loadStats(){
+try{
+let x=JSON.parse(localStorage.getItem(STATS));
+if(x){
+stats.wins=Math.max(0,+x.wins||0);
+stats.losses=Math.max(0,+x.losses||0)
+}
+}catch(e){}
+updateStats()
+}
+
+function saveStats(){
+try{localStorage.setItem(STATS,JSON.stringify(stats))}catch(e){}
+updateStats()
+}
+
+function updateStats(){
+$('wins').textContent=stats.wins;
+$('losses').textContent=stats.losses;
+$('rw').textContent=stats.wins;
+$('rl').textContent=stats.losses
+}
+
+function resetStats(){
+if(confirm('Reset Wins and Losses to 0?')){
+stats={wins:0,losses:0};
+saveStats();
+sound('pick')
+}
+}
+
+function record(w){
+if(recorded)return;
+recorded=true;
+if(w==='player'){
+stats.wins++;
+sound('win')
+}else{
+stats.losses++;
+sound('lose')
+}
+saveStats()
+}
+
+function shuffle(a){
+for(let i=a.length-1;i>0;i--){
+let j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]]
+}
+}
+
+function createDeck(){
+deck=[];
+[1,2,3,4,5,7,10,11,12,13,14].forEach(n=>S.forEach(s=>deck.push({shape:s,number:n})));
+for(let i=0;i<5;i++)deck.push({shape:'whot',number:20});
+shuffle(deck)
+}
+
+function deal(){
+player=[];
+cpu=[];
+pile=[];
+
+/* RESET BOTH LAST-CARD FLAGS */
+lastCardAlerted={
+    player:false,
+    cpu:false
+};
+
+for(let i=0;i<7;i++){
+player.push(deck.pop());
+cpu.push(deck.pop())
+}
+
+let f;
+do{
+f=deck.pop();
+if(f.shape==='whot'){
+deck.unshift(f);
+shuffle(deck)
+}
+}while(f.shape==='whot');
+
+pile.push(f);
+currentShape=f.shape;
+currentNumber=f.number
+}
+
+function canPlay(c){
+if(!c)return false;
+if(pick2>0)return c.number===2;
+if(general>0)return false;
+return c.shape==='whot'||c.shape===currentShape||c.number===currentNumber
+}
+
+function recycle(){
+if(deck.length)return true;
+if(pile.length<=1)return false;
+let t=pile[pile.length-1];
+deck=pile.slice(0,-1);
+pile=[t];
+shuffle(deck);
+return!!deck.length
+}
+
+function takeCards(h,n){
+let g=0;
+for(let i=0;i<n;i++){
+if(!recycle())break;
+let c=deck.pop();
+if(c){
+h.push(c);
+g++
+}
+}
+return g
+}
+
+function shapeHTML(s){
+return s==='cross'?'<i class="cross"></i>':'<span class="shape '+s+'">'+E[s]+'</span>'
+}
+
+function cardHTML(c,hide){
+if(hide)return'<div class="card back">WHOT</div>';
+if(c.shape==='whot')return'<div class="card"><b>WHOT</b><span class="shape star">★</span><b>20</b></div>';
+return'<div class="card '+((c.shape==='circle'||c.shape==='star')?'red':'')+'"><b>'+c.number+'</b>'+shapeHTML(c.shape)+'<b>'+c.number+'</b></div>'
+}
+
+function needed(){
+if(pick2>0)return'PICK '+pick2+' — PLAY 2 OR PICK';
+if(general>0)return'GENERAL MARKET — PICK 1';
+return N[currentShape]+' OR '+currentNumber
+}
+
+/* FIXED LAST CARD SYSTEM */
+function checkLastCard(){
+
+    /* PLAYER HAS ONE CARD */
+    if(player.length===1&&!lastCardAlerted.player){
+        lastCardAlerted.player=true;
+        message('⚠️ LAST CARD!');
+    }
+
+    /* CPU HAS ONE CARD */
+    if(cpu.length===1&&!lastCardAlerted.cpu){
+        lastCardAlerted.cpu=true;
+
+        /* Small delay so the CPU announcement appears clearly */
+        setTimeout(()=>{
+            if(!over)message('⚠️ CPU HAS LAST CARD!');
+        },350);
+    }
+
+    /* Reset each side's warning after they have more than one card */
+    if(player.length>1)lastCardAlerted.player=false;
+    if(cpu.length>1)lastCardAlerted.cpu=false;
+}
 
 function update(){
 $('deckCount').textContent=deck.length;
@@ -76,88 +246,470 @@ $('pc').textContent=player.length;
 $('cc').textContent=cpu.length;
 $('needed').textContent=needed();
 $('turn').textContent=turn==='player'?'Your Turn':turn==='cpu'?'CPU Thinking...':'Game Over';
+
 $('cpuHand').innerHTML=cpu.map(()=>cardHTML(null,true)).join('');
-$('playerHand').innerHTML=player.map((c,i)=>'<div data-card="'+i+'" style="opacity:'+(canPlay(c)?1:.35)+'">'+cardHTML(c,false)+'</div>').join('');
+
+$('playerHand').innerHTML=player.map((c,i)=>
+'<div data-card="'+i+'" style="opacity:'+(canPlay(c)?1:.35)+'">'+cardHTML(c,false)+'</div>'
+).join('');
+
 let t=pile[pile.length-1];
 $('pile').innerHTML=t?cardHTML(t,false):'';
+
 checkLastCard()
 }
 
-function saveGame(){if(!started||over)return;try{localStorage.setItem(SAVE,JSON.stringify({deck,player,cpu,pile,currentShape,currentNumber,turn,pick2,general,waiting}))}catch(e){}}
-function loadGame(){try{let r=localStorage.getItem(SAVE);if(!r)return false;let d=JSON.parse(r);if(!d||!Array.isArray(d.deck)||!Array.isArray(d.player)||!Array.isArray(d.cpu)||!Array.isArray(d.pile))return false;({deck,player,cpu,pile,currentShape,currentNumber,turn,pick2,general,waiting}=d);currentNumber=+currentNumber||0;turn=turn||'player';pick2=+pick2||0;general=+general||0;waiting=!!waiting;return true}catch(e){localStorage.removeItem(SAVE);return false}}
-
-function message(t){clearTimeout(alertTimer);let e=$('alert');e.textContent=t;e.style.display='block';e.style.transform='translate(-50%,-50%) scale(1)';sound('special');alertTimer=setTimeout(()=>{e.style.transform='translate(-50%,-50%) scale(.9)';setTimeout(()=>e.style.display='none',200)},5500)}
-
-function startGame(){
-$('start').style.display='none';started=true;over=false;recorded=false;
-if(loadGame()){update();if(waiting)$('picker').style.display='flex';if(turn==='cpu'&&!waiting)timer=setTimeout(cpuTurn,700)}else newGame();
-try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume()}catch(e){}
+function saveGame(){
+if(!started||over)return;
+try{
+localStorage.setItem(SAVE,JSON.stringify({
+deck,player,cpu,pile,currentShape,currentNumber,turn,pick2,general,waiting,
+lastCardAlerted
+}))
+}catch(e){}
 }
 
-function shareGame(){if(navigator.share)navigator.share({title:'WHOT Game',text:'Come play WHOT with me!',url:location.href}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(location.href).then(()=>alert('Game link copied!')).catch(()=>alert('Sharing is not supported.'));else alert('Sharing is not supported.')}
+function loadGame(){
+try{
+let r=localStorage.getItem(SAVE);
+if(!r)return false;
+
+let d=JSON.parse(r);
+
+if(!d||!Array.isArray(d.deck)||!Array.isArray(d.player)||!Array.isArray(d.cpu)||!Array.isArray(d.pile))return false;
+
+({deck,player,cpu,pile,currentShape,currentNumber,turn,pick2,general,waiting}=d);
+
+currentNumber=+currentNumber||0;
+turn=turn||'player';
+pick2=+pick2||0;
+general=+general||0;
+waiting=!!waiting;
+
+/* LOAD LAST-CARD FLAGS SAFELY */
+lastCardAlerted={
+    player:!!(d.lastCardAlerted&&d.lastCardAlerted.player),
+    cpu:!!(d.lastCardAlerted&&d.lastCardAlerted.cpu)
+};
+
+return true
+}catch(e){
+localStorage.removeItem(SAVE);
+return false
+}
+}
+
+function message(t){
+clearTimeout(alertTimer);
+
+let e=$('alert');
+e.textContent=t;
+e.style.display='block';
+e.style.transform='translate(-50%,-50%) scale(1)';
+sound('special');
+
+alertTimer=setTimeout(()=>{
+e.style.transform='translate(-50%,-50%) scale(.9)';
+setTimeout(()=>e.style.display='none',200)
+},5500)
+}
+
+function startGame(){
+$('start').style.display='none';
+started=true;
+over=false;
+recorded=false;
+
+if(loadGame()){
+update();
+
+if(waiting)$('picker').style.display='flex';
+
+if(turn==='cpu'&&!waiting)
+timer=setTimeout(cpuTurn,700)
+}else newGame();
+
+try{
+if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();
+if(audio.state==='suspended')audio.resume()
+}catch(e){}
+}
+
+function shareGame(){
+if(navigator.share)
+navigator.share({title:'WHOT Game',text:'Come play WHOT with me!',url:location.href}).catch(()=>{});
+else if(navigator.clipboard)
+navigator.clipboard.writeText(location.href).then(()=>alert('Game link copied!')).catch(()=>alert('Sharing is not supported.'));
+else alert('Sharing is not supported.')
+}
 
 function playCard(i){
 if(!started||over||turn!=='player'||waiting)return;
-let c=player[i];if(!c)return;
-if(!canPlay(c)){if(pick2)message('PICK '+pick2+' — PLAY A 2 OR PICK '+pick2);else if(general)message('GENERAL MARKET — YOU MUST PICK 1');else message('YOU NEED '+N[currentShape].toUpperCase()+' OR '+currentNumber);return}
-sound('play');player.splice(i,1);pile.push(c);
-if(c.shape==='whot'){waiting=true;sound('whot');$('picker').style.display='flex';update();saveGame();return}
-currentShape=c.shape;currentNumber=c.number;
-if(c.number===2){pick2+=2;general=0;sound('special');if(!player.length)return endGame('YOU WIN! 🎉','player');turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,750);return}
-if(c.number===14){general=1;pick2=0;sound('special');if(!player.length)return endGame('YOU WIN! 🎉','player');turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,750);return}
-if(c.number===1){sound('special');if(!player.length)return endGame('YOU WIN! 🎉','player');turn='player';message('1 — HOLD ON! YOU PLAY AGAIN');update();saveGame();return}
-if(!player.length)return endGame('YOU WIN! 🎉','player');
-turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,750)
+
+let c=player[i];
+if(!c)return;
+
+if(!canPlay(c)){
+if(pick2)message('PICK '+pick2+' — PLAY A 2 OR PICK '+pick2);
+else if(general)message('GENERAL MARKET — YOU MUST PICK 1');
+else message('YOU NEED '+N[currentShape].toUpperCase()+' OR '+currentNumber);
+return
 }
 
-function chooseShape(s){if(!waiting)return;waiting=false;$('picker').style.display='none';currentShape=s;currentNumber=20;sound('whot');if(!player.length)return endGame('YOU WIN! 🎉','player');turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,800)}
+sound('play');
+player.splice(i,1);
+pile.push(c);
+
+/* UPDATE IMMEDIATELY AFTER PLAYER PLAYS */
+update();
+
+if(c.shape==='whot'){
+waiting=true;
+sound('whot');
+$('picker').style.display='flex';
+update();
+saveGame();
+return
+}
+
+currentShape=c.shape;
+currentNumber=c.number;
+
+if(c.number===2){
+pick2+=2;
+general=0;
+sound('special');
+
+if(!player.length)return endGame('YOU WIN! 🎉','player');
+
+turn='cpu';
+update();
+saveGame();
+timer=setTimeout(cpuTurn,750);
+return
+}
+
+if(c.number===14){
+general=1;
+pick2=0;
+sound('special');
+
+if(!player.length)return endGame('YOU WIN! 🎉','player');
+
+turn='cpu';
+update();
+saveGame();
+timer=setTimeout(cpuTurn,750);
+return
+}
+
+if(c.number===1){
+sound('special');
+
+if(!player.length)return endGame('YOU WIN! 🎉','player');
+
+turn='player';
+message('1 — HOLD ON! YOU PLAY AGAIN');
+update();
+saveGame();
+return
+}
+
+if(!player.length)return endGame('YOU WIN! 🎉','player');
+
+turn='cpu';
+update();
+saveGame();
+timer=setTimeout(cpuTurn,750)
+}
+
+function chooseShape(s){
+if(!waiting)return;
+
+waiting=false;
+$('picker').style.display='none';
+currentShape=s;
+currentNumber=20;
+sound('whot');
+
+if(!player.length)return endGame('YOU WIN! 🎉','player');
+
+turn='cpu';
+update();
+saveGame();
+timer=setTimeout(cpuTurn,800)
+}
 
 function drawCard(){
 if(!started||over||turn!=='player'||waiting)return;
-let n=pick2||1;if(pick2)pick2=0;else if(general)general=0;
-let g=takeCards(player,n);sound('pick');if(!g)return message('NO CARDS LEFT');
-message(g===1?'YOU PICKED 1 CARD':'YOU PICKED '+g+' CARDS');turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,800)
+
+let n=pick2||1;
+
+if(pick2)pick2=0;
+else if(general)general=0;
+
+let g=takeCards(player,n);
+
+sound('pick');
+
+if(!g)return message('NO CARDS LEFT');
+
+message(g===1?'YOU PICKED 1 CARD':'YOU PICKED '+g+' CARDS');
+
+turn='cpu';
+update();
+saveGame();
+timer=setTimeout(cpuTurn,800)
 }
 
-function cpuOptions(){return cpu.map((c,i)=>({card:c,index:i})).filter(x=>canPlay(x.card))}
+function cpuOptions(){
+return cpu.map((c,i)=>({card:c,index:i})).filter(x=>canPlay(x.card))
+}
+
 function cpuChoose(o){
 if(!o.length)return null;
+
 if(pick2)return o.find(x=>x.card.number===2)||null;
+
 let b=null,sc=-999;
-o.forEach(x=>{let c=x.card,s=0;if(c.shape===currentShape)s+=10;if(c.number===currentNumber)s+=5;if(c.number===2)s+=7;if(c.number===14)s+=6;if(c.number===1)s+=6;if(c.shape==='whot')s+=5;if(cpu.length<=3)s+=20;s+=Math.random()*4;if(s>sc){sc=s;b=x}});
+
+o.forEach(x=>{
+let c=x.card,s=0;
+
+if(c.shape===currentShape)s+=10;
+if(c.number===currentNumber)s+=5;
+if(c.number===2)s+=7;
+if(c.number===14)s+=6;
+if(c.number===1)s+=6;
+if(c.shape==='whot')s+=5;
+if(cpu.length<=3)s+=20;
+
+s+=Math.random()*4;
+
+if(s>sc){
+sc=s;
+b=x
+}
+});
+
 return b
 }
 
 function cpuTurn(){
 if(!started||over||turn!=='cpu')return;
+
 if(pick2){
+
 let o=cpuChoose(cpuOptions());
-if(o){let c=o.card;cpu.splice(o.index,1);pile.push(c);currentShape=c.shape;currentNumber=c.number;pick2+=2;sound('play');sound('special');if(!cpu.length)return endGame('CPU WINS! 😭','cpu');turn='player';update();saveGame();message('CPU PLAYED 2 — YOU MUST PLAY 2 OR PICK '+pick2);return}
-let g=takeCards(cpu,pick2);pick2=0;sound('pick');message(g+' CARD'+(g===1?'':'S')+' PICKED BY CPU');turn='player';update();saveGame();return
-}
-if(general){general=0;let g=takeCards(cpu,1);sound('pick');message('CPU PICKED '+g+' CARD — GENERAL MARKET');turn='player';update();saveGame();return}
-let o=cpuOptions();
-if(!o.length){let g=takeCards(cpu,1);if(g){sound('pick');message('CPU PICKED 1 CARD')}else message('CPU HAS NO CARD TO PLAY');turn='player';update();saveGame();return}
-let ch=cpuChoose(o);if(!ch)return;
-let c=ch.card;cpu.splice(ch.index,1);pile.push(c);sound('play');
-if(c.shape==='whot'){
-sound('whot');let count={};S.forEach(s=>count[s]=0);cpu.forEach(x=>{if(x.shape!=='whot')count[x.shape]++});let b=S[0];S.forEach(s=>{if(count[s]>count[b])b=s});currentShape=b;currentNumber=20;
+
+if(o){
+let c=o.card;
+
+cpu.splice(o.index,1);
+pile.push(c);
+
+currentShape=c.shape;
+currentNumber=c.number;
+
+pick2+=2;
+
+sound('play');
+sound('special');
+
 if(!cpu.length)return endGame('CPU WINS! 😭','cpu');
-turn='player';update();saveGame();message('CPU PLAYED WHOT — NEED '+N[b].toUpperCase());return
-}
-currentShape=c.shape;currentNumber=c.number;
-if(c.number===2){pick2=2;sound('special');if(!cpu.length)return endGame('CPU WINS! 😭','cpu');turn='player';update();saveGame();message('CPU PLAYED 2 — YOU MUST PLAY 2 OR PICK 2');return}
-if(c.number===14){general=1;sound('special');if(!cpu.length)return endGame('CPU WINS! 😭','cpu');turn='player';update();saveGame();message('CPU PLAYED 14 — GENERAL MARKET • PICK 1');return}
-if(c.number===1){sound('special');if(!cpu.length)return endGame('CPU WINS! 😭','cpu');turn='cpu';update();saveGame();message('CPU PLAYED 1 — HOLD ON! CPU PLAYS AGAIN');timer=setTimeout(cpuTurn,750);return}
-if(!cpu.length)return endGame('CPU WINS! 😭','cpu');
-turn='player';update();saveGame();message('CPU PLAYED '+c.number+' — NEED '+N[currentShape].toUpperCase()+' OR '+currentNumber)
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED 2 — YOU MUST PLAY 2 OR PICK '+pick2);
+return
 }
 
-function endGame(t,w){if(over)return;over=true;turn='over';clearTimeout(timer);clearTimeout(alertTimer);record(w);localStorage.removeItem(SAVE);$('resultText').textContent=t;updateStats();$('result').style.display='flex';update()}
+let g=takeCards(cpu,pick2);
+pick2=0;
+
+sound('pick');
+
+message(g+' CARD'+(g===1?'':'S')+' PICKED BY CPU');
+
+turn='player';
+update();
+saveGame();
+return
+}
+
+if(general){
+general=0;
+
+let g=takeCards(cpu,1);
+
+sound('pick');
+
+message('CPU PICKED '+g+' CARD — GENERAL MARKET');
+
+turn='player';
+update();
+saveGame();
+return
+}
+
+let o=cpuOptions();
+
+if(!o.length){
+let g=takeCards(cpu,1);
+
+if(g){
+sound('pick');
+message('CPU PICKED 1 CARD')
+}else message('CPU HAS NO CARD TO PLAY');
+
+turn='player';
+update();
+saveGame();
+return
+}
+
+let ch=cpuChoose(o);
+if(!ch)return;
+
+let c=ch.card;
+
+cpu.splice(ch.index,1);
+pile.push(c);
+
+sound('play');
+
+/* UPDATE RIGHT AFTER CPU REMOVES THE CARD.
+   THIS IS WHAT DETECTS CPU HAVING EXACTLY 1 CARD. */
+update();
+saveGame();
+
+if(c.shape==='whot'){
+sound('whot');
+
+let count={};
+S.forEach(s=>count[s]=0);
+
+cpu.forEach(x=>{
+if(x.shape!=='whot')count[x.shape]++
+});
+
+let b=S[0];
+
+S.forEach(s=>{
+if(count[s]>count[b])b=s
+});
+
+currentShape=b;
+currentNumber=20;
+
+if(!cpu.length)return endGame('CPU WINS! 😭','cpu');
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED WHOT — NEED '+N[b].toUpperCase());
+return
+}
+
+currentShape=c.shape;
+currentNumber=c.number;
+
+if(c.number===2){
+pick2=2;
+sound('special');
+
+if(!cpu.length)return endGame('CPU WINS! 😭','cpu');
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED 2 — YOU MUST PLAY 2 OR PICK 2');
+return
+}
+
+if(c.number===14){
+general=1;
+sound('special');
+
+if(!cpu.length)return endGame('CPU WINS! 😭','cpu');
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED 14 — GENERAL MARKET • PICK 1');
+return
+}
+
+if(c.number===1){
+sound('special');
+
+if(!cpu.length)return endGame('CPU WINS! 😭','cpu');
+
+turn='cpu';
+update();
+saveGame();
+
+message('CPU PLAYED 1 — HOLD ON! CPU PLAYS AGAIN');
+
+timer=setTimeout(cpuTurn,750);
+return
+}
+
+if(!cpu.length)return endGame('CPU WINS! 😭','cpu');
+
+turn='player';
+update();
+saveGame();
+
+message('CPU PLAYED '+c.number+' — NEED '+N[currentShape].toUpperCase()+' OR '+currentNumber)
+}
+
+function endGame(t,w){
+if(over)return;
+
+over=true;
+turn='over';
+
+clearTimeout(timer);
+clearTimeout(alertTimer);
+
+record(w);
+
+localStorage.removeItem(SAVE);
+
+$('resultText').textContent=t;
+updateStats();
+$('result').style.display='flex';
+
+update()
+}
 
 function newGame(){
-clearTimeout(timer);clearTimeout(alertTimer);$('result').style.display='none';$('picker').style.display='none';$('alert').style.display='none';
-createDeck();deal();turn='player';pick2=0;general=0;waiting=false;over=false;recorded=false;started=true;update();saveGame()
+clearTimeout(timer);
+clearTimeout(alertTimer);
+
+$('result').style.display='none';
+$('picker').style.display='none';
+$('alert').style.display='none';
+
+createDeck();
+deal();
+
+turn='player';
+pick2=0;
+general=0;
+waiting=false;
+over=false;
+recorded=false;
+started=true;
+
+update();
+saveGame()
 }
 
 $('startBtn').onclick=startGame;
@@ -166,8 +718,17 @@ $('reset').onclick=resetStats;
 $('newGame').onclick=newGame;
 $('again').onclick=newGame;
 $('deck').onclick=drawCard;
-document.querySelectorAll('[data-shape]').forEach(b=>b.onclick=()=>chooseShape(b.dataset.shape));
-$('playerHand').onclick=e=>{let b=e.target.closest('[data-card]');if(b)playCard(+b.dataset.card)};
+
+document.querySelectorAll('[data-shape]').forEach(b=>{
+b.onclick=()=>chooseShape(b.dataset.shape)
+});
+
+$('playerHand').onclick=e=>{
+let b=e.target.closest('[data-card]');
+if(b)playCard(+b.dataset.card)
+};
+
 loadStats();
+
 })();
 </script></body></html>
