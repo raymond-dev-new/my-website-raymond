@@ -14,10 +14,8 @@
 
 .start,.picker,.result{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99}.picker,.result{display:none}.start h1{color:#ffd700;font-size:27px;margin-bottom:10px}.start p{text-align:center;font-size:14px;margin:0 20px 14px}.stats{background:#123b29;padding:12px 22px;border-radius:14px;text-align:center;margin-bottom:13px}.stats b{color:#ffd700}.statsrow{display:flex;gap:35px;margin-top:7px}.w{color:#55efc4}.l{color:#ff7675}.startbtn,.sharebtn{width:190px;padding:11px;border-radius:11px;color:#fff;font-weight:bold;font-size:15px;margin:4px}.startbtn{background:#ff4500}.sharebtn{background:#25d366}.reset{margin-top:9px;padding:6px 12px;border-radius:7px;background:#555;color:#fff}.picker h2{color:#ffd700;margin-bottom:18px}.shapes{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}.shapebtn{width:65px;height:65px;background:#fff;border:3px solid #000;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:34px}.cross{position:relative;width:35px;height:35px}.cross:before,.cross:after{content:"";position:absolute;background:#f9a825;border-radius:3px}.cross:before{width:100%;height:10px;top:12px}.cross:after{height:100%;width:10px;left:12px}
 
-/* CPU PUSHED HIGH TO TOP */
 .top{width:100%;min-height:76px;display:flex;justify-content:center;align-items:flex-start;gap:3px;flex-wrap:nowrap;overflow:hidden;position:absolute;top:60px}
 
-/* ALERT MOVED UP TO 25% - NO LONGER ON CARDS */
 .alert{position:fixed;top:25%;left:50%;transform:translate(-50%,-50%) scale(.9);width:max-content;max-width:90%;padding:13px 18px;background:rgba(255,215,0,.98);border-radius:15px;color:#000;font-weight:900;font-size:16px;text-align:center;display:none;box-shadow:0 0 30px #ffd700,0 4px 20px #000;border:3px solid #fff;z-index:1000;transition:transform.2s;pointer-events:none}
 
 .center{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin:30px 0}
@@ -42,7 +40,7 @@
 <script>
 (function(){
 'use strict';
-const S=['circle','triangle','star','square','cross'],E={circle:'●',triangle:'▲',star:'★',square:'■'},N={circle:'Circle',triangle:'Triangle',star:'Star',square:'Square',cross:'Cross'},SAVE='whot_save_v21',STATS='whot_stats_v20';
+const S=['circle','triangle','star','square','cross'],E={circle:'●',triangle:'▲',star:'★',square:'■'},N={circle:'Circle',triangle:'Triangle',star:'Star',square:'Square',cross:'Cross'},SAVE='whot_save_v22',STATS='whot_stats_v21';
 let deck=[],player=[],cpu=[],pile=[],currentShape='',currentNumber=0,turn='player',pick2=0,general=0,waiting=false,started=false,over=false,recorded=false,stats={wins:0,losses:0},timer=null,alertTimer=null,audio=null;
 const $=id=>document.getElementById(id);
 function sound(t){try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),g=audio.createGain(),f=500,d=.08;if(t==='pick'){f=250;d=.13}if(t==='special'){f=700;d=.16}if(t==='whot'){f=900;d=.22}if(t==='win'){f=1000;d=.45}if(t==='lose'){f=180;d=.4}o.frequency.value=f;o.type='sine';o.connect(g);g.connect(audio.destination);g.gain.setValueAtTime(.001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.15,audio.currentTime+.01);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.start();o.stop(audio.currentTime+d+.02)}catch(e){}}
@@ -52,7 +50,15 @@ function updateStats(){$('wins').textContent=stats.wins;$('losses').textContent=
 function resetStats(){if(confirm('Reset Wins and Losses to 0?')){stats={wins:0,losses:0};saveStats();sound('pick')}}
 function record(w){if(recorded)return;recorded=true;if(w==='player'){stats.wins++;sound('win')}else{stats.losses++;sound('lose')}saveStats()}
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
-function createDeck(){deck=[];[1,2,3,4,5,7,10,11,12,13,14].forEach(n=>S.forEach(s=>{deck.push({shape:s,number:n});if([1,2,3,4,5,7].includes(n))deck.push({shape:s,number:n})}));for(let i=0;i<5;i++)deck.push({shape:'whot',number:20});shuffle(deck)}
+function createDeck(){deck=[];
+  // NO DUPLICATES: 1 copy of each shape + number
+  [1,2,3,4,5,7,10,11,12,13,14].forEach(n=>S.forEach(s=>{
+    deck.push({shape:s,number:n})
+  }));
+  // Only WHOT gets 5 copies
+  for(let i=0;i<5;i++)deck.push({shape:'whot',number:20});
+  shuffle(deck)
+}
 function deal(){player=[];cpu=[];pile=[];for(let i=0;i<7;i++){player.push(deck.pop());cpu.push(deck.pop())}let f;do{f=deck.pop();if(f.shape==='whot'){deck.unshift(f);shuffle(deck)}}while(f.shape==='whot');pile.push(f);currentShape=f.shape;currentNumber=f.number}
 function canPlay(c){if(!c)return false;if(pick2>0)return c.number===2;if(general>0)return false;return c.shape==='whot'||c.shape===currentShape||c.number===currentNumber}
 function recycle(){if(deck.length)return true;if(pile.length<=1)return false;let t=pile[pile.length-1];deck=pile.slice(0,-1);pile=[t];shuffle(deck);return!!deck.length}
@@ -63,7 +69,7 @@ function needed(){if(pick2>0)return'PICK '+pick2+' — PLAY 2 OR PICK';if(genera
 function update(){$('deckCount').textContent=deck.length;$('pc').textContent=player.length;$('cc').textContent=cpu.length;$('needed').textContent=needed();$('turn').textContent=turn==='player'?'Your Turn':turn==='cpu'?'CPU Thinking...':'Game Over';$('cpuHand').innerHTML=cpu.map(()=>cardHTML(null,true)).join('');$('playerHand').innerHTML=player.map((c,i)=>'<div data-card="'+i+'" style="opacity:'+(canPlay(c)?1:.35)+'">'+cardHTML(c,false)+'</div>').join('');let t=pile[pile.length-1];$('pile').innerHTML=t?cardHTML(t,false):''}
 function saveGame(){if(!started||over)return;try{localStorage.setItem(SAVE,JSON.stringify({deck,player,cpu,pile,currentShape,currentNumber,turn,pick2,general,waiting}))}catch(e){}}
 function loadGame(){try{let r=localStorage.getItem(SAVE);if(!r)return false;let d=JSON.parse(r);if(!d||!Array.isArray(d.deck)||!Array.isArray(d.player)||!Array.isArray(d.cpu)||!Array.isArray(d.pile))return false;({deck,player,cpu,pile,currentShape,currentNumber,turn,pick2,general,waiting}=d);currentNumber=+currentNumber||0;turn=turn||'player';pick2=+pick2||0;general=+general||0;waiting=!!waiting;return true}catch(e){localStorage.removeItem(SAVE);return false}}
-function message(t){clearTimeout(alertTimer);let e=$('alert');e.textContent=t;e.style.display='block';e.style.transform='translate(-50%,-50%) scale(1)';sound('special');alertTimer=setTimeout(()=>{e.style.transform='translate(-50%,-50%) scale(.9)';setTimeout(()=>e.style.display='none',200)},5000)}
+function message(t){clearTimeout(alertTimer);let e=$('alert');e.textContent=t;e.style.display='block';e.style.transform='translate(-50%,-50%) scale(1)';sound('special');alertTimer=setTimeout(()=>{e.style.transform='translate(-50%,-50%) scale(.9)';setTimeout(()=>e.style.display='none',200)},5500)}
 function startGame(){$('start').style.display='none';started=true;over=false;recorded=false;if(loadGame()){update();if(waiting)$('picker').style.display='flex';if(turn==='cpu'&&!waiting)timer=setTimeout(cpuTurn,700)}else newGame();try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume()}catch(e){}}
 function shareGame(){if(navigator.share)navigator.share({title:'WHOT Game',text:'Come play WHOT with me!',url:location.href}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(location.href).then(()=>alert('Game link copied!')).catch(()=>alert('Sharing is not supported.'));else alert('Sharing is not supported.')}
 function playCard(i){if(!started||over||turn!=='player'||waiting)return;let c=player[i];if(!c)return;if(!canPlay(c)){if(pick2)message('PICK '+pick2+' — PLAY A 2 OR PICK '+pick2);else if(general)message('GENERAL MARKET — YOU MUST PICK 1');else message('YOU NEED '+N[currentShape].toUpperCase()+' OR '+currentNumber);return}sound('play');player.splice(i,1);pile.push(c);if(c.shape==='whot'){waiting=true;sound('whot');$('picker').style.display='flex';update();saveGame();return}currentShape=c.shape;currentNumber=c.number;if(c.number===2){pick2+=2;general=0;sound('special');if(!player.length)return endGame('YOU WIN! 🎉','player');turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,750);return}if(c.number===14){general=1;pick2=0;sound('special');if(!player.length)return endGame('YOU WIN! 🎉','player');turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,750);return}if(c.number===1){sound('special');if(!player.length)return endGame('YOU WIN! 🎉','player');turn='player';message('1 — HOLD ON! YOU PLAY AGAIN');update();saveGame();return}if(!player.length)return endGame('YOU WIN! 🎉','player');turn='cpu';update();saveGame();timer=setTimeout(cpuTurn,750)}
