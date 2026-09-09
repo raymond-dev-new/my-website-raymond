@@ -2,6 +2,18 @@
 <html>
 <head>
   <title>Private Space </title>
+
+   <script>
+// Allow Googlebot to access site for AdSense verification
+const token = localStorage.getItem('token')
+const isGoogleBot = navigator.userAgent.includes('Googlebot') || 
+                    navigator.userAgent.includes('AdsBot-Google')
+
+if (!token && !isGoogleBot) {
+  window.location.replace('/login.html');
+}
+</script>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">

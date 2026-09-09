@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MyPortal - Dashboard</title>
 
+  <script>
+// Allow Googlebot to access site for AdSense verification
+const token = localStorage.getItem('token')
+const isGoogleBot = navigator.userAgent.includes('Googlebot') || 
+                    navigator.userAgent.includes('AdsBot-Google')
+
+if (!token && !isGoogleBot) {
+  window.location.replace('/login.html');
+}
+</script>
+
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625"
      crossorigin="anonymous">
     </script>

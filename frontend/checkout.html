@@ -2,15 +2,16 @@
    <html>
       <head>
 
-          <script>
-            // This runs before the page shows
-            const token = localStorage.getItem('token');
+        <script>
+// Allow Googlebot to access site for AdSense verification
+const token = localStorage.getItem('token')
+const isGoogleBot = navigator.userAgent.includes('Googlebot') || 
+                    navigator.userAgent.includes('AdsBot-Google')
 
-            if (!token) {
-              // Not logged in? Kick out immediately
-              window.location.replace('/login.html');
-            }
-          </script>
+if (!token && !isGoogleBot) {
+  window.location.replace('/login.html');
+}
+</script>
 
          <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 

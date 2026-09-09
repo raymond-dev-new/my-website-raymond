@@ -1,13 +1,15 @@
 <!DOCTYPE html><html lang="en"><head>
   
  <script>
-    const token = localStorage.getItem('token');
+// Allow Googlebot to access site for AdSense verification
+const token = localStorage.getItem('token')
+const isGoogleBot = navigator.userAgent.includes('Googlebot') || 
+                    navigator.userAgent.includes('AdsBot-Google')
 
-     if (!token) {
-      // Not logged in? Kick out immediately
-      window.location.replace('/login.html');
-    }
-   </script>  
+if (!token && !isGoogleBot) {
+  window.location.replace('/login.html');
+}
+</script>
 
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>WHOT - Real Card Game</title><style>
 *{box-sizing:border-box;margin:0;padding:0}html,body{width:100%;height:100%;overflow:hidden}body{background:radial-gradient(circle,#0a5c36,#063d24);font-family:Arial;color:#fff;touch-action:manipulation}button{border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}.table{width:100%;height:100dvh;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;overflow:hidden}
