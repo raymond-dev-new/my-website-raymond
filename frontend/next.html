@@ -1,16 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-   const tokenn = localStorage.getItem('token');
-   if (!tokenn) {
-     window.location.replace('/login.html');
-   } 
-  </script>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Private Space</title>
+
+    <script>
+      // Let Googlebot access the site for AdSense verification
+      const token = localStorage.getItem('token')
+      const isGoogleBot = navigator.userAgent.includes('Googlebot')
+
+      if (!token && !isGoogleBot) {
+        window.location.replace('/login.html');
+      }
+      </script>
+
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625"
+          crossorigin="anonymous"></script>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-5498751568948625",
+          enable_page_level_ads: true
+        });
+</script>
+
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   
   <style>
