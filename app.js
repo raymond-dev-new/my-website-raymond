@@ -44,21 +44,9 @@ app.use(express.json({ limit: '50mb' })); // important for base64
  app.use(express.static(path.join(__dirname, 'frontend')))
 
   
-// 2. Middleware to protect pages - BUT allow Googlebot
-app.use((req, res, next) => {
-  const userAgent = req.headers['user-agent'] || ''
-  const isGoogleBot = userAgent.includes('Googlebot') || userAgent.includes('AdsBot-Google')
-  
-  // If requesting .html file and no token and not Googlebot = redirect
-  if(req.path.endsWith('.html') && req.path !== '/login.html' && req.path !== '/register.html') {
-    const token = req.headers.authorization || req.query.token
-    
-    if(!token && !isGoogleBot) {
-      return res.redirect('/login.html')
-    }
-  }
-  next()
-})
+ 
+
+
 
 
 
