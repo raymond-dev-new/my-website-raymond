@@ -2,16 +2,7 @@
 <html lang="en">
 <head>
 
-  <script>
-// Allow Googlebot to access site for AdSense verification
-const token = localStorage.getItem('token')
-const isGoogleBot = navigator.userAgent.includes('Googlebot') || 
-                    navigator.userAgent.includes('AdsBot-Google')
 
-if (!token && !isGoogleBot) {
-  window.location.replace('/login.html');
-}
-</script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">

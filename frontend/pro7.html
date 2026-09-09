@@ -2,16 +2,7 @@ x<!DOCTYPE html>
 <html>
   <head> 
 
-      <script>
-// Allow Googlebot to access site for AdSense verification
-const token = localStorage.getItem('token')
-const isGoogleBot = navigator.userAgent.includes('Googlebot') || 
-                    navigator.userAgent.includes('AdsBot-Google')
-
-if (!token && !isGoogleBot) {
-  window.location.replace('/login.html');
-}
-</script>
+ 
 
     <title> Product </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">

@@ -1,16 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script>
-// Allow Googlebot to access site for AdSense verification
-const token = localStorage.getItem('token')
-const isGoogleBot = navigator.userAgent.includes('Googlebot') || 
-                    navigator.userAgent.includes('AdsBot-Google')
-
-if (!token && !isGoogleBot) {
-  window.location.replace('/login.html');
-}
-</script>
+ 
 <title> City Driver </title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
 <style>
