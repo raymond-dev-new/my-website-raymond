@@ -63,7 +63,7 @@ mongoose.connect(url)
  let User = '';
 
   app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'mainpage.html'));
+  res.sendFile(path.join(__dirname, 'frontend', 'register.html'));
  }) 
 
 
