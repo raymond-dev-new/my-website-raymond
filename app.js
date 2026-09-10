@@ -34,9 +34,9 @@ const url = process.env.MONGO_URL
 
  
 //app.use(cors())
-app.use(cors({ origin: "*",
+/*app.use(cors({ origin: "*",
   methods: ["GET", "POST" , "DELETE"]
- }));
+ })); */
 
 app.use(cors({ origin: "*" }));
 app.use(bordyparser.json()); // for metadata
@@ -62,11 +62,15 @@ mongoose.connect(url)
 
  let User = '';
 
+
+app.get('/ads.txt', (req, res) => {
+  res.type('text/plain');
+  res.sendFile(path.join(__dirname, 'frontend', 'ads.txt'));
+})
+
   app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'register.html'));
+  res.sendFile(path.join(__dirname, 'frontend', 'mainpage.html'));
  }) 
-
-
 
  app.post('/change', async (req, res) => {
    console.log(req.body)
