@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
-
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- FIXED: Use only 1 pub ID. I used the one from your script -->
+  <meta name="google-adsense-account" content="ca-pub-5498751568948625">
+ 
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625"
+     crossorigin="anonymous"></script>
+
+
   <title>Private Space Shop</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 
@@ -48,7 +53,7 @@
       align-items: center;
       justify-content: center;
       min-height: 70vh;
-      padding-top: 60px; /* space for back button */
+      padding-top: 20px; /* space for back button */
     }
 
     h1 {
@@ -111,16 +116,28 @@
 
     /* MOBILE */
     @media (max-width: 480px) {
-      h1 { font-size: 18px; }
+      h1 { font-size: 18px; margin-top: -150px;}
   .shop-grid { gap: 10px; max-width: 340px; }
   .btn { font-size: 13px; font-weight: 700; padding: 14px 6px; }
   .btn-back { padding: 10px 20px; font-size: 15px; }
+  .ad-wrapper ins { width: 350px !important; height: 110px !important;  margin-top: 70px; margin-left: 12px;}
     }
   </style>
 </head>
 <body>
 
+
   <button class="btn-back logout">Back</button>
+
+  <div class="ad-wrapper">
+    <ins class="adsbygoogle"
+         style="display:inline-block;width: 350px; height:110px"
+         data-ad-client="ca-pub-5498751568948625"
+         data-ad-slot="1207749774"></ins>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
 
   <div class="wrapper">
     <h1>SHOP FROM US TODAY</h1>
