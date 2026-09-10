@@ -23,22 +23,21 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 0; /* REMOVED extra padding */
+      padding: 0;
     }
 
-    /* HEADER - EVEN SMALLER */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 12px; /* SMALLER: was 12px 20px */
+      padding: 8px 12px;
       backdrop-filter: blur(10px);
       background: rgba(255,255,255,0.05);
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     header h1 {
-      font-size: 16px; /* SMALLER: was 20px */
+      font-size: 16px;
       font-weight: 700;
       background: linear-gradient(90deg, #4b75ff, #8b5cf6);
       -webkit-background-clip: text;
@@ -49,10 +48,10 @@
       background: #ff4757;
       color: white;
       border: none;
-      padding: 6px 10px; /* SMALLER: was 8px 14px */
-      border-radius: 8px; /* SMALLER */
+      padding: 6px 10px;
+      border-radius: 8px;
       font-weight: 600;
-      font-size: 12px; /* SMALLER */
+      font-size: 12px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -61,51 +60,68 @@
       transform: translateY(-2px);
     }
 
-    /* MAIN GRID - NO TOP SPACE */
+    /* FIXED AD WRAPPER - NO FLOAT */
+    .ad-wrapper {
+      width: 350px; /* EXACT WIDTH YOU WANT */
+      height: 110px; /* EXACT HEIGHT YOU WANT */
+      margin: 12px auto; /* centers it, pushes content down */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .ad-wrapper ins {
+      width: 350px !important;
+      height: 110px !important;
+      display: inline-block !important;
+    }
+
     .container {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start; /* START FROM TOP */
-      padding: 15px 12px; /* SMALLER: was 30px 16px */
+      justify-content: flex-start;
+      padding: 15px 12px;
     }
 
     .welcome {
       text-align: center;
-      margin-bottom: 15px; /* SMALLER: was 30px */
-      margin-top: 8px; /* TIGHT TO TOP */
+      margin-bottom: 15px;
+      margin-top: 8px;
     }
     .welcome h2 {
-      font-size: 20px; /* SMALLER: was 24px */
+      font-size: 20px;
       font-weight: 700;
       margin-bottom: 4px;
     }
     .welcome p {
-      font-size: 12px; /* SMALLER: was 14px */
+      font-size: 12px;
       opacity: 0.8;
     }
 
-    /* BUTTON GRID - NOW TAKES HALF WIDTH */
     .dashboard {
       display: grid;
-      grid-template-columns: repeat(2, 1fr); /* 2 per row like your screenshot */
-      gap: 10px; /* SMALLER: was 14px */
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
       width: 100%;
-      max-width: 50%; /* KEY: TAKES HALF OF SCREEN */
+      max-width: 50%;
     }
 
     .card {
       background: rgba(255,255,255,0.08);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px; /* SMALLER: was 16px */
-      padding: 12px 8px; /* SMALLER: was 18px 12px */
+      border-radius: 12px;
+      padding: 12px 8px;
       text-align: center;
       cursor: pointer;
       transition: all 0.3s ease;
       font-weight: 600;
-      font-size: 12px; /* SMALLER: was 14px */
+      font-size: 12px;
     }
     .card:hover {
       transform: translateY(-3px);
@@ -113,7 +129,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    /* COLORS BY CATEGORY */
     .card.diary { background: linear-gradient(135deg, #667eea, #764ba2); }
     .card.expense { background: linear-gradient(135deg, #f093fb, #f5576c); }
     .card.quiz { background: linear-gradient(135deg, #4facfe, #00f2fe); }
@@ -121,25 +136,30 @@
     .card.calc { background: linear-gradient(135deg, #fa709a, #fee140); }
     .card.design { background: linear-gradient(135deg, #30cfd0, #330867); }
     .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; }
-    .whot { background: linear-gradient(135deg, #1b02ff, #52a35f); grid-column: span 2; } /* full width */
+    .whot { background: linear-gradient(135deg, #1b02ff, #52a35f); grid-column: span 2; }
 
-    /* FOOTER */
     footer {
       text-align: center;
-      padding: 10px; /* SMALLER */
-      font-size: 10px; /* SMALLER */
+      padding: 10px;
+      font-size: 10px;
       opacity: 0.6;
     }
 
-    /* MOBILE - STILL 50% WIDTH */
+    /* MOBILE - KEEP 350x110 BUT CENTER */
     @media (max-width: 480px) {
       header h1 { font-size: 15px; }
       .welcome h2 { font-size: 18px; }
-      .dashboard { gap: 8px; max-width: 90%; grid-template-columns: repeat(2, 1fr); } /* 90% on phone */
+      .dashboard { gap: 8px; max-width: 90%; }
       .card { padding: 10px 8px; font-size: 11px; border-radius: 10px; }
       .card.game, .whot { grid-column: span 2; }
       .container { padding: 12px 10px; }
-       .ad-wrapper ins { width: 350px !important; height: 110px !important;  margin-top: 70px; margin-left: 18px;}
+      
+      /* REMOVED margin-top:70px and margin-left:18px */
+      .ad-wrapper {
+        width: 350px;
+        height: 110px;
+        margin: 10px auto; /* only centers */
+      }
     }
   </style>
 </head>
@@ -152,7 +172,6 @@
 
   <div class="ad-wrapper">
     <ins class="adsbygoogle"
-         style="display:inline-block;width: 350px; height:110px"
          data-ad-client="ca-pub-5498751568948625"
          data-ad-slot="1207749774"></ins>
     <script>
