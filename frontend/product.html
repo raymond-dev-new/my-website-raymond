@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- FIXED: Use only 1 pub ID. I used the one from your script -->
   <meta name="google-adsense-account" content="ca-pub-5498751568948625">
- 
+
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625"
      crossorigin="anonymous"></script>
-
 
   <title>Private Space Shop</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
@@ -26,16 +24,14 @@
       position: relative;
     }
 
-    .greenn{
-      margin-top: 30px;
-    }
+   .greenn{ margin-top: 30px; }
 
     /* YELLOW BACK BUTTON TOP LEFT */
-.btn-back {
+   .btn-back {
       position: absolute;
       top: 20px;
       left: 20px;
-      background: #FFD700; /* YELLOW */
+      background: #FFD700;
       color: #000;
       border: none;
       padding: 12px 24px;
@@ -44,16 +40,35 @@
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 10; /* so it stays on top */
+    }
+
+    /* AD BOX - 350x110 NO FLOAT */
+   .ad-wrapper {
+      width: 350px;
+      height: 110px;
+      margin: 80px auto 20px auto; /* 80px top to clear back button, centered */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0,0,0,0.3); /* see the box */
+      border-radius: 12px;
+      overflow: hidden;
+    }
+   .ad-wrapper ins {
+      width: 350px!important;
+      height: 110px!important;
+      display: inline-block!important;
     }
 
     /* CENTER CONTENT */
-.wrapper {
+   .wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 70vh;
-      padding-top: 20px; /* space for back button */
+      padding-top: 10px;
     }
 
     h1 {
@@ -66,7 +81,7 @@
     }
 
     /* 3x4 GRID */
-.shop-grid {
+   .shop-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
@@ -76,7 +91,7 @@
     }
 
     /* BUTTONS */
-.btn {
+   .btn {
       font-size: 14px;
       font-weight: 700;
       padding: 16px 8px;
@@ -89,16 +104,16 @@
       text-align: center;
       box-shadow: 0 3px 8px rgba(0,0,0,0.3);
     }
-.btn:hover { transform: translateY(-2px); }
+   .btn:hover { transform: translateY(-2px); }
 
     /* COLORS LIKE YOUR SCREENSHOT */
-.green { background: #00c853; }
-.yellow { background: #FFD700; color: #000; }
-.purple { background: #7e57c2; }
-.blue { background: #2962ff; }
+   .green { background: #00c853; }
+   .yellow { background: #FFD700; color: #000; }
+   .purple { background: #7e57c2; }
+   .blue { background: #2962ff; }
 
     /* ORANGE ADVERT BUTTON */
-.btn-advertise {
+   .btn-advertise {
       background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%);
       color: white;
       font-size: 16px;
@@ -116,22 +131,27 @@
 
     /* MOBILE */
     @media (max-width: 480px) {
-      h1 { font-size: 18px; margin-top: -150px;}
-  .shop-grid { gap: 10px; max-width: 340px; }
-  .btn { font-size: 13px; font-weight: 700; padding: 14px 6px; }
-  .btn-back { padding: 10px 20px; font-size: 15px; }
-  .ad-wrapper ins { width: 350px !important; height: 110px !important;  margin-top: 70px; margin-left: 12px;}
+      body { padding: 15px; }
+      h1 { font-size: 18px; margin-top: -170px;} /* REMOVED -150px */
+     .shop-grid { gap: 10px; max-width: 340px; }
+     .btn { font-size: 13px; font-weight: 700; padding: 14px 6px; }
+     .btn-back { padding: 10px 20px; font-size: 15px; top: 15px; left: 15px; }
+
+      /* FIXED AD FOR MOBILE */
+     .ad-wrapper {
+        width: 350px;
+        height: 110px;
+        margin: 70px auto 15px auto; /* centered, no left margin */
+      }
     }
   </style>
 </head>
 <body>
 
-
   <button class="btn-back logout">Back</button>
 
   <div class="ad-wrapper">
     <ins class="adsbygoogle"
-         style="display:inline-block;width: 350px; height:110px"
          data-ad-client="ca-pub-5498751568948625"
          data-ad-slot="1207749774"></ins>
     <script>
