@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- FIXED: Use only 1 pub ID. I used the one from your script -->
   <meta name="google-adsense-account" content="ca-pub-5498751568948625">
-
  
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625"
      crossorigin="anonymous"></script>
@@ -15,7 +15,7 @@
  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     
-   * { box-sizing: border-box; } /* FIX: makes padding not break layout */
+   * { box-sizing: border-box; }
 
    body {
   background-image: url("photo_2026-07-24_19-55-32.jpg");
@@ -25,8 +25,15 @@
   background-attachment: fixed;
   margin: 0;
   padding: 0;
-  /*min-height: 100vh;*/
   font-family: Roboto;
+}
+
+/* STATIC AD WRAPPER */
+.ad-wrapper {
+  width:100%; 
+  text-align:center; 
+  margin:10px 0;
+  padding: 5px 0;
 }
 
 /* TOP BAR FOR LOGOUT + INFO */
@@ -60,17 +67,14 @@
   padding: 8px;
 }
 
-/* GLASS CARD - CENTERED WITH MAX WIDTH */
 .container {
   border-radius: 20px;
-  margin: 10px auto; /* center on laptop */
+  margin: 10px auto;
   padding: 15px;
-  
-  max-width: 1200px; /* stops it from getting too wide on laptop */
+  max-width: 1200px;
   width: 95%;
 }
 
-/* MARKETPLACE BANNER */
 .market-banner {
   background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
   color: #000;
@@ -124,9 +128,6 @@ button:hover{
   transform: translateY(-2px);
 }
 
-/* ORANGE ADVERTISE BUTTON *
-
-/* DEFAULT: 2 COLUMN GRID FOR PHONE */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -195,104 +196,54 @@ button:hover{
   margin: 5px 0 10px 0;
 }
 
-/* ========== RESPONSIVE BREAKPOINTS ========== */
-
 /* TABLET: 768px and up */
 @media screen and (min-width: 768px) {
-  .container {
-    padding: 25px;
-  }
-  .h1 {
-    font-size: 36px;
-  }
-  .market-banner {
-    font-size: 16px;
-  }
-  .market-banner span {
-    font-size: 14px;
-  }
-  button {
-    font-size: 18px;
-    padding: 18px;
-  }
-  .grid {
-    grid-template-columns: repeat(3, 1fr); /* 3 columns on tablet */
-    gap: 15px;
-  }
-  .featured-grid {
-    grid-template-columns: repeat(4,1fr); /* 4 featured items */
-  }
-  .featured-item img {
-    height: 120px;
-  }
+  .container { padding: 25px; }
+  .h1 { font-size: 36px; }
+  .market-banner { font-size: 16px; }
+  .market-banner span { font-size: 14px; }
+  button { font-size: 18px; padding: 18px; }
+  .grid { grid-template-columns: repeat(3, 1fr); gap: 15px; }
+  .featured-grid { grid-template-columns: repeat(4,1fr); }
+  .featured-item img { height: 120px; }
 }
 
 /* LAPTOP: 1024px and up */
 @media screen and (min-width: 1024px) {
-  .container {
-    padding: 30px;
-    margin: 20px auto;
-  }
-  .h1 {
-    font-size: 42px;
-  }
-  .top-bar {
-    padding: 15px 30px;
-  }
-  .left-buttons button {
-    font-size: 15px;
-    padding: 10px 18px;
-  }
-  button {
-    font-size: 20px;
-    padding: 20px;
-  }
-  .grid {
-    grid-template-columns: repeat(4, 1fr); /* 4 columns on laptop */
-    gap: 20px;
-  }
-  .featured {
-    padding: 25px;
-  }
-  .featured h3 {
-    font-size: 24px;
-  }
-  .featured-item {
-    font-size: 14px;
-  }
-  .featured-item img {
-    height: 150px;
-  }
+  .container { padding: 30px; margin: 20px auto; }
+  .h1 { font-size: 42px; }
+  .top-bar { padding: 15px 30px; }
+  .left-buttons button { font-size: 15px; padding: 10px 18px; }
+  button { font-size: 20px; padding: 20px; }
+  .grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .featured { padding: 25px; }
+  .featured h3 { font-size: 24px; }
+  .featured-item { font-size: 14px; }
+  .featured-item img { height: 150px; }
 }
 
 /* SMALL PHONE: 480px and below */
 @media screen and (max-width: 480px) {
-  .h1 {
-    font-size: 24px;
-  }
-  button {
-    font-size: 15px;
-    padding: 14px;
-  }
-  .market-banner {
-    font-size: 12px;
-  }
+  .h1 { font-size: 24px; }
+  button { font-size: 15px; padding: 14px; }
+  .market-banner { font-size: 12px; }
+  /* Make ad responsive on small phones */
+  .ad-wrapper ins { width: 300px !important; height: 100px !important; }
 }
   </style>
 </head>
 <body>
 
-  <div style="width:100%;margin:15px 0;text-align:center;">
-  <ins class="adsbygoogle"
-       style="display:block"
-       data-ad-client="ca-pub-5498751568948625"
-       data-ad-slot="1207749774"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
-  <script>
-    (adsbygoogle = window.adsbygoogle || []).push({});
-  </script>
-</div>
+  <!-- STATIC GOOGLE AD - NO FLOATING -->
+  <div class="ad-wrapper">
+    <ins class="adsbygoogle"
+         style="display:inline-block;width:320px;height:100px"
+         data-ad-client="ca-pub-5498751568948625"
+         data-ad-slot="1207749774"></ins>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
 
 <div class="container">
 
@@ -317,7 +268,7 @@ button:hover{
   <h2 class="test"></h2> 
   
     <small style="color: rgb(9, 130, 167); font-weight: 700; font-size: 16px;">After payment we will upload your Products in shop product with your whatsapp number so u can be contacted by our 800+ users</small>
-  <!-- RESPONSIVE BUTTON GRID -->
+  
   <div class="grid">
    <div>  <button class="Calculator"> Design </button> </div>
    <div>  <button class="Media"> Watch Live Match </button> </div> 
@@ -359,7 +310,6 @@ button:hover{
    const logout = document.querySelector('.logout')                
    const Media = document.querySelector('.Media') 
    
-      
    calculator.addEventListener('click', () => {
       window.location.href="next.html"
    })  
