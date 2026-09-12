@@ -1,600 +1,173 @@
 <!DOCTYPE html>
 <html>
-  <head> 
-
-   
-
-    <title> Product </title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    
+<head> 
+  <title>Private Space Shop - Bags & Accessories</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Shop quality bags and accessories. Order via WhatsApp 07050472675">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
   
-    <style>
-     
-
-      body {
-  font-family: Roboto;
-  color: rgb(33, 33, 33);
-  margin-bottom: 100px;
-}
-
-.p {
-  margin: 0;
-}
-
-.images-order {
-  margin-top: 20px;
-  height: 250px;
-  width: 230px;
-  margin-bottom: 20px;
-}
-
-.paragraph-div {
-  display: grid;
-  font-family: Roboto;
-  font-size: 15px;
-  margin-left: 15px;
-  margin-right: 45px;
-}
-
-.date{
-  font-family: Roboto;
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.daten{
-  font-family: Roboto;
-  font-size: 25px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-.order-name {
-  margin: 0;
-  font-size: 42px;
-  font-weight: 700;
-  font-family: Roboto;
-  margin-bottom: 5px;
-}
-
-.price-cents {
-  font-family: Roboto;
-  margin: 0;
-  margin-bottom: 5px;
-  margin-top: 5px;
-   font-size: 42px;
-  font-weight: 700;
-  font-family: Roboto;
-}
-
-.add-button {
-  padding-left: 45px;
-  padding-right: 42px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  border-radius: 20px;
-  background-color: rgb(21, 5, 252);
-  color: black;
-  border: 1px solid black;
-  cursor: pointer;
-  font-size: 20px;
-}
-
-.add-button:hover {
-  background-color: rgb(113, 88, 253);
-}
-
-.star-icon {
-  color: orange;
-  font-size: 35px;
-}
-
-.count-c {
-  font-family: Roboto;
-  color: blue;
-  font-size: 32px;
-}
-
-.grid-co {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-  row-gap: 50px;
-  padding-bottom: 50px;
-  margin-top: 70px;
-}
-
-.flex-direct {
-  background-color: rgb(5, 5, 5);
-  display: flex;
-  flex-direction: row;
-  height: 120px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 100;
-
-}
-
-.right-section {
-  width: 25%;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.middle-section {
-  width: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.left-section {
-  width: 25%;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.padding-top {
-  padding-top: 80px;
-  font-size: 0px;
-  margin-left: 40px;
-}
-
-.header-image {
-  height: 30px;
-  padding-left: 20px;
-}
-
-.header-image:hover {
-  border: 1px solid white;
-}
-
-.order-div {
-  font-family: Roboto;
-  width: 55px;
-  margin-left: 5%;
-  margin-right: 40px;
-  color: white;
-}
-
-.header-search {
-  font-family: Roboto;
-  padding-top: 10px;
-  padding-bottom: 11px;
-  padding-left: 15px;
-  padding-right: 15px;
-  width: 90%;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  font-size: 15px;
-}
-
-.search-div {
-  background-color: rgb(109, 3, 248);
-  height: 39px;
-  width: 44px;
-  border-radius: 4px;
-  margin-left: -7px;
-  cursor: pointer;
-}
-
-.search-icon {
-  width: 21px;
-  padding-top: 11px;
-  padding-left: 11px;
-}
-
-.header-images {
-  height: 40px;
-  padding-left: 145%;
-}
-
-.header-images:hover {
-  border: 1px solid white;
-}
-
-.order-div:hover {
-  border: 1px solid white;
-}
-
-.cart-quantity {
-  font-family: Roboto;
-  position: absolute;
-  color: rgb(39, 35, 255);
-  top: 15px;
-  right: 6%;
-  font-weight: 700;
-  font-size: 20px;
-}
-
-.head-images {
-  position: relative;
-  padding-top: 4px;
-}
-
-/* Laptop: 1024px to 1439px */
-@media screen and (max-width: 1439px) {
-  .grid-co {
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-  }
-  .header-search {
-    width: 85%;
-  }
-}
-
-/* Tablet: 768px to 1023px */
-@media screen and (max-width: 1023px) {
-  .grid-co {
-    grid-template-columns: 1fr 1fr 1fr;
-    row-gap: 40px;
-  }
-  .images-order {
-    height: 300px;
-    width: 100%;
-  }
-  .paragraph-div {
-    width: 310px;
-    font-size: 14px;
-    
-  }
-  .add-button {
-    width: 75%;
-     font-size: 22px;
-      font-weight: 700;
+  <style>
+    body {
       font-family: Roboto;
-  }
-  .header-search {
-    width: 80%;
-    font-size: 14px;
-  }
-  .order-div {
-    margin-left: 2%;
-    margin-right: 20px;
-  }
-  .cart-quantity {
-    right: 4%;
-    font-size: 18px;
-  }
-}
-
-/* Phone: 767px and below */
-@media screen and (max-width: 767px) {
-  body {
-    padding-bottom: 200px;
-  }
-  .grid-co {
-    grid-template-columns: 1fr 1fr;
-    row-gap: 30px;
-    padding: 0 5%;
-    
-  }
-  .images-order {
-    height: 120px;
-    width: 100%;
-  }
-  .paragraph-div {
-    width: 100%;
-    font-size: 13px;
-  }
-  .add-button {
-    padding-left: 0;
-    padding-right: 0;
-    width: 100%;
-    font-size: 14px;
-  }
-  .star-icon {
-    font-size: 20px;
-  }
-  .flex-direct {
-    height: 60px;
-  }
-  .padding-top {
-    padding-top: 65px;
-    margin-left: 5%;
+      color: rgb(33, 33, 33);
+      margin: 0;
+      padding-bottom: 100px;
+      background: #f5f5f5;
     }
-  .left-section,
-  .right-section {
-    width: 20%;
-  }
-  .middle-section {
-    width: 60%;
-  }
-  .header-image {
-    height: 25px;
-    padding-left: 10px;
-  }
-  .header-images {
-    height: 35px;
-  }
-  .header-search {
-    width: 75%;
-    padding-top: 8px;
-    padding-bottom: 9px;
-    font-size: 13px;
-  }
-  .search-div {
-    height: 35px;
-    width: 40px;
-  }
-  .search-icon {
-    width: 18px;
-    padding-top: 9px;
-    padding-left: 11px;
-  }
-  .order-div {
-    width: 45px;
-    margin-left: 0;
-    margin-right: 10px;
-    font-size: 11px;
-  }
-  .cart-quantity {
-    top: 10px;
-    right: 2%;
-    font-size: 16px;
-  }
-}
 
-/* Small Phone: 480px and below */
-@media screen and (max-width: 480px) {
-  .grid-co {
-    grid-template-columns: 1fr;
-    padding: 0 8%;
-  }
-  .header-search {
-    width: 65%;
-  }
-  .order-div {
-    display: none;
-  }
-  .cart-quantity {
-    right: 1%;
-  }
-}
+    .ad-wrapper {
+      width: 350px;
+      height: 110px;
+      margin: 80px auto 20px auto;
+      background: rgba(0,0,0,0.85);
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
 
-.icon{
-  font-size: 50px;
-  color: white;
-  margin-left: 15px;
-}
+    .ad-wrapper ins {
+      width: 350px !important;
+      height: 110px !important;
+      display: block !important;
+    }
 
-    </style>
-  </head>
-  <body>
-    
-    <div class="flex-direct">
-      <div class="left-section"> <a href="product.html"> <i class="ri-arrow-left-line icon"></i></a> </div>
+    .flex-direct {
+      background-color: rgb(5, 5, 5);
+      display: flex;
+      flex-direction: row;
+      height: 70px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      z-index: 100;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 15px;
+    }
 
-      <div class="middle-section"> <input class="header-search" type="text" placeholder="Search"> 
-        <div class="search-div"> <img class="search-icon" src="header/search-icon.png"> </div>
-      </div>
+    .icon{ font-size: 35px; color: white; cursor: pointer; }
+    .shop-title { color: white; font-size: 18px; font-weight: 900; }
 
-     
-        <div class="right-section">
-          <div class="order-div"></div>
+    .wrapper { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-          
-          <div class="head-images">  <a href=""> <img class="header-images">  </a> 
-         </div>
-        
-        <div class="cart-quantity js-cart-quantity">  </div>
-     </div>
-    </div>
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 900;
+      margin: 20px 0;
+      color: #5b05fc;
+    }
 
-     <div class="padding-top">
-      <div class="verti-cal">
-       <div class="grid-co js-products-grid">
-       
-     </div>
-    </div>
-    
+    .grid-co {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      padding-bottom: 50px;
+    }
 
+    .product-card {
+      background: white;
+      border-radius: 15px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
 
-      
+    .product-image {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
 
+    .product-name { font-size: 18px; font-weight: 700; margin: 10px 0 5px 0; text-transform: capitalize; }
+    .product-price { font-size: 24px; font-weight: 900; color: #5b05fc; margin-bottom: 8px; }
+    .contact-info { font-size: 14px; font-weight: 700; color: #444; margin-bottom: 12px; }
 
- <script> 
+    .add-button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 25px;
+      background: linear-gradient(135deg, #5b05fc 0%, #7c58fd 100%);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+    }
 
-  //import { Cart, addToCart } from "../data/cart.js";
+    @media screen and (max-width: 1023px) {
+      .grid-co { grid-template-columns: 1fr 1fr; }
+    }
 
+    @media screen and (max-width: 767px) {
+      .ad-wrapper { width: 350px; height: 110px; margin: 75px auto 15px auto; }
+      .grid-co { grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 10px; }
+      h1 { font-size: 20px; }
+      .product-image { height: 160px; }
+      .product-name { font-size: 14px; }
+      .product-price { font-size: 18px; }
+      .add-button { padding: 10px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="flex-direct">
+    <a href="index.html"><i class="ri-arrow-left-line icon"></i></a>
+    <div class="shop-title">PRIVATE SPACE SHOP</div>
+    <div></div>
+  </div>
 
- function getProduct(productId) {
-   let matchingProduct;
+  <div class="ad-wrapper">
+    <ins class="adsbygoogle"
+         data-ad-client="ca-pub-5498751568948625"
+         data-ad-slot="1207749774"></ins>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
 
- products.forEach((product) => {
-   if (product.id === productId) {
-      matchingProduct = product;
-   }
- });
- return matchingProduct;
-}
+  <div class="wrapper">
+    <h1>SHOP BAGS FROM US TODAY</h1>
+    <div class="grid-co" id="products-grid"></div>
+  </div>
 
- const products = [{
-  id: 'rhrhur784754u-jkvh674784-kghg7t4y-4784764g',
-  image: 'pictures2/photo_2026-09-02_14-53-40.jpg',
-  name: '',
-  rating: {
-    stars: 4.5,
-    count:363
-  },
-  pricecents: 13
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625" crossorigin="anonymous"></script>
 
-}, {
-  id: 'uifg46764-hr46464g-jfg4rt764r-hfgytr4t7r4',
-  image: 'pictures2/photo_2026-09-02_14-54-04.jpg',
-  name: '',
-  rating: {
-    stars: 4.5,
-    count: 3
-  }, 
-  pricecents: 16
+  <script> 
+    const products = [
+      { image: 'pictures2/photo_2026-09-02_14-53-40.jpg', name: 'Luxury Handbag', price: '₦28,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-04.jpg', name: 'Mini Tote Bag', price: '₦18,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-11.jpg', name: 'Crossbody Bag', price: '₦15,000' }, /* fixed the / */
+      { image: 'pictures2/photo_2026-09-02_14-54-17.jpg', name: 'Quilted Shoulder Bag', price: '₦25,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-22.jpg', name: 'Designer Bag Set 3in1', price: '₦38,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-27.jpg', name: 'Leather Handbag', price: '₦32,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-32.jpg', name: 'Colorful Tote Bag', price: '₦20,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-36.jpg', name: 'Evening Clutch', price: '₦14,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-41.jpg', name: 'Casual Sling Bag', price: '₦16,000' }
+    ];
 
-}, {
-  id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
-  image: 'pictures2/photo_2026-09-02_14-54-11.jpg',
-  name: "",
-  rating:{
-    stars: 4.5,
-    count: 3157
-  }, 
-  pricecents: 27
-
-  }, {
-    id: 'urfghrf6767-jhfhr4764-jrfhr87478-jfwghr367',
-   image: 'pictures2/photo_2026-09-02_14-54-17.jpg',
-   name: '',
-   rating: {
-    stars: 4.5,
-    count: 144
-   },
-   pricecents: 18
-
-  }, {
-    id: 'efgdgr4674y-fhur476-bhdght7648-jhfrh4r7624',
-    image: 'pictures2/photo_2026-09-02_14-54-22.jpg',
-    name: '',
-    rating: {
-      stars: 4.5,
-      count: 215
-    },
-    pricecents: 32
-
-  }, {
-    id: 'yteftf78-fh3877hr-rjhut4765u-jvhjeugr4764',
-    image: 'pictures2/photo_2026-09-02_14-54-27.jpg',
-    name: "",
-    rating: {
-      stars: 4.5,
-      count: 235
-    },
-    pricecents: 18
-
-  }, {
-    id: '7t476yghrfh-fvhjfgr7r4-rfjry467-fvhjrgr4ty',
-    image: 'pictures2/photo_2026-09-02_14-54-32.jpg',
-    name: '',
-    rating: {
-      stars: 4.5,
-      count: 175
-    },
-    pricecents: 22
-
-  }, {
-    id: 'hrfghgr4764r-hjey74ry74rb-brgrf74-r4hjr467674r',
-    image: 'pictures2/photo_2026-09-02_14-54-36.jpg',
-    name: '',
-    rating: {
-      stars: 4.5,
-      count: 37
-    },
-    pricecents: 18
-
-  }, {
-    id: 'hrghreyr4yr-rhr78474gh4-rfjyfr67r4ghrf-hjryufr674yu',
-    image: 'pictures2/photo_2026-09-02_14-54-41.jpg',
-    name: '',
-    rating: {
-      stars: 4.5,
-      count: 127
-    },
-    pricecents: 15
-
-  },{
-  id: 'rhrhur784754u-jkvh674784-kghg7t4y-4784764g',
-  image: 'pictures2/photo_2026-09-02_14-53-40.jpg',
-  name: '',
-  rating: {
-    stars: 4.5,
-    count:363
-  },
-  pricecents: 13
-
-}, {
-  id: 'uifg46764-hr46464g-jfg4rt764r-hfgytr4t7r4',
-  image: 'pictures2/photo_2026-09-02_14-54-04.jpg',
-  name: '',
-  rating: {
-    stars: 4.5,
-    count: 3
-  }, 
-  pricecents: 16
-
-}, {
-  id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
-  image: 'pictures2/photo_2026-09-02_14-54-11.jpg',
-  name: "",
-  rating:{
-    stars: 4.5,
-    count: 3157
-  }, 
-  pricecents: 27
-
-  }];
-
-
-  let productsHTML = '';
-
-  products.forEach((product) => {
-   productsHTML += ` 
-       <div class="div-div">
-    <div class="paragraph-div">
-    <img class="images-order" src="${product.image}">
-
-     <p class="order-name">
-      ${product.name}
-    </p>
-
-    <span class="star-icon">&#9733&#9733&#9733&#9733&#9734 <span class="count-c">${product.rating.count}</span>
-    </span>
-    
-    <p class="price-cents"> ${(product.pricecents).toFixed(3)}</p>
-    <div class="date"> {expired on: september 16} </div>
-    <div class="daten"> 08127689541 </div>  
-
-     <button class="add-button js-add-to-cart" data-product-id="${product.id}"> Shop Products </button>
-    </div>
-    </div>
-  `;
-  });
-
- 
-    try {
-    document.querySelector('.js-products-grid').innerHTML = productsHTML;
-   }catch(error) {
-    // console.log('error. try again later')
-  }
-
-
-    function updateCartQuantity () {
-      let cartQuantity = 0; 
-
-       Cart.forEach((cartItem) => {
-          cartQuantity  += cartItem.quantity
-       })
-
-       document.querySelector('.js-cart-quantity').innerHTML = cartQuantity;
-    };
-
-
-  document.querySelectorAll('.js-add-to-cart')
-   .forEach((button) => {
-      button.addEventListener('click', () => {
-       const productId = button.dataset.productId;
-
-       addToCart(productId)  
-       updateCartQuantity();
-       
-      });
-   });
-
-   
- </script>
-    
-  </body>
+    let productsHTML = '';
+    products.forEach((product) => {
+      productsHTML += ` 
+        <div class="product-card">
+          <img class="product-image" src="${product.image}" alt="${product.name}">
+          <p class="product-name">${product.name}</p>
+          <p class="product-price">${product.price}</p>
+          <p class="contact-info">WhatsApp: 07050472675</p>
+          <button class="add-button">Order Now</button>
+        </div>
+      `;
+    });
+    document.getElementById('products-grid').innerHTML = productsHTML;
+  </script>
+</body>
 </html>
