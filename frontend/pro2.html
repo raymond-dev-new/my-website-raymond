@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head> 
-  <title>Private Space Shop - Fashion & Accessories</title>
+  <title>Private Space Shop - Bags & Accessories</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Shop clothes, shoes and bags. Order via WhatsApp 07050472675">
+  <meta name="description" content="Shop quality bags and accessories. Order via WhatsApp 07050472675">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
   
@@ -103,25 +103,13 @@
       font-weight: 700;
     }
 
-    /* Tablet: 2 columns */
     @media screen and (max-width: 1023px) {
-      .grid-co {
-        grid-template-columns: 1fr 1fr;
-      }
+      .grid-co { grid-template-columns: 1fr 1fr; }
     }
 
-    /* Phone: 2 COLUMNS */
     @media screen and (max-width: 767px) {
-      .ad-wrapper {
-        width: 350px;
-        height: 110px;
-        margin: 75px auto 15px auto;
-      }
-      .grid-co {
-        grid-template-columns: 1fr 1fr; /* 2 COLUMNS */
-        gap: 15px;
-        padding: 0 10px;
-      }
+      .ad-wrapper { width: 350px; height: 110px; margin: 75px auto 15px auto; }
+      .grid-co { grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 10px; }
       h1 { font-size: 20px; }
       .product-image { height: 160px; }
       .product-name { font-size: 14px; }
@@ -138,17 +126,8 @@
     <div></div>
   </div>
 
-  <div class="ad-wrapper">
-    <ins class="adsbygoogle"
-         data-ad-client="ca-pub-5498751568948625"
-         data-ad-slot="1207749774"></ins>
-    <script>
-      (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
-  </div>
-
   <div class="wrapper">
-    <h1>SHOP FROM US TODAY</h1>
+    <h1>SHOP BAGS FROM US TODAY</h1>
     <div class="grid-co" id="products-grid"></div>
   </div>
 
@@ -156,15 +135,15 @@
 
   <script> 
     const products = [
-      { image: 'pictures/photo_2026-08-30_16-49-44.jpg', name: 'Fashion Top', price: '₦7,000' },
-      { image: 'pictures/photo_2026-08-30_16-50-06.jpg', name: 'Elegant Gown', price: '₦16,000' },
-      { image: 'pictures/photo_2026-08-30_16-50-12.jpg', name: 'Pair of Shoes', price: '₦7,000' },
-      { image: 'pictures/photo_2026-08-30_16-50-28.jpg', name: 'Casual Top', price: '₦18,000' },
-      { image: 'pictures/photo_2026-08-30_16-50-35.jpg', name: 'Designer Trouser', price: '₦9,000' },
-      { image: 'pictures/photo_2026-08-30_16-50-54.jpg', name: 'Joggers', price: '₦18,000' },
-      { image: 'pictures/photo_2026-08-30_16-50-59.jpg', name: 'Complete Set', price: '₦13,000' },
-      { image: 'pictures/photo_2026-08-30_16-51-31.jpg', name: 'Polo Shirt', price: '₦12,000' },
-      { image: 'pictures/photo_2026-08-30_16-51-40.jpg', name: 'Classic Polo', price: '₦15,000' }
+      { image: 'pictures2/photo_2026-09-02_14-53-40.jpg', name: 'Luxury Handbag', price: '₦28,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-04.jpg', name: 'Mini Tote Bag', price: '₦18,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-11.jpg', name: 'Crossbody Bag', price: '₦15,000' }, /* fixed the / */
+      { image: 'pictures2/photo_2026-09-02_14-54-17.jpg', name: 'Quilted Shoulder Bag', price: '₦25,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-22.jpg', name: 'Designer Bag Set 3in1', price: '₦38,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-27.jpg', name: 'Leather Handbag', price: '₦32,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-32.jpg', name: 'Colorful Tote Bag', price: '₦20,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-36.jpg', name: 'Evening Clutch', price: '₦14,000' },
+      { image: 'pictures2/photo_2026-09-02_14-54-41.jpg', name: 'Casual Sling Bag', price: '₦16,000' }
     ];
 
     let productsHTML = '';
