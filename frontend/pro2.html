@@ -17,7 +17,7 @@
       body {
   font-family: Roboto;
   color: rgb(33, 33, 33);
-  margin: 0;
+  margin-bottom: 100px;
 }
 
 .p {
@@ -25,7 +25,8 @@
 }
 
 .images-order {
-  height: 200px;
+  margin-top: 20px;
+  height: 250px;
   width: 230px;
   margin-bottom: 20px;
 }
@@ -34,13 +35,26 @@
   display: grid;
   font-family: Roboto;
   font-size: 15px;
-  width: 180px;
-  margin-left: 30px;
+  margin-left: 15px;
+  margin-right: 45px;
 }
 
+.date{
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.daten{
+  font-family: Roboto;
+  font-size: 25px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
 .order-name {
   margin: 0;
-  font-size: 30px;
+  font-size: 42px;
   font-weight: 700;
   font-family: Roboto;
   margin-bottom: 5px;
@@ -51,7 +65,7 @@
   margin: 0;
   margin-bottom: 5px;
   margin-top: 5px;
-   font-size: 30px;
+   font-size: 42px;
   font-weight: 700;
   font-family: Roboto;
 }
@@ -73,22 +87,15 @@
   background-color: rgb(253, 245, 88);
 }
 
-.num{
-  margin-bottom: 45px;
-  font-weight: 700;
-  font-size: 28px;
-  stop-color: blue;
-  text-decoration-line: none;
-}
 .star-icon {
   color: orange;
-  font-size: 30px;
+  font-size: 35px;
 }
 
 .count-c {
   font-family: Roboto;
   color: blue;
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .grid-co {
@@ -96,14 +103,14 @@
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
   row-gap: 50px;
   padding-bottom: 50px;
-  margin-top: 30px;
+  margin-top: 70px;
 }
 
 .flex-direct {
   background-color: rgb(5, 5, 5);
   display: flex;
   flex-direction: row;
-  height: 90px;
+  height: 120px;
   position: fixed;
   top: 0;
   left: 0;
@@ -229,17 +236,17 @@
     row-gap: 40px;
   }
   .images-order {
-    height: 150px;
-    width: 175px;
+    height: 300px;
+    width: 100%;
   }
   .paragraph-div {
-    width: 240px;
+    width: 310px;
     font-size: 14px;
     
   }
   .add-button {
-    width: 200px;
-     font-size: 18px;
+    width: 75%;
+     font-size: 22px;
       font-weight: 700;
       font-family: Roboto;
   }
@@ -376,7 +383,7 @@
           <div class="head-images">  <a href=""> <img class="header-images" src="header/cart-icon.png">  </a> 
          </div>
         
-        <div class="cart-quantity js-cart-quantity"> 0 </div>
+        <div class="cart-quantity js-cart-quantity">  </div>
      </div>
     </div>
 
@@ -410,18 +417,18 @@
 
  const products = [{
   id: 'rhrhur784754u-jkvh674784-kghg7t4y-4784764g',
-  image: 'pictures/photo_2026-08-30_16-49-44.jpg',
-  name: 'Top,',
+  image: 'pictures2/photo_2026-09-02_14-53-40.jpg',
+  name: '',
   rating: {
     stars: 4.5,
     count:363
   },
-  pricecents: 7
+  pricecents: 13
 
 }, {
   id: 'uifg46764-hr46464g-jfg4rt764r-hfgytr4t7r4',
-  image: 'pictures/photo_2026-08-30_16-50-06.jpg',
-  name: 'Gawn',
+  image: 'pictures2/photo_2026-09-02_14-54-04.jpg',
+  name: '',
   rating: {
     stars: 4.5,
     count: 3
@@ -430,18 +437,18 @@
 
 }, {
   id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
-  image: 'pictures/photo_2026-08-30_16-50-12.jpg',
-  name: "Pair of shoes",
+  image: 'pictures2/photo_2026-09-02_14-54-11.jpg',
+  name: "",
   rating:{
     stars: 4.5,
     count: 3157
   }, 
-  pricecents: 7
+  pricecents: 27
 
   }, {
     id: 'urfghrf6767-jhfhr4764-jrfhr87478-jfwghr367',
-   image: 'pictures/photo_2026-08-30_16-50-28.jpg',
-   name: 'Top',
+   image: 'pictures2/photo_2026-09-02_14-54-17.jpg',
+   name: '',
    rating: {
     stars: 4.5,
     count: 144
@@ -450,18 +457,18 @@
 
   }, {
     id: 'efgdgr4674y-fhur476-bhdght7648-jhfrh4r7624',
-    image: 'pictures/photo_2026-08-30_16-50-35.jpg',
-    name: 'Trouser',
+    image: 'pictures2/photo_2026-09-02_14-54-22.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 215
     },
-    pricecents: 9
+    pricecents: 32
 
   }, {
     id: 'yteftf78-fh3877hr-rjhut4765u-jvhjeugr4764',
-    image: 'pictures/photo_2026-08-30_16-50-54.jpg',
-    name: "joggers",
+    image: 'pictures2/photo_2026-09-02_14-54-27.jpg',
+    name: "",
     rating: {
       stars: 4.5,
       count: 235
@@ -470,33 +477,63 @@
 
   }, {
     id: '7t476yghrfh-fvhjfgr7r4-rfjry467-fvhjrgr4ty',
-    image: 'pictures/photo_2026-08-30_16-50-59.jpg',
-    name: 'Complete',
+    image: 'pictures2/photo_2026-09-02_14-54-32.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 175
     },
-    pricecents: 13
+    pricecents: 22
 
   }, {
     id: 'hrfghgr4764r-hjey74ry74rb-brgrf74-r4hjr467674r',
-    image: 'pictures/photo_2026-08-30_16-51-31.jpg',
-    name: 'Polo',
+    image: 'pictures2/photo_2026-09-02_14-54-36.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 37
     },
-    pricecents: 12
+    pricecents: 18
 
   }, {
     id: 'hrghreyr4yr-rhr78474gh4-rfjyfr67r4ghrf-hjryufr674yu',
-    image: 'pictures/photo_2026-08-30_16-51-40.jpg',
-    name: 'Polo',
+    image: 'pictures2/photo_2026-09-02_14-54-41.jpg',
+    name: '',
     rating: {
       stars: 4.5,
       count: 127
     },
     pricecents: 15
+
+  },{
+  id: 'rhrhur784754u-jkvh674784-kghg7t4y-4784764g',
+  image: 'pictures2/photo_2026-09-02_14-53-40.jpg',
+  name: '',
+  rating: {
+    stars: 4.5,
+    count:363
+  },
+  pricecents: 13
+
+}, {
+  id: 'uifg46764-hr46464g-jfg4rt764r-hfgytr4t7r4',
+  image: 'pictures2/photo_2026-09-02_14-54-04.jpg',
+  name: '',
+  rating: {
+    stars: 4.5,
+    count: 3
+  }, 
+  pricecents: 16
+
+}, {
+  id: 'kerhjruy44-fh346754gh4-frrhu4y764yurf-4ry4ry4gr',
+  image: 'pictures2/photo_2026-09-02_14-54-11.jpg',
+  name: "",
+  rating:{
+    stars: 4.5,
+    count: 3157
+  }, 
+  pricecents: 27
 
   }];
 
@@ -516,7 +553,9 @@
     <span class="star-icon">&#9733&#9733&#9733&#9733&#9734 <span class="count-c">${product.rating.count}</span>
     </span>
     
-    <p class="price-cents"> $${(product.pricecents / 100).toFixed(2)}</p>
+    <p class="price-cents"> ${(product.pricecents).toFixed(3)}</p>
+    <div class="date"> {expired on: september 16} </div>
+    <div class="daten"> 08127689541 </div>  
 
      <button class="add-button js-add-to-cart" data-product-id="${product.id}"> Shop Products </button>
     </div>

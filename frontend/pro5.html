@@ -1,8 +1,8 @@
-x<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head> 
 
-  
+   
 
     <title> Product </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -17,7 +17,7 @@ x<!DOCTYPE html>
       body {
   font-family: Roboto;
   color: rgb(33, 33, 33);
-  margin: 0;
+  margin-bottom: 100px;
 }
 
 .p {
@@ -25,7 +25,8 @@ x<!DOCTYPE html>
 }
 
 .images-order {
-  height: 200px;
+  margin-top: 20px;
+  height: 250px;
   width: 230px;
   margin-bottom: 20px;
 }
@@ -34,13 +35,26 @@ x<!DOCTYPE html>
   display: grid;
   font-family: Roboto;
   font-size: 15px;
-  width: 180px;
-  margin-left: 30px;
+  margin-left: 15px;
+  margin-right: 45px;
 }
 
+.date{
+  font-family: Roboto;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.daten{
+  font-family: Roboto;
+  font-size: 25px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
 .order-name {
   margin: 0;
-  font-size: 30px;
+  font-size: 42px;
   font-weight: 700;
   font-family: Roboto;
   margin-bottom: 5px;
@@ -51,7 +65,7 @@ x<!DOCTYPE html>
   margin: 0;
   margin-bottom: 5px;
   margin-top: 5px;
-   font-size: 30px;
+   font-size: 42px;
   font-weight: 700;
   font-family: Roboto;
 }
@@ -73,22 +87,15 @@ x<!DOCTYPE html>
   background-color: rgb(253, 245, 88);
 }
 
-.num{
-  margin-bottom: 45px;
-  font-weight: 700;
-  font-size: 28px;
-  stop-color: blue;
-  text-decoration-line: none;
-}
 .star-icon {
   color: orange;
-  font-size: 30px;
+  font-size: 35px;
 }
 
 .count-c {
   font-family: Roboto;
   color: blue;
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .grid-co {
@@ -96,14 +103,14 @@ x<!DOCTYPE html>
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
   row-gap: 50px;
   padding-bottom: 50px;
-  margin-top: 30px;
+  margin-top: 70px;
 }
 
 .flex-direct {
   background-color: rgb(5, 5, 5);
   display: flex;
   flex-direction: row;
-  height: 90px;
+  height: 120px;
   position: fixed;
   top: 0;
   left: 0;
@@ -229,17 +236,17 @@ x<!DOCTYPE html>
     row-gap: 40px;
   }
   .images-order {
-    height: 150px;
-    width: 175px;
+    height: 300px;
+    width: 100%;
   }
   .paragraph-div {
-    width: 240px;
+    width: 310px;
     font-size: 14px;
     
   }
   .add-button {
-    width: 200px;
-     font-size: 18px;
+    width: 75%;
+     font-size: 22px;
       font-weight: 700;
       font-family: Roboto;
   }
@@ -376,7 +383,7 @@ x<!DOCTYPE html>
           <div class="head-images">  <a href=""> <img class="header-images" src="header/cart-icon.png">  </a> 
          </div>
         
-        <div class="cart-quantity js-cart-quantity"> 0 </div>
+        <div class="cart-quantity js-cart-quantity">  </div>
      </div>
     </div>
 
@@ -408,7 +415,7 @@ x<!DOCTYPE html>
  return matchingProduct;
 }
 
-  const products = [{
+ const products = [{
   id: 'rhrhur784754u-jkvh674784-kghg7t4y-4784764g',
   image: 'pictures2/photo_2026-09-02_14-53-40.jpg',
   name: '',
@@ -530,7 +537,7 @@ x<!DOCTYPE html>
 
   }];
 
- 
+
   let productsHTML = '';
 
   products.forEach((product) => {
@@ -546,7 +553,9 @@ x<!DOCTYPE html>
     <span class="star-icon">&#9733&#9733&#9733&#9733&#9734 <span class="count-c">${product.rating.count}</span>
     </span>
     
-    <p class="price-cents"> $${(product.pricecents / 100).toFixed(2)}</p>
+    <p class="price-cents"> ${(product.pricecents).toFixed(3)}</p>
+    <div class="date"> {expired on: september 16} </div>
+    <div class="daten"> 08127689541 </div>  
 
      <button class="add-button js-add-to-cart" data-product-id="${product.id}"> Shop Products </button>
     </div>
