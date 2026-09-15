@@ -73,7 +73,7 @@ app.get('/ads.txt', (req, res) => {
  }) 
 
  app.post('/change', async (req, res) => {
-   console.log(req.body)
+   
    const { token, newPassword } = req.body
     
     if(!newPassword) {
@@ -536,6 +536,5 @@ app.delete('/api/delete-media/:id', async (req, res) => {
 });  
 
 
-
-  app.listen(port, console.log('server is running on port 8000'))
+ app.listen(port, console.log('server is running on port 8000'))
   
