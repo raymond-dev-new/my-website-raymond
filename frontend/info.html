@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About Raymond</title>
+  <title>About Raymond - Raymond Business Directory</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
@@ -24,7 +21,6 @@
       padding: 20px;
     }
 
-    /* TOP BAR */
     .topbar {
       width: 100%;
       max-width: 700px;
@@ -46,11 +42,10 @@
       transition: all 0.2s;
     }
     .btn-back:hover {
-      background: rgb(103, 103, 228);
+      background: #5b05fc;
       transform: translateX(-3px);
     }
 
-    /* MAIN CARD */
     .card {
       width: 100%;
       max-width: 700px;
@@ -70,7 +65,7 @@
     .card h2 {
       font-size: 28px;
       font-weight: 700;
-      color: bisque;
+      color: #5b05fc;
       text-align: center;
       margin-bottom: 25px;
       letter-spacing: 1px;
@@ -90,7 +85,7 @@
       font-weight: 500;
       line-height: 1.6;
       color: rgb(218, 207, 207);
-      border-left: 3px solid #4b75ff;
+      border-left: 3px solid #5b05fc;
     }
 
     .info-item strong {
@@ -99,7 +94,6 @@
       margin-right: 8px;
     }
 
-    /* WHATSAPP BUTTON */
     .whatsapp-btn {
       margin-top: 25px;
       background: linear-gradient(135deg, #25D366, #128C7E);
@@ -124,12 +118,12 @@
 
     .note {
       font-size: 13px;
-      opacity: 0.7;
+      opacity: 0.8;
       text-align: center;
       margin-top: 8px;
+      color: bisque;
     }
 
-    /* MOBILE */
     @media (max-width: 480px) {
       .card { padding: 24px; }
       .card h2 { font-size: 22px; }
@@ -144,7 +138,7 @@
   </div>
 
   <div class="card">
-    <h2>INFO ABOUT DEVELOPER</h2>
+    <h2>ABOUT THE DEVELOPER</h2>
     
     <div class="info-row">
       <div class="info-item">
@@ -152,19 +146,23 @@
       </div>
       
       <div class="info-item">
-        <strong>LOCATION:</strong> Based in Benin 
+        <strong>LOCATION:</strong> Benin City, Edo State, Nigeria
       </div>
       
       <div class="info-item">
-        <strong>OCCUPATION:</strong> Web Developer. I build all kinds of websites.
-        <p>📃 I'm into document formatting, writing and editing of document.</p>
+        <strong>OCCUPATION:</strong> Web Developer & Founder of Raymond Business Directory
+        <p>I build professional websites for businesses, shops, and organizations.</p>
+      </div>
+
+      <div class="info-item">
+        <strong>SERVICES:</strong> Website Design, Business Directory Listing, Document Formatting, Writing & Editing
       </div>
     </div>
 
     <button class="whatsapp-btn num">
-      💬 Chat on WhatsApp: +234 811 561 4822
+      💬 Contact Me on WhatsApp: +234 811 561 4822
     </button>
-    <p class="note">For jobs </p>
+    <p class="note">For Website Design Jobs, Advertising & Support</p>
   </div>
 
 <script>
@@ -173,7 +171,7 @@
 
   num.addEventListener('click', () => {
     const phone = "2348115614822"; 
-    const message = `Hello RAyMoNd.`;
+    const message = `Hello RAyMoNd. I'm interested in your website design services.`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank')
   })
