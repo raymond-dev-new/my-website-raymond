@@ -9,7 +9,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625"
      crossorigin="anonymous"></script>
 
-  <title>Private Space Shop</title>
+  <title>SHOP PRODUCTS </title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 
   
@@ -44,22 +44,17 @@
       z-index: 10; /* so it stays on top */
     }
 
-    /* AD BOX - 350x110 NO FLOAT */
-   .ad-wrapper {
-      width: 350px;
-      height: 110px;
-      margin: 80px auto 20px auto; /* 80px top to clear back button, centered */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: rgba(0,0,0,0.3); /* see the box */
-      border-radius: 12px;
-      overflow: hidden;
-    }
-   .ad-wrapper ins {
-      width: 350px!important;
-      height: 110px!important;
-      display: inline-block!important;
+    
+
+    .ad-wrapper { 
+      width: 40%; /* EXACT WIDTH YOU WANT */
+      height: 210px; /* EXACT HEIGHT YOU WANT */
+      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
+      border-radius: 10px;
+       margin-left: 440px; 
+      margin-top: 10px;
+       text-align:center; 
+       margin-bottom: px;
     }
 
     /* CENTER CONTENT */
@@ -130,22 +125,34 @@
       box-shadow: 0 4px 12px rgba(255,140,0,0.4);
     }
 
-    /* MOBILE */
-    @media (max-width: 480px) {
-      body { padding: 15px; }
+   
+
+@media screen and (max-width: 900px) { 
+  .ad-wrapper{
+   width: 50%;
+   justify-self: center;
+   justify-content: center;
+   height: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin: 10px;
+  }
+}
+@media screen and (max-width: 600px) {
+ body { padding: 15px; }
       h1 { font-size: 18px; margin-top: -170px;} /* REMOVED -150px */
      .shop-grid { gap: 10px; max-width: 340px; }
      .btn { font-size: 13px; font-weight: 700; padding: 14px 6px; }
      .btn-back { padding: 10px 20px; font-size: 15px; top: 15px; left: 15px; }
 
-      /* FIXED AD FOR MOBILE */
-     .ad-wrapper {
-        width: 350px;
-        height: 170px;
-        margin: 10px auto; /* centered */
-        margin-left: 8px;
-      }
-    }
+  .ad-wrapper{
+   width: 90%;
+   height: 110px;
+    background: rgba(255,255,255,0.05); 
+    border-radius: 10px;
+    margin: 10px;
+  }
+}
   </style>
 </head>
 <body>

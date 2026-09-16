@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+   <meta name="google-adsense-account" content="ca-pub-5498751568948625">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5498751568948625"
+     crossorigin="anonymous"></script>
+
   <title>Game Zone</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -20,6 +22,17 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    .ad-wrapper { 
+      width: 40%; /* EXACT WIDTH YOU WANT */
+      height: 210px; /* EXACT HEIGHT YOU WANT */
+      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
+      border-radius: 10px;
+       margin-left: 305px; 
+      margin-top: 10px;
+       text-align:center; 
+       margin-bottom: 15px;
     }
 
     /* HEADER */
@@ -108,11 +121,31 @@
       opacity: 0.6;
     }
 
-    @media (max-width: 480px) {
-      header h1 { font-size: 20px; }
+   
+
+ @media screen and (max-width: 900px) { 
+  .ad-wrapper{
+   width: 50%;
+   justify-self: center;
+   height: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin-left: 210px;
+  }
+}
+@media screen and (max-width: 600px) {
+ header h1 { font-size: 20px; }
       .game-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
       .game-card { padding: 20px 12px; font-size: 15px; }
-    }
+  .ad-wrapper{
+   width: 90%;
+   height: 110px;
+    background: rgba(255,255,255,0.05); 
+    border-radius: 10px;
+    margin: 10px;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -121,6 +154,13 @@
     <h1>🎮 GAME ZONE</h1>
     <button class="btn-back logout">← Back</button>
   </header>
+
+    <div class="ad-wrapper">
+    <ins class="adsbygoogle" 
+         data-ad-client="ca-pub-5498751568948625"
+         data-ad-slot="1207749774"></ins>
+    <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>
+  </div>
 
   <div class="container">
     <p class="subtitle">Pick a game and have fun!</p>

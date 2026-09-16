@@ -26,6 +26,8 @@
       padding: 0;
     }
 
+    
+
     header {
       display: flex;
       justify-content: space-between;
@@ -60,24 +62,18 @@
       transform: translateY(-2px);
     }
 
-    /* FIXED AD WRAPPER - NO FLOAT */
-    .ad-wrapper {
-      width: 350px; /* EXACT WIDTH YOU WANT */
-      height: 110px; /* EXACT HEIGHT YOU WANT */
-      margin: 12px auto; /* centers it, pushes content down */
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .ad-wrapper { 
+      width: 40%; /* EXACT WIDTH YOU WANT */
+      height: 210px; /* EXACT HEIGHT YOU WANT */
       background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
       border-radius: 10px;
-      overflow: hidden;
+       margin-left: 440px; 
+      margin-top: 10px;
+       text-align:center; 
+       margin-bottom: 15px;
     }
 
-    .ad-wrapper ins {
-      width: 350px !important;
-      height: 110px !important;
-      display: inline-block !important;
-    }
+   
 
     .container {
       flex: 1;
@@ -145,22 +141,33 @@
       opacity: 0.6;
     }
 
-    /* MOBILE - KEEP 350x110 BUT CENTER */
-    @media (max-width: 480px) {
-      header h1 { font-size: 15px; }
+
+@media screen and (max-width: 900px) { 
+  .ad-wrapper{
+   width: 50%;
+   justify-self: center;
+   height: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin-left: 210px;
+  }
+}
+@media screen and (max-width: 600px) {
+  header h1 { font-size: 15px; }
       .welcome h2 { font-size: 18px; }
       .dashboard { gap: 8px; max-width: 90%; }
       .card { padding: 10px 8px; font-size: 11px; border-radius: 10px; }
       .card.game, .whot { grid-column: span 2; }
       .container { padding: 12px 10px; }
-      
-      /* REMOVED margin-top:70px and margin-left:18px */
-      .ad-wrapper {
-        width: 350px;
-        height: 150px;
-        margin: 10px auto; /* only centers */
-      }
-    }
+  .ad-wrapper{
+   width: 90%;
+   height: 100px;
+    background: rgba(255,255,255,0.05); 
+    border-radius: 10px;
+    margin: 10px;
+  }
+}
+
   </style>
 </head>
 <body>

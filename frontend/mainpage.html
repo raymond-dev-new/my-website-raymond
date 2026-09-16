@@ -23,7 +23,17 @@
   font-family: Roboto;
   min-height: 100vh;
 }
-.ad-wrapper { width: 350px; text-align:center; margin:15px 0; }
+
+.ad-wrapper { 
+      width: 40%; /* EXACT WIDTH YOU WANT */
+      height: 210px; /* EXACT HEIGHT YOU WANT */
+      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
+      border-radius: 10px;
+       margin-left: 440px; 
+      margin-top: 10px;
+       text-align:center; 
+       margin-bottom: 15px;
+    }
 
 /* CENTER THE PAGE ON LAPTOP */
 .page-wrapper {
@@ -147,18 +157,31 @@ footer p { margin: 8px 0; font-size: 13px; }
   .grid { grid-template-columns: repeat(2, 1fr); } 
   .left-buttons { flex-direction: column; width: 150px; }
   .left-buttons button { width: 100%; }
+  .ad-wrapper{
+   width: 50%;
+   justify-self: center;
+   height: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin: 10px;
+  }
 }
 @media screen and (max-width: 600px) {
   .market-banner { font-size: 13px; padding: 12px; }
   button { font-size: 14px; padding: 14px; }
+  .ad-wrapper{
+   width: 90%;
+   height: 100px;
+    background: rgba(255,255,255,0.05); 
+    border-radius: 10px;
+    margin: 10px;
+  }
 }
   </style>
 </head>
 <body>
-
   <div class="ad-wrapper">
-    <ins class="adsbygoogle"
-         style="display:inline-block;width: 350px;height:100px" 
+    <ins class="adsbygoogle" 
          data-ad-client="ca-pub-5498751568948625"
          data-ad-slot="1207749774"></ins>
     <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>
