@@ -29,7 +29,6 @@
 
     /* YELLOW BACK BUTTON TOP LEFT */
    .btn-back {
-      position: absolute;
       top: 20px;
       left: 20px;
       background: #FFD700;
@@ -42,16 +41,17 @@
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       z-index: 10; /* so it stays on top */
+      margin: 10px;
     }
 
     
 
     .ad-wrapper { 
-      width: 40%; /* EXACT WIDTH YOU WANT */
+      width: 35%; /* EXACT WIDTH YOU WANT */
       height: 210px; /* EXACT HEIGHT YOU WANT */
       background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
       border-radius: 10px;
-       margin-left: 440px; 
+       margin-left: 400px; 
       margin-top: 10px;
        text-align:center; 
        margin-bottom: px;
@@ -129,13 +129,14 @@
 
 @media screen and (max-width: 900px) { 
   .ad-wrapper{
-   width: 50%;
+   width: 70%;
    justify-self: center;
    justify-content: center;
    height: 150px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     margin: 10px;
+    
   }
 }
 @media screen and (max-width: 600px) {
