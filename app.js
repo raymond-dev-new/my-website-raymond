@@ -69,7 +69,7 @@ app.get('/ads.txt', (req, res) => {
 })
 
   app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'mainpage.html'));
+  res.sendFile(path.join(__dirname, 'frontend', 'register.html'));
  }) 
 
  app.post('/change', async (req, res) => {
