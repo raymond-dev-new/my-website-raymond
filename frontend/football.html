@@ -81,6 +81,8 @@ function formatFullDate(dateStr){
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) + " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
 }
+
+
 function getStatusBadge(match){
   if(match.status === "IN_PLAY"){
     let minute = match.minute || 0;
