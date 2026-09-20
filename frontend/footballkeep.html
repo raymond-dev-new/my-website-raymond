@@ -1,5 +1,3 @@
-
-
  <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,29 +34,14 @@ body { background: #000; color: #fff; padding: 15px; }
 .loading { text-align: center; color: #888; padding: 30px; }
 small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; justify-content: center; }
 .small{ font-weight: 700; padding-bottom: 15px; display: grid; font-size: 15px; justify-content: center; }
+
 .div{ width: 70%; }
-#break-banner{ display:none; background: #1a1a1a; border: 2px solid #f59e0b; border-radius: 14px; padding: 16px; margin-bottom: 18px; text-align:center; }
-#break-banner b.title{ color:#f59e0b; font-size:16px; display:block; margin-bottom:6px; }
-#break-banner p{ color:#d1d5db; font-size:14px; line-height:1.4; }
-#break-banner span.resume{ color:#16a34a; font-weight:800; display:block; margin-top:8px; font-size:14px; }
 @media screen and (max-width: 900px) {.div{ width: 90%; } }
 @media screen and (max-width: 600px) {.div{ width: 100%; }.ann{ font-size: 12px; } }
 </style>
 </head>
 <body>
-    <script>
-      (function(ihosnhw){
-      var d = document,
-          s = d.createElement('script'),
-          l = d.currentScript || d.scripts[d.scripts.length - 1];
-      s.settings = ihosnhw || {};
-      s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
-      s.async = true;
-      s.referrerPolicy = 'no-referrer-when-downgrade';
-      l.parentNode.insertBefore(s, l);
-      })({})
-    </script>
-
+   
  <div class="div">
   <h1 class="header-text"> Live Football ⚽ </h1>
     <small> Finish Match Will Show In Finished Tab</small>
@@ -67,23 +50,19 @@ small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; ju
   <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming</button>
   <button class="tab finished" onclick="loadMatches('finished', this)">Finished</button>
 </div>
-
-<div id="break-banner">
-  <b class="title">⚠️ Big Leagues on International Break</b>
-  <p>Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 and Champions League matches have finished for now.</p>
-  <span class="resume">They will resume on Friday 10th October 2026 — Liverpool vs Man City, Arsenal vs Leeds, Real Madrid vs Villarreal, Barcelona vs Getafe. <br> Click on finish tab to check past match </span>
-</div>
-
 <div id="matches"></div>
 </div>
 <script>
 const API = "https://raymonddomain.dev/api/matches";
 let currentTab = 'upcoming';
 let currentBtn = null;
+
+// CACHE FOR FAST CLICK
 let cache = {
   upcoming: JSON.parse(localStorage.getItem('cache_upcoming') || '[]'),
   finished: JSON.parse(localStorage.getItem('cache_finished') || '[]')
 };
+
 function formatDateHeader(dateStr){
   const d = new Date(dateStr);
   return `📅 ${d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}`;
@@ -92,16 +71,24 @@ function formatFullDate(dateStr){
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) + " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
 }
+
+
 function getStatusBadge(match){
   if(match.status === "IN_PLAY"){
     let minute = match.minute || 0;
     if(minute === 45 || match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
+
     if(minute < 45) return `<span class="badge">LIVE<br>${minute}'</span>`
+
     if(minute > 45 && minute <= 50) return `<span class="badge"> EXTRA <br> TIME </span>`
+
     return `<span class="badge">LIVE<br> ${minute}'</span>`
   }
+
   if(match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
+
   if(match.status === "FINISHED") return `<span class="badge">FINISH</span>`
+
   return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
 }
 function getYouTubeLink(match){
@@ -147,38 +134,20 @@ function groupMatchesByDate(matches){
   });
   return groups;
 }
-function isBigLeague(leagueName){
-  if(!leagueName) return false;
-  const n = leagueName.toLowerCase();
-  return n.includes("premier league") || n.includes("primera division") || n.includes("la liga") || n.includes("laliga") || n.includes("bundesliga") || n.includes("serie a") || n.includes("ligue 1") || n.includes("champions league");
-}
-function updateBreakBanner(matches, tab){
-  const banner = document.getElementById('break-banner');
-  if(tab!== 'upcoming'){
-    banner.style.display = 'none';
-    return;
-  }
-  const bigMatches = matches.filter(m => isBigLeague(m.league));
-  if(matches.length === 0 || bigMatches.length === 0){
-    banner.style.display = 'block';
-  } else {
-    banner.style.display = 'none';
-  }
-}
+
+
 function renderGrouped(matches, tab){
     const container = document.getElementById('matches');
-    updateBreakBanner(matches, tab);
     if(!matches || matches.length === 0){
-      if(tab === 'upcoming'){
-        container.innerHTML = `<div class="no-matches">No upcoming big league matches found — showing break notice above. Small leagues may still appear below when available.</div>`;
-      } else {
-        container.innerHTML = `<div class="no-matches">No matches found</div>`;
-      }
+      container.innerHTML = `<div class="no-matches">No matches found</div>`;
       return;
     }
+
     const grouped = groupMatchesByDate(matches);
     let html = '';
-    let dates = Object.keys(grouped).sort((a,b) => new Date(grouped[a][0].date) - new Date(grouped[b][0].date));
+    let dates = Object.keys(grouped).sort((a,b) => new Date(grouped[b][0].date) - new Date(grouped[a][0].date)? -1 : 1);
+    // sort by real date
+    dates = Object.keys(grouped).sort((a,b) => new Date(grouped[a][0].date) - new Date(grouped[b][0].date));
     if(tab === 'finished') dates = dates.reverse();
     dates.forEach(dateKey => {
       html += `<div class="date-header">${formatDateHeader(grouped[dateKey][0].date)}</div>`;
@@ -189,6 +158,7 @@ function renderGrouped(matches, tab){
 function showNetworkError(hasCache){
   const container = document.getElementById('matches');
   if(hasCache){
+    // don't wipe cached data, just show toast
     let toast = document.getElementById('net-toast');
     if(!toast){
       toast = document.createElement('div');
@@ -196,7 +166,7 @@ function showNetworkError(hasCache){
       toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:700;';
       document.body.appendChild(toast);
     }
-    toast.textContent = '⚠️ You have a network problem - showing saved data';
+    toast.textContent = '⚠️ You have a network problem - showing saved data'; //
     setTimeout(()=> toast.remove(), 2000);
     return;
   }
@@ -214,46 +184,64 @@ async function loadMatches(tab, btn){
   currentBtn = btn;
   document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
   btn.classList.remove('inactive');
+
   const container = document.getElementById('matches');
+
+  // 1. INSTANT RENDER FROM CACHE - makes click feel fast
   if(cache[tab] && cache[tab].length > 0){
     renderGrouped(cache[tab], tab);
   } else {
     container.innerHTML = `<div class="loading">Loading matches...</div>`;
   }
+
+  // 2. If offline immediately
   if(!navigator.onLine){
     showNetworkError(cache[tab] && cache[tab].length > 0);
     return;
   }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
+
     const res = await fetch(`${API}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
     clearTimeout(timeout);
+
     if(!res.ok) throw new Error('bad response');
+
     const data = await res.json();
+
     if(!data.success){
       if(cache[tab].length === 0) showNetworkError(false);
       return;
     }
+
+    // Empty but backend says success = truly no matches (not network error)
     if(!data.matches || data.matches.length === 0){
+      // only show No matches if we have no cache
       if(cache[tab].length === 0){
-        renderGrouped([], tab);
+        container.innerHTML = `<div class="no-matches">No matches found</div>`;
       }
       cache[tab] = [];
       localStorage.setItem('cache_'+tab, JSON.stringify([]));
       return;
     }
+
+    // Success - save and render
     cache[tab] = data.matches;
     localStorage.setItem('cache_'+tab, JSON.stringify(data.matches));
     renderGrouped(data.matches, tab);
+
   } catch(err) {
     console.log('fetch error', err);
     showNetworkError(cache[tab] && cache[tab].length > 0);
   }
 }
 function showDetails(id) { alert(id) }
+
 const firstBtn = document.querySelector('.tab.upcoming');
 loadMatches('upcoming', firstBtn);
 </script>
 </body>
 </html>
+ 

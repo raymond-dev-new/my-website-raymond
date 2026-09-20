@@ -311,8 +311,9 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
   // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
+  //new//cd4f805839fe4cdcac3de651ec2b4c68
 
-
+  //old//1f6245b3640a4f8dbdcd4ef044526b30
 const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
 const API_URL = "https://api.football-data.org/v4";
 
@@ -475,12 +476,10 @@ app.get("/api/matches", async (req, res) => {
   }
 });
 
+ 
 
-/*app.use(express.static(path.join(__dirname, "../frontend")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/football.html"));
-}); 
-*/
+
+
 
 
 //new ytresrtyuioiuytrertyuioiuytrertyu
