@@ -2,42 +2,52 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Media Vault </title>
+<title>Media Vault</title>
+<link rel="preconnect" href="https://raymonddomain.dev">
 <style>
-  :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --primary: #007bff; --danger: #dc3545; --warn: #ffc107; }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 12px; }
-  .container { max-width: 700px; margin: 0 auto; }
-  h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
-  .box { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-  input { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid #333; border-radius: 8px; background: #2a2a2a; color: var(--text); }
-  .warning { font-size: 12px; color: var(--warn); margin-bottom: 10px; text-align: center; }
-  button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
-  #gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 200px; }
-  .media-card { background: var(--card); border-radius: 10px; overflow: hidden; }
-  .media-card img { width: 100%; height: 150px; object-fit: cover; cursor: pointer; display: block; background:#222; }
-  .media-card button { background: var(--danger); border-radius: 0; padding: 8px; font-size: 13px; }
-  .hidden { display: none; }
-  .empty { text-align: center; color: #aaa; grid-column: 1/-1; padding: 40px 0; }
-  #viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 999; }
-  #viewerContent img { width: 100%; max-height: 80vh; border-radius: 8px; }
-  #closeBtn { position: absolute; top: 15px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; font-size: 28px; width: 45px; height: 45px; border-radius: 50%; }
+:root{--bg:#121212;--card:#1e1e1e;--text:#e0e0e0;--primary:#007bff;--danger:#dc3545;--warn:#ffc107}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+body{background:var(--bg);color:var(--text);padding:12px}
+#topBar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#007bff,#00d4ff);width:0%;z-index:9999;transition:width .3s ease}
+.container{max-width:700px;margin:0 auto;padding-top:5px}
+h2{text-align:center;margin-bottom:15px;font-size:20px}
+.box{background:var(--card);padding:15px;border-radius:12px;margin-bottom:15px}
+input{width:100%;padding:12px;margin-bottom:8px;border:1px solid #333;border-radius:8px;background:#2a2a2a;color:var(--text)}
+.warning{font-size:12px;color:var(--warn);margin-bottom:10px;text-align:center}
+button{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-weight:bold}
+#gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:300px}
+@media(min-width:768px){#gallery{grid-template-columns:1fr 1fr 1fr}}
+.media-card{background:var(--card);border-radius:10px;overflow:hidden;animation:pop .3s ease}
+.media-card img{width:100%;height:150px;object-fit:cover;cursor:pointer;display:block;background:#222;opacity:0;transition:opacity .4s}
+.media-card img.show{opacity:1}
+.media-card button{background:var(--danger);border-radius:0;padding:8px;font-size:13px}
+.hidden{display:none}
+.empty{text-align:center;color:#aaa;grid-column:1/-1;padding:40px 0;line-height:1.6}
+#viewer{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);display:none;justify-content:center;align-items:center;z-index:999;padding:10px}
+#viewerContent img{width:100%;max-height:80vh;border-radius:8px}
+#closeBtn{position:absolute;top:15px;right:20px;background:rgba(255,255,255,.1);color:#fff;border:none;font-size:28px;width:45px;height:45px;border-radius:50%}
+.skeleton{height:150px;border-radius:10px;background:linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
+.load-text{grid-column:1/-1;text-align:center;color:#888;font-size:14px;margin:10px 0;animation:blink 1s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes blink{0%,100%{opacity:.6}50%{opacity:1}}
 </style>
 </head>
 <body>
+<div id="topBar"></div>
 <div class="container">
   <div id="loginBox" class="box">
-    <h2>Login to Vault <br> insert your email to save your photo</h2>
-    <input type="text" id="emailInput" placeholder="Enter your email" />
+    <h2>Login to Vault<br>insert your email to save your photo</h2>
+    <input type="text" id="emailInput" placeholder="Enter your email"/>
     <button onclick="login()">Enter</button>
   </div>
   <div id="appBox" class="hidden">
     <h2>📁 Vault - <span id="userEmail"></span></h2>
     <div class="box">
       <p class="warning">⚠️ Images Only</p>
-      <input type="file" id="fileInput" accept="image/*" multiple />
+      <input type="file" id="fileInput" accept="image/*" multiple/>
       <button id="uploadBtn">Upload Selected</button>
-      <button onclick="logout()" style="background:#555;margin-top:8px;">Logout</button>
+      <button onclick="logout()" style="background:#555;margin-top:8px">Logout</button>
     </div>
     <div id="gallery"></div>
   </div>
@@ -51,7 +61,54 @@
 const API_URL = "https://raymonddomain.dev";
 let CURRENT_USER = localStorage.getItem('vault_user') || "";
 
-function login() {
+function topProgress(n){ document.getElementById('topBar').style.width = n+'%'; }
+
+function showLoadingUI(){
+  topProgress(20);
+  document.getElementById('gallery').innerHTML = `
+    <div class="load-text">Loading your vault... Please wait</div>
+    <div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div>
+  `;
+}
+
+function renderImages(list){
+  const gallery = document.getElementById('gallery');
+  if(!list.length){
+    gallery.innerHTML = `<div class="empty">No images yet.<br>Upload your first photo</div>`;
+    return;
+  }
+  // FAST RENDER
+  gallery.innerHTML = list.map(item => `
+    <div class="media-card">
+      <img src="${item.src}" loading="lazy" decoding="async" onload="this.classList.add('show')" onclick="openViewer('${item.src}')" />
+      <button onclick="deleteMedia('${item._id}')">Delete</button>
+    </div>
+  `).join("");
+}
+
+async function loadFromDB(){
+  showLoadingUI();
+  topProgress(40);
+  try{
+    const res = await fetch(`${API_URL}/api/get-media?userId=${encodeURIComponent(CURRENT_USER)}`, {cache:'no-store'});
+    topProgress(70);
+    const mediaList = await res.json();
+    topProgress(90);
+    if(Array.isArray(mediaList)){
+      renderImages(mediaList);
+    }else{
+      document.getElementById('gallery').innerHTML = `<div class="empty">No data found</div>`;
+    }
+  }catch(e){
+    document.getElementById('gallery').innerHTML = `<div class="empty">⚠️ Network slow<br>Check internet and <br><button onclick="loadFromDB()" style="margin-top:10px;background:#007bff;width:auto;padding:8px 16px;border-radius:8px">Retry</button></div>`;
+  }
+  topProgress(100);
+  setTimeout(()=>topProgress(0),600);
+}
+
+function login(){
   const email = document.getElementById('emailInput').value.trim();
   if(!email) return alert("Enter email");
   CURRENT_USER = email;
@@ -61,78 +118,51 @@ function login() {
   document.getElementById('appBox').classList.remove('hidden');
   loadFromDB();
 }
-function logout() {
+function logout(){
   CURRENT_USER = "";
   localStorage.removeItem('vault_user');
   document.getElementById('appBox').classList.add('hidden');
   document.getElementById('loginBox').classList.remove('hidden');
 }
 
-async function loadFromDB() {
-  const gallery = document.getElementById('gallery');
-  // FAST: show boxes instantly
-  gallery.innerHTML = `<div style="height:150px;background:#222;border-radius:10px"></div><div style="height:150px;background:#222;border-radius:10px"></div>`;
-  
-  try {
-    const res = await fetch(`${API_URL}/api/get-media?userId=${encodeURIComponent(CURRENT_USER)}`);
-    const mediaList = await res.json();
-    
-    if(Array.isArray(mediaList) && mediaList.length > 0) {
-      gallery.innerHTML = mediaList.map(item => `
-        <div class="media-card">
-          <img src="${item.src}" loading="lazy" onclick="openViewer('${item.src}')" />
-          <button onclick="deleteMedia('${item._id}')">Delete</button>
-        </div>
-      `).join("");
-    } else {
-      gallery.innerHTML = `<div class="empty">No images yet.</div>`;
-    }
-  } catch(err) {
-    gallery.innerHTML = `<div class="empty">Check your internet connection.</div>`;
-  }
-}
-
-document.getElementById('uploadBtn').onclick = async () => {
-  const files = document.getElementById('fileInput').files;
-  if (files.length === 0) return alert("Pick images first");
-  const btn = document.getElementById('uploadBtn');
-  btn.disabled = true;
-  for(let i = 0; i < files.length; i++) {
-    btn.innerText = `Uploading ${i+1}/${files.length}...`;
-    const formData = new FormData();
-    formData.append('file', files[i]);
-    formData.append('userId', CURRENT_USER);
-    try {
-      await fetch(`${API_URL}/api/save-media`, { method: 'POST', body: formData });
-    } catch(err) {}
-  }
-  document.getElementById('fileInput').value = "";
-  btn.disabled = false;
-  btn.innerText = "Upload Selected";
-  loadFromDB();
-}
-
-async function deleteMedia(id) {
-   if(!confirm('Delete this image?')) return;
-  await fetch(`${API_URL}/api/delete-media/${id}`, {method: 'DELETE'});
-  loadFromDB();
-}
-function openViewer(url) {
-  document.getElementById('viewerContent').innerHTML = `<img src="${url}" />`;
-  document.getElementById('viewer').style.display = 'flex';
-}
-function closeViewer() {
-  document.getElementById('viewer').style.display = 'none';
-}
-
-// AUTO LOGIN FAST
+// AUTO FAST OPEN
 if(CURRENT_USER){
-  document.getElementById('emailInput').value = CURRENT_USER;
-  document.getElementById('userEmail').innerText = CURRENT_USER;
-  document.getElementById('loginBox').classList.add('hidden');
-  document.getElementById('appBox').classList.remove('hidden');
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('emailInput').value = CURRENT_USER;
+    document.getElementById('userEmail').innerText = CURRENT_USER;
+    document.getElementById('loginBox').classList.add('hidden');
+    document.getElementById('appBox').classList.remove('hidden');
+    loadFromDB();
+  });
+}
+
+document.getElementById('uploadBtn').onclick = async () =>{
+  const files = document.getElementById('fileInput').files;
+  if(!files.length) return alert("Pick images");
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled=true;
+  topProgress(20);
+  for(let i=0;i<files.length;i++){
+    btn.innerText = `Uploading ${i+1}/${files.length}...`;
+    const fd = new FormData(); fd.append('file',files[i]); fd.append('userId',CURRENT_USER);
+    await fetch(`${API_URL}/api/save-media`,{method:'POST',body:fd});
+    topProgress(20 + Math.round((i+1)/files.length*60));
+  }
+  document.getElementById('fileInput').value="";
+  btn.disabled=false; btn.innerText="Upload Selected";
+  topProgress(100);
   loadFromDB();
 }
+async function deleteMedia(id){
+  if(!confirm('Delete?')) return;
+  await fetch(`${API_URL}/api/delete-media/${id}`,{method:'DELETE'});
+  loadFromDB();
+}
+function openViewer(url){
+  document.getElementById('viewerContent').innerHTML = `<img src="${url}" />`;
+  document.getElementById('viewer').style.display='flex';
+}
+function closeViewer(){ document.getElementById('viewer').style.display='none'; }
 </script>
 </body>
 </html>
