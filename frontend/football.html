@@ -90,7 +90,7 @@ function getStatusBadge(match){
 
     if(minute > 45 && minute <= 50) return `<span class="badge"> EXTRA <br> TIME </span>`
 
-    return `<span class="badge">LIVE<br>${minute}'</span>`
+    return `<span class="badge">LIVE<br> ${minute}'</span>`
   }
 
   if(match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
@@ -127,7 +127,7 @@ function renderMatch(match){
         <div class="team-name">${match.away.name}</div>
       </div>
     </div>
-    
+    <small class="ann"> Extra time might show as 90 that is a glitch from api </small>
     <button class="btn btn-details" onclick="showDetails('Coming Soon')">Line Up</button>
     <button class="btn btn-watch" onclick="window.open('${youtubeLink}', '_blank')">▶ Watch Live</button>
   </div> `
