@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <style>
+    /* === MOBILE: 320px+ === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-image: url("photo_2026-07-27_07-52-03 (2).jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+html, body {
+  height: 100%;
+}
+
+.form-div {
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  padding-top: 50%;
+}
+
+.login {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 24px;
+  margin-left: 0;
+  margin-bottom: 20px;
+  font-weight: 700;
+  margin-top: 0;
+  text-align: center;
+  color: white;
+}
+
+.username, .email, .password {
+  display: block;
+  width: 100%;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 16px;
+  margin-left: 0;
+  font-weight: 700;
+  margin-top: 15px;
+  height: 45px;
+  border-radius: 5px;
+  padding-left: 4%;
+  padding-right: 4%;
+  border: 1px solid #999;
+}
+
+.space {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 16px;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 20px;
+  margin-top: 8px;
+  color: white;
+}
+
+.button {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 18px;
+  margin-left: 0;
+  font-weight: 500;
+  height: 50px;
+  width: 100%;
+  background-color: blue;
+  color: white;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: green;
+}
+
+.paragh {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 18px;
+  margin-left: 0;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.notice {
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 18px;
+  margin-left: 0;
+  font-weight: 600;
+  text-align: center;
+  color: red;
+}
+
+/* === TABLET: 600px+ === */
+@media (min-width: 600px) {
+  body {
+    align-items: center;
+  }
+
+  .form-div {
+    margin-top: 0;
+    padding: 30px 5%;
+    min-height: 350px;
+  }
+
+  .login {
+    font-size: 28px;
+    margin-bottom: 25px;
+  }
+
+  .username, .email, .password {
+    font-size: 18px;
+    height: 48px;
+  }
+
+  .space {
+    font-size: 18px;
+  }
+
+  .button {
+    font-size: 20px;
+    width: 150px;
+    margin-left: 0;
+  }
+
+  .paragh {
+    font-size: 20px;
+    text-align: left;
+  }
+
+  .notice {
+    font-size: 22px;
+    text-align: left;
+  }
+}
+
+/* === DESKTOP: 1024px+ === */
+@media (min-width: 1024px) {
+  .form-div {
+    width: 530px;
+    padding: 20px 70px 30px 70px;
+  }
+
+  .login {
+    font-size: 30px;
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .username, .email, .password {
+    width: 400px;
+    font-size: 20px;
+    margin-left: 0;
+    height: 40px;
+  }
+
+  .space {
+    font-size: 20px;
+    margin-left: 50%;
+  }
+
+  .button {
+    font-size: 23px;
+    margin-left: 0;
+    width: 130px;
+  }
+
+  .paragh {
+    font-size: 23px;
+    margin-left: 0;
+  }
+
+  .notice {
+    font-size: 25px;
+    margin-left: 0;
+  }
+}
+  </style>
+</head>
+<body>
+ 
+  <div class="form-div">
+
+   <div class="login"> Changing password </div>
+    
+    <form class="form">
+   <input class="password"  type="password" name="password">
+   <div class="space">Password</div>
+
+   <button class="button" type="submit" name="submit"> Change </button>
+
+    </form>
+  </div>
+ 
+
+  <script>
+     const form = document.querySelector('.form')
+
+    form.addEventListener('submit', registerUser)
+
+   async function registerUser(event) {
+    event.preventDefault()
+     const newPassword = document.querySelector('.password').value
+    //https://my-project-three-psi-85.vercel.app
+     const result = await fetch('https://raymonddomain.dev/change', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+         newPassword,
+         token: localStorage.getItem('token')
+      })
+    })
+
+    const data = await result.json()
+    if(data.status === 'ok') {
+     // localStorage.setItem('token', data.data)
+       alert('Password change successfully')
+    } else {
+      alert(data.error)
+    }
+   }
+  </script>
+</body>
+</html>

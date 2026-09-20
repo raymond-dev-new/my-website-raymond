@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+  <html>
+     <head>
+
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+     
+     <style>
+    body {
+      padding-bottom: 15px;
+      margin: 0;
+      padding-top: 62px;
+      padding-left: 70px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+      .thumbnail-1 {
+        width: 270px;
+        padding-top: 18px;
+      }
+
+      .search-bar {
+        display: block;
+      }
+      .page-g {
+        display: inline-block;
+        width: 270px;
+      }
+
+      .grid-colume {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+      }
+
+      .channel-picture {
+        width: 34px;
+        border-radius: 40px;
+        margin-top: 6px;
+      }
+
+      .video-title {
+        font-family: Roboto;
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        margin-top: 6px;
+      }
+
+      .video-author {
+      font-family: Roboto;
+      color: rgb(96, 96, 96);
+      font-size: 14px;
+      }
+
+      .video-date {
+       font-family: Roboto;
+       color: rgb(96, 96, 96);
+       font-size: 14px;
+       margin-top: 4px;
+      }
+
+      .grid-template-column {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        column-gap: px;
+        row-gap: 20px;
+      }
+
+      .header-grid {
+        height: 60px;
+        display: flex;
+        flex-direction: row;
+      
+      }
+
+      .left-section {
+        width: px;
+        display: flex;
+        align-items: center;
+      }
+
+      .middle-section {
+        margin-left: 30px;
+        display: flex;
+        align-items: center;
+        
+      }
+
+      .right-section {
+        width: 356px;
+        margin-left: 175px;
+        display: flex;
+        align-items: center;
+        
+      }
+
+      .icon-menu {
+        height: 30px;
+        margin-right: 10px;
+        margin-left: -53px;
+     }
+
+     .icon-logo {
+      height: 30px;
+     }
+
+      .icon-upload {
+        height: 30px;
+        margin-left: 15px;
+        
+      }
+
+      .icon-apps {
+        height: 30px;
+        margin-left: 15px;
+        
+      }
+
+      .icon-notifications {
+        height: 30px;
+        margin-left: 15px;
+        
+      
+      }
+
+      .icon-channel {
+        height: 30px;
+        margin-left: 15px;
+        margin-right: -90px;
+      }
+
+    .icon-search {
+      height: 28px;
+      border: none;
+      
+      
+    }
+
+    .icon-voice {
+      height: 30px;
+    }
+
+    .search-input {
+      height: 30px;
+       padding-left: 10px;
+      padding-right: 245px; 
+    }
+
+    .icon-s {
+      margin-right: 10px;
+      margin-left: -5px;
+    }
+
+    .position-fix {
+      position: fixed;
+      background-color: white;
+      margin-bottom: px;
+      top: 0;
+      
+    }
+
+    .side-bar {
+     position: fixed;
+     top: 60px;
+     left: 0;
+     bottom: 0;
+     right: 1160px;
+    }
+
+     .adjust-padd {
+      display: flex;
+      vertical-align: center;
+     }
+
+     .sidebar-m {
+      display: flex;
+      height: 25px;
+      padding-bottom: 40px;
+      padding-left: 16px;
+      padding-right: 18px; 
+      cursor: pointer;
+     }
+
+     .sidebar-m:hover {
+      background-color: lightgray;
+     }
+
+     .back-color {
+      background-color: rgb(248, 248, 248);
+      padding-left: 15px;
+      
+     }
+     </style>
+     </head>
+     <body>
+      <div class="adjust-padd">
+         <div class="position-fix">
+         <div class="header-grid">
+        <div class="left-section">
+          <img class="icon-menu" src="icon/hamburger-menu.svg"> 
+          <img class="icon-logo" src="icon/youtube-logo.svg">
+        </div>
+
+        <div class="middle-section">
+         <input class="search-bar search-input" type="text" placeholder="Search">
+          <button class="icon-s"> <img class="icon-search" src="icon/search.svg"></button>  
+         <button><img class="icon-voice" src="icon/voice-search-icon.svg"> </button>       
+         </div>
+
+        <div class="right-section">
+          <button> <a href="amazon.html"> Amozon Page </a></button>
+        <img class="icon-upload" src="icon/upload.svg">
+        <img class="icon-apps" src="icon/youtube-apps.svg">
+        <img class="icon-notifications" src="icon/notifications.svg">
+        <img class="icon-channel" src="icon/my-channel.jpeg">
+        </div>
+      </div>
+      </div>
+       </div>
+      
+      <div class="side-bar">
+      <div> <img class="sidebar-m" src="sidebar/home.svg"> </div>
+      <div> <img class="sidebar-m" src="sidebar/explore.svg"> </div>
+      <div> <img class="sidebar-m" src="sidebar/subscriptions.svg"> </div>
+      <div> <img class="sidebar-m" src="sidebar/originals.svg"> </div>
+      <div> <img class="sidebar-m" src="sidebar/youtube-music.svg"> </div>
+      <div> <img class="sidebar-m" src="sidebar/library.svg"> </div>
+      </div>
+      
+      <div class="back-color">
+      <div class="grid-template-column">
+       <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-1.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-1.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Talking Tech and AI with Google CEO Sundar Pichai!
+        </p>
+        <p class="video-author">
+          Marques Brownlee
+        </p>
+        <p class="video-date">
+          3.4M views · 6 months ago
+        </p>
+        </div>
+       </div>
+     </div>
+  
+
+
+        <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-2.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-2.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Try Not To Laugh Challenge #9
+        </p>
+        <p class="video-author">
+          Markiplier
+        </p>
+        <p class="video-date">
+          19M views · 4 years ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+
+
+
+        <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-3.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-3.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Crazy Tik Toks Taken Moments Before DISASTER
+        </p>
+        <p class="video-author">
+          SSSniperWolf
+        </p>
+        <p class="video-date">
+          12M views · 1 year ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+
+
+         <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-4.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-4.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        The Simplest Math Problem No One Can Solve - Collatz Conjecture
+        </p>
+        <p class="video-author">
+          Veritasium
+        </p>
+        <p class="video-date">
+          18M views · 4 months ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+
+
+       <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-5.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-5.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Kadane's Algorithm to Maximum Sum Subarray Problem
+        </p>
+        <p class="video-author">
+          CS Dojo
+        </p>
+        <p class="video-date">
+          519k views · 5 years ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+
+
+       <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-6.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-6.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+         Anything You Can Fit In The Circle I’ll Pay For
+        </p>
+        <p class="video-author">
+          MrBeast
+        </p>
+        <p class="video-date">
+          141M views · 1 year ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+
+
+       <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-7.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-7.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Why Planes Don't Fly Over Tibet
+        </p>
+        <p class="video-author">
+          RealLifeLore
+        </p>
+        <p class="video-date">
+          6.6M views · 1 year ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+     
+
+       <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-8.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-8.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        The SECRET to Super Human STRENGTH
+        </p>
+        <p class="video-author">
+          ThenX
+        </p>
+        <p class="video-date">
+          20M views · 3 years ago
+        </p>
+       </div>
+      </div>
+    </div>
+  </div>
+ </div>  
+ 
+ 
+
+
+
+      <div class="back-color">
+      <div class="grid-template-column">
+       <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-1.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-1.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Talking Tech and AI with Google CEO Sundar Pichai!
+        </p>
+        <p class="video-author">
+          Marques Brownlee
+        </p>
+        <p class="video-date">
+          3.4M views · 6 months ago
+        </p>
+        </div>
+       </div>
+     </div>
+  
+
+
+        <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-2.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-2.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Try Not To Laugh Challenge #9
+        </p>
+        <p class="video-author">
+          Markiplier
+        </p>
+        <p class="video-date">
+          19M views · 4 years ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+
+
+
+        <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-3.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-3.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        Crazy Tik Toks Taken Moments Before DISASTER
+        </p>
+        <p class="video-author">
+          SSSniperWolf
+        </p>
+        <p class="video-date">
+          12M views · 1 year ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+
+
+         <div class="page-g">
+            <img class="thumbnail-1" src="thumbnails/thumbnail-4.webp">
+
+          <div class="grid-colume">
+          <div>
+            <img class="channel-picture" src="channels/channel-4.jpeg">
+          </div>
+        
+        <div>
+         <p class="video-title">
+        The Simplest Math Problem No One Can Solve - Collatz Conjecture
+        </p>
+        <p class="video-author">
+          Veritasium
+        </p>
+        <p class="video-date">
+          18M views · 4 months ago
+        </p>
+        </div>
+       </div>
+     </div>
+
+  </body>
+  </html>

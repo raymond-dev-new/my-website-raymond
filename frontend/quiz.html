@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> QUIZ </title>
+<style>
+ 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-image: url('photo_2026-07-24_20-36-26.jpg');
+   background-size: cover;
+  background-position: center;
+  
+  font-family: Roboto, Arial, sans-serif;
+  padding: 20px 4%;
+  min-height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+html, body {
+  height: 100%;
+}
+
+.top-div {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 555px;
+  margin-left: 0;
+  height: auto;
+  min-height: 500px;
+  border: 3px solid gray;
+  border-radius: 7px;
+  background-color: white;
+  padding: 20px 4%;
+}
+
+.simple {
+  margin-left: 0;
+  padding-bottom: 20px;
+  border-bottom: 2px solid gray;
+  margin-bottom: 20px;
+}
+
+.question {
+  margin-left: 0;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  margin-top: 0;
+  line-height: 130%;
+}
+
+.btn {
+  display: block;
+  margin-left: 0;
+  padding: 12px 5%;
+  width: 100%;
+  margin-bottom: 15px;
+  border-radius: 7px;
+  border: 3px solid gray;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.btn:hover:not([disabled]) {
+  background: rgb(44, 43, 43);
+  color: rgb(245, 241, 241);
+}
+
+.btn:disabled {
+  cursor: no-drop;
+}
+
+.next-btn {
+  margin-top: 10px;
+  margin-left: 0;
+  font-size: 18px;
+  font-weight: 600;
+  background-color: rgb(14, 14, 197);
+  color: white;
+  width: 100%;
+  padding: 12px 5%;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  display: none;
+}
+
+.next-btn:hover {
+  background: rgb(7, 7, 7);
+  color: rgb(245, 241, 241);
+}
+
+.correct {
+  background-color: rgb(20, 230, 20);
+  color: #fff;
+  border-color: rgb(20, 230, 20);
+}
+
+.incorrect {
+  background-color: rgb(238, 19, 19);
+  color: #fff;
+  border-color: rgb(238, 19, 19);
+}
+
+/* === TABLET: 600px+ === */
+@media (min-width: 600px) {
+  body {
+    padding: 30px 5%;
+    align-items: center;
+  }
+
+ .top-div {
+    margin-top: 0;
+    padding: 25px 5%;
+    min-height: 550px;
+  }
+
+ .question {
+    font-size: 22px;
+    margin-bottom: 25px;
+  }
+
+ .btn {
+    font-size: 18px;
+    padding: 14px 4%;
+    margin-bottom: 20px;
+  }
+
+ .next-btn {
+    font-size: 20px;
+    width: 150px;
+    margin-left: auto;
+    margin-right: auto;
+    display: none;
+  }
+
+ .simple {
+    padding-bottom: 25px;
+  }
+}
+
+/* === DESKTOP: 1024px+ === */
+@media (min-width: 1024px) {
+ .top-div {
+    min-height: 600px;
+  }
+
+ .question {
+    font-size: 25px;
+  }
+
+ .btn {
+    font-size: 20px;
+  }
+
+ .next-btn {
+    font-size: 22px;
+    width: 120px;
+    margin-left: 200px;
+    margin-right: 0;
+  }
+}
+</style>
+</head>
+<body>
+  <div class="top-div">
+     <h1 class="simple"> Simple Quiz </h1>
+     <div class="question"> question goes here</div>
+     <div class="btnn">
+      <button class="btn">answer 1</button>
+      <button class="btn">answer 2</button>
+      <button class="btn">answer 3</button>
+      <button class="btn">answer 4</button>
+     </div>
+     <button class="next-btn">Next</button>
+  </div>
+
+  <script>
+
+ const questions = [
+  {
+    question: "What is the largest mammal in the world?",
+    answers: [
+      { text: "Elephant", correct: false },
+      { text: "Blue Whale", correct: true },
+      { text: "Giraffe", correct: false },
+      { text: "Polar Bear", correct: false },
+    ]
+  },
+  {
+    question: "Which metal is liquid at room temperature?",
+    answers: [
+      { text: "Iron", correct: false },
+      { text: "Gold", correct: false },
+      { text: "Mercury", correct: true },
+      { text: "Copper", correct: false },
+    ]
+  },
+  {
+    question: "How many bones does an adult human have?",
+    answers: [
+      { text: "186", correct: false },
+      { text: "206", correct: true },
+      { text: "256", correct: false },
+      { text: "306", correct: false },
+    ]
+  },
+  {
+    question: "What is the capital of Japan?",
+    answers: [
+      { text: "Seoul", correct: false },
+      { text: "Beijing", correct: false },
+      { text: "Tokyo", correct: true },
+      { text: "Bangkok", correct: false },
+    ]
+  },
+  {
+    question: "Which animal has the longest neck?",
+    answers: [
+      { text: "Camel", correct: false },
+      { text: "Giraffe", correct: true },
+      { text: "Horse", correct: false },
+      { text: "Ostrich", correct: false },
+    ]
+  },
+  {
+    question: "What is the currency of Japan?",
+    answers: [
+      { text: "Yuan", correct: false },
+      { text: "Won", correct: false },
+      { text: "Yen", correct: true },
+      { text: "Dollar", correct: false },
+    ]
+  },
+  {
+    question: "Which bird cannot fly?",
+    answers: [
+      { text: "Eagle", correct: false },
+      { text: "Penguin", correct: true },
+      { text: "Sparrow", correct: false },
+      { text: "Parrot", correct: false },
+    ]
+  },
+  {
+    question: "How many hours are in 2 days?",
+    answers: [
+      { text: "24", correct: false },
+      { text: "36", correct: false },
+      { text: "48", correct: true },
+      { text: "60", correct: false },
+    ]
+  },
+  {
+    question: "Which country is famous for the Eiffel Tower?",
+    answers: [
+      { text: "Italy", correct: false },
+      { text: "Spain", correct: false },
+      { text: "France", correct: true },
+      { text: "Germany", correct: false },
+    ]
+  },
+  {
+    question: "What do we call a baby kangaroo?",
+    answers: [
+      { text: "Cub", correct: false },
+      { text: "Joey", correct: true },
+      { text: "Pup", correct: false },
+      { text: "Calf", correct: false },
+    ]
+  },
+  {
+    question: "Which instrument has 6 strings?",
+    answers: [
+      { text: "Piano", correct: false },
+      { text: "Drum", correct: false },
+      { text: "Guitar", correct: true },
+      { text: "Violin", correct: false },
+    ]
+  },
+  {
+    question: "What color do you get when you mix blue and yellow?",
+    answers: [
+      { text: "Orange", correct: false },
+      { text: "Purple", correct: false },
+      { text: "Green", correct: true },
+      { text: "Brown", correct: false },
+    ]
+  },
+  {
+    question: "Which animal is known to sleep upside down?",
+    answers: [
+      { text: "Monkey", correct: false },
+      { text: "Bat", correct: true },
+      { text: "Sloth", correct: false },
+      { text: "Owl", correct: false },
+    ]
+  },
+  {
+    question: "How many days are in a week?",
+    answers: [
+      { text: "5", correct: false },
+      { text: "6", correct: false },
+      { text: "7", correct: true },
+      { text: "8", correct: false },
+    ]
+  },
+  {
+    question: "Which country is home to the Taj Mahal?",
+    answers: [
+      { text: "Pakistan", correct: false },
+      { text: "India", correct: true },
+      { text: "Bangladesh", correct: false },
+      { text: "Nepal", correct: false },
+    ]
+  },
+  {
+    question: "What is the hardest natural substance?",
+    answers: [
+      { text: "Steel", correct: false },
+      { text: "Iron", correct: false },
+      { text: "Diamond", correct: true },
+      { text: "Granite", correct: false },
+    ]
+  },
+  {
+    question: "Which animal can change its color for camouflage?",
+    answers: [
+      { text: "Lion", correct: false },
+      { text: "Chameleon", correct: true },
+      { text: "Zebra", correct: false },
+      { text: "Fox", correct: false },
+    ]
+  },
+  {
+    question: "How many letters are in the English alphabet?",
+    answers: [
+      { text: "24", correct: false },
+      { text: "25", correct: false },
+      { text: "26", correct: true },
+      { text: "27", correct: false },
+    ]
+  },
+  {
+    question: "Which country is famous for sushi?",
+    answers: [
+      { text: "China", correct: false },
+      { text: "Thailand", correct: false },
+      { text: "Japan", correct: true },
+      { text: "Korea", correct: false },
+    ]
+  },
+  {
+    question: "What do bees make?",
+    answers: [
+      { text: "Milk", correct: false },
+      { text: "Honey", correct: true },
+      { text: "Cheese", correct: false },
+      { text: "Butter", correct: false },
+    ]
+  }
+];
+
+  const questiomElement = document.querySelector('.question')
+  const answerButtons = document.querySelector('.btnn') 
+  const nextButton = document.querySelector('.next-btn')   
+  
+  let currentQuestionIndex = 0;
+  let score = 0;
+  
+
+  
+  function startQuiz() {
+    let currentQuestionIndex = 0;
+    let score = 0;
+    nextButton.innerHTML = 'Next';
+    showQuestion();
+  }
+
+  function showQuestion() {
+   resetState();
+
+    let currentQuestion = questions[currentQuestionIndex]
+    let questionNo = currentQuestionIndex + 1;
+    questiomElement.innerHTML = questionNo + ". " + currentQuestion.question;
+
+    currentQuestion.answers.forEach((answer) => {
+      const button = document.createElement("button")
+      button.innerHTML = answer.text
+      button.classList.add("btn")
+      answerButtons.appendChild(button)
+      if(answer.correct) {
+         button.dataset.correct = answer.correct;
+      }
+
+      button.addEventListener('click', (button) => {
+        const selecteBtn = button.target;
+        const isCorrect = selecteBtn.dataset.correct === "true";
+         if(isCorrect) {
+           selecteBtn.classList.add("correct")
+           score++;
+         }else {
+           selecteBtn.classList.add("incorrect")
+         }
+
+         Array.from(answerButtons.children).forEach((button) => {
+          if(button.dataset.correct === "true"){
+            button.classList.add("correct")
+          }
+         button.disabled = true;
+
+         })
+
+         nextButton.style.display = "block";
+      })
+
+    })
+  };
+
+ function resetState() {
+    nextButton.style.display = "none";
+    while(answerButtons.firstChild) {
+      answerButtons.removeChild(answerButtons.firstChild)
+    }
+  } 
+    
+
+
+  nextButton.addEventListener("click", () => {
+     if(currentQuestionIndex < questions.length) {
+
+    currentQuestionIndex++;
+    if(currentQuestionIndex < questions.length) {
+      showQuestion()
+   } else {
+      showScore()
+    }
+   }else {
+    startQuiz()
+   } 
+})
+
+   function showScore() {
+    resetState()
+    questiomElement.innerHTML = `You score ${score} out of ${questions.length}`
+    nextButton.innerHTML = "play again "
+    nextButton.style.display = 'block'
+  } 
+
+ 
+  startQuiz();
+  </script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer-when-downgrade" />
+<title>Football Scores</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+.div{ justify-self: center; width: 80%; }
+body { background: #000; color: #fff; padding: 15px; }
+.ad-wrapper { width: 40%; height: 210px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-left: 305px; margin-top: 10px; text-align:center; margin-bottom: 15px; }
+.header-text { text-align: center; color: #fff; font-size: 25px; margin-bottom: 15px; }
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.tab { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s; }
+.tab.upcoming { background: #16a34a; color: #fff; }
+.tab.finished { background: #dc2626; color: #fff; }
+.tab.inactive { opacity: 0.5; }
+.date-header { display: flex; align-items: center; gap: 8px; color: #3b82f6; font-size: 16px; font-weight: 700; margin: 20px 0 12px 0; }
+.match-card { background: #111; border: 1px solid #222; border-radius: 16px; padding: 15px; margin-bottom: 15px; }
+.league { color: #f59e0b; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.match-date { color: #9ca3af; font-size: 13px; margin-bottom: 15px; }
+.teams { display: flex; align-items: center; justify-content: space-between; text-align: center; margin-bottom: 12px; }
+.team { flex: 1; }
+.team img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px; }
+.team-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.score-area { flex: 0 0 90px; }
+.score { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.badge { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; display: inline-block; background: #2563eb; color: white; line-height: 1.3; }
+.btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; }
+.btn-details { background: #1f2937; color: #fff; }
+.btn-watch { background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.no-matches { text-align: center; color: #666; padding: 40px 0; }
+.loading { text-align: center; color: #888; padding: 30px; }
+small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; justify-content: center; }
+.small{ font-weight: 700; padding-bottom: 15px; display: grid; font-size: 15px; justify-content: center; }
+.div{ width: 70%; }
+@media screen and (max-width: 900px) {.div{ width: 90%; } }
+@media screen and (max-width: 600px) {.div{ width: 100%; }.ann{ font-size: 12px; } }
+</style>
+</head>
+<body>
+  <script>
+    (function(ihosnhw){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = ihosnhw || {};
+    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    l.parentNode.insertBefore(s, l);
+    })({})
+</script>
+ <div class="div">
+  <h1 class="header-text"> Live Football ⚽ </h1>
+    <small> Finish Match Will Show In Finished Tab</small>
+  <small class="small"> within Some Hours </small>
+<div class="tabs">
+  <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming</button>
+  <button class="tab finished" onclick="loadMatches('finished', this)">Finished</button>
+</div>
+<div id="matches"></div>
+</div>
+<script>
+const API = "https://raymonddomain.dev/api/matches";
+let currentTab = 'upcoming';
+let currentBtn = null;
+
+// CACHE FOR FAST CLICK
+let cache = {
+  upcoming: JSON.parse(localStorage.getItem('cache_upcoming') || '[]'),
+  finished: JSON.parse(localStorage.getItem('cache_finished') || '[]')
+};
+
+function formatDateHeader(dateStr){
+  const d = new Date(dateStr);
+  return `📅 ${d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}`;
+}
+function formatFullDate(dateStr){
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) + " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
+}
+function getStatusBadge(match){
+  if(match.status === "IN_PLAY"){
+    let minute = match.minute || 0;
+    if(minute === 45 || match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
+
+    if(minute < 45) return `<span class="badge">LIVE<br>${minute}'</span>`
+
+    if(minute > 45 && minute <= 50) return `<span class="badge"> EXTRA <br> TIME </span>`
+
+    return `<span class="badge">LIVE<br>${minute}'</span>`
+  }
+
+  if(match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
+
+  if(match.status === "FINISHED") return `<span class="badge">FINISH</span>`
+
+  return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
+}
+function getYouTubeLink(match){
+  const query = `${match.home.name} vs ${match.away.name} live stream`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+}
+function cleanLeagueName(name){
+  if(!name) return name;
+  if(name.toLowerCase().includes("primera division")) return "LaLiga EA ";
+  return name;
+}
+function renderMatch(match){
+  const youtubeLink = getYouTubeLink(match);
+  return ` <div class="match-card">
+    <div class="league">${cleanLeagueName(match.league)}</div>
+    <div class="match-date">${formatFullDate(match.date)}</div>
+    <div class="teams">
+      <div class="team">
+        <img src="${match.home.logo}" onerror="this.src='https://via.placeholder.com/50'" alt="${match.home.name}">
+        <div class="team-name">${match.home.name}</div>
+      </div>
+      <div class="score-area">
+        <div class="score">${match.homeScore} - ${match.awayScore}</div>
+        ${getStatusBadge(match)}
+      </div>
+      <div class="team">
+        <img src="${match.away.logo}" onerror="this.src='https://via.placeholder.com/50'" alt="${match.away.name}">
+        <div class="team-name">${match.away.name}</div>
+      </div>
+    </div>
+    <small class="ann"> Extra time might show as 90 that is a glitch from api </small>
+    <button class="btn btn-details" onclick="showDetails('Coming Soon')">Line Up</button>
+    <button class="btn btn-watch" onclick="window.open('${youtubeLink}', '_blank')">▶ Watch Live</button>
+  </div> `
+}
+function groupMatchesByDate(matches){
+  const groups = {};
+  matches.forEach(match => {
+    const d = new Date(match.date);
+    const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if(!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(match);
+  });
+  return groups;
+}
+function renderGrouped(matches, tab){
+    const container = document.getElementById('matches');
+    if(!matches || matches.length === 0){
+      container.innerHTML = `<div class="no-matches">No matches found</div>`;
+      return;
+    }
+    const grouped = groupMatchesByDate(matches);
+    let html = '';
+    let dates = Object.keys(grouped).sort((a,b) => new Date(grouped[b][0].date) - new Date(grouped[a][0].date)? -1 : 1);
+    // sort by real date
+    dates = Object.keys(grouped).sort((a,b) => new Date(grouped[a][0].date) - new Date(grouped[b][0].date));
+    if(tab === 'finished') dates = dates.reverse();
+    dates.forEach(dateKey => {
+      html += `<div class="date-header">${formatDateHeader(grouped[dateKey][0].date)}</div>`;
+      grouped[dateKey].forEach(match => { html += renderMatch(match); });
+    });
+    container.innerHTML = html;
+}
+function showNetworkError(hasCache){
+  const container = document.getElementById('matches');
+  if(hasCache){
+    // don't wipe cached data, just show toast
+    let toast = document.getElementById('net-toast');
+    if(!toast){
+      toast = document.createElement('div');
+      toast.id = 'net-toast';
+      toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:700;';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '⚠️ You have a network problem - showing saved data'; //
+    setTimeout(()=> toast.remove(), 2000);
+    return;
+  }
+  container.innerHTML = `
+    <div style="text-align:center; padding:60px 20px; color:#fff;">
+      <div style="font-size:50px; margin-bottom:10px;">📡</div>
+      <p style="font-size:18px; font-weight:700;">You have a network problem</p>
+      <p style="color:#9ca3af; margin-top:8px;">Check your data connection and try again</p>
+      <button onclick="currentBtn && loadMatches(currentTab, currentBtn)" style="margin-top:20px; padding:12px 24px; background:#16a34a; border:none; border-radius:10px; color:white; font-weight:700; cursor:pointer;">Retry</button>
+    </div>
+  `;
+}
+async function loadMatches(tab, btn){
+  currentTab = tab;
+  currentBtn = btn;
+  document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
+  btn.classList.remove('inactive');
+
+  const container = document.getElementById('matches');
+
+  // 1. INSTANT RENDER FROM CACHE - makes click feel fast
+  if(cache[tab] && cache[tab].length > 0){
+    renderGrouped(cache[tab], tab);
+  } else {
+    container.innerHTML = `<div class="loading">Loading matches...</div>`;
+  }
+
+  // 2. If offline immediately
+  if(!navigator.onLine){
+    showNetworkError(cache[tab] && cache[tab].length > 0);
+    return;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(`${API}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
+    clearTimeout(timeout);
+
+    if(!res.ok) throw new Error('bad response');
+
+    const data = await res.json();
+
+    if(!data.success){
+      if(cache[tab].length === 0) showNetworkError(false);
+      return;
+    }
+
+    // Empty but backend says success = truly no matches (not network error)
+    if(!data.matches || data.matches.length === 0){
+      // only show No matches if we have no cache
+      if(cache[tab].length === 0){
+        container.innerHTML = `<div class="no-matches">No matches found</div>`;
+      }
+      cache[tab] = [];
+      localStorage.setItem('cache_'+tab, JSON.stringify([]));
+      return;
+    }
+
+    // Success - save and render
+    cache[tab] = data.matches;
+    localStorage.setItem('cache_'+tab, JSON.stringify(data.matches));
+    renderGrouped(data.matches, tab);
+
+  } catch(err) {
+    console.log('fetch error', err);
+    showNetworkError(cache[tab] && cache[tab].length > 0);
+  }
+}
+function showDetails(id) { alert(id) }
+
+const firstBtn = document.querySelector('.tab.upcoming');
+loadMatches('upcoming', firstBtn);
+</script>
+</body>
+</html>

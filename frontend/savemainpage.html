@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Private Space </title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer-when-downgrade" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image: url('photo_2026-07-27_07-52-04.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+     
+      z-index: 0;
+    }
+    
+    .container {
+      position: relative; /* so back button can be absolute inside */
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+      min-height: 85vh; /* give height so we can center buttons */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center; /* center the grid vertically */
+      padding-top: 60px; /* space for back button */
+    }
+    
+    /* Back button EXACTLY in the corner you marked */
+    .back-btn {
+      position: absolute;
+      top: 20px; /* distance from top */
+      left: 20px; /* distance from left */
+      background: rgba(0, 253, 118, 0.15);
+      color: #75cca3;
+      border: 1px solid rgba(0, 255, 120, 0.3);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s;
+    }
+    .back-btn:hover {
+      background: rgba(0, 255, 120, 0.25);
+      transform: translateX(-2px);
+    }
+    
+    /* Button Grid - stays perfectly centered */
+    .btn-grid {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    
+    /* Main buttons */
+    .btn {
+      background: rgba(42, 10, 224, 0.1);
+      color: #14ac65;
+      border: 1px solid rgba(0, 255, 120, 0.3);
+      padding: 16px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s;
+      
+      width: 100%;
+    }
+    
+    .btn:hover {
+      background: rgba(0, 255, 120, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0, 255, 120, 0.3);
+    }
+    
+    .btn.next {
+      background: linear-gradient(135deg, #00ff88, #00cc66);
+      color: #000;
+      border: none;
+      font-weight: 800;
+    }
+    .btn.next:hover {
+      box-shadow: 0 0 20px rgba(0, 255, 120, 0.6);
+    }
+    
+    .icon { font-size: 18px; }
+    
+    /* LAPTOP / TABLET: 2 columns */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 700px;
+      }
+      .btn-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .btn.next {
+        grid-column: span 2; /* Next button takes full width */
+      }
+      .back-btn {
+        font-size: 16px;
+        padding: 12px 20px;
+        top: 30px;
+        left: 30px;
+      }
+      .btn {
+        font-size: 16px;
+        padding: 18px 24px;
+      }
+    }
+    
+    /* LARGE DESKTOP */
+    @media (min-width: 1200px) {
+      .container {
+        max-width: 800px;
+      }
+      .btn {
+        padding: 20px 28px;
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+   <script>
+    (function(ihosnhw){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = ihosnhw || {};
+    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    l.parentNode.insertBefore(s, l);
+    })({})
+</script>
+
+  
+  <div class="container">
+      <button class="back-btn logout"><i class="ri-arrow-left-line icon"></i> Back</button>
+    
+      <div class="btn-grid">
+        <button class="btn Media"><i class="ri-download-2-line icon"></i> Save image</button>
+        <button class="btn Note"><i class="ri-sticky-note-line icon"></i> Save Note</button>
+        <button class="btn ball"><i class="ri-live-line icon"></i> Live Match</button>
+      
+      </div>
+  </div>
+
+  <script>
+   const next = document.querySelector('.next')
+   const logout = document.querySelector('.logout')
+   const Note = document.querySelector('.Note')                  
+   const Media = document.querySelector('.Media') 
+   const ball = document.querySelector('.ball')
+      
+   ball.addEventListener('click', () => {
+      window.location.href="football.html"
+   })  
+
+   Media.addEventListener('click', () => {
+      window.location.href="media.html"
+   })  
+
+   Note.addEventListener('click', () => {
+      window.location.href="note.html"
+   })
+
+   logout.addEventListener('click', () => {
+     window.location.href="mainpage.html"
+   })
+
+   
+  </script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+ 
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rock Paper Scissors</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { 
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #1e1e2e;
+      color: white; 
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .con{
+      width: 100%;
+      max-width: 800px; /* keeps it from getting too wide on laptop */
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 48px); /* scales: min 28px, max 48px */
+      font-weight: 700;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap; /* wraps on small screens */
+      justify-content: center;
+      gap: 15px;
+    }
+
+    button {
+      font-size: clamp(18px, 4vw, 30px); /* bigger on laptop, smaller on phone */
+      padding: clamp(15px, 3vw, 25px) clamp(25px, 6vw, 50px);
+      border: none; 
+      border-radius: 12px;
+      cursor: pointer; 
+      font-weight: 700;
+      background: #4c4cff;
+      color: white;
+      transition: transform 0.1s;
+      flex: 1 1 200px; /* buttons grow/shrink */
+      max-width: 300px;
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    #result {
+      font-size: clamp(18px, 4vw, 28px);
+      margin-top: 10px; 
+      font-weight: 700;
+      min-height: 50px;
+    }
+
+    #score {
+      font-size: clamp(15px, 3.5vw, 26px);
+      font-weight: 700;
+    }
+
+    /* Extra spacing for laptop/desktop */
+    @media (min-width: 768px) {
+      .con {
+        gap: 30px;
+        padding: 40px;
+      }
+      body {
+        padding: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="con">
+    <h1>Rock Paper Scissors ✊✋✌️</h1>
+
+    <div class="buttons">
+      <button onclick="play('rock')">✊ Rock</button>
+      <button onclick="play('paper')">✋ Paper</button>
+      <button onclick="play('scissors')">✌️ Scissors</button>
+    </div>
+    
+    <div id="result"></div>
+    <div id="score"></div>
+  </div>
+
+  <script>
+    let userScore = 0;
+    let compScore = 0;
+
+    function play(userChoice) {
+      const choices = ['rock', 'paper', 'scissors'];
+      const compChoice = choices[Math.floor(Math.random() * 3)];
+      
+      let result = '';
+      if (userChoice === compChoice) {
+        result = "It's a Tie!";
+      } else if (
+        (userChoice === 'rock' && compChoice === 'scissors') ||
+        (userChoice === 'paper' && compChoice === 'rock') ||
+        (userChoice === 'scissors' && compChoice === 'paper')
+      ) {
+        result = 'You Win! 🎉';
+        userScore++;
+      } else {
+        result = 'You Lose! 😢';
+        compScore++;
+      }
+
+      document.getElementById('result').innerHTML = 
+        `You pick: ${userChoice} | Computer pick: ${compChoice} <br> <b>${result}</b>`;
+      document.getElementById('score').innerHTML = 
+        `Score - You: ${userScore} | Computer: ${compScore}`;
+    }
+  </script>
+</body>
+</html>

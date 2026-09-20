@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+ 
+   
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Game Working</title>
+<style>
+  body {
+    background: #0f172a;
+    color: white;
+    font-family: Arial;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    margin: 0;
+  }
+  canvas {
+    background: #111827;
+    border: 3px solid #22c55e;
+    border-radius: 8px;
+    margin: 10px 0;
+  }
+ .row { display: flex; gap: 8px; justify-content: center; }
+ .btn {
+    width: 70px;
+    height: 70px;
+    font-size: 28px;
+    background: #334155;
+    color: white;
+    border: 2px solid #22c55e;
+    border-radius: 12px;
+    margin: 4px;
+  }
+ .btn:active { background: #22c55e; }
+  #restart {
+    padding: 10px 20px;
+    background: #22c55e;
+    border: none;
+    border-radius: 8px;
+    color: #0f172a;
+    font-weight: bold;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+  <h2>🐍 Snake Game</h2>
+  <div>Score: <span id="score">0</span></div>
+  <canvas id="game" width="300" height="300"></canvas>
+
+  <div class="row"><button class="btn" onclick="setDir('UP')">▲</button></div>
+  <div class="row">
+    <button class="btn" onclick="setDir('LEFT')">◀</button>
+    <button class="btn" onclick="setDir('RIGHT')">▶</button>
+  </div>
+  <div class="row"><button class="btn" onclick="setDir('DOWN')">▼</button></div>
+
+  <button id="restart" onclick="startGame()">Restart</button>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const grid = 15;
+const tiles = 20;
+
+let snake, food, dir, score, gameLoop, gameOver;
+
+function startGame(){
+  clearInterval(gameLoop);
+  snake = [{x: 10, y: 10}];
+  dir = 'RIGHT'; // start moving right immediately
+  score = 0;
+  gameOver = false;
+  scoreEl.innerText = 0;
+  spawnFood();
+  draw(); // draw first frame
+  gameLoop = setInterval(update, 370); // 120ms = good speed
+}
+
+function spawnFood(){
+  food = {
+    x: Math.floor(Math.random() * tiles),
+    y: Math.floor(Math.random() * tiles)
+  };
+  // don't spawn on snake
+  if(snake.some(s => s.x === food.x && s.y === food.y)) spawnFood();
+}
+
+function setDir(newDir){
+  if(newDir === 'LEFT' && dir!== 'RIGHT') dir = 'LEFT';
+  if(newDir === 'RIGHT' && dir!== 'LEFT') dir = 'RIGHT';
+  if(newDir === 'UP' && dir!== 'DOWN') dir = 'UP';
+  if(newDir === 'DOWN' && dir!== 'UP') dir = 'DOWN';
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowUp' || e.key === 'w') setDir('UP');
+  if(e.key === 'ArrowDown' || e.key === 's') setDir('DOWN');
+  if(e.key === 'ArrowLeft' || e.key === 'a') setDir('LEFT');
+  if(e.key === 'ArrowRight' || e.key === 'd') setDir('RIGHT');
+});
+
+function update(){
+  if(gameOver) return;
+
+  let head = {x: snake[0].x, y: snake[0].y};
+  if(dir === 'LEFT') head.x--;
+  if(dir === 'RIGHT') head.x++;
+  if(dir === 'UP') head.y--;
+  if(dir === 'DOWN') head.y++;
+
+  // wall collision
+  if(head.x < 0 || head.y < 0 || head.x >= tiles || head.y >= tiles){
+    return gameOverNow();
+  }
+  // self collision
+  if(snake.some(s => s.x === head.x && s.y === head.y)){
+    return gameOverNow();
+  }
+
+  snake.unshift(head);
+
+  // eat food
+  if(head.x === food.x && head.y === food.y){
+    score += 10;
+    scoreEl.innerText = score;
+    spawnFood();
+  } else {
+    snake.pop();
+  }
+
+  draw();
+}
+
+function draw(){
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(0,0,300,300);
+
+  // food
+  ctx.fillStyle = 'red';
+  ctx.fillRect(food.x * grid, food.y * grid, grid, grid);
+
+  // snake
+  snake.forEach((part, i) => {
+    ctx.fillStyle = i === 0? '#22c55e' : '#4ade80';
+    ctx.fillRect(part.x * grid, part.y * grid, grid-1, grid-1);
+  });
+}
+
+function gameOverNow(){
+  clearInterval(gameLoop);
+  gameOver = true;
+  ctx.fillStyle = 'rgba(0,0,0,0.8)';
+  ctx.fillRect(0,0,300,300);
+  ctx.fillStyle = 'white';
+  ctx.font = '24px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('GAME OVER', 150, 140);
+  ctx.font = '16px Arial';
+  ctx.fillText('Score: ' + score, 150, 165);
+  ctx.fillText('Tap Restart', 150, 190);
+}
+startGame(); // auto start
+</script>
+</body>
+</html>

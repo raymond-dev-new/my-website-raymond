@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer-when-downgrade" />
+  <title>SHOP PRODUCTS </title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: url("photo_2026-07-27_08-21-15.jpg") center/cover no-repeat fixed;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+    }
+
+   .greenn{ margin-top: 30px; }
+
+    /* YELLOW BACK BUTTON TOP LEFT */
+   .btn-back {
+      top: 20px;
+      left: 20px;
+      background: #FFD700;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 10; /* so it stays on top */
+      margin: 10px;
+    }
+
+    
+
+    .ad-wrapper { 
+      width: 30%; /* EXACT WIDTH YOU WANT */
+      height: 210px; /* EXACT HEIGHT YOU WANT */
+      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
+      border-radius: 10px;
+       margin-left: 480px; 
+      margin-top: 10px;
+       text-align:center; 
+       
+    }
+
+    /* CENTER CONTENT */
+   .wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+      padding-top: 10px;
+    }
+
+    h1 {
+      color: white;
+      font-size: 20px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 25px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    }
+
+    /* 3x4 GRID */
+   .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 380px;
+      margin-bottom: 20px;
+    }
+
+    /* BUTTONS */
+   .btn {
+      font-size: 14px;
+      font-weight: 700;
+      padding: 16px 8px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      color: white;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    }
+   .btn:hover { transform: translateY(-2px); }
+
+    /* COLORS LIKE YOUR SCREENSHOT */
+   .green { background: #00c853; }
+   .yellow { background: #FFD700; color: #000; }
+   .purple { background: #7e57c2; }
+   .blue { background: #2962ff; }
+
+    /* ORANGE ADVERT BUTTON */
+   .btn-advertise {
+      background: linear-gradient(135deg, #FF8C00 0%, #FF4500 100%);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: none;
+      width: 100%;
+      max-width: 250px;
+      margin: 0 auto;
+      display: block;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255,140,0,0.4);
+    }
+
+  .div{
+  margin-top: 10px;
+  margin-left: 22px;
+  height: 70px;
+}
+
+@media screen and (max-width: 900px) { 
+  .wrapper{
+   margin-top: 50px;
+    
+  }
+}
+@media screen and (max-width: 600px) {
+ body { padding: 15px; }
+      h1 { font-size: 18px; margin-top: -170px;} /* REMOVED -150px */
+     .shop-grid { gap: 10px; max-width: 340px; }
+     .btn { font-size: 13px; font-weight: 700; padding: 14px 6px; }
+     .btn-back { padding: 10px 20px; font-size: 15px; top: 15px; left: 15px; }
+
+  .wrapper{
+   margin-top: 50px;
+  }
+}
+  </style>
+</head>
+<body>
+
+  <script>
+    (function(ihosnhw){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = ihosnhw || {};
+    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    l.parentNode.insertBefore(s, l);
+    })({})
+</script>
+
+ <div> <button class="btn-back logout">Back</button> </div>
+
+   <div>
+    
+ </div>
+    
+
+  <div class="wrapper">
+    <h1>SHOP FROM US TODAY</h1>
+
+    <div class="shop-grid">
+      <!-- ROW 1 -->
+      <button class="btn green">FOR SALE *</button>
+      <button class="btn yellow">FOR SALE</button>
+      <button class="btn purple">FOR SALE *</button>
+
+      <!-- ROW 2 -->
+      <button class="btn yellow">FOR SALE</button>
+      <button class="btn yellow">FOR SALE</button>
+      <button class="btn green">FOR SALE</button>
+
+      <!-- ROW 3 -->
+      <button class="btn blue">FOR SALE</button>
+      <button class="btn blue">FOR SALE</button>
+      <button class="btn blue">FOR SALE</button>
+
+      <!-- ROW 4 -->
+      <button class="btn green greenn">Video<br>Advert *</button>
+      <button class="btn green greenn">Video<br>Advert</button>
+      <button class="btn green greenn">Video<br>Advert</button>
+    </div>
+
+    <button class="btn-advertise advertise">📢 Click to place yours</button>
+  </div>
+
+  <script>
+    const btns = document.querySelectorAll('.btn');
+    btns[0].onclick = () => window.location.href="pro1.html"
+    btns[1].onclick = () => window.location.href="pro5.html"
+    btns[2].onclick = () => window.location.href="pro3.html"
+    btns[3].onclick = () => window.location.href="pro6.html"
+    btns[4].onclick = () => window.location.href="pro4.html"
+    btns[5].onclick = () => window.location.href="pro2.html"
+    btns[6].onclick = () => window.location.href="pro7.html"
+    btns[7].onclick = () => window.location.href="pro8.html"
+    btns[8].onclick = () => window.location.href="pro9.html"
+    btns[9].onclick = () => window.location.href="pro1v.html"
+    btns[10].onclick = () => window.location.href="pro2v.html"
+    btns[11].onclick = () => window.location.href="pro3v.html"
+
+    document.querySelector('.advertise').onclick = () => {
+      const phone = "2348115614822";
+      const message = `Hello, Thanks for advertising with us`;
+      window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    };
+
+    document.querySelector('.logout').onclick = () => window.location.href="mainpage.html"
+  </script>
+</body>
+</html>

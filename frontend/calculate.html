@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <title>Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #000;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .calc {
+      background: #111;
+      padding: 20px;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 350px;
+      margin-top: -200px;
+    }
+    
+    /* Display */
+    #display {
+      width: 100%;
+      height: 80px;
+      background: #1a1a1a;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 36px;
+      font-weight: 600;
+      text-align: right;
+      padding: 0 15px;
+      margin-bottom: 15px;
+    }
+    
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    
+    /* Buttons */
+    button {
+      height: 65px;
+      border: none;
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.1s;
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    
+    /* Numbers */
+    .num {
+      background: #2d2d2d;
+      color: white;
+    }
+    .num:hover {
+      background: #3d3d3d;
+    }
+    
+    /* Operators - Yellow */
+    .op {
+      background: #ffeb3b;
+      color: #000;
+    }
+    .op:hover {
+      background: #fdd835;
+    }
+    
+    /* Equals */
+    .eq {
+      background: #ffeb3b;
+      color: #000;
+    }
+    
+    /* Special buttons */
+    .clear, .del {
+      background: #ffeb3b;
+      color: #000;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="calc">
+    <input type="text" id="display" readonly>
+    
+    <div class="grid">
+      <button class="op" onclick="append('+')">+</button>
+      <button class="num" onclick="append('7')">7</button>
+      <button class="num" onclick="append('8')">8</button>
+      <button class="num" onclick="append('9')">9</button>
+      
+      <button class="op" onclick="append('-')">-</button>
+      <button class="num" onclick="append('4')">4</button>
+      <button class="num" onclick="append('5')">5</button>
+      <button class="num" onclick="append('6')">6</button>
+      
+      <button class="op" onclick="append('*')">*</button>
+      <button class="num" onclick="append('1')">1</button>
+      <button class="num" onclick="append('2')">2</button>
+      <button class="num" onclick="append('3')">3</button>
+      
+      <button class="op" onclick="append('/')">/</button>
+      <button class="num" onclick="append('0')">0</button>
+      <button class="num" onclick="append('.')">.</button>
+      <button class="eq" onclick="calculate()">=</button>
+      
+      <button class="del" onclick="deleteOne()">DEL</button>
+      <button class="clear" onclick="clearAll()">C</button>
+    </div>
+  </div>
+
+  <script>
+    const display = document.getElementById('display');
+    
+    // LOAD from localStorage when page opens
+    window.onload = () => {
+      const saved = localStorage.getItem('calcValue');
+      if(saved) display.value = saved;
+    }
+    
+    function append(val) {
+      display.value += val;
+      saveToLocal();
+    }
+    
+    function calculate() {
+      try {
+        display.value = eval(display.value);
+        saveToLocal(); // SAVE result
+      } catch {
+        display.value = 'Error';
+        setTimeout(() => { display.value = ''; }, 1000);
+      }
+    }
+    
+    // NEW: Delete one character
+    function deleteOne() {
+      display.value = display.value.slice(0, -1);
+      saveToLocal();
+    }
+    
+    // NEW: Clear all
+    function clearAll() {
+      display.value = '';
+      localStorage.removeItem('calcValue'); // CLEAR storage too
+    }
+    
+    function saveToLocal() {
+      localStorage.setItem('calcValue', display.value);
+    }
+  </script>
+</body>
+</html>

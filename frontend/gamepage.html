@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer-when-downgrade" />
+  <title>Game Zone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), 
+                  url("photo_2026-07-27_07-52-03.jpg") center/cover no-repeat fixed;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ad-wrapper { 
+      width: 40%; /* EXACT WIDTH YOU WANT */
+      height: 210px; /* EXACT HEIGHT YOU WANT */
+      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
+      border-radius: 10px;
+       margin-left: 305px; 
+      margin-top: 10px;
+       text-align:center; 
+       margin-bottom: 15px;
+    }
+
+    /* HEADER */
+    header {
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,0.3);
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #ff8a00, #e52e71);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .btn-back {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-back:hover { background: rgb(103, 103, 228); }
+
+    /* MAIN */
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .subtitle {
+      font-size: 18px;
+      opacity: 0.8;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    /* GAME GRID */
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .game-card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .game-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    /* GAME COLORS */
+    .brick { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+    .wave { background: linear-gradient(135deg, #00c9ff, #92fe9d); }
+    .rps { background: linear-gradient(135deg, #f7971e, #ffd200); }
+    .snake { background: linear-gradient(135deg, #56ab2f, #a8e063); }
+    .city { background: linear-gradient(135deg, #4776E6, #8E54E9); }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
+
+   .div{
+  margin-top: 10px;
+  margin-left: 22px;
+  height: 70px;
+}
+
+ @media screen and (max-width: 900px) { 
+  .container{
+    margin-top: 40px;
+  }
+}
+@media screen and (max-width: 600px) {
+ header h1 { font-size: 20px; }
+      .game-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .game-card { padding: 20px 12px; font-size: 15px; }
+  .container{
+    margin-top: 30px;
+  }
+}
+
+  </style>
+</head>
+<body>
+    
+   <script>
+    (function(ihosnhw){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = ihosnhw || {};
+    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    l.parentNode.insertBefore(s, l);
+    })({})
+</script>
+
+
+  <header>
+    <h1>🎮 GAME ZONE</h1>
+    <button class="btn-back logout">← Back</button>
+  </header>
+
+  <div class="container">
+    <p class="subtitle">Pick a game and have fun!</p>
+    
+    <div class="game-grid">
+      <div class="game-card brick">🧱 Brick Breaker</div>
+      <div class="game-card wave">🌊 Wave Defender V2</div>
+      <div class="game-card rps">✊ Rock Paper Scissor</div>
+      <div class="game-card snake">🐍 Snake</div>
+      <div class="game-card city">🚗 City Drive</div>
+    </div>
+  </div>
+
+  <footer>
+    More games coming soon...
+  </footer>
+
+  <script>
+    // Clean button navigation
+    document.querySelector('.brick').onclick = () => window.location.href = "brickgame.html";
+    document.querySelector('.wave').onclick = () => window.location.href = "draginggame.html";
+    document.querySelector('.rps').onclick = () => window.location.href = "rockpaper.html";
+    document.querySelector('.snake').onclick = () => window.location.href = "snakegame.html";
+    document.querySelector('.city').onclick = () => window.location.href = "cityg.html";
+    document.querySelector('.logout').onclick = () => window.location.href = "mainpage.html";
+  </script>
+</body>
+</html>

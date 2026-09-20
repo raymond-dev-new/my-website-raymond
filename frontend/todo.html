@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+   
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOdo List</title>
+
+  <style>
+     /* === MOBILE: 320px+ === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(to right, rgb(129, 129, 153), rgb(146, 116, 125), rgb(136, 102, 102), rgb(116, 116, 74), rgb(226, 202, 202));
+  min-height: 100%;
+  font-family: Arial, sans-serif;
+  padding: 20px 4%;
+}
+
+html, body {
+  height: 100%;
+}
+
+.container {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.input-container {
+  width: 100%;
+  max-width: 500px;
+  background-color: rgb(214, 200, 200);
+  height: auto;
+  border-radius: 5px;
+  padding: 20px 5%;
+  margin-left: 0;
+}
+
+.title {
+  margin-bottom: 20px;
+  margin-left: 0;
+  margin-top: 0;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.add {
+  margin-left: 0;
+  font-size: 24px;
+  font-family: Roboto, Arial, sans-serif;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.input {
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
+  height: 45px;
+  border: none;
+  padding-left: 5%;
+  padding-right: 5%;
+  margin-left: 0;
+  border-radius: 5px;
+  background-color: rgb(228, 217, 217);
+}
+
+.bu {
+  font-size: 18px;
+  font-weight: 700;
+  width: 100%;
+  height: 45px;
+  border: none;
+  border-radius: 5px;
+  background-color: #333;
+  color: white;
+  cursor: pointer;
+}
+
+.con {
+  height: auto;
+  min-height: 300px;
+  width: 100%;
+  max-width: 500px;
+  border: 3px solid rgb(177, 168, 168);
+  border-radius: 7px;
+  margin-top: 15px;
+  background-color: rgb(248, 246, 246);
+  padding: 15px 4%;
+}
+
+.radio-con, .Todo {
+  padding: 12px 3%;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px 1fr 50px 50px;
+  gap: 8px;
+  border-radius: 7px;
+  margin-top: 10px;
+  background-color: white;
+  align-items: center;
+}
+
+input[type="radio"] {
+  transform: scale(1.2);
+  margin-left: 0;
+  margin-right: 0;
+  justify-self: center;
+}
+
+.todo {
+  font-size: 16px;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.edit, .delete, .de {
+  font-size: 14px;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.edit {
+  color: #2980b9;
+}
+
+.delete, .de {
+  color: #c0392b;
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  left: 5%;
+  right: 5%;
+  margin-left: 0;
+  margin-top: 0;
+  padding: 12px 4%;
+  background-color: red;
+  margin-bottom: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  border-radius: 8px;
+  display: none;
+  transition: opacity 0.5s ease;
+  text-align: center;
+  z-index: 1000;
+}
+
+.notification.show {
+  display: block;
+}
+
+.noti {
+  display: none;
+}
+
+/* === TABLET: 600px+ === */
+@media (min-width: 600px) {
+  body {
+    padding: 30px 5%;
+  }
+
+  .container {
+    margin-top: 30px;
+  }
+
+  .input-container {
+    padding: 25px 5%;
+  }
+
+  .title {
+    font-size: 30px;
+    margin-bottom: 25px;
+  }
+
+  .add {
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+
+  .input {
+    font-size: 18px;
+    height: 50px;
+    width: 65%;
+    margin-right: 3%;
+    margin-bottom: 0;
+    display: inline-block;
+  }
+
+  .bu {
+    font-size: 20px;
+    width: 30%;
+    height: 50px;
+    display: inline-block;
+  }
+
+  .con {
+    padding: 20px 4%;
+    margin-top: 20px;
+  }
+
+  .radio-con, .Todo {
+    grid-template-columns: 35px 1fr 60px 60px;
+    padding: 15px 3%;
+  }
+
+  .todo {
+    font-size: 18px;
+  }
+
+  .edit, .delete, .de {
+    font-size: 16px;
+  }
+
+  .notification {
+    left: auto;
+    right: 5%;
+    width: 300px;
+    font-size: 18px;
+  }
+}
+
+/* === DESKTOP: 1024px+ === */
+@media (min-width: 1024px) {
+  .title {
+    font-size: 35px;
+  }
+
+  .add {
+    font-size: 35px;
+  }
+
+  .input {
+    font-size: 20px;
+    width: 200px;
+    margin-left: 12px;
+    margin-right: 0;
+  }
+
+  .bu {
+    font-size: 25px;
+    width: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .todo {
+    font-size: 22px;
+  }
+
+  .edit, .delete, .de {
+    font-size: 20px;
+  }
+
+  .notification {
+    right: 50px;
+    width: auto;
+    font-size: 22px;
+  }
+}
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+  <div class="input-container">  
+   <h1 class="title"> Daily Activities Todo </h1>
+   <form class="form">
+    <span class="span"> 
+      <input class="input js-todo" type="text" name="newtodo" placeholder="i will do .....">
+    </span>
+
+    <span class="add"> <button class="bu" type="submit"> + </button> </span>
+    </form>
+    
+  </div>
+
+    <div class="con">
+  
+   <!-- <span>
+       <input class="radio" type="radio" name="theme">
+    </span>
+    <span class="todo" id="0">Go get milk</span>
+
+    <span class="edit"> <button class="de"> Edit </button> </span>
+
+    <span class="delete"> <button class="de"> Delete </button> </span>
+    -->
+  
+  </div>
+  <div class="noti">h</div>
+  </div>
+  
+  <script>
+   const form = document.querySelector('.form')
+   const todoInput = document.querySelector('.js-todo')
+  const todoListEl = document.querySelector('.con')
+  const notification = document.querySelector('.noti')
+
+   
+   let todos = JSON.parse(localStorage.getItem('todo')) || []; 
+   let EdithTodoId = -1
+
+   renderTodos()
+
+    form.addEventListener('submit', (event) => {
+       event.preventDefault()
+
+       saveTodo()
+       renderTodos()
+       localStorage.setItem('todo', JSON.stringify(todos))
+    });
+
+    function saveTodo() {
+      const todoValue = todoInput.value
+
+      const isEmpty = todoValue === '';
+
+      const isDuplicate = todos.some((todo) => {
+       return todo.value.toUpperCase() === todoValue.toUpperCase() 
+      })
+
+     
+
+      if (isEmpty) {
+       showNotification("Todo's input is empty")
+
+      } else if (isDuplicate) {
+         showNotification('Todo already exist')
+      } else {
+        if (EdithTodoId >= 0) {
+        todos = todos.map((todo, index) => {
+            return {
+              ...todo,
+              value: index === EdithTodoId ? todoValue : todo.value
+            }
+          });
+          EdithTodoId = -1;
+      } else {
+         todos.push({
+        value : todoValue,
+        checked : false,
+        color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+     })
+    }
+      
+
+      todoInput.value = "";
+      }
+   }   
+   
+   function renderTodos() {
+       todoListEl.innerHTML = "";
+    
+      todos.forEach((todo, index) => {
+        todoListEl.innerHTML += `
+        <div class="radio-con" id="${index}"> 
+        <span>
+       <input style="color: ${todo.color}" class="radio" type="radio" name="theme" data-action="check">
+        </span>
+        <span class="todo" data-action="check">${todo.value}</span>
+
+        <span class="edit"> <button class="de" data-action="edit"> Edit </button> </span>
+
+        <span class="delete"> <button class="de" data-action="delete"> Delete </button> </span>
+        </div>
+        `
+      })
+   }
+
+   todoListEl.addEventListener('click', (event) => {
+     const target = event.target
+      const parentElement = target.closest('.radio-con');
+        if (!parentElement) return
+
+        const todo = parentElement
+        const todoId = Number(todo.id); 
+
+       const action = target.dataset.action
+
+       //action === 'check' && checkTodo(todoId);
+        action === 'edit' && editTodo(todoId);
+       action === 'delete' && deleteTodo(todoId);
+
+   })
+ 
+    /* function checkTodo(todoId) {
+     todos = todos.map((todo, index) => 
+          ({
+             ...todo,
+            checked: index === todoId ? !todo.checked : todo.checked
+          }));
+      
+      renderTodos();
+      localStorage.setItem('todo', JSON.stringify(todos))
+     }; */
+
+
+     function editTodo(todoId) {
+       todoInput.value = todos[todoId].value 
+       EdithTodoId = todoId
+     }
+
+     function deleteTodo(todoId) {
+     todos = todos.filter((todo, index) => index !== todoId)
+      EdithTodoId = -1;
+       renderTodos();
+       localStorage.setItem('todo', JSON.stringify(todos))
+     }
+
+     function showNotification(msg) {
+       notification.innerHTML = msg 
+
+       notification.classList.add('notification')
+
+       setTimeout(() => {
+         notification.classList.remove('notification')
+       }, 2000)
+       
+     }
+    
+  </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register</title>
+  <style>
+
+    /* === MOBILE: 320px+ === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-image: url("photo_2026-07-27_07-52-03 (2).jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 100%;
+  font-family: Arial, sans-serif;
+  padding: 20px 4%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+html, body {
+  height: 100%;
+}
+
+h1 {
+  font-weight: 700;
+  font-size: 28px;
+  margin: 0 0 20px 0;
+  text-align: center;
+  color: #fff;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+  width: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: rgba(0,0,0,0.4);
+  padding: 25px 5%;
+  border-radius: 10px;
+  margin-top: 0;
+}
+
+.p {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  color: white;
+}
+
+.name, .email, .password {
+  font-size: 16px;
+  padding: 12px 4%;
+  font-weight: 600;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 100%;
+}
+
+.name:focus, .email:focus, .password:focus {
+  outline: none;
+  border-color: green;
+}
+
+button {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  background-color: green;
+  color: white;
+  padding: 14px 5%;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+}
+
+button:active {
+  background-color: #006400;
+}
+
+.span {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  color: white;
+}
+
+.link {
+  font-size: 16px;
+  font-weight: 700;
+  color: blue;
+  text-decoration: none;
+}
+
+/* === TABLET: 600px+ === */
+@media (min-width: 600px) {
+  body {
+    padding: 30px 5%;
+  }
+
+  h1 {
+    font-size: 35px;
+    margin-bottom: 30px;
+  }
+
+  .container {
+    padding: 35px 6%;
+    gap: 18px;
+    max-width: 450px;
+  }
+
+  .p {
+    font-size: 21px;
+  }
+
+  .name, .email, .password {
+    font-size: 18px;
+    padding: 14px 4%;
+  }
+
+  button {
+    font-size: 20px;
+    padding: 16px 5%;
+  }
+
+  .span, .link {
+    font-size: 18px;
+  }
+}
+
+/* === DESKTOP: 1024px+ === */
+@media (min-width: 1024px) {
+  body {
+    justify-content: center;
+  }
+
+  h1 {
+    font-size: 40px;
+  }
+}
+     </style>
+</head>
+<body>
+  
+  <div class="container">
+    <h1> Register </h1>
+    
+   <p class="p"> Name</p>
+   <input class="name" type="text" placeholder="Name" required>
+
+    <p class="p"> Email </p>
+   <input class="email" type="email" placeholder="Email" required>
+
+    <p class="p" class="password"> Password </p>
+   <input class="password" type="password" placeholder="Password" required>
+
+   <button>  Sign up</button>
+
+    <span class="span">
+    Already have an accoung
+     <a class="link" href="login.html"> Login </a>
+    </span>
+
+   </div>
+    
+
+   <script>
+    const Name = document.querySelector('.name')
+      const email = document.querySelector('.email')
+        const password = document.querySelector('.password')
+         const button = document.querySelector('button')
+
+         button.addEventListener('click', async () => {
+          //http://localhost:8000
+           const response = await fetch('https://raymonddomain.dev/register', {
+            method: 'POST', 
+            headers: {
+                 'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: Name.value,
+              email: email.value,
+              passwords: password.value
+            })
+          })
+
+        const result = await response.json() 
+         //  console.log(result)
+        if(result.status === 'ok') {
+          window.location.href="login.html"
+        } else {
+          alert(result.error)
+        }
+
+         })
+   </script>
+</body>
+</html>

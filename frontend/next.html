@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+
+  <title>Private Space</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                  url("photo_2026-07-27_08-21-15.jpg") center/cover no-repeat fixed;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+    }
+
+    
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #4b75ff, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-logout {
+      background: #ff4757;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover {
+      background: #e84118;
+      transform: translateY(-2px);
+    }
+
+    .ad-wrapper { 
+      width: 40%; /* EXACT WIDTH YOU WANT */
+      height: 210px; /* EXACT HEIGHT YOU WANT */
+      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
+      border-radius: 10px;
+       margin-left: 440px; 
+      margin-top: 10px;
+       text-align:center; 
+       margin-bottom: 15px;
+    }
+
+   
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 15px 12px;
+      margin-top: 100px;
+    }
+
+    .welcome {
+      text-align: center;
+      margin-bottom: 15px;
+      margin-top: 8px;
+    }
+    .welcome h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .welcome p {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 50%;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .card.diary { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .card.expense { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .card.quiz { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .card.todo { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .card.calc { background: linear-gradient(135deg, #fa709a, #fee140); }
+    .card.design { background: linear-gradient(135deg, #30cfd0, #330867); }
+    .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; }
+    .whot { background: linear-gradient(135deg, #1b02ff, #52a35f); grid-column: span 2; }
+
+    footer {
+      text-align: center;
+      padding: 10px;
+      font-size: 10px;
+      opacity: 0.6;
+    }
+
+  .div{
+  margin-top: 10px;
+  margin-left: 22px;
+  height: 70px;
+}
+
+@media screen and (max-width: 900px) { 
+  .ad-wrapper{
+   width: 50%;
+   justify-self: center;
+   height: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin-left: 210px;
+  }
+}
+@media screen and (max-width: 600px) {
+  header h1 { font-size: 15px; }
+      .welcome h2 { font-size: 18px; }
+      .dashboard { gap: 8px; max-width: 90%; }
+      .card { padding: 10px 8px; font-size: 11px; border-radius: 10px; }
+      .card.game, .whot { grid-column: span 2; }
+      .container { padding: 12px 10px; margin-top: 100px;}
+  .ad-wrapper{
+   width: 85%;
+   height: 120px;
+    background: rgba(255,255,255,0.05); 
+    border-radius: 10px;
+    margin-left: 8px;
+  }
+}
+
+  </style>
+</head>
+<body>
+
+
+  <script>
+    (function(ihosnhw){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = ihosnhw || {};
+    s.src = "\/\/surefootedpause.com\/cGDt9S6Nb.2y5rlPSUWIQ\/9PNbzdQRzjOCDhUUyCNfSk0d3\/NwDSMo4iN-ThI\/5g";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    l.parentNode.insertBefore(s, l);
+    })({})
+</script>
+
+
+  <header>
+    <h1>Private Space</h1>
+    <button class="btn-logout logout">← Back</button>
+  </header>
+   
+    
+  <div class="container">
+    <div class="welcome">
+      <h2 style="margin-top: 20px;">Welcome Back 👋</h2>
+      <p>Choose what you want to do today</p>
+    </div>
+
+    <div class="dashboard">
+      <div class="card diary">📓 Diary</div>
+      <div class="card expense">💰 Expense</div>
+      <div class="card quiz">🧠 Quiz</div>
+      <div class="card todo">✅ Todo</div>
+      <div class="card calc">🧮 Calculator</div>
+      <div class="card design">🎨 Designers</div>
+      <div class="card whot"> Whot </div>
+      <div class="card game">♟ Draughts</div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelector('.whot').onclick = () => window.location.href = "whot.html";
+    document.querySelector('.diary').onclick = () => window.location.href = "mycorner.html";
+    document.querySelector('.expense').onclick = () => window.location.href = "expense.html";
+    document.querySelector('.quiz').onclick = () => window.location.href = "quiz.html";
+    document.querySelector('.todo').onclick = () => window.location.href = "todo.html";
+    document.querySelector('.calc').onclick = () => window.location.href = "calculate.html";
+    document.querySelector('.design').onclick = () => window.location.href = "design.html";
+    document.querySelector('.game').onclick = () => window.location.href = "drat.html";
+    document.querySelector('.logout').onclick = () => window.location.href = "mainpage.html";
+  </script>
+</body>
+</html>
