@@ -127,7 +127,7 @@ function renderMatch(match){
         <div class="team-name">${match.away.name}</div>
       </div>
     </div>
-    <small class="ann"> Extra time might show as 90 that is a glitch from api </small>
+    
     <button class="btn btn-details" onclick="showDetails('Coming Soon')">Line Up</button>
     <button class="btn btn-watch" onclick="window.open('${youtubeLink}', '_blank')">▶ Watch Live</button>
   </div> `
@@ -142,12 +142,14 @@ function groupMatchesByDate(matches){
   });
   return groups;
 }
+
 function renderGrouped(matches, tab){
     const container = document.getElementById('matches');
     if(!matches || matches.length === 0){
       container.innerHTML = `<div class="no-matches">No matches found</div>`;
       return;
     }
+
     const grouped = groupMatchesByDate(matches);
     let html = '';
     let dates = Object.keys(grouped).sort((a,b) => new Date(grouped[b][0].date) - new Date(grouped[a][0].date)? -1 : 1);
