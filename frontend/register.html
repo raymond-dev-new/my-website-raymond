@@ -178,7 +178,7 @@ button:active {
     
 
    <script>
-    const Name = document.querySelector('.name').value.trim()
+    const Name = document.querySelector('.name')
       const email = document.querySelector('.email')
         const password = document.querySelector('.password')
          const button = document.querySelector('button')
@@ -191,7 +191,7 @@ button:active {
                  'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              name: Name,
+              name: Name.value,
               email: email.value,
               passwords: password.value
             })
