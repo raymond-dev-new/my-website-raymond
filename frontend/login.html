@@ -3,185 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register</title>
+  <title>Login</title>
   <style>
-   /* === MOBILE: 320px+ === */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  margin: 0; padding: 0; box-sizing: border-box;
 }
-
 body {
   background-image: url("photo_2026-07-27_07-52-03 (2).jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  min-height: 100%;
-  font-family: Arial, sans-serif;
-  padding: 20px 4%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  min-height: 100%; font-family: Arial, sans-serif;
+  padding: 20px 4%; display: flex; flex-direction: column; align-items: center;
 }
-
-html, body {
-  height: 100%;
-}
-
+html, body { height: 100%; }
 h1 {
-  font-weight: 700;
-  font-size: 28px;
-  margin: 0 0 20px 0;
-  text-align: center;
-  color: #fff;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-  width: 100%;
+  font-weight: 700; font-size: 28px; margin: 0 0 20px 0; text-align: center;
+  color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); width: 100%;
 }
-
 .container {
-  width: 100%;
-  max-width: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  background: rgba(0,0,0,0.4);
-  padding: 25px 5%;
-  border-radius: 10px;
-  margin-top: 20px;
+  width: 100%; max-width: 420px; display: flex; flex-direction: column;
+  gap: 15px; background: rgba(0,0,0,0.4); padding: 25px 5%;
+  border-radius: 10px; margin-top: 20px;
 }
-
-.p {
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-  color: #fff;
-}
-
+.p { font-size: 20px; font-weight: 700; text-align: center; color: #fff; }
 .name, .email, .password {
-  font-size: 16px;
-  padding: 12px 4%;
-  font-weight: 600;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  width: 100%;
+  font-size: 16px; padding: 12px 4%; font-weight: 600;
+  border: 1px solid #ccc; border-radius: 5px; width: 100%;
 }
-
-.name:focus, .email:focus, .password:focus {
-  outline: none;
-  border-color: rgb(0, 255, 213);
-}
-
+.name:focus, .email:focus, .password:focus { outline: none; border-color: rgb(0, 255, 213); }
 button {
-  margin-top: 15px;
-  font-size: 18px;
-  font-weight: 700;
-  background-color: green;
-  color: white;
-  padding: 14px 5%;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  width: 100%;
+  margin-top: 15px; font-size: 18px; font-weight: 700; background-color: green;
+  color: white; padding: 14px 5%; border: none; border-radius: 10px;
+  cursor: pointer; width: 100%; display: flex; justify-content: center;
+  align-items: center; gap: 8px; transition: 0.3s;
 }
-
-button:active {
-  background-color: #006400;
-}
-
+button:active { background-color: #006400; }
+button:disabled { opacity: 0.7; cursor: not-allowed; }
 .span {
-  margin-top: 20px;
-  font-size: 16px;
-  font-weight: 700;
-  text-align: center;
-  color: #fff;
+  margin-top: 20px; font-size: 16px; font-weight: 700; text-align: center; color: #fff;
 }
-
 .link {
-  font-size: 16px;
-  font-weight: 700;
-  color: rgb(0, 255, 213);
-  text-decoration: none;
+  font-size: 16px; font-weight: 700; color: rgb(0, 255, 213); text-decoration: none;
 }
-
 .linkk {
-  font-size: 20px;
-  font-weight: 700;
-  color: rgb(47, 0, 255);
-  text-decoration: none;
-  display: grid;
-  justify-content: center;
-  align-items: center;
+  font-size: 20px; font-weight: 700; color: rgb(47, 0, 255); text-decoration: none;
+  display: grid; justify-content: center; align-items: center;
 }
+/* SWEET LOADER */
+.loader {
+  width: 20px; height: 20px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* === TABLET: 600px+ === */
 @media (min-width: 600px) {
-  body {
-    padding: 30px 5%;
-  }
-
-  h1 {
-    font-size: 35px;
-    margin-bottom: 30px;
-  }
-
-  .container {
-    padding: 35px 6%;
-    gap: 18px;
-    max-width: 480px;
-    margin-top: 30px;
-  }
-
-  .p {
-    font-size: 25px;
-  }
-
-  .name, .email, .password {
-    font-size: 18px;
-    padding: 14px 4%;
-  }
-
-  button {
-    font-size: 22px;
-    padding: 16px 5%;
-    margin-top: 20px;
-  }
-
-  .span {
-    font-size: 18px;
-    margin-top: 25px;
-  }
-
-  .link {
-    font-size: 18px;
-  }
+  body { padding: 30px 5%; }
+  h1 { font-size: 35px; margin-bottom: 30px; }
+  .container { padding: 35px 6%; gap: 18px; max-width: 480px; margin-top: 30px; }
+  .p { font-size: 25px; }
+  .name, .email, .password { font-size: 18px; padding: 14px 4%; }
+  button { font-size: 22px; padding: 16px 5%; margin-top: 20px; }
+  .span { font-size: 18px; margin-top: 25px; }
+  .link { font-size: 18px; }
 }
-
-/* === DESKTOP: 1024px+ === */
 @media (min-width: 1024px) {
-  body {
-    justify-content: center;
-  }
-
-  h1 {
-    font-size: 40px;
-  }
-
-  .p {
-    font-size: 28px;
-  }
-
-  .name, .email, .password {
-    font-size: 20px;
-  }
-
-  button {
-    font-size: 24px;
-  }
-
-  .span, .link {
-    font-size: 20px;
-  }
+  body { justify-content: center; }
+  h1 { font-size: 40px; }
+  .p { font-size: 28px; }
+  .name, .email, .password { font-size: 20px; }
+  button { font-size: 24px; }
+  .span, .link { font-size: 20px; }
 }
   </style>
 </head>
@@ -196,10 +89,10 @@ button:active {
     <p class="p"> Email </p>
    <input class="email" type="email" placeholder="Email" required>
 
-    <p class="p" class="password"> Password </p>
+    <p class="p"> Password </p>
    <input class="password" type="password" placeholder="Password" required>
 
-   <button>  Sign in </button>
+   <button id="signinBtn">Sign in</button>
 
     <span class="span">
     Dont have account yet?
@@ -211,44 +104,57 @@ button:active {
 
    <script>
      const Name = document.querySelector('.name')
-      const email = document.querySelector('.email')
-        const password = document.querySelector('.password')
-         const button = document.querySelector('button')
-          //http://localhost:8000
-          //https://my-website-raymond.vercel.app
-          async function loginUser() {
-          const response = await fetch('https://my-website-raymond.vercel.app/login', {
-            method: 'POST', 
-            headers: {
-                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              name: Name.value,
-              email: email.value,
-              password: password.value
-            })
-          })
+     const email = document.querySelector('.email')
+     const password = document.querySelector('.password')
+     const button = document.getElementById('signinBtn')
 
-        const result = await response.json() 
-        return result
-       }
+     async function loginUser() {
+       const response = await fetch('https://my-website-raymond.vercel.app/login', {
+         method: 'POST', 
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+           name: Name.value.trim(),
+           email: email.value.trim(),
+           password: password.value.trim()
+         })
+       })
+       return await response.json()
+     }
         
-          
-         button.addEventListener('click', async () => {
-            const result = await loginUser()
-           // console.log(result.Name)
+     button.addEventListener('click', async () => {
+       // validate
+       if(!Name.value.trim() || !email.value.trim() || !password.value.trim()){
+         alert("Please fill all fields");
+         return;
+       }
 
-          if(result.status === 'ok') {
-          localStorage.setItem('token', result.data)
-          localStorage.setItem('Name', result.Name)
-          window.location.href="mainpage.html"
-         
-        } else {
-          alert(result.error)
-        }
+       // SWEET LOADING
+       const originalText = button.innerHTML;
+       button.disabled = true;
+       button.innerHTML = `<span class="loader"></span> Signing in...`;
 
-        })
+       try {
+         const result = await loginUser()
 
+         if(result.status === 'ok') {
+           localStorage.setItem('token', result.data)
+           localStorage.setItem('Name', result.Name)
+           button.innerHTML = `✓ Welcome!`;
+           button.style.background = "#0a5a1e";
+           setTimeout(()=> {
+             window.location.href="mainpage.html"
+           }, 600);
+         } else {
+           alert(result.error || "Login failed")
+           button.disabled = false;
+           button.innerHTML = originalText;
+         }
+       } catch(err){
+         alert("Network error, try again");
+         button.disabled = false;
+         button.innerHTML = originalText;
+       }
+     })
    </script>
 </body>
 </html>
