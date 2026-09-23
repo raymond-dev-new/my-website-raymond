@@ -284,7 +284,7 @@
     </div>
 
     <script>
-      
+
         const API = "https://raymonddomain.dev/api/matches";
         let liveInterval = null;
 
@@ -380,7 +380,7 @@
                 if (hasLive && tab === "upcoming") liveInterval = setInterval(() => loadMatches(tab, btn), 60000);
 
             } catch (err) {
-                container.innerHTML = `<div class="no-big">❌ Cannot connect to backend<br>Make sure server is running on port 8000<br><br><b>Open: http://127.0.0.1:8000/</b><br>Not 5500<br><br>Error: ${err.message}</div>`;
+                container.innerHTML = `<div class="no-big"> </div>`;
             }
         }
 
