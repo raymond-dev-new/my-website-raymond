@@ -546,8 +546,8 @@ app.get("/api/matches", async (req, res) => {
 // 5 times per day = 5 x 2 calls = 10 calls/day total = VERY SAFE
 // These times are in UTC, but we log in WAT (Lagos time)
 const syncTimesUTC = [
-  "10 22 * * *", // 23:10 WAT - night
-  "0 3 * * *", // 04:00 WAT - morning
+  "50 0 * * *", // 01:50 WAT - early morning
+  "38 5 * * *", // 06:38 WAT - morning
   "26 10 * * *", // 11:26 WAT - noon
   "14 15 * * *", // 16:14 WAT - afternoon
   "2 20 * * *", // 21:02 WAT - night
