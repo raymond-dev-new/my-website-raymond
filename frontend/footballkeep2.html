@@ -1,446 +1,195 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Football</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif
-        }
-
-        body {
-            background: #000;
-            color: #fff;
-            padding: 15px
-        }
-
-       .div {
-            justify-self: center;
-            width: 70%
-        }
-
-       .header-text {
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 6px;
-            font-weight: 800
-        }
-
-        small {
-            font-weight: 700;
-            display: block;
-            text-align: center;
-            font-size: 14px;
-            line-height: 1.4;
-            color: #d1d5db
-        }
-
-       .small {
-            margin-bottom: 15px;
-            color: #9ca3af
-        }
-
-       .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            margin-top: 15px
-        }
-
-       .tab {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer
-        }
-
-       .tab.upcoming {
-            background: #14532d;
-            color: #6b7280
-        }
-
-       .tab.finished {
-            background: #7f1d1d;
-            color: #6b7280
-        }
-
-       .tab.active.upcoming {
-            background: #16a34a!important;
-            color: #fff!important
-        }
-
-       .tab.active.finished {
-            background: #dc2626!important;
-            color: #fff!important
-        }
-
-        #break-banner {
-            background: #111;
-            border: 2px solid #f59e0b;
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 18px;
-            text-align: center;
-            display: none
-        }
-
-        #break-banner b.title {
-            color: #f59e0b;
-            font-size: 15px;
-            display: block;
-            margin-bottom: 8px
-        }
-
-        #break-banner p {
-            color: #d1d5db;
-            font-size: 14px;
-            line-height: 1.4
-        }
-
-        #break-banner span.resume {
-            color: #16a34a;
-            font-weight: 700;
-            display: block;
-            margin-top: 10px;
-            font-size: 13px;
-            line-height: 1.5
-        }
-
-       .date-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #3b82f6;
-            font-size: 16px;
-            font-weight: 700;
-            margin: 20px 0 12px 0
-        }
-
-       .match-card {
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 15px
-        }
-
-       .league {
-            color: #f59e0b;
-            font-weight: 700;
-            font-size: 15px;
-            margin-bottom: 6px
-        }
-
-       .match-date {
-            color: #9ca3af;
-            font-size: 13px;
-            margin-bottom: 15px
-        }
-
-       .teams {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            text-align: center;
-            margin-bottom: 12px
-        }
-
-       .team {
-            flex: 1
-        }
-
-       .team img {
-            width: 50px;
-            height: 50px;
-            object-fit: contain;
-            margin-bottom: 8px
-        }
-
-       .team-name {
-            font-size: 14px;
-            font-weight: 600;
-            line-height: 1.3
-        }
-
-       .score-area {
-            flex: 0 0 90px
-        }
-
-       .score {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 8px
-        }
-
-       .badge {
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            display: inline-block;
-            background: #2563eb;
-            color: white;
-            line-height: 1.3;
-            text-align: center
-        }
-
-       .badge.live {
-            background: #dc2626
-        }
-
-       .btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 15px;
-            cursor: pointer
-        }
-
-       .btn-details {
-            background: #1f2937;
-            color: #fff
-        }
-
-       .btn-watch {
-            background: #dc2626;
-            color: #fff
-        }
-
-       .scorers-box {
-            margin-top: 12px;
-            background: #1e1e1e;
-            border-left: 3px solid #f59e0b;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            line-height: 1.8
-        }
-
-       .no-big {
-            text-align: center;
-            color: #666;
-            padding: 30px 10px;
-            font-size: 14px;
-            line-height: 1.5
-        }
-
-       .loading {
-            text-align: center;
-            color: #888;
-            padding: 30px
-        }
-
-        @media(max-width:900px) {
-           .div {
-                width: 90%
-            }
-        }
-
-        @media(max-width:600px) {
-           .div {
-                width: 100%
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer-when-downgrade" />
+<title>Football Scores - Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+.div{ justify-self: center; width: 70%; }
+body { background: #000; color: #fff; padding: 15px; }
+.header-text { text-align: center; color: #fff; font-size: 25px; margin-bottom: 15px; }
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.tab { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s; }
+.tab.upcoming { background: #16a34a; color: #fff; }
+.tab.finished { background: #dc2626; color: #fff; }
+.tab.inactive { opacity: 0.5; }
+.date-header { display: flex; align-items: center; gap: 8px; color: #3b82f6; font-size: 16px; font-weight: 700; margin: 20px 0 12px 0; }
+.match-card { background: #111; border: 1px solid #222; border-radius: 16px; padding: 15px; margin-bottom: 15px; }
+.league { color: #f59e0b; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.match-date { color: #9ca3af; font-size: 13px; margin-bottom: 15px; }
+.teams { display: flex; align-items: center; justify-content: space-between; text-align: center; margin-bottom: 12px; }
+.team { flex: 1; }
+.team img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px; }
+.team-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.score-area { flex: 0 0 90px; }
+.score { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.badge { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; display: inline-block; background: #2563eb; color: white; line-height: 1.3; text-align:center; }
+.badge.live { background: #dc2626; animation: pulse 1s infinite; }
+@keyframes pulse { 0%{opacity:1} 50%{opacity:0.6} 100%{opacity:1} }
+.btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; }
+.btn-details { background: #1f2937; color: #fff; }
+.btn-watch { background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.no-matches { text-align: center; color: #666; padding: 40px 0; }
+.loading { text-align: center; color: #888; padding: 30px; }
+small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; justify-content: center; }
+.small{ font-weight: 700; padding-bottom: 15px; display: grid; font-size: 15px; justify-content: center; }
+#break-banner{ display:none; background: #1a1a1a; border: 2px solid #f59e0b; border-radius: 14px; padding: 16px; margin-bottom: 18px; text-align:center; }
+#break-banner b.title{ color:#f59e0b; font-size:16px; display:block; margin-bottom:6px; }
+#break-banner p{ color:#d1d5db; font-size:14px; line-height:1.4; }
+#break-banner span.resume{ color:#16a34a; font-weight:800; display:block; margin-top:8px; font-size:14px; }
+.scorers-box{ margin-top:12px; background:#1e1e1e; border-left:3px solid #f59e0b; padding:10px 12px; border-radius:8px; font-size:13px; line-height:1.6; }
+.scorers-box b{ color:#f59e0b; }
+@media screen and (max-width: 900px) {.div{ width: 90%; } }
+@media screen and (max-width: 600px) {.div{ width: 100%; } }
+</style>
 </head>
-
 <body>
-
- <script>
-    (function(ihosnhw){
-    var d = document,
-        s = d.createElement('script'),
-        l = d.currentScript || d.scripts[d.scripts.length - 1];
-    s.settings = ihosnhw || {};
-    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-    l.parentNode.insertBefore(s, l);
-    })({})
+ <div class="div">
+  <h1 class="header-text"> Live Football ⚽ </h1>
+  <small> Finish Match Will Show In Finished Tab</small>
+  <small class="small"> within Some Hours </small>
+<div class="tabs">
+  <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming & Live</button>
+  <button class="tab finished" onclick="loadMatches('finished', this)">Finished</button>
+</div>
+<div id="break-banner">
+  <b class="title">⚠️ Big Leagues on International Break</b>
+  <p>Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 and Champions League matches have finished for now.</p>
+  <span class="resume">They will resume on Friday 10th October 2026 — Liverpool vs Man City, Arsenal vs Leeds, Real Madrid vs Villarreal, Barcelona vs Getafe. <br> Click on finish tab to check past match </span>
+</div>
+<div id="matches"></div>
+</div>
+<script>
+const API = "https://raymonddomain.dev/api/matches";
+let currentTab = 'upcoming';
+let currentBtn = null;
+let liveInterval = null;
+let cache = {
+  upcoming: JSON.parse(localStorage.getItem('cache_upcoming') || '[]'),
+  finished: JSON.parse(localStorage.getItem('cache_finished') || '[]')
+};
+function formatDateHeader(dateStr){
+  const d = new Date(dateStr);
+  return `📅 ${d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}`;
+}
+function formatFullDate(dateStr){
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) + " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
+}
+function getStatusBadge(match){
+  if(match.status === "IN_PLAY"){
+    let minute = match.minute || 0;
+    if(minute === 0) return `<span class="badge live">LIVE<br>0'</span>`;
+    if(minute === 45 || match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
+    return `<span class="badge live">LIVE<br>${minute}'</span>`
+  }
+  if(match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
+  if(match.status === "FINISHED") return `<span class="badge" style="background:#16a34a">FINISH</span>`
+  return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
+}
+function getYouTubeLink(match){
+  const query = `${match.home.name} vs ${match.away.name} live stream`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+}
+function cleanLeagueName(name){
+  if(!name) return name;
+  if(name.toLowerCase().includes("primera division")) return "LaLiga EA Sports";
+  return name;
+}
+function renderMatch(match){
+  const youtubeLink = getYouTubeLink(match);
+  let scorersHtml = "";
+  if(match.scorers && match.scorers.length > 0){
+    scorersHtml = `<div class="scorers-box"><b>⚽ Goals:</b><br>${match.scorers.map(s => ` ${s.minute}' - ${s.player} <span style="color:#9ca3af">(${s.team})</span>`).join('<br>')}</div>`;
+  }
+  return `<div class="match-card"><div class="league">${cleanLeagueName(match.league)}</div><div class="match-date">${formatFullDate(match.date)}</div><div class="teams"><div class="team"><img src="${match.home.logo}" onerror="this.src='https://via.placeholder.com/50'" alt="${match.home.name}"><div class="team-name">${match.home.name}</div></div><div class="score-area"><div class="score">${match.homeScore?? 0} - ${match.awayScore?? 0}</div>${getStatusBadge(match)}</div><div class="team"><img src="${match.away.logo}" onerror="this.src='https://via.placeholder.com/50'" alt="${match.away.name}"><div class="team-name">${match.away.name}</div></div></div>${scorersHtml}<button class="btn btn-details" onclick="showDetails('Coming Soon')">Line Up</button><button class="btn btn-watch" onclick="window.open('${youtubeLink}', '_blank')">▶ Watch Live</button></div>`
+}
+function groupMatchesByDate(matches){
+  const groups = {}; matches.forEach(match => { const d = new Date(match.date); const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; if(!groups[dateKey]) groups[dateKey] = []; groups[dateKey].push(match); }); return groups;
+}
+function isBigLeague(leagueName){
+  if(!leagueName) return false; const n = leagueName.toLowerCase();
+  return n.includes("premier league") || n.includes("primera division") || n.includes("la liga") || n.includes("laliga") || n.includes("bundesliga") || n.includes("serie a") || n.includes("ligue 1") || n.includes("champions league");
+}
+function updateBreakBanner(matches, tab){
+  const banner = document.getElementById('break-banner'); if(tab!== 'upcoming'){ banner.style.display = 'none'; return; } const bigMatches = matches.filter(m => isBigLeague(m.league)); if(matches.length === 0 || bigMatches.length === 0){ banner.style.display = 'block'; } else { banner.style.display = 'none'; }
+}
+function renderGrouped(matches, tab){
+    const container = document.getElementById('matches'); updateBreakBanner(matches, tab);
+    if(!matches || matches.length === 0){ container.innerHTML = `<div class="no-matches"> No upcoming big league matches found — showing break notice above. Small leagues may still appear below when available. </div>`; return; }
+    const grouped = groupMatchesByDate(matches); let html = ''; let dates = Object.keys(grouped).sort((a,b) => new Date(grouped[a][0].date) - new Date(grouped[b][0].date));
+    if(tab === 'finished') dates = dates.reverse();
+    dates.forEach(dateKey => { html += `<div class="date-header">${formatDateHeader(grouped[dateKey][0].date)}</div>`; grouped[dateKey].forEach(match => { html += renderMatch(match); }); });
+    container.innerHTML = html;
+}
+function showNetworkError(hasCache){
+  const container = document.getElementById('matches');
+  if(hasCache){ let toast = document.getElementById('net-toast'); if(!toast){ toast = document.createElement('div'); toast.id = 'net-toast'; toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;z-index:9999;font-weight:700;'; document.body.appendChild(toast); } toast.textContent = '⚠️ You have a network problem - showing saved data'; setTimeout(()=> toast.remove(), 3000); return; }
+  container.innerHTML = `<div style="text-align:center; padding:60px 20px; color:#fff;"><div style="font-size:50px; margin-bottom:10px;">📡</div><p style="font-size:18px; font-weight:700;">You have a network problem</p><p style="color:#9ca3af; margin-top:8px;">Check your data connection and try again</p><button onclick="currentBtn && loadMatches(currentTab, currentBtn)" style="margin-top:20px; padding:12px 24px; background:#16a34a; border:none; border-radius:10px; color:white; font-weight:700; cursor:pointer;">Retry</button></div>`;
+}
+async function loadMatches(tab, btn){
+  currentTab = tab; currentBtn = btn;
+  document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive')); btn.classList.remove('inactive');
+  const container = document.getElementById('matches');
+  if(cache[tab] && cache[tab].length > 0){ renderGrouped(cache[tab], tab); } else { container.innerHTML = `<div class="loading">Loading matches...</div>`; }
+  if(liveInterval) clearInterval(liveInterval);
+  if(!navigator.onLine){ showNetworkError(cache[tab] && cache[tab].length > 0); return; }
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    const res = await fetch(`${API}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
+    clearTimeout(timeout);
+    if(!res.ok) throw new Error('Server error: ' + res.status);
+    const data = await res.json();
+    if(!data.success){ if(cache[tab].length === 0) showNetworkError(false); return; }
+    cache[tab] = data.matches || [];
+    localStorage.setItem('cache_'+tab, JSON.stringify(data.matches));
+    renderGrouped(data.matches, tab);
+    const hasLive = data.matches.some(m => m.status === "IN_PLAY" || m.status === "PAUSED");
+    if(hasLive && tab === "upcoming"){ liveInterval = setInterval(()=> loadMatches(tab, btn), 60000); }
+  } catch(err) {
+    console.log('fetch error', err.name, err.message);
+    if(err.name === 'AbortError'){
+      container.innerHTML = `<div style="text-align:center; padding:40px 20px;"><div style="font-size:30px;">⏳</div><p style="margin-top:10px; font-weight:700;">Server is waking up...</p><p style="color:#9ca3af; font-size:14px; margin-top:5px;">Render free tier sleeps, retrying in 3s</p></div>`;
+      setTimeout(()=> loadMatches(tab, btn), 3000); return;
+    }
+    showNetworkError(cache[tab] && cache[tab].length > 0);
+  }
+}
+function showDetails(id) { alert(id) }
+const firstBtn = document.querySelector('.tab.upcoming');
+loadMatches('upcoming', firstBtn);
 </script>
-
-
-
-    <div class="div">
-        <h1 class="header-text">Live Football ⚽</h1>
-        <small>Finish Match Will Show In Finished Tab</small>
-        <small class="small">within Some Hours</small>
-
-        <div class="tabs">
-            <button class="tab upcoming active" onclick="loadMatches('upcoming',this)">Upcoming</button>
-            <button class="tab finished" onclick="loadMatches('finished',this)">Finished</button>
-        </div>
-
-        <div id="break-banner">
-            <b class="title">⚠️ Big Leagues on International Break</b>
-            <p>
-                Premier League, LaLiga, Serie A, Bundesliga,<br>
-                Ligue 1 and Champions League matches have<br>
-                finished for now.
-            </p>
-            <span class="resume">
-                They will resume on Friday 10th October 2026<br>
-                — Liverpool vs Man City, Arsenal vs Leeds,<br>
-                Real Madrid vs Villarreal, Barcelona vs Getafe.<br>
-                Click on finish tab to check past match
-            </span>
-        </div>
-
-        <div id="matches"></div>
-    </div>
-
-    <script>
-
-        const API = "https://raymonddomain.dev/api/matches";
-
-        let liveInterval = null;
-
-        function formatDateHeader(s) {
-            const d = new Date(s);
-            return `📅 ${d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`
-        }
-
-        function formatFullDate(s) {
-            const d = new Date(s);
-            return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + " • " + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
-        }
-
-        function getStatusBadge(m) {
-            if (m.status === "IN_PLAY") return `<span class="badge live">LIVE ${m.minute || 0}'</span>`;
-
-            if (m.status === "PAUSED") return `<span class="badge">HALF TIME</span>`;
-
-            if (m.status === "FINISHED") return `<span class="badge" style="background:#16a34a">FINISH</span>`;
-
-            return `<span class="badge" style="background:#374151">${new Date(m.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>`
-        }
-
-        function cleanLeague(n) {
-            if (!n) return n;
-            if (n.toLowerCase().includes("primera division")) return "LaLiga EA Sports";
-            return n
-        }
-
-        function isBigLeague(n) {
-            if (!n) return false;
-            const l = n.toLowerCase();
-            return l.includes("premier") || l.includes("la liga") || l.includes("laliga") || l.includes("primera") || l.includes("bundesliga") || l.includes("serie a") || l.includes("ligue 1") || l.includes("champions")
-        }
-
-        function renderMatch(m) {
-            let scorers = "";
-            if (m.scorers && m.scorers.length > 0) {
-                scorers = `<div class="scorers-box"><b>⚽ Goals:</b><br>${m.scorers.map(s => `• ${s.minute}' <b style="color:#fff">${s.player}</b> <span style="color:#16a34a;font-weight:800;">[${s.score || ''}]</span> <span style="color:#9ca3af">- ${s.team}</span>`).join('<br>')}</div>`
-            }
-            return `<div class="match-card"><div class="league">${cleanLeague(m.league)}</div><div class="match-date">${formatFullDate(m.date)}</div><div class="teams"><div class="team"><img src="${m.home.logo}" onerror="this.src='https://via.placeholder.com/50'"><div class="team-name">${m.home.name}</div></div><div class="score-area"><div class="score">${m.homeScore?? 0} - ${m.awayScore?? 0}</div>${getStatusBadge(m)}</div><div class="team"><img src="${m.away.logo}" onerror="this.src='https://via.placeholder.com/50'"><div class="team-name">${m.away.name}</div></div></div>${scorers}<button class="btn btn-details">Line Up</button><button class="btn btn-watch" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(m.home.name + ' vs ' + m.away.name + ' live')}','_blank')">▶ Watch Live</button></div>`
-        }
-
-        function renderGrouped(matches, tab) {
-            const container = document.getElementById('matches');
-            const banner = document.getElementById('break-banner');
-
-            if (tab === 'upcoming') {
-                const big = matches.filter(m => isBigLeague(m.league));
-                banner.style.display = (matches.length === 0 || big.length === 0)? 'block' : 'none'
-            } else {
-                banner.style.display = 'none'
-            }
-
-            if (!matches || matches.length === 0) {
-                container.innerHTML = tab === 'upcoming'? `<div class="no-big">No upcoming big league matches found —<br>showing break notice above. Small leagues may still appear below when available.</div>` : `<div class="no-big">No finished matches in last 7 days.<br>Checking...</div>`;
-                return
-            }
-
-            const groups = {};
-            matches.forEach(m => {
-                const d = new Date(m.date);
-                const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-                if (!groups[k]) groups[k] = [];
-                groups[k].push(m)
-            });
-
-            let html = '';
-            let dates = Object.keys(groups).sort((a, b) => new Date(groups[a][0].date) - new Date(groups[b][0].date));
-            if (tab === 'finished') dates = dates.reverse();
-
-            dates.forEach(k => {
-                html += `<div class="date-header">${formatDateHeader(groups[k][0].date)}</div>`;
-                groups[k].forEach(m => html += renderMatch(m))
-            });
-
-            container.innerHTML = html;
-        }
-
-        async function loadMatches(tab, btn) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            btn.classList.add('active');
-
-            const container = document.getElementById('matches');
-            container.innerHTML = `<div class="loading">Loading ${tab}...</div>`;
-
-            if (liveInterval) clearInterval(liveInterval);
-
-            try {
-                const res = await fetch(`${API}?tab=${tab}`, { cache: "no-store" });
-                if (!res.ok) throw new Error("API " + res.status);
-                const data = await res.json();
-                renderGrouped(data.matches || [], tab);
-
-                const hasLive = (data.matches || []).some(m => m.status === "IN_PLAY" || m.status === "PAUSED");
-                if (hasLive && tab === "upcoming") liveInterval = setInterval(() => loadMatches(tab, btn), 60000);
-
-            } catch (err) {
-                container.innerHTML = `<div class="no-big"> </div>`;
-            }
-        }
-
-        loadMatches('upcoming', document.querySelector('.tab.upcoming'));
-    </script>
 </body>
 </html>
 
 /*
+ 
 
 // ================= 2. CONFIG - ANTI-BAN FIX =================
-// ANTI-BAN 1: Use process.env so your key is hidden
-// If you push to GitHub, bots will steal hardcoded key and eat your quota
 const API_KEY = process.env.FOOTBALL_API_KEY || "1f6245b3640a4f8dbdcd4ef044526b30";
 const API_URL = "https://api.football-data.org/v4";
-
-// ANTI-BAN 2: Lock flag - prevents 2 syncs running at same time
-// Without this, if cron overlaps, you do 4 calls at once = 429 ban
 let isSyncing = false;
 
 // ================= 3. DATABASE SCHEMA =================
-// Schema = structure of match saved in MongoDB
 const MatchSchema = new mongoose.Schema({
-  _id: String, // ID from football-data.org
-  date: Date, // Match date UTC
-  status: String, // SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED
-  minute: Number, // Live minute
-  league: String, // Premier League etc
+  _id: String,
+  date: Date,
+  status: String,
+  minute: Number,
+  league: String,
   home: { name: String, logo: String },
   away: { name: String, logo: String },
   homeScore: Number,
   awayScore: Number,
-  scorers: [{ // Scorers list - we get this from same /matches call, no extra call
+  scorers: [{
     team: String,
     player: String,
     minute: Number,
-    type: String, // REGULAR, PENALTY, OWN_GOAL
-    score: String // e.g. "1 - 0"
+    type: String,
+    score: String
   }],
   lastUpdated: Date
 }, { collection: "newmatches" });
@@ -448,22 +197,17 @@ const MatchSchema = new mongoose.Schema({
 const Match = mongoose.model("Matchnew", MatchSchema);
 
 // ================= 4. HELPERS =================
-// Get date string YYYY-MM-DD with offset. -7 = 7 days ago, 0 = today, 7 = 7 days future
 function getDate(offset){
   const d = new Date();
   d.setDate(d.getDate() + (offset || 0));
   return d.toISOString().split("T")[0];
 }
 
-// Main function to call football-data.org API
 async function callAPI(endpoint, params = {}){
   const apiUrl = new URL(API_URL + endpoint);
-  for (let k in params) apiUrl.searchParams.set(k, params[k]); // Add dateFrom, dateTo etc
-
+  for (let k in params) apiUrl.searchParams.set(k, params[k]);
   const res = await fetch(apiUrl, { headers: { "X-Auth-Token": API_KEY } });
   const data = await res.json();
-
-  // Handle rate limit error
   if (!res.ok){
     if(res.status === 429) throw new Error("Rate limit 429 - you called too fast, wait 1 min");
     throw new Error(data.message || "API Error " + res.status);
@@ -471,19 +215,13 @@ async function callAPI(endpoint, params = {}){
   return data;
 }
 
-// Convert football-data.org format to our DB format
 function formatMatch(m){
-  // Score logic: use fullTime for finished, live for live games
   let homeScore = m.score?.fullTime?.home?? m.score?.halfTime?.home?? 0;
   let awayScore = m.score?.fullTime?.away?? m.score?.halfTime?.away?? 0;
-
-  // If game is live, use live score
   if(m.status === "IN_PLAY" || m.status === "PAUSED"){
     homeScore = m.score?.live?.home?? homeScore;
     awayScore = m.score?.live?.away?? awayScore;
   }
-
-  // Scorers - IMPORTANT: This is inside /matches response, NO extra API call = safe from ban
   let scorers = [];
   if(m.goals && m.goals.length > 0){
     scorers = m.goals.map(g => ({
@@ -494,7 +232,6 @@ function formatMatch(m){
       score: g.score? `${g.score.home} - ${g.score.away}` : ""
     }));
   }
-
   return {
     _id: String(m.id),
     date: new Date(m.utcDate),
@@ -503,100 +240,57 @@ function formatMatch(m){
     league: m.competition?.name || "Football",
     home: { name: m.homeTeam?.name || "Home", logo: m.homeTeam?.id? `https://crests.football-data.org/${m.homeTeam.id}.png` : "" },
     away: { name: m.awayTeam?.name || "Away", logo: m.awayTeam?.id? `https://crests.football-data.org/${m.awayTeam.id}.png` : "" },
-    homeScore, awayScore,
-    scorers,
+    homeScore, awayScore, scorers,
     lastUpdated: new Date()
   };
 }
 
-// ================= 5. FULL SYNC - 7 DAYS BACK + 7 DAYS FRONT =================
-// This is the main sync that gets all matches
-// football-data.org only allows 10 days per call, so we split into 2 calls
+// ================= 5. FULL SYNC =================
 async function fullSync(){
-  // ANTI-BAN: If already syncing, skip - prevents double calls
-  if(isSyncing){
-    console.log("[SKIP] Already syncing, skipping to avoid ban");
-    return 0;
-  }
-  isSyncing = true; // Lock
-
+  if(isSyncing){ console.log("[SKIP] Already syncing"); return 0; }
+  isSyncing = true;
   const today = getDate(0);
-  const fromBack = getDate(-7); // 7 days ago
-  const toFront = getDate(7); // 7 days future
+  const fromBack = getDate(-7);
+  const toFront = getDate(7);
   const nowWAT = new Date().toLocaleString("en-NG", {timeZone: "Africa/Lagos"});
-
-  console.log(`[FULL SYNC START] ${nowWAT} WAT - 2 calls: ${fromBack} to ${today} AND ${today} to ${toFront}`);
-
+  console.log(`[FULL SYNC START] ${nowWAT} WAT - ${fromBack} to ${toFront}`);
   try{
-    // CALL 1: Past 7 days - for finished tab
     const data1 = await callAPI("/matches", { dateFrom: fromBack, dateTo: today });
-    console.log(`[SYNC 1] Got ${data1.matches?.length || 0} matches from past 7 days`);
-
-    // ANTI-BAN: Wait 7 seconds between calls - keeps you at 8 calls/min (limit 10)
+    console.log(`[SYNC 1] Got ${data1.matches?.length || 0} past`);
     await new Promise(r => setTimeout(r, 7000));
-
-    // CALL 2: Next 7 days - for upcoming tab
     const data2 = await callAPI("/matches", { dateFrom: today, dateTo: toFront });
-    console.log(`[SYNC 2] Got ${data2.matches?.length || 0} matches from next 7 days`);
-
-    // Merge both results and remove duplicate (today appears in both)
+    console.log(`[SYNC 2] Got ${data2.matches?.length || 0} upcoming`);
     const allMatches = [...(data1.matches || []),...(data2.matches || [])];
     const uniqueMap = new Map();
     allMatches.forEach(m => uniqueMap.set(m.id, m));
     const uniqueList = Array.from(uniqueMap.values());
-
-    if(uniqueList.length === 0){
-      console.log("[SYNC] No matches in both ranges - international break");
-      return 0;
-    }
-
-    // Save all to MongoDB at once
+    if(uniqueList.length === 0){ console.log("[SYNC] No matches"); return 0; }
     const formatted = uniqueList.map(formatMatch);
     const ops = formatted.map(m => ({ updateOne: { filter: { _id: m._id }, update: { $set: m }, upsert: true } }));
     await Match.bulkWrite(ops, {ordered:false});
-
-    console.log(`[SYNCED] ${formatted.length} matches at ${nowWAT} WAT`);
+    console.log(`[SYNCED] ${formatted.length} matches`);
     return formatted.length;
-
-  }catch(e){
-    console.log("[SYNC ERROR]", e.message);
-  } finally {
-    isSyncing = false; // Always unlock even if error
-  }
+  }catch(e){ console.log("[SYNC ERROR]", e.message); }
+  finally { isSyncing = false; }
 }
 
-// ================= 6. LIVE SYNC - ONLY WHEN GAMES ARE LIVE =================
-// This checks DB for IN_PLAY games and updates live scores
+// ================= 6. LIVE SYNC =================
 async function liveSync(){
   const liveInDb = await Match.find({ status: { $in: ["IN_PLAY","PAUSED"] } });
-
-  // ANTI-BAN: If 0 live games, make 0 API calls and exit
   if(liveInDb.length === 0) return;
-
-  // ANTI-BAN: If too many live games (>15), skip this round to avoid 10/min limit
-  if(liveInDb.length > 15){
-    console.log(`[LIVE SKIP] ${liveInDb.length} live games too many, skip to avoid ban`);
-    return;
-  }
-
-  console.log(`[LIVE SYNC] ${liveInDb.length} live games - using ${liveInDb.length} API calls`);
-
+  if(liveInDb.length > 15){ console.log(`[LIVE SKIP] ${liveInDb.length} live`); return; }
+  console.log(`[LIVE SYNC] ${liveInDb.length} live`);
   for(let match of liveInDb){
     try{
-      const data = await callAPI(`/matches/${match._id}`); // 1 call per live game
+      const data = await callAPI(`/matches/${match._id}`);
       const formatted = formatMatch(data);
       await Match.updateOne({ _id: match._id }, { $set: formatted });
-
-      // ANTI-BAN: Wait 7 sec between each live game - keeps you safe
       await new Promise(r => setTimeout(r, 7000));
-
-    }catch(e){
-      console.log("live error", e.message);
-    }
+    }catch(e){ console.log("live error", e.message); }
   }
 }
 
-// API route: Frontend calls /api/matches?tab=upcoming or finished or live
+// ================= 7. API ROUTE - FIXED SAME ERROR AS FRONTEND =================
 app.get("/api/matches", async (req, res) => {
   try{
     const tab = req.query.tab || "upcoming";
@@ -604,64 +298,41 @@ app.get("/api/matches", async (req, res) => {
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
     const in7Days = new Date(today); in7Days.setDate(today.getDate()+7);
     const ago7Days = new Date(today); ago7Days.setDate(today.getDate()-7);
-
-    let filter = {};
-    let sort = { date: 1 };
-
-    // Upcoming: next 7 days, SCHEDULED, TIMED, IN_PLAY
+    let filter = {}; let sort = { date: 1 };
     if(tab === "upcoming"){
       filter = { date: { $gte: today, $lte: in7Days }, status: { $in: ["SCHEDULED","TIMED","IN_PLAY","PAUSED"] } };
       sort = { date: 1 };
     }
-    // Finished: last 7 days, FINISHED only
     if(tab === "finished"){
       filter = { status: "FINISHED", date: { $gte: ago7Days, $lt: tomorrow } };
       sort = { date: -1 };
     }
-    // Live: only IN_PLAY
     if(tab === "live"){
       filter = { status: { $in: ["IN_PLAY","PAUSED"] } };
     }
-
-    const matches = await Match.find(filter).sort(sort);
-    res.json({ success: true, matches });
-
+    const matches = await Match.find(filter).sort(sort).lean();
+    console.log(`[API] tab=${tab} -> ${matches.length}`);
+    res.json({ success: true, matches: matches || [] });
   }catch(err){
-    res.status(500).json({ success: false, error: err.message });
+    console.error("❌ API CRASH:", err.message);
+    res.json({ success: true, matches: [] }); // NEVER 500 - SAME FIX
   }
 });
 
-// ================= 8. CRON JOBS - 8 TIMES PER DAY =================
-// These times are UTC, but log shows WAT (Lagos) time
-// 10 crons x 2 calls each = 16 calls/day = VERY SAFE (limit 10/min)
-const syncTimesUTC = [
-  "50 12 * * *", // 13:50 WAT
-  "14 15 * * *", // 16:14 WAT
-  "38 17 * * *", // 18:38 WAT
-  "26 22 * * *", // 23:26 WAT
-  "50 0 * * *", // 01:50 WAT next day
-  "38 5 * * *", // 06:38 WAT
-  "2 8 * * *", // 09:02 WAT
-  "26 10 * * *" // 11:26 WAT
-];
+app.get("/", (req,res)=> res.send("Football API Running"));
 
+// ================= 8. CRON JOBS =================
+const syncTimesUTC = ["50 12 * * *","14 15 * * *","38 17 * * *","26 22 * * *","50 0 * * *","38 5 * * *","2 8 * * *","26 10 * * *"];
 syncTimesUTC.forEach(time => {
   cron.schedule(time, async () => {
     const nowWAT = new Date().toLocaleString("en-NG", {timeZone: "Africa/Lagos"});
-    console.log(`[CRON 10x] Auto sync at ${nowWAT} WAT (${time} UTC)`);
+    console.log(`[CRON] Auto sync at ${nowWAT} WAT`);
     try{ await fullSync(); }catch(e){ console.log("cron fail", e.message); }
   }, { timezone: "UTC" });
 });
+cron.schedule("*/2 * * * *", async () => { try{ await liveSync(); }catch(e){} });
 
-// Live sync cron: Every 2 mins, but 0 calls if no live games in DB
-cron.schedule("*/2 * * * *", async () => {
-  try{ await liveSync(); }catch(e){ console.log("live cron fail", e.message); }
-});
+setTimeout(async () => { console.log("🚀 Initial sync..."); try{ await fullSync(); }catch(e){} }, 5000);
 
-// Initial sync when server starts, after 5 seconds
-setTimeout(async () => {
-  console.log("🚀 Initial auto sync starting...");
-  try{ await fullSync(); }catch(e){}
-}, 5000);
 
 */
