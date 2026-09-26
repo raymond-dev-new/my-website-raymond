@@ -453,7 +453,7 @@ setTimeout(fullSyncToDB,5000);
     
 
 
-const API=process.env.API_FOOTBALL_KEY || 'e11e83e05b19af09fbdd776affffc3a7';
+const API=process.env.API_FOOTBALL_KEY || '04fc3b1b53bf340e7214f1ef23f11a02';
 
 const countrySchema=new mongoose.Schema({
   fixture_id:{type:Number,unique:true},
@@ -582,9 +582,10 @@ async function fetchCountryMatches(){
 /* 12 FULL SYNCS PER DAY */
 cron.schedule('0 */2 * * *',fetchCountryMatches);
 
-/* INITIAL SYNC */
+/* INITIAL SYNC 
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
+*/
 
 /* MATCHES */
 app.get('/apii/matches',async(req,res)=>{
