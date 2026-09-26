@@ -582,10 +582,10 @@ async function fetchCountryMatches(){
 /* 12 FULL SYNCS PER DAY */
 cron.schedule('0 */2 * * *',fetchCountryMatches);
 
-/* INITIAL SYNC 
+//INITIAL SYNC 
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
-*/
+
 
 /* MATCHES */
 app.get('/apii/matches',async(req,res)=>{
