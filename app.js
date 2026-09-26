@@ -448,10 +448,12 @@ setTimeout(fullSyncToDB,5000);
 
 // country match ihgfchjjhgviiuyuiodiuuojihuuiub
 
-const API = 'e11e83e05b19af09fbdd776affffc3a7';
+// ===== YOUR API KEY =====
+const API = process.env.API_FOOTBALL_KEY || 'e11e83e05b19af09fbdd776affffc3a7';
+
 
 // ===============================
-// COUNTRY MATCH SCHEMA
+// SCHEMA
 // ===============================
 const countrySchema = new mongoose.Schema({
   fixture_id: { type: Number, unique: true },
@@ -468,11 +470,10 @@ const countrySchema = new mongoose.Schema({
   score_away: { type: Number, default: null },
   last_updated: { type: Date, default: Date.now }
 });
-
 const CountryMatch = mongoose.model('CountryMatch', countrySchema);
 
 // ===============================
-// COUNTRY COMPETITION CHECK
+// COUNTRY CHECK
 // ===============================
 function isCountryMatch(m) {
   const league = (m.league?.name || '').toLowerCase();
@@ -490,23 +491,19 @@ function isCountryMatch(m) {
 }
 
 // ===============================
-// FETCH COUNTRY MATCHES
-// 3 DAYS BACK + TODAY + 3 DAYS FRONT = 7 DAYS TOTAL
+// FETCH
 // ===============================
 async function fetchCountryMatches() {
   try {
     console.log(`[FETCH START] ${new Date().toLocaleString()} - COUNTRY ONLY 3 DAYS`);
-
     let allCountryMatches = [];
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    // CHANGED FROM -7 to -3
     for (let i = -3; i <= 3; i++) {
       const date = new Date(today);
       date.setUTCDate(date.getUTCDate() + i);
       const dateStr = date.toISOString().split('T')[0];
-
       try {
         const response = await axios.get(
           `https://v3.football.api-sports.io/fixtures?date=${dateStr}`,
@@ -514,22 +511,14 @@ async function fetchCountryMatches() {
         );
         const fixtures = response.data.response || [];
         const countryMatches = fixtures.filter(isCountryMatch);
-
         console.log(`[FETCH] ${dateStr} -> Total: ${fixtures.length} | Country: ${countryMatches.length}`);
-
-        countryMatches.forEach(m => {
-          console.log(`  >> COUNTRY: ${m.teams.home.name} vs ${m.teams.away.name} | ${m.league.name} | ${m.fixture.status.short} ${m.goals.home ?? 0}-${m.goals.away ?? 0}`);
-        });
-
         allCountryMatches.push(...countryMatches);
-        await new Promise(resolve => setTimeout(resolve, 1100));
-
+        await new Promise(r => setTimeout(r, 1100));
       } catch (dayErr) {
         console.log(`Error ${dateStr}:`, dayErr.response?.data?.errors || dayErr.message);
       }
     }
 
-    // SAVE TO MONGODB
     for (const m of allCountryMatches) {
       const data = {
         fixture_id: m.fixture.id,
@@ -549,88 +538,92 @@ async function fetchCountryMatches() {
       await CountryMatch.findOneAndUpdate({ fixture_id: data.fixture_id }, data, { upsert: true, new: true });
     }
 
-    // WINDOW CHANGED TO 3 DAYS
-    const start = new Date(today);
-    start.setUTCDate(start.getUTCDate() - 3);
-    const end = new Date(today);
-    end.setUTCDate(end.getUTCDate() + 3);
-    end.setUTCHours(23, 59, 59, 999);
-
-    const deleted = await CountryMatch.deleteMany({
-      $or: [{ match_date: { $lt: start } }, { match_date: { $gt: end } }]
-    });
-
-    console.log(`[DB CLEANUP] Deleted ${deleted.deletedCount} matches outside 3-day window`);
+    const start = new Date(today); start.setUTCDate(start.getUTCDate() - 3);
+    const end = new Date(today); end.setUTCDate(end.getUTCDate() + 3); end.setUTCHours(23,59,59,999);
+    const deleted = await CountryMatch.deleteMany({ $or: [{ match_date: { $lt: start } }, { match_date: { $gt: end } }] });
+    console.log(`[DB CLEANUP] Deleted ${deleted.deletedCount}`);
     console.log(`[TOTAL] Found ${allCountryMatches.length} COUNTRY matches`);
-    console.log(`[DB] Country matches saved successfully`);
-
   } catch (err) {
     console.log('[API ERROR]:', err.message);
   }
 }
 
-// ==================================================
-// CRON - 12 TIMES PER DAY (Every 2 hours)
-// ==================================================
-cron.schedule('0 0 * * *', async () => { console.log('[CRON 1/12] 00:00'); await fetchCountryMatches(); });
-cron.schedule('0 2 * * *', async () => { console.log('[CRON 2/12] 02:00'); await fetchCountryMatches(); });
-cron.schedule('0 4 * * *', async () => { console.log('[CRON 3/12] 04:00'); await fetchCountryMatches(); });
-cron.schedule('0 6 * * *', async () => { console.log('[CRON 4/12] 06:00'); await fetchCountryMatches(); });
-cron.schedule('0 8 * * *', async () => { console.log('[CRON 5/12] 08:00'); await fetchCountryMatches(); });
-cron.schedule('0 10 * * *', async () => { console.log('[CRON 6/12] 10:00'); await fetchCountryMatches(); });
-cron.schedule('0 12 * * *', async () => { console.log('[CRON 7/12] 12:00'); await fetchCountryMatches(); });
-cron.schedule('0 14 * * *', async () => { console.log('[CRON 8/12] 14:00'); await fetchCountryMatches(); });
-cron.schedule('0 16 * * *', async () => { console.log('[CRON 9/12] 16:00'); await fetchCountryMatches(); });
-cron.schedule('0 18 * * *', async () => { console.log('[CRON 10/12] 18:00'); await fetchCountryMatches(); });
-cron.schedule('0 20 * * *', async () => { console.log('[CRON 11/12] 20:00'); await fetchCountryMatches(); });
-cron.schedule('0 22 * * *', async () => { console.log('[CRON 12/12] 22:00'); await fetchCountryMatches(); });
+// CRON 12 TIMES/DAY
+cron.schedule('0 0 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 2 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 4 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 6 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 8 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 10 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 12 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 14 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 16 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 18 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 20 * * *', async () => { await fetchCountryMatches(); });
+cron.schedule('0 22 * * *', async () => { await fetchCountryMatches(); });
 
-// ==================================================
-// INITIAL SYNC
-// ==================================================
 (async () => {
-  console.log('Initial sync 3 days back/front - 12 calls/day');
+  console.log('Initial sync');
   await fetchCountryMatches();
 })();
 
-// ==================================================
-// GET COUNTRY MATCHES - CHANGED TO 3 DAYS
-// ==================================================
+// ===============================
+// API - THIS FIXES YOUR ERROR
+// ===============================
+app.get('/apii/matches', async (req, res) => {
+  try {
+    const tab = req.query.tab || 'upcoming';
+    const today = new Date(); today.setUTCHours(0,0,0,0);
+    const start = new Date(today); start.setUTCDate(start.getUTCDate() - 3);
+    const end = new Date(today); end.setUTCDate(end.getUTCDate() + 3); end.setUTCHours(23,59,59,999);
+
+    let dbMatches = await CountryMatch.find({ match_date: { $gte: start, $lte: end } }).sort({ match_date: 1 }).lean();
+
+    // Filter by tab
+    if(tab === 'finished'){
+      dbMatches = dbMatches.filter(m => ['FT','AET','PEN'].includes(m.status));
+    } else {
+      dbMatches = dbMatches.filter(m => ['NS','1H','HT','2H','ET','BT','P','LIVE','INT'].includes(m.status));
+    }
+
+    // MAP TO FRONTEND FORMAT
+    const formatted = dbMatches.map(m => ({
+      id: m.fixture_id,
+      league: m.league,
+      leagueLogo: m.league_logo,
+      date: m.match_date,
+      status: ['FT','AET','PEN'].includes(m.status) ? 'FINISHED' : (['1H','HT','2H','ET','P','LIVE','INT'].includes(m.status) ? 'IN_PLAY' : 'SCHEDULED'),
+      home: { name: m.home_team, logo: m.home_logo },
+      away: { name: m.away_team, logo: m.away_logo },
+      homeScore: m.score_home,
+      awayScore: m.score_away,
+      elapsed: m.elapsed,
+      rawStatus: m.status
+    }));
+
+    res.json({ success: true, matches: formatted });
+  } catch(err){
+    res.status(500).json({ success: false, matches: [], error: err.message });
+  }
+});
+
 app.get('/api/country-matches', async (req, res) => {
   try {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const start = new Date(today);
-    start.setUTCDate(start.getUTCDate() - 3);
-    const end = new Date(today);
-    end.setUTCDate(end.getUTCDate() + 3);
-    end.setUTCHours(23, 59, 59, 999);
-
-    const matches = await CountryMatch.find({
-      match_date: { $gte: start, $lte: end }
-    }).sort({ match_date: 1 });
-
+    const today = new Date(); today.setUTCHours(0,0,0,0);
+    const start = new Date(today); start.setUTCDate(start.getUTCDate() - 3);
+    const end = new Date(today); end.setUTCDate(end.getUTCDate() + 3); end.setUTCHours(23,59,59,999);
+    const matches = await CountryMatch.find({ match_date: { $gte: start, $lte: end } }).sort({ match_date: 1 });
     res.json(matches);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch(err){ res.status(500).json([]); }
 });
 
-// ==================================================
-// MANUAL FETCH
-// ==================================================
 app.get('/api/fetch-now', async (req, res) => {
-  try {
-    await fetchCountryMatches();
-    res.json({
-      message: 'Country fetch done',
-      window: '3 days back + today + 3 days front',
-      fetches_per_day: 12
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  await fetchCountryMatches();
+  const count = await CountryMatch.countDocuments();
+  res.json({ message: 'Done', totalInDB: count });
 });
+
+
 
 // country match end here kjhgcfghhgxuygfxyf
 

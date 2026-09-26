@@ -1,158 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Live Football</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, sans-serif}
-  body{background:#0a0a0a;color:#fff;min-height:100vh}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#0a0a0a;color:#fff}
 .top-title{padding:20px;text-align:center}
-.top-title h1{font-size:26px;font-weight:bold;margin-bottom:8px}
-.top-title p{font-size:14px;color:#aaa;line-height:1.4}
+.top-title h1{font-size:26px}
+.top-title p{color:#aaa;font-size:13px;margin-top:5px}
 .tabs{display:flex;gap:10px;padding:15px}
-.tabs button{flex:1;padding:14px;border:0;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer}
-.tab-upcoming{background:#1a4d2e;color:#6b8a7a}
-.tab-upcoming.active{background:#22c55e;color:#000}
-.tab-finished{background:#5a1a1a;color:#999}
-.tab-finished.active{background:#ef4444;color:#fff}
-.date-header{padding:10px 15px;color:#3b82f6;font-size:15px}
-.match-card{background:#1c1c1e;border-radius:16px;margin:0 12px 14px 12px;padding:16px;border:1px solid #2a2a2c}
-.league-name{color:#f59e0b;font-size:14px;font-weight:bold;margin-bottom:2px}
-.match-time{color:#888;font-size:12px;margin-bottom:14px}
+.tabs button{flex:1;padding:14px;border:0;border-radius:10px;font-weight:bold;cursor:pointer}
+.tab-upcoming{background:#1a4d2e;color:#6b8a7a}.tab-upcoming.active{background:#22c55e;color:#000}
+.tab-finished{background:#5a1a1a;color:#999}.tab-finished.active{background:#ef4444;color:#fff}
+.date-header{padding:10px 15px;color:#3b82f6}
+.match-card{background:#1c1c1e;border-radius:16px;margin:0 12px 14px;padding:16px;border:1px solid #2a2a2c}
+.league-name{color:#f59e0b;font-weight:bold;font-size:14px}
+.match-time{color:#888;font-size:12px;margin-bottom:10px}
 .teams-row{display:flex;align-items:center;justify-content:space-between}
-.team{flex:1;text-align:center}
-.team img{width:50px;height:50px;object-fit:contain;margin-bottom:8px}
-.team span{font-size:13px;display:block;line-height:1.2}
-.score-center{text-align:center;flex:0.8}
-.score-text{font-size:32px;font-weight:bold;margin-bottom:8px}
-.status-badge{display:inline-block;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:bold}
-.status-vs{background:#333;color:#aaa}
-.status-ns{background:#333;color:#aaa}
-.card-buttons{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-.btn-lineup{background:#2a2a2e;color:#fff;border:0;padding:12px;border-radius:10px;font-size:14px;cursor:pointer}
-.btn-watch{background:#ef4444;color:#fff;border:0;padding:12px;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer}
+.team{flex:1;text-align:center}.team img{width:50px;height:50px}
+.team span{font-size:13px;display:block;margin-top:5px}
+.score-center{text-align:center;flex:0.8}.score-text{font-size:30px;font-weight:bold}
+.status-badge{display:inline-block;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:bold;background:#333;color:#aaa;margin-top:5px}
+.btn-watch{width:100%;background:#ef4444;color:#fff;border:0;padding:12px;border-radius:10px;font-weight:bold;margin-top:12px;cursor:pointer}
 .empty{text-align:center;padding:40px;color:#666}
 </style>
 </head>
 <body>
-
-<div class="top-title">
-  <h1>Live Football ⚽</h1>
-  <p>Finish Match Will Show In Finished Tab<br>within Some Hours</p>
-</div>
-
+<div class="top-title"><h1>Live Football ⚽</h1><p>Finish Match Will Show In Finished Tab within Some Hours</p></div>
 <div class="tabs">
-  <button id="btnUpcoming" class="tab-upcoming active" onclick="switchTab('upcoming')">Upcoming & Live</button>
-  <button id="btnFinished" class="tab-finished" onclick="switchTab('finished')">Finished</button>
+<button id="btnUpcoming" class="tab-upcoming active" onclick="switchTab('upcoming')">Upcoming & Live</button>
+<button id="btnFinished" class="tab-finished" onclick="switchTab('finished')">Finished</button>
 </div>
-
 <div class="date-header" id="dateHeader">📅 Loading...</div>
-<div id="list"><div class="empty">Loading country matches...</div></div>
+<div id="list"><div class="empty">Loading...</div></div>
 
 <script>
-const API_URL = 'https://raymonddomain.dev/api/country-matches';
-
+const API_URL = 'https://raymonddomain.dev/apii/matches';
 let allMatches = [];
 let currentTab = 'upcoming';
 
-async function loadMatches() {
-  try {
-    const res = await fetch(API_URL);
-    const matches = await res.json();
-    allMatches = matches;
-    renderMatches();
-  } catch (err) {
-    document.getElementById('list').innerHTML = `<div class="empty">Error: ${err.message}<br>Is server.js running on 8000?</div>`;
+async function loadMatches(){
+  document.getElementById('dateHeader').innerHTML = `📅 ${new Date().toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
+  try{
+    const res = await fetch(`${API_URL}?tab=${currentTab}&t=${Date.now()}`);
+    const json = await res.json();
+    // CRITICAL FIX - NEVER CRASHES
+    if(Array.isArray(json)) allMatches = json;
+    else if(json && Array.isArray(json.matches)) allMatches = json.matches;
+    else allMatches = [];
+    if(!Array.isArray(allMatches)) allMatches = [];
+    render();
+  }catch(e){
+    document.getElementById('list').innerHTML = `<div class="empty">Error: ${e.message}<br><button onclick="loadMatches()" style="margin-top:10px;padding:8px 16px;background:#22c55e;border:0;border-radius:6px">Retry</button></div>`;
   }
 }
 
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('btnUpcoming').className = tab==='upcoming'? 'tab-upcoming active' : 'tab-upcoming';
-  document.getElementById('btnFinished').className = tab==='finished'? 'tab-finished active' : 'tab-finished';
-  renderMatches();
-}
-
-function watchLive(home, away) {
-  const query = `${home} vs ${away} live`;
-  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank');
-}
-
-function renderMatches() {
+function render(){
   const list = document.getElementById('list');
-  const dateHeader = document.getElementById('dateHeader');
-  const today = new Date();
-  dateHeader.innerHTML = `📅 ${today.toLocaleDateString('en-US', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}`;
-
-  let filtered = [];
-  if(currentTab === 'upcoming') {
-    filtered = allMatches.filter(m => ['NS','1H','HT','2H','ET','P','LIVE','TBD'].includes(m.status));
-    // LIVE at top, then earliest upcoming
-    filtered.sort((a,b) => {
-      const aLive = ['1H','HT','2H','ET','P','LIVE'].includes(a.status) ? 0 : 1;
-      const bLive = ['1H','HT','2H','ET','P','LIVE'].includes(b.status) ? 0 : 1;
-      if(aLive !== bLive) return aLive - bLive;
-      return new Date(a.match_date) - new Date(b.match_date);
-    });
-  } else {
-    filtered = allMatches.filter(m => ['FT','AET','PEN'].includes(m.status));
-    // FINISHED: Most recent at top
-    filtered.sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
-  }
-
-  if(filtered.length === 0) {
-    list.innerHTML = `<div class="empty">No ${currentTab} matches<br><small>3 days range</small></div>`;
+  if(!Array.isArray(allMatches)) allMatches = [];
+  const filtered = allMatches.filter(m=>m && m.home && m.away);
+  if(filtered.length===0){
+    list.innerHTML = `<div class="empty">No ${currentTab} country matches found<br>Last 3 days + Next 3 days<br><br>Open <a href="https://raymonddomain.dev/api/fetch-now" target="_blank" style="color:#3b82f6">fetch-now</a> to sync</div>`;
     return;
   }
-
-  list.innerHTML = filtered.map(m => {
-    const date = new Date(m.match_date);
-    const isLive = ['1H','2H','ET','P','LIVE','HT'].includes(m.status);
-    const isNS = m.status === 'NS' || m.status === 'TBD';
-
-    let scoreText = '';
-    let statusText = 'VS';
-    let statusClass = 'status-vs';
-
-    if(isLive) {
-      scoreText = `${m.score_home ?? 0} - ${m.score_away ?? 0}`;
-      statusText = 'VS';
-    } else if(['FT','AET','PEN'].includes(m.status)) {
-      scoreText = `${m.score_home ?? 0} - ${m.score_away ?? 0}`;
-      statusText = 'VS';
-    } else {
-      scoreText = 'VS';
-      statusText = date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      statusClass = 'status-ns';
-    }
-
-    const scoreStyle = isNS ? 'font-size:18px;color:#666' : 'font-size:32px;';
-
-    return `
-      <div class="match-card">
-        <div class="league-name">${m.league}</div>
-        <div class="match-time">${date.toLocaleDateString('en-US', {weekday:'long', day:'numeric', month:'long'})} • ${date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-        <div class="teams-row">
-          <div class="team"><img src="${m.home_logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.home_team}</span></div>
-          <div class="score-center">
-            <div class="score-text" style="${scoreStyle}">${scoreText}</div>
-            <div class="status-badge ${statusClass}">${statusText}</div>
-          </div>
-          <div class="team"><img src="${m.away_logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.away_team}</span></div>
-        </div>
-        <div class="card-buttons">
-          <button class="btn-lineup">Line Up</button>
-          <button class="btn-watch" onclick="watchLive('${m.home_team.replace(/'/g, "\\'")}', '${m.away_team.replace(/'/g, "\\'")}')">▶ Watch Live</button>
-        </div>
+  list.innerHTML = filtered.map(m=>{
+    const d = new Date(m.date);
+    const isLive = m.status==='IN_PLAY';
+    const score = m.status==='SCHEDULED' ? 'VS' : `${m.homeScore??0} - ${m.awayScore??0}`;
+    return `<div class="match-card">
+      <div class="league-name">${m.league}</div>
+      <div class="match-time">${d.toLocaleString()} ${m.elapsed ? m.elapsed+"'" : ''} ${m.rawStatus||''}</div>
+      <div class="teams-row">
+        <div class="team"><img src="${m.home.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.home.name}</span></div>
+        <div class="score-center"><div class="score-text">${score}</div><div class="status-badge">${m.status}</div></div>
+        <div class="team"><img src="${m.away.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.away.name}</span></div>
       </div>
-    `;
+      <button class="btn-watch" onclick="window.open('https://www.youtube.com/results?search_query='+encodeURIComponent('${m.home.name} vs ${m.away.name} live'),'_blank')">▶ Watch Live</button>
+    </div>`;
   }).join('');
 }
 
+function switchTab(t){
+  currentTab=t;
+  document.getElementById('btnUpcoming').className = t==='upcoming'?'tab-upcoming active':'tab-upcoming';
+  document.getElementById('btnFinished').className = t==='finished'?'tab-finished active':'tab-finished';
+  loadMatches();
+}
 loadMatches();
-setInterval(async () => { await loadMatches(); }, 30000);
+setInterval(loadMatches, 30000);
 </script>
-
 </body>
 </html>
