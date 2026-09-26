@@ -27,12 +27,9 @@
 .score-center{text-align:center;flex:0.8}
 .score-text{font-size:32px;font-weight:bold;margin-bottom:8px}
 .status-badge{display:inline-block;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:bold}
-.status-live{background:#ef4444;color:#fff;animation:blink 1s infinite}
-.status-ht{background:#f59e0b;color:#000}
+.status-vs{background:#333;color:#aaa}
 .status-ft{background:#22c55e;color:#000}
 .status-ns{background:#333;color:#aaa}
-.elapsed{font-size:11px;color:#ef4444;margin-top:4px;font-weight:bold}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.5}}
 .card-buttons{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 .btn-lineup{background:#2a2a2e;color:#fff;border:0;padding:12px;border-radius:10px;font-size:14px;cursor:pointer}
 .btn-watch{background:#ef4444;color:#fff;border:0;padding:12px;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer}
@@ -55,27 +52,22 @@
 <div id="list"><div class="empty">Loading country matches...</div></div>
 
 <script>
-// ===== CONFIG - matches your backend port 8000 =====
 const API_URL = 'https://raymonddomain.dev/api/country-matches';
-// =====================================================
 
-let allMatches = []; // Store all matches
-let currentTab = 'upcoming'; // Current active tab
+let allMatches = [];
+let currentTab = 'upcoming';
 
-// --- Load matches using async/await (not.then) ---
 async function loadMatches() {
   try {
-    const res = await fetch(API_URL); // Fetch from DB
-    const matches = await res.json(); // Parse JSON with await
-    allMatches = matches; // Save globally
-    renderMatches(); // Render
+    const res = await fetch(API_URL);
+    const matches = await res.json();
+    allMatches = matches;
+    renderMatches();
   } catch (err) {
     document.getElementById('list').innerHTML = `<div class="empty">Error: ${err.message}<br>Is server.js running on 8000?</div>`;
-    console.log('Error:', err);
   }
 }
 
-// --- Switch tab ---
 function switchTab(tab) {
   currentTab = tab;
   document.getElementById('btnUpcoming').className = tab==='upcoming'? 'tab-upcoming active' : 'tab-upcoming';
@@ -83,7 +75,13 @@ function switchTab(tab) {
   renderMatches();
 }
 
-// --- Render with live minutes, HT, FINISH ---
+// REDIRECT TO YOUTUBE
+function watchLive(home, away) {
+  const query = `${home} vs ${away} live`;
+  const youtubeUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  window.open(youtubeUrl, '_blank');
+}
+
 function renderMatches() {
   const list = document.getElementById('list');
   const dateHeader = document.getElementById('dateHeader');
@@ -98,39 +96,35 @@ function renderMatches() {
   }
 
   if(filtered.length === 0) {
-    list.innerHTML = `<div class="empty">No ${currentTab} matches<br><small>7 days range</small></div>`;
+    list.innerHTML = `<div class="empty">No ${currentTab} matches<br><small>3 days range</small></div>`;
     return;
   }
 
   list.innerHTML = filtered.map(m => {
     const date = new Date(m.match_date);
-    const isLive = ['1H','2H','ET','P','LIVE'].includes(m.status);
-    const isHT = m.status === 'HT';
-    const isFT = ['FT','AET','PEN'].includes(m.status);
-    const isNS = m.status === 'NS';
+    const isLive = ['1H','2H','ET','P','LIVE','HT'].includes(m.status);
+    const isNS = m.status === 'NS' || m.status === 'TBD';
 
-    let scoreText = 'vs';
-    if(!isNS && m.score_home!== null) scoreText = `${m.score_home} - ${m.score_away}`;
-
-    let statusText = m.status;
-    let statusClass = 'status-ns';
-    let elapsedText = '';
+    let scoreText = '';
+    let statusText = '';
+    let statusClass = 'status-vs';
 
     if(isLive) {
-      statusText = m.elapsed? `${m.elapsed}'` : 'LIVE';
-      statusClass = 'status-live';
-      elapsedText = `${m.status} • ${m.elapsed? m.elapsed + "'" : ''}`;
-    } else if(isHT) {
-      statusText = 'HALF TIME';
-      statusClass = 'status-ht';
-      elapsedText = `HT • ${m.elapsed? m.elapsed + "'" : ''}`;
-    } else if(isFT) {
-      statusText = 'FINISH';
-      statusClass = 'status-ft';
-    } else if(isNS) {
+      // LIVE = Score + VS only, no minutes, no LIVE text
+      scoreText = `${m.score_home ?? 0} - ${m.score_away ?? 0}`;
+      statusText = 'VS';
+      statusClass = 'status-vs';
+    } else if(['FT','AET','PEN'].includes(m.status)) {
+      scoreText = `${m.score_home ?? 0} - ${m.score_away ?? 0}`;
+      statusText = 'VS';
+      statusClass = 'status-vs';
+    } else {
+      scoreText = 'VS';
       statusText = date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
       statusClass = 'status-ns';
     }
+
+    const scoreStyle = isNS ? 'font-size:18px;color:#666' : 'font-size:32px;';
 
     return `
       <div class="match-card">
@@ -138,22 +132,26 @@ function renderMatches() {
         <div class="match-time">${date.toLocaleDateString('en-US', {weekday:'long', day:'numeric', month:'long'})} • ${date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
         <div class="teams-row">
           <div class="team"><img src="${m.home_logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.home_team}</span></div>
-          <div class="score-center"><div class="score-text" style="${isNS? 'font-size:18px;color:#666' : ''}">${scoreText}</div><div class="status-badge ${statusClass}">${statusText}</div>${isLive || isHT? `<div class="elapsed">${elapsedText}</div>` : ''}</div>
+          <div class="score-center">
+            <div class="score-text" style="${scoreStyle}">${scoreText}</div>
+            <div class="status-badge ${statusClass}">${statusText}</div>
+          </div>
           <div class="team"><img src="${m.away_logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.away_team}</span></div>
         </div>
-        <div class="card-buttons"><button class="btn-lineup">Line Up</button><button class="btn-watch">▶ Watch Live</button></div>
+        <div class="card-buttons">
+          <button class="btn-lineup">Line Up</button>
+          <button class="btn-watch" onclick="watchLive('${m.home_team.replace(/'/g, "\\'")}', '${m.away_team.replace(/'/g, "\\'")}')">▶ Watch Live</button>
+        </div>
       </div>
     `;
   }).join('');
 }
 
-// Initial load
 loadMatches();
 
-// Auto refresh every 60 sec using async
 setInterval(async () => {
   await loadMatches();
-}, 60000);
+}, 30000);
 </script>
 
 </body>
