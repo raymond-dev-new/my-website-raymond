@@ -521,29 +521,51 @@ const API = 'e11e83e05b19af09fbdd776affffc3a7';
 
 
 // ===============================
-// SCHEMA
+// COUNTRY MATCH SCHEMA
 // ===============================
 
 const countrySchema = new mongoose.Schema({
-  fixture_id: { type: Number, unique: true },
+  fixture_id: {
+    type: Number,
+    unique: true
+  },
+
   home_team: String,
   away_team: String,
+
   home_logo: String,
   away_logo: String,
+
   league: String,
   league_logo: String,
+
   match_date: Date,
+
   status: String,
-  elapsed: { type: Number, default: null },
-  score_home: { type: Number, default: null },
-  score_away: { type: Number, default: null },
-  last_updated: { type: Date, default: Date.now }
+
+  elapsed: {
+    type: Number,
+    default: null
+  },
+
+  score_home: {
+    type: Number,
+    default: null
+  },
+
+  score_away: {
+    type: Number,
+    default: null
+  },
+
+  last_updated: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-const CountryMatch = mongoose.model(
-  'CountryMatch',
-  countrySchema
-);
+const CountryMatch =
+  mongoose.model('CountryMatch', countrySchema);
 
 
 // ===============================
@@ -552,50 +574,46 @@ const CountryMatch = mongoose.model(
 
 function isCountryMatch(m) {
 
-  const league = (m.league?.name || '').toLowerCase();
+  const league =
+    (m.league?.name || '').toLowerCase();
 
   const countryCompetitions = [
 
-    // World
+    // WORLD
     'world cup',
     'world cup qualification',
     'world cup qualifiers',
 
-    // Europe
+    // EUROPE
     'euro',
     'european championship',
     'european championship qualification',
     'euro qualification',
     'nations league',
 
-    // Africa
+    // AFRICA
     'africa cup of nations',
     'afcon',
     'africa cup',
     'african nations',
-    'world cup - qualification africa',
 
-    // Asia
+    // ASIA
     'asian cup',
     'afc asian cup',
-    'world cup - qualification asia',
 
-    // South America
+    // SOUTH AMERICA
     'copa america',
-    'world cup - qualification south america',
 
-    // North/Central America
+    // NORTH / CENTRAL AMERICA
     'concacaf',
     'gold cup',
     'concacaf nations league',
-    'world cup - qualification concacaf',
 
-    // Oceania
+    // OCEANIA
     'oceania nations cup',
     'ofc nations cup',
-    'world cup - qualification oceania',
 
-    // International
+    // INTERNATIONAL FRIENDLIES
     'friendlies',
     'international friendly',
     'international friendlies'
@@ -608,7 +626,9 @@ function isCountryMatch(m) {
 
 
 // ===============================
-// FETCH 7 DAYS BACK + TODAY
+// FETCH COUNTRY MATCHES
+// 7 DAYS BACK
+// + TODAY
 // + 7 DAYS FRONT
 // ===============================
 
@@ -624,10 +644,16 @@ async function fetchCountryMatches() {
 
     const today = new Date();
 
-    today.setUTCHours(0, 0, 0, 0);
+    today.setUTCHours(
+      0,
+      0,
+      0,
+      0
+    );
 
 
-    // -7 through +7 = 15 days
+    // -7 through +7
+    // TOTAL = 15 DAYS
     for (let i = -7; i <= 7; i++) {
 
       const date = new Date(today);
@@ -656,7 +682,7 @@ async function fetchCountryMatches() {
           response.data.response || [];
 
 
-        // COUNTRY / NATIONAL COMPETITIONS ONLY
+        // COUNTRY MATCHES ONLY
         const countryMatches =
           fixtures.filter(isCountryMatch);
 
@@ -666,13 +692,17 @@ async function fetchCountryMatches() {
         );
 
 
+        // SHOW COUNTRY MATCHES
         countryMatches.forEach(m => {
 
           console.log(
-            `  >> COUNTRY: ${m.teams.home.name} vs ${m.teams.away.name} | ` +
+            `  >> COUNTRY: ` +
+            `${m.teams.home.name} vs ` +
+            `${m.teams.away.name} | ` +
             `${m.league.name} | ` +
             `${m.fixture.status.short} ` +
-            `${m.goals.home ?? 0}-${m.goals.away ?? 0}`
+            `${m.goals.home ?? 0}-` +
+            `${m.goals.away ?? 0}`
           );
 
         });
@@ -683,9 +713,9 @@ async function fetchCountryMatches() {
         );
 
 
-        // Delay
-        await new Promise(
-          resolve => setTimeout(resolve, 1100)
+        // API REQUEST DELAY
+        await new Promise(resolve =>
+          setTimeout(resolve, 1100)
         );
 
 
@@ -710,7 +740,8 @@ async function fetchCountryMatches() {
 
       const data = {
 
-        fixture_id: m.fixture.id,
+        fixture_id:
+          m.fixture.id,
 
         home_team:
           m.teams.home.name,
@@ -770,26 +801,35 @@ async function fetchCountryMatches() {
 
 
     // ===============================
-    // DELETE OLD MATCHES
+    // WINDOW
     // ===============================
 
-    const start = new Date(today);
+    const start =
+      new Date(today);
 
     start.setUTCDate(
       start.getUTCDate() - 7
     );
 
 
-    const end = new Date(today);
-
-    end.setUTCHours(
-      23, 59, 59, 999
-    );
+    const end =
+      new Date(today);
 
     end.setUTCDate(
       end.getUTCDate() + 7
     );
 
+    end.setUTCHours(
+      23,
+      59,
+      59,
+      999
+    );
+
+
+    // ===============================
+    // DELETE OUTSIDE WINDOW
+    // ===============================
 
     const deleted =
       await CountryMatch.deleteMany({
@@ -814,7 +854,7 @@ async function fetchCountryMatches() {
 
 
     console.log(
-      `[DB CLEANUP] Deleted ${deleted.deletedCount} old/outside matches`
+      `[DB CLEANUP] Deleted ${deleted.deletedCount} matches outside window`
     );
 
 
@@ -823,7 +863,7 @@ async function fetchCountryMatches() {
     );
 
     console.log(
-      `[DB] Country matches saved`
+      `[DB] Country matches saved successfully`
     );
 
 
@@ -839,78 +879,63 @@ async function fetchCountryMatches() {
 }
 
 
-// ===============================
-// CRON
-// ===============================
+// ==================================================
+// CRON - 5 TIMES PER DAY
+// ==================================================
 
-cron.schedule(
-  '0 0 * * *',
-  async () => {
-    console.log('[CRON] 00:00');
-    await fetchCountryMatches();
-  }
-);
+// 00:00
+cron.schedule('0 0 * * *', async () => {
 
-cron.schedule(
-  '0 3 * * *',
-  async () => {
-    console.log('[CRON] 03:00');
-    await fetchCountryMatches();
-  }
-);
+  console.log('[CRON] 00:00');
 
-cron.schedule(
-  '0 6 * * *',
-  async () => {
-    console.log('[CRON] 06:00');
-    await fetchCountryMatches();
-  }
-);
+  await fetchCountryMatches();
 
-cron.schedule(
-  '0 9 * * *',
-  async () => {
-    console.log('[CRON] 09:00');
-    await fetchCountryMatches();
-  }
-);
-
-cron.schedule(
-  '0 12 * * *',
-  async () => {
-    console.log('[CRON] 12:00');
-    await fetchCountryMatches();
-  }
-);
-
-cron.schedule(
-  '0 16 * * *',
-  async () => {
-    console.log('[CRON] 16:00');
-    await fetchCountryMatches();
-  }
-);
-
-cron.schedule(
-  '0 20 * * *',
-  async () => {
-    console.log('[CRON] 20:00');
-    await fetchCountryMatches();
-  }
-);
-
-cron.schedule(
-  '10 23 * * *',
-  async () => {
-    console.log('[CRON] 23:10');
-    await fetchCountryMatches();
-  }
-);
+});
 
 
-// ===============================
+// 06:00
+cron.schedule('0 6 * * *', async () => {
+
+  console.log('[CRON] 06:00');
+
+  await fetchCountryMatches();
+
+});
+
+
+// 12:00
+cron.schedule('0 12 * * *', async () => {
+
+  console.log('[CRON] 12:00');
+
+  await fetchCountryMatches();
+
+});
+
+
+// 18:00
+cron.schedule('0 18 * * *', async () => {
+
+  console.log('[CRON] 18:00');
+
+  await fetchCountryMatches();
+
+});
+
+
+// 23:00
+cron.schedule('0 23 * * *', async () => {
+
+  console.log('[CRON] 23:00');
+
+  await fetchCountryMatches();
+
+});
+
+
+// ==================================================
 // INITIAL SYNC
-// ===============================
+// ==================================================
 
 (async () => {
 
@@ -923,9 +948,9 @@ cron.schedule(
 })();
 
 
-// ===============================
+// ==================================================
 // GET COUNTRY MATCHES
-// ===============================
+// ==================================================
 
 app.get(
   '/api/country-matches',
@@ -936,7 +961,10 @@ app.get(
       const today = new Date();
 
       today.setUTCHours(
-        0, 0, 0, 0
+        0,
+        0,
+        0,
+        0
       );
 
 
@@ -951,12 +979,15 @@ app.get(
       const end =
         new Date(today);
 
-      end.setUTCHours(
-        23, 59, 59, 999
-      );
-
       end.setUTCDate(
         end.getUTCDate() + 7
+      );
+
+      end.setUTCHours(
+        23,
+        59,
+        59,
+        999
       );
 
 
@@ -981,7 +1012,10 @@ app.get(
     } catch (err) {
 
       res.status(500).json({
-        error: err.message
+
+        error:
+          err.message
+
       });
 
     }
@@ -990,9 +1024,9 @@ app.get(
 );
 
 
-// ===============================
+// ==================================================
 // MANUAL FETCH
-// ===============================
+// ==================================================
 
 app.get(
   '/api/fetch-now',
@@ -1008,21 +1042,26 @@ app.get(
           'Country fetch done',
 
         window:
-          '7 days back + today + 7 days front'
+          '7 days back + today + 7 days front',
+
+        fetches_per_day:
+          5
 
       });
 
     } catch (err) {
 
       res.status(500).json({
-        error: err.message
+
+        error:
+          err.message
+
       });
 
     }
 
   }
 );
-
 
 //new ytresrtyuioiuytrertyuioiuytrertyu
 
