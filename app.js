@@ -562,11 +562,13 @@ cron.schedule('0 18 * * *', async () => { await fetchCountryMatches(); });
 cron.schedule('0 20 * * *', async () => { await fetchCountryMatches(); });
 cron.schedule('0 22 * * *', async () => { await fetchCountryMatches(); });
 
+/*
+// call api locally when server is starting
 (async () => {
   console.log('Initial sync');
   await fetchCountryMatches();
 })();
-
+*/
 // ===============================
 // API - THIS FIXES YOUR ERROR
 // ===============================
