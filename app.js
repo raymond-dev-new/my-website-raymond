@@ -937,15 +937,7 @@ cron.schedule('0 23 * * *', async () => {
 // INITIAL SYNC
 // ==================================================
 
-(async () => {
 
-  console.log(
-    'Initial sync - 7 DAYS BACK + TODAY + 7 DAYS FRONT'
-  );
-
-  await fetchCountryMatches();
-
-})();
 
 
 // ==================================================
