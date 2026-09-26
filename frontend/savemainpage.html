@@ -175,6 +175,7 @@
         <button class="btn Media"><i class="ri-download-2-line icon"></i> Save image</button>
         <button class="btn Note"><i class="ri-sticky-note-line icon"></i> Save Note</button>
         <button class="btn ball"><i class="ri-live-line icon"></i> Live Match</button>
+         <button class="btn balll"><i class="ri-live-line icon"></i> Country Match</button>
       
       </div>
   </div>
@@ -185,10 +186,17 @@
    const Note = document.querySelector('.Note')                  
    const Media = document.querySelector('.Media') 
    const ball = document.querySelector('.ball')
+   const balll = document.querySelector('.balll')
       
    ball.addEventListener('click', () => {
       window.location.href="football.html"
    })  
+
+    balll.addEventListener('click', () => {
+      window.location.href="countrymatch.html"
+   })  
+
+    
 
    Media.addEventListener('click', () => {
       window.location.href="media.html"

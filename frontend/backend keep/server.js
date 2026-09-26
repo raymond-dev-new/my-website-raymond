@@ -307,6 +307,7 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 // new oiufdfgyuiopoiuytrertyuiopoiuytfdfghjk
 
+
 // ================= 2. CONFIG =================
 const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
 const API_URL = "https://api.football-data.org/v4";
@@ -510,7 +511,6 @@ setTimeout(async () => {
   console.log("🚀 Initial sync starting...");
   try{ await fullSyncToDB(); }catch(e){}
 }, 5000);
-
 
 
 //new ytresrtyuioiuytrertyuioiuytrertyu

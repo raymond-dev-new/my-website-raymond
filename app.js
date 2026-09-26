@@ -513,6 +513,517 @@ setTimeout(async () => {
 }, 5000);
 
 
+// country match ihgfchjjhgviiuyuiodiuuojihuuiub
+
+
+
+const API = 'e11e83e05b19af09fbdd776affffc3a7';
+
+
+// ===============================
+// SCHEMA
+// ===============================
+
+const countrySchema = new mongoose.Schema({
+  fixture_id: { type: Number, unique: true },
+  home_team: String,
+  away_team: String,
+  home_logo: String,
+  away_logo: String,
+  league: String,
+  league_logo: String,
+  match_date: Date,
+  status: String,
+  elapsed: { type: Number, default: null },
+  score_home: { type: Number, default: null },
+  score_away: { type: Number, default: null },
+  last_updated: { type: Date, default: Date.now }
+});
+
+const CountryMatch = mongoose.model(
+  'CountryMatch',
+  countrySchema
+);
+
+
+// ===============================
+// COUNTRY COMPETITION CHECK
+// ===============================
+
+function isCountryMatch(m) {
+
+  const league = (m.league?.name || '').toLowerCase();
+
+  const countryCompetitions = [
+
+    // World
+    'world cup',
+    'world cup qualification',
+    'world cup qualifiers',
+
+    // Europe
+    'euro',
+    'european championship',
+    'european championship qualification',
+    'euro qualification',
+    'nations league',
+
+    // Africa
+    'africa cup of nations',
+    'afcon',
+    'africa cup',
+    'african nations',
+    'world cup - qualification africa',
+
+    // Asia
+    'asian cup',
+    'afc asian cup',
+    'world cup - qualification asia',
+
+    // South America
+    'copa america',
+    'world cup - qualification south america',
+
+    // North/Central America
+    'concacaf',
+    'gold cup',
+    'concacaf nations league',
+    'world cup - qualification concacaf',
+
+    // Oceania
+    'oceania nations cup',
+    'ofc nations cup',
+    'world cup - qualification oceania',
+
+    // International
+    'friendlies',
+    'international friendly',
+    'international friendlies'
+  ];
+
+  return countryCompetitions.some(name =>
+    league.includes(name)
+  );
+}
+
+
+// ===============================
+// FETCH 7 DAYS BACK + TODAY
+// + 7 DAYS FRONT
+// ===============================
+
+async function fetchCountryMatches() {
+
+  try {
+
+    console.log(
+      `[FETCH START] ${new Date().toLocaleString()} - COUNTRY ONLY`
+    );
+
+    let allCountryMatches = [];
+
+    const today = new Date();
+
+    today.setUTCHours(0, 0, 0, 0);
+
+
+    // -7 through +7 = 15 days
+    for (let i = -7; i <= 7; i++) {
+
+      const date = new Date(today);
+
+      date.setUTCDate(
+        date.getUTCDate() + i
+      );
+
+      const dateStr =
+        date.toISOString().split('T')[0];
+
+
+      try {
+
+        const response = await axios.get(
+          `https://v3.football.api-sports.io/fixtures?date=${dateStr}`,
+          {
+            headers: {
+              'x-apisports-key': API
+            }
+          }
+        );
+
+
+        const fixtures =
+          response.data.response || [];
+
+
+        // COUNTRY / NATIONAL COMPETITIONS ONLY
+        const countryMatches =
+          fixtures.filter(isCountryMatch);
+
+
+        console.log(
+          `[FETCH] ${dateStr} -> Total: ${fixtures.length} | Country: ${countryMatches.length}`
+        );
+
+
+        countryMatches.forEach(m => {
+
+          console.log(
+            `  >> COUNTRY: ${m.teams.home.name} vs ${m.teams.away.name} | ` +
+            `${m.league.name} | ` +
+            `${m.fixture.status.short} ` +
+            `${m.goals.home ?? 0}-${m.goals.away ?? 0}`
+          );
+
+        });
+
+
+        allCountryMatches.push(
+          ...countryMatches
+        );
+
+
+        // Delay
+        await new Promise(
+          resolve => setTimeout(resolve, 1100)
+        );
+
+
+      } catch (dayErr) {
+
+        console.log(
+          `Error ${dateStr}:`,
+          dayErr.response?.data?.errors ||
+          dayErr.message
+        );
+
+      }
+
+    }
+
+
+    // ===============================
+    // SAVE TO MONGODB
+    // ===============================
+
+    for (const m of allCountryMatches) {
+
+      const data = {
+
+        fixture_id: m.fixture.id,
+
+        home_team:
+          m.teams.home.name,
+
+        away_team:
+          m.teams.away.name,
+
+        home_logo:
+          m.teams.home.logo,
+
+        away_logo:
+          m.teams.away.logo,
+
+        league:
+          m.league.name,
+
+        league_logo:
+          m.league.logo,
+
+        match_date:
+          new Date(m.fixture.date),
+
+        status:
+          m.fixture.status.short,
+
+        elapsed:
+          m.fixture.status.elapsed,
+
+        score_home:
+          m.goals.home,
+
+        score_away:
+          m.goals.away,
+
+        last_updated:
+          new Date()
+      };
+
+
+      await CountryMatch.findOneAndUpdate(
+
+        {
+          fixture_id:
+            data.fixture_id
+        },
+
+        data,
+
+        {
+          upsert: true,
+          new: true
+        }
+
+      );
+
+    }
+
+
+    // ===============================
+    // DELETE OLD MATCHES
+    // ===============================
+
+    const start = new Date(today);
+
+    start.setUTCDate(
+      start.getUTCDate() - 7
+    );
+
+
+    const end = new Date(today);
+
+    end.setUTCHours(
+      23, 59, 59, 999
+    );
+
+    end.setUTCDate(
+      end.getUTCDate() + 7
+    );
+
+
+    const deleted =
+      await CountryMatch.deleteMany({
+
+        $or: [
+
+          {
+            match_date: {
+              $lt: start
+            }
+          },
+
+          {
+            match_date: {
+              $gt: end
+            }
+          }
+
+        ]
+
+      });
+
+
+    console.log(
+      `[DB CLEANUP] Deleted ${deleted.deletedCount} old/outside matches`
+    );
+
+
+    console.log(
+      `[TOTAL] Found ${allCountryMatches.length} COUNTRY matches`
+    );
+
+    console.log(
+      `[DB] Country matches saved`
+    );
+
+
+  } catch (err) {
+
+    console.log(
+      '[API ERROR]:',
+      err.message
+    );
+
+  }
+
+}
+
+
+// ===============================
+// CRON
+// ===============================
+
+cron.schedule(
+  '0 0 * * *',
+  async () => {
+    console.log('[CRON] 00:00');
+    await fetchCountryMatches();
+  }
+);
+
+cron.schedule(
+  '0 3 * * *',
+  async () => {
+    console.log('[CRON] 03:00');
+    await fetchCountryMatches();
+  }
+);
+
+cron.schedule(
+  '0 6 * * *',
+  async () => {
+    console.log('[CRON] 06:00');
+    await fetchCountryMatches();
+  }
+);
+
+cron.schedule(
+  '0 9 * * *',
+  async () => {
+    console.log('[CRON] 09:00');
+    await fetchCountryMatches();
+  }
+);
+
+cron.schedule(
+  '0 12 * * *',
+  async () => {
+    console.log('[CRON] 12:00');
+    await fetchCountryMatches();
+  }
+);
+
+cron.schedule(
+  '0 16 * * *',
+  async () => {
+    console.log('[CRON] 16:00');
+    await fetchCountryMatches();
+  }
+);
+
+cron.schedule(
+  '0 20 * * *',
+  async () => {
+    console.log('[CRON] 20:00');
+    await fetchCountryMatches();
+  }
+);
+
+cron.schedule(
+  '10 23 * * *',
+  async () => {
+    console.log('[CRON] 23:10');
+    await fetchCountryMatches();
+  }
+);
+
+
+// ===============================
+// INITIAL SYNC
+// ===============================
+
+(async () => {
+
+  console.log(
+    'Initial sync - 7 DAYS BACK + TODAY + 7 DAYS FRONT'
+  );
+
+  await fetchCountryMatches();
+
+})();
+
+
+// ===============================
+// GET COUNTRY MATCHES
+// ===============================
+
+app.get(
+  '/api/country-matches',
+  async (req, res) => {
+
+    try {
+
+      const today = new Date();
+
+      today.setUTCHours(
+        0, 0, 0, 0
+      );
+
+
+      const start =
+        new Date(today);
+
+      start.setUTCDate(
+        start.getUTCDate() - 7
+      );
+
+
+      const end =
+        new Date(today);
+
+      end.setUTCHours(
+        23, 59, 59, 999
+      );
+
+      end.setUTCDate(
+        end.getUTCDate() + 7
+      );
+
+
+      const matches =
+        await CountryMatch.find({
+
+          match_date: {
+            $gte: start,
+            $lte: end
+          }
+
+        }).sort({
+
+          match_date: 1
+
+        });
+
+
+      res.json(matches);
+
+
+    } catch (err) {
+
+      res.status(500).json({
+        error: err.message
+      });
+
+    }
+
+  }
+);
+
+
+// ===============================
+// MANUAL FETCH
+// ===============================
+
+app.get(
+  '/api/fetch-now',
+  async (req, res) => {
+
+    try {
+
+      await fetchCountryMatches();
+
+      res.json({
+
+        message:
+          'Country fetch done',
+
+        window:
+          '7 days back + today + 7 days front'
+
+      });
+
+    } catch (err) {
+
+      res.status(500).json({
+        error: err.message
+      });
+
+    }
+
+  }
+);
+
+
 //new ytresrtyuioiuytrertyuioiuytrertyu
 
 
