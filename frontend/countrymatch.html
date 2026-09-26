@@ -28,7 +28,6 @@
 .score-text{font-size:32px;font-weight:bold;margin-bottom:8px}
 .status-badge{display:inline-block;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:bold}
 .status-vs{background:#333;color:#aaa}
-.status-ft{background:#22c55e;color:#000}
 .status-ns{background:#333;color:#aaa}
 .card-buttons{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 .btn-lineup{background:#2a2a2e;color:#fff;border:0;padding:12px;border-radius:10px;font-size:14px;cursor:pointer}
@@ -75,11 +74,9 @@ function switchTab(tab) {
   renderMatches();
 }
 
-// REDIRECT TO YOUTUBE
 function watchLive(home, away) {
   const query = `${home} vs ${away} live`;
-  const youtubeUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  window.open(youtubeUrl, '_blank');
+  window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank');
 }
 
 function renderMatches() {
@@ -91,8 +88,17 @@ function renderMatches() {
   let filtered = [];
   if(currentTab === 'upcoming') {
     filtered = allMatches.filter(m => ['NS','1H','HT','2H','ET','P','LIVE','TBD'].includes(m.status));
+    // LIVE at top, then earliest upcoming
+    filtered.sort((a,b) => {
+      const aLive = ['1H','HT','2H','ET','P','LIVE'].includes(a.status) ? 0 : 1;
+      const bLive = ['1H','HT','2H','ET','P','LIVE'].includes(b.status) ? 0 : 1;
+      if(aLive !== bLive) return aLive - bLive;
+      return new Date(a.match_date) - new Date(b.match_date);
+    });
   } else {
     filtered = allMatches.filter(m => ['FT','AET','PEN'].includes(m.status));
+    // FINISHED: Most recent at top
+    filtered.sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
   }
 
   if(filtered.length === 0) {
@@ -106,18 +112,15 @@ function renderMatches() {
     const isNS = m.status === 'NS' || m.status === 'TBD';
 
     let scoreText = '';
-    let statusText = '';
+    let statusText = 'VS';
     let statusClass = 'status-vs';
 
     if(isLive) {
-      // LIVE = Score + VS only, no minutes, no LIVE text
       scoreText = `${m.score_home ?? 0} - ${m.score_away ?? 0}`;
       statusText = 'VS';
-      statusClass = 'status-vs';
     } else if(['FT','AET','PEN'].includes(m.status)) {
       scoreText = `${m.score_home ?? 0} - ${m.score_away ?? 0}`;
       statusText = 'VS';
-      statusClass = 'status-vs';
     } else {
       scoreText = 'VS';
       statusText = date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -148,10 +151,7 @@ function renderMatches() {
 }
 
 loadMatches();
-
-setInterval(async () => {
-  await loadMatches();
-}, 30000);
+setInterval(async () => { await loadMatches(); }, 30000);
 </script>
 
 </body>
