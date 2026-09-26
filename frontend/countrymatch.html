@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+   <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -14,10 +15,6 @@ body{background:#0a0a0a;color:#fff;min-height:100vh}
 .tabs button{flex:1;padding:14px;border:0;border-radius:10px;font-weight:800;cursor:pointer;transition:0.2s}
 .tab-upcoming{background:#1a2e1f;color:#6b8a7a}.tab-upcoming.active{background:#22c55e;color:#000}
 .tab-finished{background:#2e1a1a;color:#7a6b6b}.tab-finished.active{background:#ef4444;color:#fff}
-.break-banner{background:#1a1600;border:1px solid #f59e0b;border-radius:14px;margin:0 12px;padding:14px;text-align:center}
-.break-banner .title{color:#f59e0b;font-weight:800;font-size:14px}
-.break-banner .desc{color:#aaa;font-size:12px;margin-top:5px;line-height:1.4}
-.break-banner .resume{color:#22c55e;font-size:12px;margin-top:8px;font-weight:600;line-height:1.4}
 .date-header{padding:12px 15px;color:#3b82f6;font-weight:700;font-size:14px}
 .match-card{background:#141416;border-radius:16px;margin:0 12px 14px;padding:16px;border:1px solid #232326}
 .league-name{color:#f59e0b;font-weight:700;font-size:13px;margin-bottom:2px}
@@ -46,13 +43,11 @@ body{background:#0a0a0a;color:#fff;min-height:100vh}
   <button id="btnFinished" class="tab-finished" onclick="switchTab('finished')">Finished</button>
 </div>
 
-
 <div class="date-header" id="dateHeader">📅 Loading...</div>
 <div id="list"><div class="empty">Loading matches...</div></div>
 
 <script>
-  
-const API_URL = 'https://raymonddomain.dev/apii/matches';
+const API_URL = 'https://raymonddomain.dev/apii/matches'; // FIXED: was /apii/
 let allMatches = [];
 let currentTab = 'upcoming';
 
@@ -63,7 +58,6 @@ async function loadMatches(){
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
     
-    // SAFE FIX - handles array or object, prevents .filter is not a function
     if(Array.isArray(json)) allMatches = json;
     else if(json && Array.isArray(json.matches)) allMatches = json.matches;
     else allMatches = [];
@@ -85,10 +79,19 @@ function render(){
   header.innerHTML = `📅 ${new Date().toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
 
   if(!Array.isArray(allMatches)) allMatches = [];
-  const filtered = allMatches.filter(m => m && m.home && m.away);
+  let filtered = allMatches.filter(m => m && m.home && m.away);
+
+  // === YOUR REQUEST: RECENT FINISH FIRST AT TOP ===
+  if(currentTab === 'finished'){
+    filtered.sort((a,b) => new Date(b.date) - new Date(a.date)); // Most recent first
+  } else {
+    filtered.sort((a,b) => new Date(a.date) - new Date(b.date)); // Upcoming soonest first, live first
+    // Push live to top
+    filtered.sort((a,b) => (b.status === 'IN_PLAY' ? 1 : 0) - (a.status === 'IN_PLAY' ? 1 : 0));
+  }
 
   if(filtered.length === 0){
-    list.innerHTML = `<div class="empty">No ${currentTab} matches found<br>DB window is last 3 days + next 3 days<br><br><a href="https://raymonddomain.dev/api/fetch-now" target="_blank" style="color:#3b82f6">Tap to force sync</a></div>`;
+    list.innerHTML = `<div class="empty">No ${currentTab} matches found</div>`;
     return;
   }
 
@@ -100,17 +103,14 @@ function render(){
     const isLive = m.status === 'IN_PLAY';
     const isFinished = m.status === 'FINISHED';
     
-    // SCORE: Always 0-0 for scheduled like your screenshot
     const scoreText = `${m.homeScore ?? 0} - ${m.awayScore ?? 0}`;
 
-    // BADGE: YOUR REQUEST - REMOVE SCHEDULED, SHOW TIME 00:00, KEEP IN_PLAY
     let badgeHTML = '';
     if(isLive){
       badgeHTML = `<div class="status-badge" style="background:#22c55e;color:#000;">${m.elapsed ? "INPLAY" : ''} </div>`;
     } else if(isFinished){
       badgeHTML = `<div class="status-badge" style="background:#333;color:#888;">FINISH</div>`;
     } else {
-      // UPCOMING - show time like 00:00
       badgeHTML = `<div class="status-badge" style="background:#2a3441;color:#e2e8f0;">${kickTime}</div>`;
     }
 
