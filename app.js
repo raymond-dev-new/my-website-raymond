@@ -469,8 +469,8 @@ app.get("/api/sync", async (req,res)=>{
 // country match ihgfchjjhgviiuyuiodiuuojihuuiub
 
  // old e11e83e05b19af09fbdd776affffc3a7
-
-  // ================= COUNTRY MATCHES =================
+   
+ // ================= COUNTRY MATCHES =================
 const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
 const BASE='https://v3.football.api-sports.io';
 
@@ -486,10 +486,11 @@ const CountryMatch=mongoose.models.CountryMatch||
 
 const LIVE=new Set(['1H','HT','2H','ET','BT','P','LIVE','INT']);
 const DONE=new Set(['FT','AET','PEN']);
+let fetching=false;
 
-// Check if both teams are national teams
+// Country/national-team filter
 function isCountry(m){
- if(m.teams?.home?.national===true&&m.teams?.away?.national===true)return true;
+ if(m.teams?.home?.national&&m.teams?.away?.national)return true;
  const n=(m.league?.name||'').toLowerCase();
  return[
   'world cup','world cup qualification','world cup qualifiers','euro',
@@ -497,21 +498,18 @@ function isCountry(m){
   'euro qualification','nations league','africa cup of nations','afcon',
   'africa cup','african nations','asian cup','afc asian cup','copa america',
   'concacaf','gold cup','concacaf nations league','oceania nations cup',
-  'ofc nations cup','international friendly','international friendlies',
-  'friendlies'
+  'ofc nations cup','international friendly','international friendlies','friendlies'
  ].some(x=>n.includes(x));
 }
 
-// Add/subtract days
+// Date helper
 const day=(d,n)=>{
  const x=new Date(d);
  x.setUTCDate(x.getUTCDate()+n);
  return x.toISOString().slice(0,10);
 };
 
-let fetching=false;
-
-// Fetch one day - short timeout prevents cron 30s timeout
+// Fetch one day
 async function getDay(date){
  try{
   const r=await axios.get(`${BASE}/fixtures`,{
@@ -519,131 +517,91 @@ async function getDay(date){
    headers:{'x-apisports-key':API},
    timeout:6000
   });
-  if(r.data?.errors&&Object.keys(r.data.errors).length){
-   console.log(`⚠️ ${date}`,r.data.errors);
-   return[];
-  }
+  if(r.data?.errors&&Object.keys(r.data.errors).length)return[];
   return r.data?.response||[];
  }catch(e){
-  console.log(`❌ ${date}`,e.code||e.message);
+  console.log(`❌ ${date}:`,e.code||e.message);
   return[];
-}
+ }
 }
 
-// Main country sync
+// Convert API match to DB update
+const matchData=m=>({
+ fixture_id:m.fixture.id,
+ home_team:m.teams.home.name,away_team:m.teams.away.name,
+ home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
+ league:m.league?.name||'International',league_logo:m.league?.logo||'',
+ match_date:new Date(m.fixture.date),
+ status:m.fixture.status?.short||'NS',
+ elapsed:m.fixture.status?.elapsed??null,
+ score_home:m.goals?.home??null,score_away:m.goals?.away??null,
+ last_updated:new Date()
+});
+
+// Main sync: -3 to +3 days
 async function fetchCountryMatches(){
- if(fetching){
-  console.log('⏳ Fetch already running');
-  return {total:0,saved:0,deleted:0,busy:true};
- }
- if(!API){
-  console.log('❌ API key missing');
-  return {total:0,saved:0,deleted:0};
- }
+ if(fetching)return{total:0,saved:0,deleted:0,busy:true};
+ if(!API)return{total:0,saved:0,deleted:0};
+
+ // Use the existing MongoDB connection
+ if(mongoose.connection.readyState!==1)
+  throw new Error('MongoDB is not connected');
 
  fetching=true;
 
  try{
-  // Reuse existing MongoDB connection
-  if(mongoose.connection.readyState!==1)
-   await mongoose.connect(process.env.MONGO_URI);
- 
-
   const now=new Date();
   now.setUTCHours(0,0,0,0);
 
-  // -3 days through +3 days = 7 API calls in parallel
-  const dates=Array.from({length:7},(_,k)=>day(now,k-3));
-
-  // allSettled means one failed API call won't stop the others
+  const dates=Array.from({length:7},(_,i)=>day(now,i-3));
   const results=await Promise.allSettled(dates.map(getDay));
 
-  let total=0;
-  const countryMatches=[];
+  let total=0,items=[];
 
   results.forEach((r,i)=>{
    const list=r.status==='fulfilled'?r.value:[];
+   const found=list.filter(isCountry);
    total+=list.length;
-   const filtered=list.filter(isCountry);
-   countryMatches.push(...filtered);
-   console.log(`📅 ${dates[i]}: ${list.length} -> ${filtered.length} country`);
+   items.push(...found);
+   console.log(`📅 ${dates[i]}: ${list.length} -> ${found.length}`);
   });
 
-  // Save everything with one bulk database operation
-  if(countryMatches.length){
-   const nowUpdate=new Date();
-
+  // Save all matches at once
+  if(items.length)
    await CountryMatch.bulkWrite(
-    countryMatches.map(m=>({
+    items.map(m=>({
      updateOne:{
       filter:{fixture_id:m.fixture.id},
-      update:{$set:{
-       fixture_id:m.fixture.id,
-       home_team:m.teams.home.name,
-       away_team:m.teams.away.name,
-       home_logo:m.teams.home.logo||'',
-       away_logo:m.teams.away.logo||'',
-       league:m.league?.name||'International',
-       league_logo:m.league?.logo||'',
-       match_date:new Date(m.fixture.date),
-       status:m.fixture.status?.short||'NS',
-       elapsed:m.fixture.status?.elapsed??null,
-       score_home:m.goals?.home??null,
-       score_away:m.goals?.away??null,
-       last_updated:nowUpdate
-      }},
+      update:{$set:matchData(m)},
       upsert:true
      }
     })),
     {ordered:false}
    );
-  }
 
-  // Remove matches outside the -3/+3 day window
-  const start=new Date(now);
+  // Remove records outside the 7-day window
+  const start=new Date(now),end=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
-
-  const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
 
   const d=await CountryMatch.deleteMany({
-   $or:[
-    {match_date:{$lt:start}},
-    {match_date:{$gt:end}}
-   ]
+   $or:[{match_date:{$lt:start}},{match_date:{$gt:end}}]
   });
 
-  console.log(`✅ API:${total} Saved:${countryMatches.length} Deleted:${d.deletedCount}`);
+  console.log(`✅ API:${total} Saved:${items.length} Deleted:${d.deletedCount}`);
 
-  return{
-   total,
-   saved:countryMatches.length,
-   deleted:d.deletedCount
-  };
+  return{total,saved:items.length,deleted:d.deletedCount};
 
  }catch(e){
   console.log('❌ FETCH:',e.message);
-  return{
-   total:0,
-   saved:0,
-   deleted:0,
-   error:e.message
-  };
+  return{total:0,saved:0,deleted:0,error:e.message};
  }finally{
   fetching=false;
  }
 }
 
-
-// ================= AUTOMATIC SYNC =================
-// Render only. Cron-job.org handles Vercel.
-cron.schedule('0 */2 * * *',fetchCountryMatches);
-
-if(mongoose.connection.readyState===1)
- fetchCountryMatches();
-else
- mongoose.connection.once('connected',fetchCountryMatches);
+// Automatic 2-hour sync
 
 
 // ================= MATCHES API =================
@@ -653,10 +611,8 @@ app.get('/api/matches-country',async(req,res)=>{
   const now=new Date();
   now.setUTCHours(0,0,0,0);
 
-  const start=new Date(now);
+  const start=new Date(now),end=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
-
-  const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
 
@@ -666,51 +622,35 @@ app.get('/api/matches-country',async(req,res)=>{
 
   if(tab==='live')
    db=db.filter(m=>LIVE.has(m.status));
-
   else if(['finished','recent','past'].includes(tab))
    db=db.filter(m=>DONE.has(m.status))
-     .sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
-
+    .sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
   else if(tab==='today'){
    const tomorrow=new Date(now);
    tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
-
    db=db.filter(m=>{
     const d=new Date(m.match_date);
     return d>=now&&d<tomorrow;
    }).sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
-
-  }else{
+  }else
    db=db.filter(m=>!DONE.has(m.status)&&!LIVE.has(m.status))
-     .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
-  }
+    .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
 
   res.json({
-   success:true,
-   count:db.length,
+   success:true,count:db.length,
    matches:db.map(m=>({
-    id:m.fixture_id,
-    league:m.league,
-    leagueLogo:m.league_logo,
+    id:m.fixture_id,league:m.league,leagueLogo:m.league_logo,
     date:m.match_date,
-    status:DONE.has(m.status)?'FINISHED':
-           LIVE.has(m.status)?'IN_PLAY':'SCHEDULED',
+    status:DONE.has(m.status)?'FINISHED':LIVE.has(m.status)?'IN_PLAY':'SCHEDULED',
     home:{name:m.home_team,logo:m.home_logo},
     away:{name:m.away_team,logo:m.away_logo},
-    homeScore:m.score_home,
-    awayScore:m.score_away,
-    elapsed:m.elapsed,
-    rawStatus:m.status
+    homeScore:m.score_home,awayScore:m.score_away,
+    elapsed:m.elapsed,rawStatus:m.status
    }))
   });
-
  }catch(e){
   console.log('❌ MATCH API:',e.message);
-  res.status(500).json({
-   success:false,
-   matches:[],
-   error:e.message
-  });
+  res.status(500).json({success:false,matches:[],error:e.message});
  }
 });
 
@@ -721,10 +661,8 @@ app.get('/api/country-matches',async(req,res)=>{
   const now=new Date();
   now.setUTCHours(0,0,0,0);
 
-  const start=new Date(now);
+  const start=new Date(now),end=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
-
-  const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
 
@@ -739,22 +677,20 @@ app.get('/api/country-matches',async(req,res)=>{
 });
 
 
-// ================= CRON-JOB.ORG 2-HOUR ROUTE =================
-// This now uses the optimized fetch above.
+// ================= CRON-JOB.ORG =================
+// Called every 2 hours by cron-job.org
 app.get('/api/fetch-now',async(req,res)=>{
  try{
   if(fetching)
-   return res.json({
-    success:false,
-    message:'Fetch already running'
+   return res.json({success:false,message:'Fetch already running'});
+
+  // Do not reconnect with an undefined URI
+  if(mongoose.connection.readyState!==1)
+   return res.status(503).json({
+    success:false,message:'MongoDB is not connected'
    });
 
-  // Only connect here if the connection is not already ready.
-  if(mongoose.connection.readyState!==1)
-   await mongoose.connect(process.env.MONGO_URI);
-
   const result=await fetchCountryMatches();
-
   const totalInDB=await CountryMatch.countDocuments();
 
   res.json({
@@ -763,18 +699,14 @@ app.get('/api/fetch-now',async(req,res)=>{
    synced:result.saved||0,
    apiTotal:result.total||0,
    deleted:result.deleted||0,
-   totalInDB,
-   time:new Date().toISOString()
+   totalInDB,time:new Date().toISOString()
   });
 
  }catch(e){
   console.log('❌ FETCH-NOW:',e.message);
-
   res.status(500).json({
-   success:false,
-   message:'Fetch failed',
-   error:e.message,
-   time:new Date().toISOString()
+   success:false,message:'Fetch failed',
+   error:e.message,time:new Date().toISOString()
   });
  }
 });
