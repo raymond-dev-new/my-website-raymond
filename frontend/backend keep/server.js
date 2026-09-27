@@ -495,8 +495,26 @@ app.get("/api/live", async(req,res)=>{
 // Vercel calls this automatically at 0 1 * * * (1am UTC = 2am Lagos)
 // You should also call it manually once after deploy to fill DB first time
 // ANTI-BAN: Only 1 time per day = 2 API calls/day = you use <1% of limit
+
+// ADD THIS AT TOP with other caches
+let syncCache = { time: 0, data: null };
+
+// ========== ROUTE 3: /api/sync - PROTECTED ==========
 app.get("/api/sync", async(req,res)=>{
-  const r=await fullSyncToDB();
+  const now = Date.now();
+  
+  // ANTI-BAN LAYER 3: SYNC COOLDOWN - 1 hour
+  // Even if 1000 users click sync, only 1 per hour will actually run
+  if(now - syncCache.time < 3600000 && syncCache.data){
+    return res.json({success:true, ...syncCache.data, cached:true, message:"Sync cooldown 1hr - serving cache"});
+  }
+
+  if(isSyncing){
+    return res.json({success:false, message:"Sync already running, wait..."});
+  }
+
+  const r = await fullSyncToDB();
+  syncCache = { time: now, data: r }; // Save for 1 hour
   res.json({success:true,...r, timeWAT: new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})});
 });
 
@@ -675,10 +693,10 @@ async function fetchCountryMatches(){
 }
 
 // FOR RENDER ONLY - Vercel uses cron-job.org
-
+/*
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
-
+*/
 
 /* MATCHES - Returns filtered by tab */
 app.get('/api/matches-country',async(req,res)=>{
