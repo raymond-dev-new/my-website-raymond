@@ -708,7 +708,7 @@ app.get('/api/country-matches',async(req,res)=>{
  }
 });
 
-/* MANUAL FOR CRON-JOB.ORG - 2 HOURS ROUTE */
+/* MANUAL FOR CRON-JOB.ORG - 2 HOURS ROUTE hgh */
 app.get('/api/fetch-now',async(req,res)=>{
  if(fetching)return res.json({success:false,message:'Fetch already running'});
  

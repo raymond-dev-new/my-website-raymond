@@ -469,8 +469,8 @@ app.get("/api/sync", async (req,res)=>{
 // country match ihgfchjjhgviiuyuiodiuuojihuuiub
 
  // old e11e83e05b19af09fbdd776affffc3a7
-   
- const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
+ 
+  const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
 const BASE='https://v3.football.api-sports.io';
 
 // DB Schema for country matches
@@ -637,10 +637,10 @@ async function fetchCountryMatches(){
 }
 
 // FOR RENDER ONLY - Vercel uses cron-job.org
-/*
+
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
-*/
+
 
 /* MATCHES - Returns filtered by tab */
 app.get('/api/matches-country',async(req,res)=>{
@@ -732,8 +732,8 @@ app.get('/api/fetch-now',async(req,res)=>{
   totalInDB:await CountryMatch.countDocuments(),
   time: new Date().toISOString()
  });
-});
- 
+}); 
+
 // country match end here kjhgcfghhgxuygfxyf
 
 //new ytresrtyuioiuytrertyuioiuytrertyu
