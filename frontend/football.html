@@ -5,229 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Football</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-        }
-
-        body {
-            background: #000;
-            color: #fff;
-            padding: 15px;
-        }
-
-      .container {
-            width: 80%;
-            margin: 0 auto;
-        }
-
-      .header-text {
-            text-align: center;
-            font-size: 25px;
-            margin-bottom: 15px;
-        }
-
-      .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-      .tab {
-            flex: 1;
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+        body { background: #000; color: #fff; padding: 15px; }
+       .container { width: 80%; margin: 0 auto; }
+       .header-text { text-align: center; font-size: 25px; margin-bottom: 15px; }
+       .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+       .tab { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; }
+       .tab.upcoming { background: #16a34a; color: #fff; }
+       .tab.finished { background: #dc2626; color: #fff; }
+       .tab.inactive { opacity: 0.5; }
+       .date-header { display: flex; align-items: center; gap: 8px; color: #3b82f6; font-size: 16px; font-weight: 700; margin: 20px 0 12px; }
+       .match-card { background: #111; border: 1px solid #222; border-radius: 16px; padding: 15px; margin-bottom: 15px; }
+       .league { color: #f59e0b; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+       .match-date { color: #9ca3af; font-size: 13px; margin-bottom: 15px; }
+       .teams { display: flex; align-items: center; justify-content: space-between; text-align: center; margin-bottom: 12px; }
+       .team { flex: 1; }
+       .team img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px; }
+       .team-name { font-size: 14px; font-weight: 600; }
+       .score-area { flex: 0 0 90px; text-align: center; }
+       .score { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+       .badge { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; display: inline-block; background: #2563eb; color: #fff; }
+       .badge.live { background: #dc2626; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+       .btn { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; }
+       .btn-watch { background: #dc2626; color: #fff; }
+       .no-matches { text-align: center; color: #666; padding: 40px 0; }
+       .loading { text-align: center; color: #888; padding: 30px; }
+        /* BREAK NOTICE STYLE */
+        #breakNotice {
+            display: none;
+            border: 2px solid #f59e0b;
+            background: #1a1200;
+            border-radius: 14px;
             padding: 14px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-      .tab.upcoming {
-            background: #16a34a;
-            color: #fff;
-        }
-
-      .tab.finished {
-            background: #dc2626;
-            color: #fff;
-        }
-
-      .tab.inactive {
-            opacity: 0.5;
-        }
-
-      .date-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #3b82f6;
-            font-size: 16px;
-            font-weight: 700;
-            margin: 20px 0 12px;
-        }
-
-      .match-card {
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-      .league {
-            color: #f59e0b;
-            font-weight: 700;
-            font-size: 15px;
-            margin-bottom: 6px;
-        }
-
-      .match-date {
-            color: #9ca3af;
-            font-size: 13px;
-            margin-bottom: 15px;
-        }
-
-      .teams {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            text-align: center;
-            margin-bottom: 12px;
-        }
-
-      .team {
-            flex: 1;
-        }
-
-      .team img {
-            width: 50px;
-            height: 50px;
-            object-fit: contain;
-            margin-bottom: 8px;
-        }
-
-      .team-name {
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-      .score-area {
-            flex: 0 0 90px;
+            margin-bottom: 18px;
             text-align: center;
         }
-
-      .score {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-      .badge {
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            display: inline-block;
-            background: #2563eb;
-            color: #fff;
-        }
-
-      .badge.live {
-            background: #dc2626;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
-
-      .btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-      .btn-watch {
-            background: #dc2626;
-            color: #fff;
-        }
-
-      .no-matches {
-            text-align: center;
-            color: #666;
-            padding: 40px 0;
-        }
-
-      .loading {
-            text-align: center;
-            color: #888;
-            padding: 30px;
-        }
-
-        @media (max-width: 900px) {
-          .container { width: 90%; }
-        }
-
-        @media (max-width: 600px) {
-          .container { width: 100%; }
-        }
+        #breakNotice.title { color: #f59e0b; font-weight: 800; font-size: 15px; margin-bottom: 6px; }
+        #breakNotice.desc { color: #d1d5db; font-size: 14px; line-height: 1.4; }
+        #breakNotice.resume { color: #10b981; font-size: 13px; margin-top: 8px; font-weight: 600; }
+        @media (max-width: 900px) {.container { width: 90%; } }
+        @media (max-width: 600px) {.container { width: 100%; } }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1 class="header-text">Live Football ⚽</h1>
-
         <div class="tabs">
-            <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">
-                Upcoming & Live
-            </button>
-            <button class="tab finished inactive" onclick="loadMatches('finished', this)">
-                Finished
-            </button>
+            <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming & Live</button>
+            <button class="tab finished inactive" onclick="loadMatches('finished', this)">Finished</button>
+        </div>
+
+        <!-- BREAK NOTICE - ON TOP -->
+        <div id="breakNotice">
+            <div class="title">⚠️ Big Leagues on International Break</div>
+            <div class="desc">Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 and Champions League matches have finished for now.</div>
+            <div class="resume">They will resume on Friday 10th October 2026 — Liverpool vs Man City, Arsenal vs Leeds, Real Madrid vs Villarreal, Barcelona vs Getafe.</div>
         </div>
 
         <div id="matches"></div>
     </div>
 
     <script>
-        // BASE URL: localhost:8000 for testing, change to raymonddomain.dev when live
         const BASE_URL = "https://raymonddomain.dev";
         const API_MATCHES = `${BASE_URL}/api/matches`;
         const API_LIVE = `${BASE_URL}/api/live`;
-
         let currentTab = 'upcoming';
         let currentBtn = null;
         let liveInterval = null;
-
-        // ANTI-BAN LAYER 1: LOCAL STORAGE CACHE
-        // We save last fetched matches in browser.
-        // 1000 users opening page = 1000 reads from their own browser, not 1000 API calls to backend.
-        // So first paint shows matches instantly with 0 network calls.
         let cache = {
             upcoming: JSON.parse(localStorage.getItem('cache_upcoming') || '[]'),
             finished: JSON.parse(localStorage.getItem('cache_finished') || '[]')
         };
 
+        // BIG LEAGUES LIST - to auto-hide notice
+        const BIG_LEAGUE_KEYWORDS = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1', 'Champions League', 'Primera Division'];
+
+        function shouldShowBreakNotice(matches, tab) {
+            if (tab!== 'upcoming') return false; // only show on upcoming tab
+            if (!matches || matches.length === 0) return true; // no matches at all = show notice
+
+            // Check if any match is from big leagues
+            const hasBigLeague = matches.some(m => {
+                const league = (m.league || m.competition?.name || '').toLowerCase();
+                return BIG_LEAGUE_KEYWORDS.some(k => league.includes(k.toLowerCase()));
+            });
+
+            return!hasBigLeague; // Show notice if NO big league found
+        }
+
         function formatDateHeader(d) {
             return `📅 ${new Date(d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
         }
-
         function formatFullDate(d) {
             const x = new Date(d);
             return x.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + " • " + x.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
-
         function getStatusBadge(m) {
             if (["IN_PLAY", "LIVE"].includes(m.status)) {
                 return `<span class="badge live">LIVE<br>${m.minuteText || (m.minute? m.minute + "'" : "LIVE")}</span>`;
@@ -240,7 +113,6 @@
             }
             return `<span class="badge" style="background:#374151">${new Date(m.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>`;
         }
-
         function renderMatch(m) {
             return `
                 <div class="match-card">
@@ -260,13 +132,9 @@
                             <div class="team-name">${m.away.name}</div>
                         </div>
                     </div>
-                    <button class="btn btn-watch" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(m.home.name + ' vs ' + m.away.name + ' live')}', '_blank')">
-                        ▶ Watch Live
-                    </button>
-                </div>
-            `;
+                    <button class="btn btn-watch" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(m.home.name + ' vs ' + m.away.name + ' live')}', '_blank')">▶ Watch Live</button>
+                </div>`;
         }
-
         function groupByDate(matches) {
             const g = {};
             matches.forEach(m => {
@@ -277,11 +145,19 @@
             });
             return g;
         }
-
         function renderGrouped(matches, tab) {
             const c = document.getElementById('matches');
+            const breakNotice = document.getElementById('breakNotice');
+
+            // CONTROL NOTICE HERE
+            if (shouldShowBreakNotice(matches, tab)) {
+                breakNotice.style.display = 'block';
+            } else {
+                breakNotice.style.display = 'none';
+            }
+
             if (!matches || matches.length === 0) {
-                c.innerHTML = `<div class="no-matches"> Check your network and retry </small></div>`;
+                c.innerHTML = `<div class="no-matches">No matches found.</div>`;
                 return;
             }
             const grouped = groupByDate(matches);
@@ -301,44 +177,26 @@
             c.innerHTML = html;
         }
 
-        // CORE FUNCTION - ANTI-BAN EXPLAINED
         async function loadMatches(tab, btn) {
             currentTab = tab;
             currentBtn = btn;
-
             document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
             btn.classList.remove('inactive');
-
             const container = document.getElementById('matches');
-
-            // ANTI-BAN LAYER 2: SHOW CACHE FIRST
-            // Show cached matches instantly - 0 API calls for first paint
             if (cache[tab] && cache[tab].length > 0) {
                 renderGrouped(cache[tab], tab);
             } else {
                 container.innerHTML = `<div class="loading">Loading matches...</div>`;
             }
-
             if (liveInterval) clearInterval(liveInterval);
-
             try {
                 const controller = new AbortController();
                 setTimeout(() => controller.abort(), 25000);
-
                 let matches = [];
-
                 if (tab === 'upcoming') {
-                    // STEP 1: Fetch from YOUR DB, NOT football-data
-                    // /api/matches reads from MongoDB = 0 cost to football-data
-                    // 1000 users = 1000 DB reads = safe, no ban
                     const resDB = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
                     const dataDB = await resDB.json();
                     let dbMatches = dataDB.success? (dataDB.matches || []) : [];
-
-                    // STEP 2: ANTI-BAN LAYER 3 - LIVE WITH 60s BACKEND CACHE
-                    // Backend liveCache stores data for 60 seconds
-                    // WITHOUT it: 1000 users = 1000 calls/min = BAN (limit 10/min)
-                    // WITH it: 1000 users = 1 real call + 999 from cache = SAFE
                     try {
                         const resLive = await fetch(`${API_LIVE}`, { cache: "no-store", signal: controller.signal });
                         const dataLive = await resLive.json();
@@ -353,31 +211,21 @@
                         matches = dbMatches;
                     }
                 } else {
-                    // Finished tab - only from DB, 0 API calls to football-data
                     const res = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
                     const data = await res.json();
                     matches = data.matches || [];
                 }
-
-                // Save fresh data to localStorage for next instant load
                 cache[tab] = matches;
                 localStorage.setItem('cache_' + tab, JSON.stringify(matches));
                 renderGrouped(matches, tab);
-
-                // ANTI-BAN LAYER 4: AUTO-REFRESH ONLY EVERY 60s
-                // We only refresh if LIVE match exists, and only every 60 seconds
-                // 5 sec = 12 calls/min = BAN. 60 sec = 1 call/min = SAFE
                 const hasLive = matches.some(m => ["IN_PLAY", "LIVE", "PAUSED"].includes(m.status));
                 if (hasLive && tab === "upcoming") {
                     liveInterval = setInterval(() => loadMatches(tab, btn), 60000);
                 }
-
             } catch (err) {
                 console.log(err);
             }
         }
-
-        // Auto load upcoming on page open
         window.onload = () => {
             const firstBtn = document.querySelector('.tab.upcoming');
             loadMatches('upcoming', firstBtn);
