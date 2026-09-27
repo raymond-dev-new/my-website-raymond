@@ -281,7 +281,7 @@
         function renderGrouped(matches, tab) {
             const c = document.getElementById('matches');
             if (!matches || matches.length === 0) {
-                c.innerHTML = `<div class="no-matches">No matches found.<br><small>Make sure backend is running on localhost:8000 and run ${BASE_URL}/api/sync once</small></div>`;
+                c.innerHTML = `<div class="no-matches"> Check your network and retry </small></div>`;
                 return;
             }
             const grouped = groupByDate(matches);
