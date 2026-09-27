@@ -188,8 +188,8 @@
    const ball = document.querySelector('.ball')
    const balll = document.querySelector('.balll')
       
-   ball.addEventListener('click', async () => {
-       
+   ball.addEventListener('click', () => {
+        const response = fetch('https://raymonddomain.dev/api/sync')
       window.location.href="football.html";
     });
      
