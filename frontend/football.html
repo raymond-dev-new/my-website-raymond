@@ -31,7 +31,6 @@
        .btn-watch { background: #dc2626; color: #fff; }
        .no-matches { text-align: center; color: #666; padding: 40px 0; }
        .loading { text-align: center; color: #888; padding: 30px; }
-        /* BREAK NOTICE STYLE */
         #breakNotice {
             display: none;
             border: 2px solid #f59e0b;
@@ -55,17 +54,13 @@
             <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming & Live</button>
             <button class="tab finished inactive" onclick="loadMatches('finished', this)">Finished</button>
         </div>
-
-        <!-- BREAK NOTICE - ON TOP -->
         <div id="breakNotice">
             <div class="title">⚠️ Big Leagues on International Break</div>
             <div class="desc">Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 and Champions League matches have finished for now.</div>
-            <div class="resume">They will resume on Friday 10th October 2026 — Liverpool vs Man City, Arsenal vs Leeds, Real Madrid vs Villarreal, Barcelona vs Getafe.</div>
+            <div class="resume">They will resume on Friday 10th October 2026 — Liverpool vs Man City, Arsenal vs Leeds, Real Madrid vs Villarreal, Barcelona vs Getafe.<br>Click on finish tab to check past match</div>
         </div>
-
         <div id="matches"></div>
     </div>
-
     <script>
         const BASE_URL = "https://raymonddomain.dev";
         const API_MATCHES = `${BASE_URL}/api/matches`;
@@ -77,83 +72,43 @@
             upcoming: JSON.parse(localStorage.getItem('cache_upcoming') || '[]'),
             finished: JSON.parse(localStorage.getItem('cache_finished') || '[]')
         };
+        const BIG_LEAGUE_KEYWORDS = ['Premier League', 'La Liga', 'Primera Division', 'Serie A', 'Bundesliga', 'Ligue 1', 'Champions League', 'PL', 'PD', 'SA', 'BL1', 'FL1', 'CL'];
 
-        // BIG LEAGUES LIST - to auto-hide notice
-        const BIG_LEAGUE_KEYWORDS = ['Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1', 'Champions League', 'Primera Division'];
-
-        function shouldShowBreakNotice(matches, tab) {
-            if (tab!== 'upcoming') return false; // only show on upcoming tab
-            if (!matches || matches.length === 0) return true; // no matches at all = show notice
-
-            // Check if any match is from big leagues
-            const hasBigLeague = matches.some(m => {
-                const league = (m.league || m.competition?.name || '').toLowerCase();
-                return BIG_LEAGUE_KEYWORDS.some(k => league.includes(k.toLowerCase()));
+        function hasBigLeagueMatch(matches){
+            if(!matches || matches.length===0) return false;
+            return matches.some(m=>{
+                const league = (m.league || m.competition?.name || m.competition?.code || '').toLowerCase();
+                return BIG_LEAGUE_KEYWORDS.some(k=> league.includes(k.toLowerCase()));
             });
-
-            return!hasBigLeague; // Show notice if NO big league found
         }
 
-        function formatDateHeader(d) {
-            return `📅 ${new Date(d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
-        }
-        function formatFullDate(d) {
-            const x = new Date(d);
-            return x.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + " • " + x.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-        }
+        function formatDateHeader(d) { return `📅 ${new Date(d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`; }
+        function formatFullDate(d) { const x = new Date(d); return x.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + " • " + x.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }); }
         function getStatusBadge(m) {
-            if (["IN_PLAY", "LIVE"].includes(m.status)) {
-                return `<span class="badge live">LIVE<br>${m.minuteText || (m.minute? m.minute + "'" : "LIVE")}</span>`;
-            }
-            if (m.status === "PAUSED") {
-                return `<span class="badge" style="background:#eab308;color:#000">HT</span>`;
-            }
-            if (m.status === "FINISHED") {
-                return `<span class="badge" style="background:#16a34a">FINISH</span>`;
-            }
+            if (["IN_PLAY", "LIVE"].includes(m.status)) return `<span class="badge live">LIVE<br>${m.minuteText || (m.minute? m.minute + "'" : "LIVE")}</span>`;
+            if (m.status === "PAUSED") return `<span class="badge" style="background:#eab308;color:#000">HT</span>`;
+            if (m.status === "FINISHED") return `<span class="badge" style="background:#16a34a">FINISH</span>`;
             return `<span class="badge" style="background:#374151">${new Date(m.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>`;
         }
         function renderMatch(m) {
-            return `
-                <div class="match-card">
-                    <div class="league">${m.league || ''}</div>
-                    <div class="match-date">${formatFullDate(m.date)}</div>
-                    <div class="teams">
-                        <div class="team">
-                            <img src="${m.home.logo}" onerror="this.src='https://via.placeholder.com/50'">
-                            <div class="team-name">${m.home.name}</div>
-                        </div>
-                        <div class="score-area">
-                            <div class="score">${m.homeScore?? 0} - ${m.awayScore?? 0}</div>
-                            ${getStatusBadge(m)}
-                        </div>
-                        <div class="team">
-                            <img src="${m.away.logo}" onerror="this.src='https://via.placeholder.com/50'">
-                            <div class="team-name">${m.away.name}</div>
-                        </div>
-                    </div>
-                    <button class="btn btn-watch" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(m.home.name + ' vs ' + m.away.name + ' live')}', '_blank')">▶ Watch Live</button>
-                </div>`;
+            return `<div class="match-card"><div class="league">${m.league || ''}</div><div class="match-date">${formatFullDate(m.date)}</div><div class="teams"><div class="team"><img src="${m.home.logo}" onerror="this.src='https://via.placeholder.com/50'"><div class="team-name">${m.home.name}</div></div><div class="score-area"><div class="score">${m.homeScore?? 0} - ${m.awayScore?? 0}</div>${getStatusBadge(m)}</div><div class="team"><img src="${m.away.logo}" onerror="this.src='https://via.placeholder.com/50'"><div class="team-name">${m.away.name}</div></div></div><button class="btn btn-watch" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(m.home.name + ' vs ' + m.away.name + ' live')}', '_blank')">▶ Watch Live</button></div>`;
         }
         function groupByDate(matches) {
-            const g = {};
-            matches.forEach(m => {
-                const d = new Date(m.date);
-                const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-                if (!g[k]) g[k] = [];
-                g[k].push(m);
-            });
-            return g;
+            const g = {}; matches.forEach(m => { const d = new Date(m.date); const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; if (!g[k]) g[k] = []; g[k].push(m); }); return g;
         }
         function renderGrouped(matches, tab) {
             const c = document.getElementById('matches');
             const breakNotice = document.getElementById('breakNotice');
 
-            // CONTROL NOTICE HERE
-            if (shouldShowBreakNotice(matches, tab)) {
-                breakNotice.style.display = 'block';
+            // NEW LOGIC: Banner on top, matches always below
+            if(tab === 'upcoming'){
+                if(hasBigLeagueMatch(matches)){
+                    breakNotice.style.display = 'none'; // Big leagues started -> remove banner
+                } else {
+                    breakNotice.style.display = 'block'; // No big leagues -> show banner on top
+                }
             } else {
-                breakNotice.style.display = 'none';
+                breakNotice.style.display = 'none'; // Never show on Finished tab
             }
 
             if (!matches || matches.length === 0) {
@@ -166,28 +121,18 @@
             if (tab === 'finished') dates = dates.reverse();
             dates.forEach(k => {
                 html += `<div class="date-header">${formatDateHeader(grouped[k][0].date)}</div>`;
-                grouped[k].sort((a, b) => {
-                    const la = ["IN_PLAY", "LIVE", "PAUSED"].includes(a.status);
-                    const lb = ["IN_PLAY", "LIVE", "PAUSED"].includes(b.status);
-                    if (la &&!lb) return -1;
-                    if (!la && lb) return 1;
-                    return 0;
-                }).forEach(m => html += renderMatch(m));
+                grouped[k].sort((a, b) => { const la = ["IN_PLAY", "LIVE", "PAUSED"].includes(a.status); const lb = ["IN_PLAY", "LIVE", "PAUSED"].includes(b.status); if (la &&!lb) return -1; if (!la && lb) return 1; return 0; }).forEach(m => html += renderMatch(m));
             });
             c.innerHTML = html;
         }
 
         async function loadMatches(tab, btn) {
-            currentTab = tab;
-            currentBtn = btn;
+            currentTab = tab; currentBtn = btn;
             document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
             btn.classList.remove('inactive');
             const container = document.getElementById('matches');
-            if (cache[tab] && cache[tab].length > 0) {
-                renderGrouped(cache[tab], tab);
-            } else {
-                container.innerHTML = `<div class="loading">Loading matches...</div>`;
-            }
+            if (cache[tab] && cache[tab].length > 0) { renderGrouped(cache[tab], tab); }
+            else { container.innerHTML = `<div class="loading">Loading matches...</div>`; }
             if (liveInterval) clearInterval(liveInterval);
             try {
                 const controller = new AbortController();
@@ -204,32 +149,20 @@
                             const liveMap = new Map(dataLive.matches.map(m => [m._id, m]));
                             dbMatches = dbMatches.filter(m =>!liveMap.has(m._id));
                             matches = [...dataLive.matches,...dbMatches];
-                        } else {
-                            matches = dbMatches;
-                        }
-                    } catch (e) {
-                        matches = dbMatches;
-                    }
+                        } else { matches = dbMatches; }
+                    } catch (e) { matches = dbMatches; }
                 } else {
                     const res = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
-                    const data = await res.json();
-                    matches = data.matches || [];
+                    const data = await res.json(); matches = data.matches || [];
                 }
                 cache[tab] = matches;
                 localStorage.setItem('cache_' + tab, JSON.stringify(matches));
                 renderGrouped(matches, tab);
                 const hasLive = matches.some(m => ["IN_PLAY", "LIVE", "PAUSED"].includes(m.status));
-                if (hasLive && tab === "upcoming") {
-                    liveInterval = setInterval(() => loadMatches(tab, btn), 60000);
-                }
-            } catch (err) {
-                console.log(err);
-            }
+                if (hasLive && tab === "upcoming") { liveInterval = setInterval(() => loadMatches(tab, btn), 60000); }
+            } catch (err) { console.log(err); }
         }
-        window.onload = () => {
-            const firstBtn = document.querySelector('.tab.upcoming');
-            loadMatches('upcoming', firstBtn);
-        };
+        window.onload = () => { const firstBtn = document.querySelector('.tab.upcoming'); loadMatches('upcoming', firstBtn); };
     </script>
 </body>
 </html>
