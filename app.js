@@ -35,10 +35,10 @@ const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdg
 const url = process.env.MONGO_URL
 
  
-//app.use(cors())
-/*app.use(cors({ origin: "*",
-  methods: ["GET", "POST" , "DELETE"]
- })); */
+
+
+
+
 
 app.use(cors({ origin: "*" }));
 app.use(bordyparser.json()); // for metadata
