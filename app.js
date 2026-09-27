@@ -309,11 +309,12 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
 // ================= 2. CONFIG =================
+
 const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
 const API_URL="https://api.football-data.org/v4";
 let isSyncing=false;
 
-const Match=mongoose.model("Match",new mongoose.Schema({
+const Match=mongoose.models.Match || mongoose.model("Match",new mongoose.Schema({
   _id:String,date:Date,status:String,minute:Number,minuteText:String,league:String,
   home:{name:String,logo:String},away:{name:String,logo:String},
   homeScore:Number,awayScore:Number
@@ -391,8 +392,10 @@ async function fullSyncToDB(){
       );
       console.log(`[SYNCED] ${formatted.length} matches`);
     }
+    return formatted.length;
   }catch(e){
     console.log("[SYNC ERROR]",e.message);
+    return 0;
   }finally{
     isSyncing=false;
   }
@@ -435,6 +438,12 @@ app.get("/api/matches",async(req,res)=>{
   }catch(e){
     res.json({success:true,matches:[]});
   }
+});
+
+// === API FOR CRON-JOB.ORG ===
+app.get("/api/sync", async (req,res)=>{
+  const count = await fullSyncToDB();
+  res.json({success:true, synced:count, time:new Date().toISOString()});
 });
 
 // EVERY 2 MINUTES
@@ -561,10 +570,10 @@ async function fetchCountryMatches(){
 }
 
 cron.schedule('0 */2 * * *',fetchCountryMatches);
-/*
+
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
-*/
+
 
 /* MATCHES */
 app.get('/apii/matches',async(req,res)=>{
