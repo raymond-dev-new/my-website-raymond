@@ -11,15 +11,5 @@
       "src": "/(.*)",
       "dest": "app.js"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/sync",
-      "schedule": "2 */2 * * *"
-    },
-    {
-      "path": "/api/fetch-now",
-      "schedule": "0 */2 * * *"
-    }
   ]
 }
