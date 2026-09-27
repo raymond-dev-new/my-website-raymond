@@ -309,11 +309,12 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
 // ================= 2. CONFIG =================
+
 const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
 const API_URL="https://api.football-data.org/v4";
 let isSyncing=false;
 
-const Match=mongoose.model("Match",new mongoose.Schema({
+const Match=mongoose.models.Match || mongoose.model("Match",new mongoose.Schema({
   _id:String,date:Date,status:String,minute:Number,minuteText:String,league:String,
   home:{name:String,logo:String},away:{name:String,logo:String},
   homeScore:Number,awayScore:Number
@@ -365,11 +366,19 @@ function format(m){
 }
 
 async function fullSyncToDB(){
-  if(isSyncing)return console.log("[SKIP] Already syncing");
+  if(isSyncing){
+    console.log("[SKIP] Already syncing");
+    return 0;
+  }
   isSyncing=true;
   console.log(`[SYNC] ${new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})} WAT`);
 
   try{
+    // Connect if not connected
+    if(mongoose.connection.readyState!==1){
+      await mongoose.connect(process.env.MONGO_URI);
+    }
+
     const finished=await api("/matches",{dateFrom:getDate(-7),dateTo:getDate()});
     await new Promise(r=>setTimeout(r,7000));
     const upcoming=await api("/matches",{dateFrom:getDate(),dateTo:getDate(7)});
@@ -389,10 +398,12 @@ async function fullSyncToDB(){
         })),
         {ordered:false}
       );
-      console.log(`[SYNCED] ${formatted.length} matches`);
+      console.log(`[SYNCED] ${formatted.length} matches saved to DB`);
     }
+    return formatted.length;
   }catch(e){
     console.log("[SYNC ERROR]",e.message);
+    return 0;
   }finally{
     isSyncing=false;
   }
@@ -408,12 +419,19 @@ async function getMatches(type){
       filter={date:{$gte:s,$lte:e}};
     }
 
-    if(type==="upcoming")
-      filter={date:{$gte:new Date(getDate()),$lte:new Date(getDate(7))},
-        status:{$in:["SCHEDULED","TIMED","IN_PLAY","PAUSED"]}};
+    if(type==="upcoming"){
+      filter={
+        date:{$gte:new Date(getDate()),$lte:new Date(getDate(7))},
+        status:{$in:["SCHEDULED","TIMED","IN_PLAY","PAUSED"]}
+      };
+    }
 
-    if(type==="finished")
-      filter={date:{$gte:new Date(getDate(-7)),$lte:new Date()},status:"FINISHED"};
+    if(type==="finished"){
+      filter={
+        date:{$gte:new Date(getDate(-7)),$lte:new Date()},
+        status:"FINISHED"
+      };
+    }
 
     const matches=await Match.find(filter).lean();
 
@@ -437,7 +455,15 @@ app.get("/api/matches",async(req,res)=>{
   }
 });
 
-// EVERY 2 MINUTES
+// === API FOR CRON-JOB.ORG ===
+// METHOD: GET | ROUTE: /api/sync
+app.get("/api/sync", async (req,res)=>{
+  const count = await fullSyncToDB();
+  const totalInDB = await Match.countDocuments();
+  res.json({success:true, synced:count, totalInDB, time:new Date().toISOString()});
+});
+
+// EVERY 2 MINUTES (for Render/VPS - Vercel uses cron-job.org)
 cron.schedule("*/2 * * * *",()=>fullSyncToDB(),{timezone:"UTC"});
 
 // INITIAL SYNC
@@ -450,7 +476,9 @@ setTimeout(fullSyncToDB,5000);
 
  // old e11e83e05b19af09fbdd776affffc3a7
 
- const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
+
+
+const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
 const BASE='https://v3.football.api-sports.io';
 
 const countrySchema=new mongoose.Schema({
@@ -460,7 +488,7 @@ const countrySchema=new mongoose.Schema({
  score_home:{type:Number,default:null},score_away:{type:Number,default:null},
  last_updated:{type:Date,default:Date.now}
 });
-const CountryMatch=mongoose.model('CountryMatch',countrySchema);
+const CountryMatch=mongoose.models.CountryMatch || mongoose.model('CountryMatch',countrySchema);
 
 const LIVE=new Set(['1H','HT','2H','ET','BT','P','LIVE','INT']);
 const DONE=new Set(['FT','AET','PEN']);
@@ -527,20 +555,33 @@ async function save(m){
 }
 
 async function fetchCountryMatches(){
- if(fetching)return console.log('⏳ Fetch already running');
- if(!API)return console.log('❌ API key missing');
+ if(fetching){
+   console.log('⏳ Fetch already running');
+   return {total:0, saved:0, deleted:0};
+ }
+ if(!API){
+   console.log('❌ API key missing');
+   return {total:0, saved:0, deleted:0};
+ }
  fetching=true;
 
  try{
+  if(mongoose.connection.readyState!==1){
+    await mongoose.connect(process.env.MONGO_URI);
+  }
+
   const now=new Date();
   now.setUTCHours(0,0,0,0);
   let total=0,saved=0;
 
   for(let i=-3;i<=3;i++){
-   const date=day(now,i),list=await getDay(date);
+   const date=day(now,i);
+   const list=await getDay(date);
    total+=list.length;
    for(const m of list.filter(isCountry)){await save(m);saved++;}
-   console.log(`📅 ${date}: ${list.length}`);
+   console.log(`📅 ${date}: ${list.length} -> ${list.filter(isCountry).length} country`);
+   // wait 1 sec to avoid rate limit
+   await new Promise(r=>setTimeout(r,1000));
   }
 
   const start=new Date(now);
@@ -555,19 +596,21 @@ async function fetchCountryMatches(){
   });
 
   console.log(`✅ API:${total} Saved:${saved} Deleted:${d.deletedCount}`);
+  return {total, saved, deleted:d.deletedCount};
  }catch(e){
   console.log('❌ FETCH:',e.message);
+  return {total:0, saved:0, deleted:0, error:e.message};
  }finally{fetching=false;}
 }
 
+// FOR RENDER ONLY - Vercel uses cron-job.org
 cron.schedule('0 */2 * * *',fetchCountryMatches);
-/*
+
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
-*/
 
-/* MATCHES */
-app.get('/apii/matches',async(req,res)=>{
+/* MATCHES - FIXED TYPO from /apii/ to /api/ */
+app.get('/api/matches-country',async(req,res)=>{
  try{
   const tab=(req.query.tab||'upcoming').toLowerCase();
   const now=new Date();
@@ -618,7 +661,6 @@ app.get('/apii/matches',async(req,res)=>{
  }
 });
 
-
 /* ALL */
 app.get('/api/country-matches',async(req,res)=>{
  try{
@@ -639,16 +681,27 @@ app.get('/api/country-matches',async(req,res)=>{
  }
 });
 
-
-/* MANUAL */
+/* MANUAL FOR CRON-JOB.ORG - 2 HOURS ROUTE */
+// METHOD: GET | ROUTE: /api/fetch-now
 app.get('/api/fetch-now',async(req,res)=>{
  if(fetching)return res.json({success:false,message:'Fetch already running'});
- await fetchCountryMatches();
+ 
+ if(mongoose.connection.readyState!==1){
+   await mongoose.connect(process.env.MONGO_URI);
+ }
+
+ const result = await fetchCountryMatches();
  res.json({
-  success:true,message:'Fetch complete',
-  totalInDB:await CountryMatch.countDocuments()
+  success:true,
+  message:'Fetch complete - saved to DB',
+  synced: result.saved,
+  apiTotal: result.total,
+  deleted: result.deleted,
+  totalInDB:await CountryMatch.countDocuments(),
+  time: new Date().toISOString()
  });
 });
+
  
 // country match end here kjhgcfghhgxuygfxyf
 
