@@ -463,12 +463,6 @@ app.get("/api/sync", async (req,res)=>{
   res.json({success:true, synced:count, totalInDB, time:new Date().toISOString()});
 });
 
-// EVERY 2 MINUTES (for Render/VPS - Vercel uses cron-job.org)
-cron.schedule("*/2 * * * *",()=>fullSyncToDB(),{timezone:"UTC"});
-
-// INITIAL SYNC
-setTimeout(fullSyncToDB,5000);
-
 // matach end here kjhgfdghjkjhgfcghjkjhgf
 
 
@@ -636,10 +630,11 @@ async function fetchCountryMatches(){
 }
 
 // FOR RENDER ONLY - Vercel uses cron-job.org
-cron.schedule('0 */2 * * *',fetchCountryMatches);
 
+/*
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
+*/
 
 /* MATCHES - Returns filtered by tab */
 app.get('/api/matches-country',async(req,res)=>{
