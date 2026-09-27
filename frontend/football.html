@@ -33,9 +33,6 @@ body { background: #000; color: #fff; padding: 15px; }
 .btn-watch { background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .no-matches { text-align: center; color: #666; padding: 40px 0; }
 .loading { text-align: center; color: #888; padding: 30px; }
-small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; justify-content: center; }
-.small{ font-weight: 700; padding-bottom: 15px; display: grid; font-size: 15px; justify-content: center; }
-.div{ width: 70%; }
 #break-banner{ display:none; background: #1a1a1a; border: 2px solid #f59e0b; border-radius: 14px; padding: 16px; margin-bottom: 18px; text-align:center; }
 #break-banner b.title{ color:#f59e0b; font-size:16px; display:block; margin-bottom:6px; }
 #break-banner p{ color:#d1d5db; font-size:14px; line-height:1.4; }
@@ -48,7 +45,7 @@ small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; ju
 </head>
 <body>
 
-    <script>
+  <script>
     (function(ihosnhw){
     var d = document,
         s = d.createElement('script'),
@@ -62,7 +59,7 @@ small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; ju
  </script>
 
 
- <div class="div">
+<div class="div">
   <h1 class="header-text"> Live Football ⚽ </h1>
 <div class="tabs">
   <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming & Live</button>
@@ -77,7 +74,10 @@ small{ font-weight: 700; padding-bottom: 3px; display: grid; font-size: 15px; ju
 </div>
 
 <script>
-const API = "https://raymonddomain.dev/api/matches";
+const BASE_URL = "https://raymonddomain.dev";
+const API_MATCHES = `${BASE_URL}/api/matches`;
+const API_LIVE = `${BASE_URL}/api/live`;
+
 let currentTab = 'upcoming';
 let currentBtn = null;
 let liveInterval = null;
@@ -96,15 +96,12 @@ function formatFullDate(dateStr){
   return d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}) + " • " + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false});
 }
 function getStatusBadge(match){
-  if(match.status === "IN_PLAY"){
-    let minute = match.minute || 0;
-    if(minute === 0) return `<span class="badge live">LIVE<br>0'</span>`;
-    if(minute === 45 || match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
-    return `<span class="badge live">LIVE<br>${minute}'</span>`
+  if(match.status === "IN_PLAY" || match.status === "LIVE"){
+    return `<span class="badge live">LIVE<br>${match.minuteText || (match.minute? match.minute+"'" : "LIVE")}</span>`;
   }
-  if(match.status === "PAUSED") return `<span class="badge">HALF<br>TIME</span>`
-  if(match.status === "FINISHED") return `<span class="badge" style="background:#16a34a">FINISH</span>`
-  return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`
+  if(match.status === "PAUSED") return `<span class="badge" style="background:#eab308; color:#000">HT</span>`;
+  if(match.status === "FINISHED") return `<span class="badge" style="background:#16a34a">FT</span>`;
+  return `<span class="badge" style="background:#374151">${new Date(match.date).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit', hour12: false})}</span>`;
 }
 function getYouTubeLink(match){
   const query = `${match.home.name} vs ${match.away.name} live stream`;
@@ -133,7 +130,7 @@ function renderMatch(match){
         <div class="team-name">${match.home.name}</div>
       </div>
       <div class="score-area">
-        <div class="score">${match.homeScore?? 0} - ${match.awayScore?? 0}</div>
+        <div class="score">${match.homeScore??0} - ${match.awayScore??0}</div>
         ${getStatusBadge(match)}
       </div>
       <div class="team">
@@ -144,7 +141,7 @@ function renderMatch(match){
     ${scorersHtml}
     <button class="btn btn-details" onclick="showDetails('Coming Soon')">Line Up</button>
     <button class="btn btn-watch" onclick="window.open('${youtubeLink}', '_blank')">▶ Watch Live</button>
-  </div>`
+  </div>`;
 }
 function groupMatchesByDate(matches){
   const groups = {};
@@ -172,7 +169,7 @@ function renderGrouped(matches, tab){
     const container = document.getElementById('matches');
     updateBreakBanner(matches, tab);
     if(!matches || matches.length === 0){
-      container.innerHTML = `<div class="no-matches"> No upcoming big league matches found — showing break notice above. Small leagues may still appear below when available. </div>`;
+      container.innerHTML = `<div class="no-matches">No matches found.</div>`;
       return;
     }
     const grouped = groupMatchesByDate(matches);
@@ -181,7 +178,11 @@ function renderGrouped(matches, tab){
     if(tab === 'finished') dates = dates.reverse();
     dates.forEach(dateKey => {
       html += `<div class="date-header">${formatDateHeader(grouped[dateKey][0].date)}</div>`;
-      grouped[dateKey].forEach(match => { html += renderMatch(match); });
+      grouped[dateKey].sort((a,b)=>{
+        const la=["IN_PLAY","LIVE","PAUSED"].includes(a.status);
+        const lb=["IN_PLAY","LIVE","PAUSED"].includes(b.status);
+        if(la&&!lb) return -1; if(!la&&lb) return 1; return 0;
+      }).forEach(match => { html += renderMatch(match); });
     });
     container.innerHTML = html;
 }
@@ -203,10 +204,10 @@ function showNetworkError(hasCache){
     <div style="text-align:center; padding:60px 20px; color:#fff;">
       <div style="font-size:50px; margin-bottom:10px;">📡</div>
       <p style="font-size:18px; font-weight:700;">You have a network problem</p>
-      <p style="color:#9ca3af; margin-top:8px;">Check your data connection and try again</p>
       <button onclick="currentBtn && loadMatches(currentTab, currentBtn)" style="margin-top:20px; padding:12px 24px; background:#16a34a; border:none; border-radius:10px; color:white; font-weight:700; cursor:pointer;">Retry</button>
     </div>`;
 }
+
 async function loadMatches(tab, btn){
   currentTab = tab;
   currentBtn = btn;
@@ -230,35 +231,48 @@ async function loadMatches(tab, btn){
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
-    const res = await fetch(`${API}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
-    clearTimeout(timeout);
+    let matches = [];
 
-    if(!res.ok) throw new Error('Server error: ' + res.status);
-    const data = await res.json();
+    if(tab === 'upcoming'){
+      // DB first
+      const resDB = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
+      const dataDB = await resDB.json();
+      let dbMatches = dataDB.success? (dataDB.matches||[]) : [];
 
-    if(!data.success){
-      console.log("Backend returned success:false", data);
-      if(cache[tab].length === 0) showNetworkError(false);
-      return;
+      // LIVE directly from API - real minutes + real scores
+      try{
+        const resLive = await fetch(`${API_LIVE}`, { cache: "no-store", signal: controller.signal });
+        const dataLive = await resLive.json();
+        if(dataLive.success && dataLive.matches.length > 0){
+          const liveMap = new Map(dataLive.matches.map(m=>[m._id, m]));
+          dbMatches = dbMatches.filter(m=>!liveMap.has(m._id));
+          matches = [...dataLive.matches,...dbMatches];
+        } else {
+          matches = dbMatches;
+        }
+      }catch(e){ matches = dbMatches; }
+
+    } else {
+      const res = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
+      const data = await res.json();
+      if(!data.success) throw new Error('Backend error');
+      matches = data.matches || [];
     }
 
-    cache[tab] = data.matches || [];
-    localStorage.setItem('cache_'+tab, JSON.stringify(data.matches));
-    renderGrouped(data.matches, tab);
+    clearTimeout(timeout);
+    cache[tab] = matches;
+    localStorage.setItem('cache_'+tab, JSON.stringify(matches));
+    renderGrouped(matches, tab);
 
-    const hasLive = data.matches.some(m => m.status === "IN_PLAY" || m.status === "PAUSED");
+    const hasLive = matches.some(m => ["IN_PLAY","LIVE","PAUSED"].includes(m.status));
     if(hasLive && tab === "upcoming"){
-      liveInterval = setInterval(()=> loadMatches(tab, btn), 60000);
+      liveInterval = setInterval(()=> loadMatches(tab, btn), 30000); // real API refresh every 30s
     }
 
   } catch(err) {
     console.log('fetch error', err.name, err.message);
     if(err.name === 'AbortError'){
-      container.innerHTML = `<div style="text-align:center; padding:40px 20px;">
-        <div style="font-size:30px;">⏳</div>
-        <p style="margin-top:10px; font-weight:700;">Server is waking up...</p>
-        <p style="color:#9ca3af; font-size:14px; margin-top:5px;">Render free tier sleeps, retrying in 3 seconds</p>
-      </div>`;
+      container.innerHTML = `<div style="text-align:center; padding:40px 20px;"><p>Server waking up... retrying in 3s</p></div>`;
       setTimeout(()=> loadMatches(tab, btn), 3000);
       return;
     }

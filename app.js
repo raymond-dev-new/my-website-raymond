@@ -309,160 +309,110 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
 // ================= 2. CONFIG =================
-
 const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
-const API_URL="https://api.football-data.org/v4";
-let isSyncing=false;
+const API_URL = "https://api.football-data.org/v4";
+let isSyncing = false;
 
-const Match=mongoose.models.Match || mongoose.model("Match",new mongoose.Schema({
-  _id:String,date:Date,status:String,minute:Number,minuteText:String,league:String,
-  home:{name:String,logo:String},away:{name:String,logo:String},
-  homeScore:Number,awayScore:Number
+const Match = mongoose.models.Match || mongoose.model("Match", new mongoose.Schema({
+  _id: String, date: Date, status: String, minute: Number, minuteText: String,
+  league: String, home: {name:String, logo:String}, away: {name:String, logo:String},
+  homeScore: Number, awayScore: Number, updatedAt: Date
 }));
 
-function getDate(n=0){let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split("T")[0]}
+function getDate(n=0){ let d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().split("T")[0]; }
 
-async function api(endpoint,params={}){
-  const url=new URL(API_URL+endpoint);
+async function api(endpoint, params={}){
+  const url = new URL(API_URL+endpoint);
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-  const r=await fetch(url,{headers:{"X-Auth-Token":API_KEY}});
-  const data=await r.json();
-  if(!r.ok)throw Error(data.message||`Football API error: ${r.status}`);
+  const r = await fetch(url,{ headers:{ "X-Auth-Token": API_KEY }});
+  const data = await r.json();
+  if(!r.ok) throw Error(data.message);
   return data;
 }
 
-function calculateMinute(date,status,apiMinute){
-  if(status==="PAUSED")return{minute:45,minuteText:"HT"};
-  if(status!=="IN_PLAY")return{minute:null,minuteText:null};
-  if(typeof apiMinute==="number"&&apiMinute>0)return{minute:apiMinute,minuteText:`${apiMinute}'`};
-
-  let elapsed=Math.floor((Date.now()-new Date(date))/60000);
-  if(elapsed<1)elapsed=1;
-  if(elapsed<=45)return{minute:elapsed,minuteText:`${elapsed}'`};
-
-  let second=elapsed-15;
-  if(second>45&&second<=90)return{minute:second,minuteText:`${second}'`};
-  if(elapsed>105)return{minute:90,minuteText:"FINISH"};
-  return{minute:90,minuteText:"90+'"};
-}
-
 function format(m){
-  const live=calculateMinute(m.utcDate,m.status,m.minute);
-  return{
-    _id:String(m.id),date:m.utcDate,status:m.status,
-    minute:live.minute,minuteText:live.minuteText,
-    league:m.competition?.name||"Football",
-    home:{
-      name:m.homeTeam?.name||"Home",
-      logo:m.homeTeam?.id?`https://crests.football-data.org/${m.homeTeam.id}.png`:"https://via.placeholder.com/40"
-    },
-    away:{
-      name:m.awayTeam?.name||"Away",
-      logo:m.awayTeam?.id?`https://crests.football-data.org/${m.awayTeam.id}.png`:"https://via.placeholder.com/40"
-    },
-    homeScore:m.score?.fullTime?.home??m.score?.halfTime?.home??0,
-    awayScore:m.score?.fullTime?.away??m.score?.halfTime?.away??0
+  return {
+    _id: String(m.id), date: new Date(m.utcDate), status: m.status,
+    minute: m.minute||null,
+    minuteText: m.status==="IN_PLAY"? `${m.minute||0}'` : m.status==="PAUSED"? "HT" : m.status==="FINISHED"? "FT" : null,
+    league: m.competition?.name,
+    home: { name: m.homeTeam?.name, logo: `https://crests.football-data.org/${m.homeTeam.id}.png` },
+    away: { name: m.awayTeam?.name, logo: `https://crests.football-data.org/${m.awayTeam.id}.png` },
+    homeScore: m.score?.fullTime?.home?? m.score?.halfTime?.home?? m.score?.fullTime?.home?? 0,
+    awayScore: m.score?.fullTime?.away?? m.score?.halfTime?.away?? m.score?.fullTime?.away?? 0,
+    updatedAt: new Date()
   };
 }
 
+// === SYNC ONCE PER DAY AT 2AM WAT ===
 async function fullSyncToDB(){
-  if(isSyncing){
-    console.log("[SKIP] Already syncing");
-    return 0;
-  }
+  if(isSyncing) return {synced:0,total:0};
   isSyncing=true;
-  console.log(`[SYNC] ${new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})} WAT`);
-
   try{
-    // Connect if not connected
-    if(mongoose.connection.readyState!==1){
-      await mongoose.connect(process.env.MONGO_URI);
-    }
-
-    const finished=await api("/matches",{dateFrom:getDate(-7),dateTo:getDate()});
-    await new Promise(r=>setTimeout(r,7000));
-    const upcoming=await api("/matches",{dateFrom:getDate(),dateTo:getDate(7)});
+    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
+    const past = await api("/matches", {dateFrom:getDate(-7), dateTo:getDate()});
+    await new Promise(r=>setTimeout(r,6500));
+    const future = await api("/matches", {dateFrom:getDate(), dateTo:getDate(7)});
 
     const map=new Map();
-    [...(finished.matches||[]),...(upcoming.matches||[])].forEach(m=>map.set(m.id,m));
+    [...(past.matches||[]),...(future.matches||[])].forEach(m=>map.set(m.id,m));
     const formatted=[...map.values()].map(format);
 
     if(formatted.length){
-      await Match.bulkWrite(
-        formatted.map(m=>({
-          updateOne:{
-            filter:{_id:m._id},
-            update:{$set:m},
-            upsert:true
-          }
-        })),
-        {ordered:false}
-      );
-      console.log(`[SYNCED] ${formatted.length} matches saved to DB`);
+      await Match.bulkWrite(formatted.map(m=>({
+        updateOne:{filter:{_id:m._id}, update:{$set:m}, upsert:true}
+      })),{ordered:false});
     }
-    return formatted.length;
-  }catch(e){
-    console.log("[SYNC ERROR]",e.message);
-    return 0;
-  }finally{
-    isSyncing=false;
-  }
+    return {synced:formatted.length, total: await Match.countDocuments()};
+  }finally{ isSyncing=false; }
 }
 
 async function getMatches(type){
-  try{
-    let filter={};
-
-    if(type==="today"){
-      const s=new Date();s.setHours(0,0,0,0);
-      const e=new Date();e.setHours(23,59,59,999);
-      filter={date:{$gte:s,$lte:e}};
-    }
-
-    if(type==="upcoming"){
-      filter={
-        date:{$gte:new Date(getDate()),$lte:new Date(getDate(7))},
-        status:{$in:["SCHEDULED","TIMED","IN_PLAY","PAUSED"]}
-      };
-    }
-
-    if(type==="finished"){
-      filter={
-        date:{$gte:new Date(getDate(-7)),$lte:new Date()},
-        status:"FINISHED"
-      };
-    }
-
-    const matches=await Match.find(filter).lean();
-
-    return matches.sort((a,b)=>{
-      const la=["IN_PLAY","PAUSED"].includes(a.status);
-      const lb=["IN_PLAY","PAUSED"].includes(b.status);
-      if(la&&!lb)return-1;if(!la&&lb)return 1;
-      return new Date(a.date)-new Date(b.date);
-    });
-  }catch(e){
-    console.log("getMatches error:",e.message);
-    return[];
-  }
+  const now=new Date();
+  let filter={};
+  if(type==="today"){ const s=new Date(); s.setHours(0,0,0,0); const e=new Date(); e.setHours(23,59,59,999); filter={date:{$gte:s,$lte:e}}; }
+  else if(type==="upcoming"){ const s=new Date(); s.setHours(0,0,0,0); const e=new Date(); e.setDate(e.getDate()+7); filter={date:{$gte:s,$lte:e}, status:{$in:["SCHEDULED","TIMED"]}}; }
+  else if(type==="finished"){ const s=new Date(); s.setDate(s.getDate()-7); filter={date:{$gte:s,$lte:now}, status:"FINISHED"}; }
+  const matches=await Match.find(filter).lean();
+  return matches.sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
 
-app.get("/api/matches",async(req,res)=>{
+// 1. FROM DB - for Today/Upcoming/Finished
+app.get("/api/matches", async(req,res)=>{
+  res.set('Cache-Control','no-store');
+  res.json({success:true, matches: await getMatches(req.query.tab||"today")});
+});
+
+// 2. DIRECT FROM API - FOR LIVE (real minute + real score)
+app.get("/api/live", async(req,res)=>{
+  res.set('Cache-Control','no-store, no-cache');
   try{
-    res.json({success:true,matches:await getMatches(req.query.tab||"today")});
+    // get today's matches and filter live
+    const today = await api("/matches", {dateFrom:getDate(), dateTo:getDate()});
+    const live = (today.matches||[]).filter(m=> ["IN_PLAY","PAUSED","LIVE"].includes(m.status));
+    res.json({success:true, matches: live.map(format)});
   }catch(e){
-    res.json({success:true,matches:[]});
+    res.json({success:false, matches:[], error:e.message});
   }
 });
 
-// === API FOR CRON-JOB.ORG ===
-// METHOD: GET | ROUTE: /api/sync
-app.get("/api/sync", async (req,res)=>{
-  const count = await fullSyncToDB();
-  const totalInDB = await Match.countDocuments();
-  res.json({success:true, synced:count, totalInDB, time:new Date().toISOString()});
+// 3. DIRECT FROM API - SINGLE MATCH WHEN USER CLICKS
+app.get("/api/match/:id", async(req,res)=>{
+  res.set('Cache-Control','no-store');
+  try{
+    const data = await api(`/matches/${req.params.id}`);
+    res.json({success:true, match: format(data.match||data)});
+  }catch(e){
+    const db = await Match.findById(req.params.id).lean();
+    res.json({success:true, match: db});
+  }
 });
 
+// 4. CRON AT 2AM WAT
+app.get("/api/sync", async(req,res)=>{
+  const r=await fullSyncToDB();
+  res.json({success:true,...r, timeWAT: new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})});
+});
 // matach end here kjhgfdghjkjhgfcghjkjhgf
 
 
