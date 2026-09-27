@@ -309,19 +309,31 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 
 
+// ========== CONFIG ==========
+const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30"; // your football-data.org key
+const API_URL = "https://api.football-data.org/v4"; // base url for football API
 
-const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
-const API_URL = "https://api.football-data.org/v4";
-
+// ========== ANTI-BAN SYSTEM ==========
+// isSyncing: prevents 2 syncs running same time (if cron triggers twice)
 let isSyncing = false;
-let liveCache = { data: [], time: 0 }; // <-- ANTI-BAN CACHE
 
+// liveCache: This is the MAIN protection against ban.
+// Instead of calling football-data for every user, we save live matches in memory for 60 seconds.
+// 1000 users in same minute = 1 real API call + 999 served from this cache.
+let liveCache = { data: [], time: 0 };
+
+// visitorCache: Prevents same IP from spamming live endpoint.
+// If same person refreshes 10 times in 10 seconds, we serve cache, not new API call.
+let visitorCache = new Map();
+
+// ========== DATABASE MODEL ==========
+// We store matches in MongoDB so we don't call API for every page load
 const Match = mongoose.models.Match || mongoose.model("Match", new mongoose.Schema({
-  _id: String,
-  date: Date,
-  status: String,
-  minute: Number,
-  minuteText: String,
+  _id: String, // football-data match id
+  date: Date, // match date
+  status: String, // SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED
+  minute: Number, // current minute like 67
+  minuteText: String, // display like "67'" or "HT" or "FT"
   league: String,
   home: {name:String, logo:String},
   away: {name:String, logo:String},
@@ -330,14 +342,19 @@ const Match = mongoose.models.Match || mongoose.model("Match", new mongoose.Sche
   updatedAt: Date
 }));
 
+// ========== HELPER: GET DATE STRING ==========
+// Returns YYYY-MM-DD for today +/- n days
+// Used to ask football-data for dateFrom and dateTo
 function getDate(n=0){
   let d=new Date();
   d.setDate(d.getDate()+n);
   return d.toISOString().split("T")[0];
 }
 
+// ========== HELPER: CALL FOOTBALL-DATA API ==========
 async function api(endpoint, params={}){
   const url = new URL(API_URL+endpoint);
+  // add params like?dateFrom=2025-09-20&dateTo=2025-09-27
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
   const r = await fetch(url,{ headers:{ "X-Auth-Token": API_KEY }});
   const data = await r.json();
@@ -345,118 +362,133 @@ async function api(endpoint, params={}){
   return data;
 }
 
+// ========== HELPER: FORMAT API DATA FOR OUR DB ==========
 function format(m){
   return {
     _id: String(m.id),
     date: new Date(m.utcDate),
     status: m.status,
     minute: m.minute||null,
+    // minuteText is what frontend shows
     minuteText: m.status==="IN_PLAY"? `${m.minute||0}'` : m.status==="PAUSED"? "HT" : m.status==="FINISHED"? "FT" : null,
     league: m.competition?.name,
     home: { name: m.homeTeam?.name, logo: `https://crests.football-data.org/${m.homeTeam.id}.png` },
     away: { name: m.awayTeam?.name, logo: `https://crests.football-data.org/${m.awayTeam.id}.png` },
+    // score: use fullTime if available, else halfTime, else 0
     homeScore: m.score?.fullTime?.home?? m.score?.halfTime?.home?? 0,
     awayScore: m.score?.fullTime?.away?? m.score?.halfTime?.away?? 0,
     updatedAt: new Date()
   };
 }
 
-// === SYNC ONCE PER DAY AT 2AM WAT ===
+// ========== CORE: SYNC 7 DAYS BACK + 7 DAYS FRONT TO DB ==========
+// This runs ONLY once per day at 2am WAT via vercel cron.
+// Why only 2am? Free plan allows only 10 requests/minute. If we sync every hour we will get banned.
+// 2 calls per day = safe.
 async function fullSyncToDB(){
-  if(isSyncing) return {synced:0,total:0};
+  if(isSyncing) return {synced:0,total:0}; // if already syncing, skip
   isSyncing=true;
   try{
+    // connect to MongoDB if not connected
     if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
+
+    // 1st API call: get matches from 7 days ago to today
     const past = await api("/matches", {dateFrom:getDate(-7), dateTo:getDate()});
-    await new Promise(r=>setTimeout(r,6500)); // wait 6.5s to respect 10/min limit
+
+    // WAIT 6.5 seconds - football-data free limit is 10 req/min. Waiting avoids 429 error/ban
+    await new Promise(r=>setTimeout(r,6500));
+
+    // 2nd API call: get matches from today to next 7 days
     const future = await api("/matches", {dateFrom:getDate(), dateTo:getDate(7)});
 
+    // Merge past + future and remove duplicates by id
     const map=new Map();
     [...(past.matches||[]),...(future.matches||[])].forEach(m=>map.set(m.id,m));
     const formatted=[...map.values()].map(format);
 
+    // Save to DB: if match exists update it, if not create it (upsert)
     if(formatted.length){
       await Match.bulkWrite(formatted.map(m=>({
         updateOne:{filter:{_id:m._id}, update:{$set:m}, upsert:true}
       })),{ordered:false});
     }
     return {synced:formatted.length, total: await Match.countDocuments()};
-  }finally{ isSyncing=false; }
+  }finally{
+    isSyncing=false; // allow next sync
+  }
 }
 
+// ========== CORE: GET MATCHES FROM DB (0 API COST) ==========
+// This is why you don't get banned. All users read from your DB, not from football-data.
+// Upcoming = 7 days back + 7 days front (so user sees past week + next week + live)
+// Finished = 7 days back only
 async function getMatches(type){
   const now=new Date();
   let filter={};
-  if(type==="today"){
-    const s=new Date(); s.setHours(0,0,0,0);
-    const e=new Date(); e.setHours(23,59,59,999);
-    filter={date:{$gte:s,$lte:e}};
-  }
-  else if(type==="upcoming"){
-    const s=new Date(); s.setHours(0,0,0,0);
-    const e=new Date(); e.setDate(e.getDate()+7);
-    filter={date:{$gte:s,$lte:e}, status:{$in:["SCHEDULED","TIMED"]}};
-  }
-  else if(type==="finished"){
-    const s=new Date(); s.setDate(s.getDate()-7);
-    filter={date:{$gte:s,$lte:now}, status:"FINISHED"};
+  if(type==="upcoming"){
+    const start=new Date(); start.setDate(start.getDate()-7); start.setHours(0,0,0,0); // 7 days ago start of day
+    const end=new Date(); end.setDate(end.getDate()+7); end.setHours(23,59,59,999); // 7 days front end of day
+    filter={ date:{ $gte:start, $lte:end }, status:{ $in:["SCHEDULED","TIMED","IN_PLAY","LIVE","PAUSED"] } };
+  } else if(type==="finished"){
+    const start=new Date(); start.setDate(start.getDate()-7);
+    filter={ date:{ $gte:start, $lte:now }, status:"FINISHED" };
   }
   const matches=await Match.find(filter).lean();
-  return matches.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  return matches.sort((a,b)=> new Date(a.date)-new Date(b.date));
 }
 
-// 1. FROM DB - for Today/Upcoming/Finished (0 API cost)
+// ========== ROUTE 1: /api/matches - FROM DB ONLY (SAFE FOR 1000 USERS) ==========
 app.get("/api/matches", async(req,res)=>{
   try{
     if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
-    res.set('Cache-Control','no-store');
-    res.json({success:true, matches: await getMatches(req.query.tab||"today")});
+    res.set('Cache-Control','no-store'); // no browser cache, always fresh from DB
+    const matches = await getMatches(req.query.tab||"upcoming");
+    res.json({success:true, matches});
   }catch(e){
     res.json({success:false, matches:[], error:e.message});
   }
 });
 
-// 2. DIRECT FROM API - FOR LIVE (with 60s shared cache) - REAL MINUTE + REAL SCORE
+// ========== ROUTE 2: /api/live - DIRECT API BUT WITH 60s CACHE (ANTI-BAN) ==========
+// This gives REAL minute like 67' and real score 2-1
+// Without cache: 1000 users = 1000 API calls in 1 min = BAN (limit is 10/min)
+// With cache: 1000 users = 1 API call per minute = SAFE
 app.get("/api/live", async(req,res)=>{
-  res.set('Cache-Control','no-store, no-cache');
+  res.set('Cache-Control','no-store');
   try{
-    const now = Date.now();
-    // If we fetched less than 60 seconds ago, serve cache. 1000 users = 1 API call
-    if(now - liveCache.time < 60000 && liveCache.data.length >= 0){
+    const now=Date.now();
+    const ip = req.headers['x-forwarded-for'] || req.ip;
+
+    // Layer 1 protection: If same IP called within 10 seconds, serve cache (no API call)
+    if(visitorCache.has(ip) && now - visitorCache.get(ip) < 10000){
+      return res.json({success:true, matches: liveCache.data, cached:true});
+    }
+    visitorCache.set(ip, now);
+
+    // Layer 2 protection: If we fetched live within last 60 seconds, serve cache for ALL users
+    if(now - liveCache.time < 60000 && liveCache.data){
       return res.json({success:true, matches: liveCache.data, cached:true});
     }
 
+    // Only if cache expired (after 60s) we call real football-data API
     const today = await api("/matches", {dateFrom:getDate(), dateTo:getDate()});
     const live = (today.matches||[]).filter(m=> ["IN_PLAY","PAUSED","LIVE"].includes(m.status));
     const formatted = live.map(format);
 
-    // Save to cache
+    // Save to cache for next 60 seconds
     liveCache = { data: formatted, time: now };
-
     res.json({success:true, matches: formatted, cached:false});
+
   }catch(e){
-    // If API fails, serve old cache instead of error
-    if(liveCache.data.length > 0){
-      return res.json({success:true, matches: liveCache.data, cached:true, error:e.message});
-    }
+    // If API fails or banned, still serve old cache so frontend doesn't break
+    if(liveCache.data.length>0) return res.json({success:true, matches: liveCache.data, cached:true});
     res.json({success:false, matches:[], error:e.message});
   }
 });
 
-// 3. DIRECT FROM API - SINGLE MATCH WHEN USER CLICKS
-app.get("/api/match/:id", async(req,res)=>{
-  res.set('Cache-Control','no-store');
-  try{
-    const data = await api(`/matches/${req.params.id}`);
-    res.json({success:true, match: format(data.match||data)});
-  }catch(e){
-    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
-    const db = await Match.findById(req.params.id).lean();
-    res.json({success:true, match: db});
-  }
-});
-
-// 4. CRON AT 2AM WAT
+// ========== ROUTE 3: /api/sync - CRON AT 2AM WAT ==========
+// Vercel calls this automatically at 0 1 * * * (1am UTC = 2am Lagos)
+// You should also call it manually once after deploy to fill DB first time
 app.get("/api/sync", async(req,res)=>{
   const r=await fullSyncToDB();
   res.json({success:true,...r, timeWAT: new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})});
