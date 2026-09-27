@@ -638,9 +638,9 @@ async function fetchCountryMatches(){
 
 // FOR RENDER ONLY - Vercel uses cron-job.org
 
-if(mongoose.connection.readyState===1)fetchCountryMatches();
+/*if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
-
+*/
 
 /* MATCHES - Returns filtered by tab */
 app.get('/api/matches-country',async(req,res)=>{
