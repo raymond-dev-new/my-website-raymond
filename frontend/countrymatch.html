@@ -1,5 +1,4 @@
-
-   <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -17,6 +16,7 @@ body{background:#0a0a0a;color:#fff;min-height:100vh}
 .tab-finished{background:#2e1a1a;color:#7a6b6b}.tab-finished.active{background:#ef4444;color:#fff}
 .date-header{padding:12px 15px;color:#3b82f6;font-weight:700;font-size:14px}
 .match-card{background:#141416;border-radius:16px;margin:0 12px 14px;padding:16px;border:1px solid #232326}
+.match-card.is-live{border-color:#22c55e;box-shadow:0 0 0 1px #22c55e33}
 .league-name{color:#f59e0b;font-weight:700;font-size:13px;margin-bottom:2px}
 .match-time{color:#666;font-size:11px;margin-bottom:12px}
 .teams-row{display:flex;align-items:center;justify-content:space-between}
@@ -26,6 +26,10 @@ body{background:#0a0a0a;color:#fff;min-height:100vh}
 .score-center{text-align:center;flex:0.9}
 .score-text{font-size:32px;font-weight:900;letter-spacing:1px}
 .status-badge{min-width:64px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:800;margin-top:6px;display:inline-block;text-align:center}
+.live-badge{background:#22c55e;color:#000;animation:pulse 1.5s infinite}
+.live-dot{width:8px;height:8px;background:#000;border-radius:50%;display:inline-block;margin-right:4px;animation:blink 1s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 .btn-lineup{width:100%;background:#1e293b;color:#e2e8f0;border:0;padding:12px;border-radius:10px;font-weight:700;margin-top:14px;cursor:pointer}
 .btn-watch{width:100%;background:#dc2626;color:#fff;border:0;padding:12px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer}
 .empty{text-align:center;padding:40px;color:#666;font-size:13px}
@@ -46,6 +50,7 @@ body{background:#0a0a0a;color:#fff;min-height:100vh}
     })({})
  </script>
 
+
 <div class="top-title">
   <h1>Live Football ⚽</h1>
   <p>Finish Match Will Show In Finished Tab within Some Hours</p>
@@ -60,7 +65,7 @@ body{background:#0a0a0a;color:#fff;min-height:100vh}
 <div id="list"><div class="empty">Loading matches...</div></div>
 
 <script>
-const API_URL = 'https://raymonddomain.dev/api/matches-country'; // FIXED: was /apii/
+const API_URL = 'https://raymonddomain.dev/api/matches-country';
 let allMatches = [];
 let currentTab = 'upcoming';
 
@@ -70,17 +75,11 @@ async function loadMatches(){
     const res = await fetch(`${API_URL}?tab=${currentTab}&t=${Date.now()}`, { cache: 'no-store' });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
-    
     if(Array.isArray(json)) allMatches = json;
     else if(json && Array.isArray(json.matches)) allMatches = json.matches;
     else allMatches = [];
-    
-    if(!Array.isArray(allMatches)) allMatches = [];
-    
     render();
   }catch(e){
-    console.error(e);
-    allMatches = [];
     list.innerHTML = `<div class="empty">Error loading: ${e.message}<br><br><button onclick="loadMatches()" style="padding:8px 18px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;
   }
 }
@@ -88,49 +87,37 @@ async function loadMatches(){
 function render(){
   const list = document.getElementById('list');
   const header = document.getElementById('dateHeader');
-  
   header.innerHTML = `📅 ${new Date().toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
-
-  if(!Array.isArray(allMatches)) allMatches = [];
   let filtered = allMatches.filter(m => m && m.home && m.away);
-
-  // === YOUR REQUEST: RECENT FINISH FIRST AT TOP ===
   if(currentTab === 'finished'){
-    filtered.sort((a,b) => new Date(b.date) - new Date(a.date)); // Most recent first
+    filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
   } else {
-    filtered.sort((a,b) => new Date(a.date) - new Date(b.date)); // Upcoming soonest first, live first
-    // Push live to top
+    filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
     filtered.sort((a,b) => (b.status === 'IN_PLAY' ? 1 : 0) - (a.status === 'IN_PLAY' ? 1 : 0));
   }
-
   if(filtered.length === 0){
     list.innerHTML = `<div class="empty">No ${currentTab} matches found</div>`;
     return;
   }
-
   list.innerHTML = filtered.map(m=>{
     const d = new Date(m.date);
     const kickTime = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
     const dayStr = d.toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-
     const isLive = m.status === 'IN_PLAY';
     const isFinished = m.status === 'FINISHED';
-    
     const scoreText = `${m.homeScore ?? 0} - ${m.awayScore ?? 0}`;
-
     let badgeHTML = '';
     if(isLive){
-      badgeHTML = `<div class="status-badge" style="background:#22c55e;color:#000;">${m.elapsed ? "INPLAY" : ''} </div>`;
+      badgeHTML = `<div class="status-badge live-badge"><span class="live-dot"></span>IN PLAY</div>`;
     } else if(isFinished){
-      badgeHTML = `<div class="status-badge" style="background:#333;color:#888;">FINISH</div>`;
+      badgeHTML = `<div class="status-badge" style="background:#333;color:#888;">FINISHED</div>`;
     } else {
       badgeHTML = `<div class="status-badge" style="background:#2a3441;color:#e2e8f0;">${kickTime}</div>`;
     }
-
     return `
-    <div class="match-card">
+    <div class="match-card ${isLive ? 'is-live' : ''}">
       <div class="league-name">${m.league}</div>
-      <div class="match-time">${dayStr} • ${kickTime}</div>
+      <div class="match-time">${dayStr} • ${kickTime} ${isLive ? '• <span style="color:#22c55e;font-weight:800">LIVE NOW</span>' : ''}</div>
       <div class="teams-row">
         <div class="team"><img src="${m.home.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.home.name}</span></div>
         <div class="score-center">
