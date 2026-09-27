@@ -307,30 +307,34 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 // new oiufdfgyuiopoiuytrertyuiopoiuytfdfghjk
 
-
-
 // ========== CONFIG ==========
-const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30"; // your football-data.org key
-const API_URL = "https://api.football-data.org/v4"; // base url for football API
+const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30"; // Your football-data.org free key
+const API_URL = "https://api.football-data.org/v4"; // Base URL
 
-// ========== ANTI-BAN SYSTEM ==========
-// isSyncing: prevents 2 syncs running same time (if cron triggers twice)
+// ========== ANTI-BAN SYSTEM - MAIN PROTECTION FOR 1000 USERS ==========
+
+// isSyncing = Lock. If vercel cron triggers twice or 2 people hit /api/sync same time, only 1 sync runs.
+// Without this, 2 syncs = 4 API calls at once = risk of 429.
 let isSyncing = false;
 
-// liveCache: This is the MAIN protection against ban.
-// Instead of calling football-data for every user, we save live matches in memory for 60 seconds.
-// 1000 users in same minute = 1 real API call + 999 served from this cache.
+// liveCache = MOST IMPORTANT ANTI-BAN.
+// Football-data free limit = 10 requests per minute. If 1000 users open /api/live at same time:
+// WITHOUT cache: 1000 API calls in 1 minute = you get banned instantly (429 error).
+// WITH this cache: First user triggers 1 real API call, we save result + time. For next 60 seconds,
+// we serve the saved result from server RAM to the other 999 users. So 1000 users = 1 API call/min = SAFE.
 let liveCache = { data: [], time: 0 };
 
-// visitorCache: Prevents same IP from spamming live endpoint.
-// If same person refreshes 10 times in 10 seconds, we serve cache, not new API call.
+// visitorCache = ANTI-SPAM for single IP.
+// If 1 person refreshes page 20 times in 10 seconds (F5 spam), without this = 20 API calls = ban risk.
+// With this: We store last request time per IP. If same IP asks within 10 seconds, we give cached data immediately, no API call.
 let visitorCache = new Map();
 
 // ========== DATABASE MODEL ==========
-// We store matches in MongoDB so we don't call API for every page load
+// We save matches in MongoDB so we NEVER call football-data for normal page loads.
+// Upcoming/Finished tabs will read from this DB = 0 API calls = can handle unlimited users.
 const Match = mongoose.models.Match || mongoose.model("Match", new mongoose.Schema({
   _id: String, // football-data match id
-  date: Date, // match date
+  date: Date, // match kickoff time
   status: String, // SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED
   minute: Number, // current minute like 67
   minuteText: String, // display like "67'" or "HT" or "FT"
@@ -342,10 +346,8 @@ const Match = mongoose.models.Match || mongoose.model("Match", new mongoose.Sche
   updatedAt: Date
 }));
 
-
 // ========== HELPER: GET DATE STRING ==========
-// Returns YYYY-MM-DD for today +/- n days
-// Used to ask football-data for dateFrom and dateTo
+// Returns YYYY-MM-DD for today +/- n days. Used to ask football-data for range.
 function getDate(n=0){
   let d=new Date();
   d.setDate(d.getDate()+n);
@@ -355,7 +357,6 @@ function getDate(n=0){
 // ========== HELPER: CALL FOOTBALL-DATA API ==========
 async function api(endpoint, params={}){
   const url = new URL(API_URL+endpoint);
-  // add params like?dateFrom=2025-09-20&dateTo=2025-09-27
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
   const r = await fetch(url,{ headers:{ "X-Auth-Token": API_KEY }});
   const data = await r.json();
@@ -370,12 +371,10 @@ function format(m){
     date: new Date(m.utcDate),
     status: m.status,
     minute: m.minute||null,
-    // minuteText is what frontend shows
     minuteText: m.status==="IN_PLAY"? `${m.minute||0}'` : m.status==="PAUSED"? "HT" : m.status==="FINISHED"? "FT" : null,
     league: m.competition?.name,
     home: { name: m.homeTeam?.name, logo: `https://crests.football-data.org/${m.homeTeam.id}.png` },
     away: { name: m.awayTeam?.name, logo: `https://crests.football-data.org/${m.awayTeam.id}.png` },
-    // score: use fullTime if available, else halfTime, else 0
     homeScore: m.score?.fullTime?.home?? m.score?.halfTime?.home?? 0,
     awayScore: m.score?.fullTime?.away?? m.score?.halfTime?.away?? 0,
     updatedAt: new Date()
@@ -384,22 +383,23 @@ function format(m){
 
 // ========== CORE: SYNC 7 DAYS BACK + 7 DAYS FRONT TO DB ==========
 // This runs ONLY once per day at 2am WAT via vercel cron.
-// Why only 2am? Free plan allows only 10 requests/minute. If we sync every hour we will get banned.
-// 2 calls per day = safe.
+// ANTI-BAN LOGIC HERE:
+// Free plan: 10 req/min max. If we sync every hour = 48 API calls/day but risk of hitting limit if many cron runs.
+// We do 1 sync per day = 2 API calls only = super safe.
+// We also wait 6.5 seconds between 2 calls because free plan needs gap.
 async function fullSyncToDB(){
-  if(isSyncing) return {synced:0,total:0}; // if already syncing, skip
+  if(isSyncing) return {synced:0,total:0}; // Prevent double sync
   isSyncing=true;
   try{
-    // connect to MongoDB if not connected
     if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
 
-    // 1st API call: get matches from 7 days ago to today
+    // 1st API call: get matches from 7 days ago to today (past week + today)
     const past = await api("/matches", {dateFrom:getDate(-7), dateTo:getDate()});
 
-    // WAIT 6.5 seconds - football-data free limit is 10 req/min. Waiting avoids 429 error/ban
+    // WAIT 6.5 seconds - MANDATORY for free plan to avoid 429 Too Many Requests / ban
     await new Promise(r=>setTimeout(r,6500));
 
-    // 2nd API call: get matches from today to next 7 days
+    // 2nd API call: get matches from today to next 7 days (future)
     const future = await api("/matches", {dateFrom:getDate(), dateTo:getDate(7)});
 
     // Merge past + future and remove duplicates by id
@@ -407,7 +407,7 @@ async function fullSyncToDB(){
     [...(past.matches||[]),...(future.matches||[])].forEach(m=>map.set(m.id,m));
     const formatted=[...map.values()].map(format);
 
-    // Save to DB: if match exists update it, if not create it (upsert)
+    // Save to DB: upsert = update if exists, insert if new
     if(formatted.length){
       await Match.bulkWrite(formatted.map(m=>({
         updateOne:{filter:{_id:m._id}, update:{$set:m}, upsert:true}
@@ -415,63 +415,67 @@ async function fullSyncToDB(){
     }
     return {synced:formatted.length, total: await Match.countDocuments()};
   }finally{
-    isSyncing=false; // allow next sync
+    isSyncing=false; // Release lock
   }
 }
 
 // ========== CORE: GET MATCHES FROM DB (0 API COST) ==========
-// This is why you don't get banned. All users read from your DB, not from football-data.
-// Upcoming = 7 days back + 7 days front (so user sees past week + next week + live)
-// Finished = 7 days back only
+// ANTI-BAN: This function is WHY 1000 users don't ban you.
+// All users reading upcoming/finished read from YOUR MongoDB, not from football-data.
+// MongoDB can handle 1000 reads/sec easily, football-data free cannot.
+// 1000 users = 0 API calls to football-data here.
 async function getMatches(type){
   const now=new Date();
   let filter={};
   if(type==="upcoming"){
-    const start=new Date(); start.setDate(start.getDate()-7); start.setHours(0,0,0,0); // 7 days ago start of day
-    const end=new Date(); end.setDate(end.getDate()+7); end.setHours(23,59,59,999); // 7 days front end of day
+    const start=new Date(); start.setDate(start.getDate()-7); start.setHours(0,0,0,0); // 7 days back
+    const end=new Date(); end.setDate(end.getDate()+7); end.setHours(23,59,59,999); // 7 days front
     filter={ date:{ $gte:start, $lte:end }, status:{ $in:["SCHEDULED","TIMED","IN_PLAY","LIVE","PAUSED"] } };
   } else if(type==="finished"){
     const start=new Date(); start.setDate(start.getDate()-7);
     filter={ date:{ $gte:start, $lte:now }, status:"FINISHED" };
   }
   const matches=await Match.find(filter).lean();
-  return matches.sort((a,b)=> new Date(a.date)-new Date(b.date));
+  return matches.sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
 
 // ========== ROUTE 1: /api/matches - FROM DB ONLY (SAFE FOR 1000 USERS) ==========
 app.get("/api/matches", async(req,res)=>{
   try{
     if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
-    res.set('Cache-Control','no-store'); // no browser cache, always fresh from DB
+    res.set('Cache-Control','no-store'); // Always fresh from DB, no browser cache
+    // This reads from DB = 0 API calls = 1000 users safe
     const matches = await getMatches(req.query.tab||"upcoming");
     res.json({success:true, matches});
-  }catch(e){
-    res.json({success:false, matches:[], error:e.message});
-  }
+  }catch(e){ res.json({success:false, matches:[], error:e.message}); }
 });
 
 // ========== ROUTE 2: /api/live - DIRECT API BUT WITH 60s CACHE (ANTI-BAN) ==========
 // This gives REAL minute like 67' and real score 2-1
-// Without cache: 1000 users = 1000 API calls in 1 min = BAN (limit is 10/min)
-// With cache: 1000 users = 1 API call per minute = SAFE
+// WITHOUT cache: 1000 users = 1000 API calls in 1 min = BAN (limit 10/min)
+// WITH cache: 1000 users = 1 API call per minute = SAFE
 app.get("/api/live", async(req,res)=>{
   res.set('Cache-Control','no-store');
   try{
     const now=Date.now();
     const ip = req.headers['x-forwarded-for'] || req.ip;
 
-    // Layer 1 protection: If same IP called within 10 seconds, serve cache (no API call)
+    // ANTI-BAN LAYER 1: IP DEDUPLICATION
+    // If same IP asked <10s ago, serve cache immediately. No API call.
+    // Prevents 1 user spamming F5 from banning whole site.
     if(visitorCache.has(ip) && now - visitorCache.get(ip) < 10000){
       return res.json({success:true, matches: liveCache.data, cached:true});
     }
     visitorCache.set(ip, now);
 
-    // Layer 2 protection: If we fetched live within last 60 seconds, serve cache for ALL users
+    // ANTI-BAN LAYER 2: GLOBAL 60s CACHE
+    // If we fetched live within last 60 seconds, serve cache for ALL users (all IPs).
+    // This is main protection: 1000 users in same minute = 1 API call, 999 from cache.
     if(now - liveCache.time < 60000 && liveCache.data){
       return res.json({success:true, matches: liveCache.data, cached:true});
     }
 
-    // Only if cache expired (after 60s) we call real football-data API
+    // Only if cache expired (after 60s) we call real football-data API - 1 call per minute max
     const today = await api("/matches", {dateFrom:getDate(), dateTo:getDate()});
     const live = (today.matches||[]).filter(m=> ["IN_PLAY","PAUSED","LIVE"].includes(m.status));
     const formatted = live.map(format);
@@ -481,7 +485,7 @@ app.get("/api/live", async(req,res)=>{
     res.json({success:true, matches: formatted, cached:false});
 
   }catch(e){
-    // If API fails or banned, still serve old cache so frontend doesn't break
+    // If API fails or we get 429 banned, still serve old cache so frontend doesn't break and doesn't retry API
     if(liveCache.data.length>0) return res.json({success:true, matches: liveCache.data, cached:true});
     res.json({success:false, matches:[], error:e.message});
   }
@@ -490,6 +494,7 @@ app.get("/api/live", async(req,res)=>{
 // ========== ROUTE 3: /api/sync - CRON AT 2AM WAT ==========
 // Vercel calls this automatically at 0 1 * * * (1am UTC = 2am Lagos)
 // You should also call it manually once after deploy to fill DB first time
+// ANTI-BAN: Only 1 time per day = 2 API calls/day = you use <1% of limit
 app.get("/api/sync", async(req,res)=>{
   const r=await fullSyncToDB();
   res.json({success:true,...r, timeWAT: new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})});
