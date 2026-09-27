@@ -470,10 +470,10 @@ app.get("/api/sync", async (req,res)=>{
 
  // old e11e83e05b19af09fbdd776affffc3a7
    
- // ================= COUNTRY MATCHES =================
-const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
+ const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
 const BASE='https://v3.football.api-sports.io';
 
+// DB Schema for country matches
 const countrySchema=new mongoose.Schema({
  fixture_id:{type:Number,unique:true},home_team:String,away_team:String,
  home_logo:String,away_logo:String,league:String,league_logo:String,
@@ -481,16 +481,15 @@ const countrySchema=new mongoose.Schema({
  score_home:{type:Number,default:null},score_away:{type:Number,default:null},
  last_updated:{type:Date,default:Date.now}
 });
-const CountryMatch=mongoose.models.CountryMatch||
- mongoose.model('CountryMatch',countrySchema);
+const CountryMatch=mongoose.models.CountryMatch || mongoose.model('CountryMatch',countrySchema);
 
+// Live and finished status
 const LIVE=new Set(['1H','HT','2H','ET','BT','P','LIVE','INT']);
 const DONE=new Set(['FT','AET','PEN']);
-let fetching=false;
 
-// Country/national-team filter
+// Check if match is country vs country
 function isCountry(m){
- if(m.teams?.home?.national&&m.teams?.away?.national)return true;
+ if(m.teams?.home?.national===true&&m.teams?.away?.national===true)return true;
  const n=(m.league?.name||'').toLowerCase();
  return[
   'world cup','world cup qualification','world cup qualifiers','euro',
@@ -498,90 +497,130 @@ function isCountry(m){
   'euro qualification','nations league','africa cup of nations','afcon',
   'africa cup','african nations','asian cup','afc asian cup','copa america',
   'concacaf','gold cup','concacaf nations league','oceania nations cup',
-  'ofc nations cup','international friendly','international friendlies','friendlies'
+  'ofc nations cup','international friendly','international friendlies',
+  'friendlies'
  ].some(x=>n.includes(x));
 }
 
-// Date helper
+// Helper to get date string
 const day=(d,n)=>{
  const x=new Date(d);
  x.setUTCDate(x.getUTCDate()+n);
  return x.toISOString().slice(0,10);
 };
 
-// Fetch one day
+let fetching=false;
+
+// Fetch one day from API - FIXED timeout 8s not 20s to avoid Vercel 30s timeout
 async function getDay(date){
  try{
   const r=await axios.get(`${BASE}/fixtures`,{
    params:{date},
    headers:{'x-apisports-key':API},
-   timeout:6000
+   timeout:8000 // FIXED: was 20000 = cause timeout
   });
-  if(r.data?.errors&&Object.keys(r.data.errors).length)return[];
+  if(r.data?.errors&&Object.keys(r.data.errors).length){
+   console.log(`⚠️ ${date}`,r.data.errors);
+   return[];
+  }
   return r.data?.response||[];
  }catch(e){
-  console.log(`❌ ${date}:`,e.code||e.message);
+  console.log(`❌ ${date}`,e.response?.data||e.message);
   return[];
  }
 }
 
-// Convert API match to DB update
-const matchData=m=>({
- fixture_id:m.fixture.id,
- home_team:m.teams.home.name,away_team:m.teams.away.name,
- home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
- league:m.league?.name||'International',league_logo:m.league?.logo||'',
- match_date:new Date(m.fixture.date),
- status:m.fixture.status?.short||'NS',
- elapsed:m.fixture.status?.elapsed??null,
- score_home:m.goals?.home??null,score_away:m.goals?.away??null,
- last_updated:new Date()
-});
+// Old single save (kept for backup)
+async function save(m){
+ if(!m.fixture?.id||!m.teams?.home||!m.teams?.away)return;
+ await CountryMatch.updateOne(
+  {fixture_id:m.fixture.id},
+  {$set:{
+   fixture_id:m.fixture.id,
+   home_team:m.teams.home.name,away_team:m.teams.away.name,
+   home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
+   league:m.league?.name||'International',
+   league_logo:m.league?.logo||'',
+   match_date:new Date(m.fixture.date),
+   status:m.fixture.status?.short||'NS',
+   elapsed:m.fixture.status?.elapsed??null,
+   score_home:m.goals?.home??null,
+   score_away:m.goals?.away??null,
+   last_updated:new Date()
+  }},
+  {upsert:true}
+ );
+}
 
-// Main sync: -3 to +3 days
+// Main fetch - FIXED FAST MODE to avoid Vercel 30s timeout + 3 DAYS BACK/FRONT LOGIC
 async function fetchCountryMatches(){
- if(fetching)return{total:0,saved:0,deleted:0,busy:true};
- if(!API)return{total:0,saved:0,deleted:0};
-
- // Use the existing MongoDB connection
- if(mongoose.connection.readyState!==1)
-  throw new Error('MongoDB is not connected');
-
+ if(fetching){
+   console.log('⏳ Fetch already running');
+   return {total:0, saved:0, deleted:0};
+ }
+ if(!API){
+   console.log('❌ API key missing');
+   return {total:0, saved:0, deleted:0};
+ }
  fetching=true;
 
  try{
+  if(mongoose.connection.readyState!==1){
+    await mongoose.connect(process.env.MONGO_URI);
+  }
+
   const now=new Date();
   now.setUTCHours(0,0,0,0);
 
-  const dates=Array.from({length:7},(_,i)=>day(now,i-3));
-  const results=await Promise.allSettled(dates.map(getDay));
+  // FIXED: 3 DAYS BACK AND FRONT LOGIC (-3 to +3) = 7 days
+  // k-3 gives: -3,-2,-1,0,1,2,3
+  const dates=Array.from({length:7},(_,k)=>day(now,k-3));
+  
+  // FIXED: allSettled not all (if 1 fails, others still save) + avoids 30s hang
+  const allResultsSettled=await Promise.allSettled(dates.map(d=>getDay(d)));
 
-  let total=0,items=[];
+  let total=0;
+  const countryMatches=[];
 
-  results.forEach((r,i)=>{
-   const list=r.status==='fulfilled'?r.value:[];
-   const found=list.filter(isCountry);
-   total+=list.length;
-   items.push(...found);
-   console.log(`📅 ${dates[i]}: ${list.length} -> ${found.length}`);
+  allResultsSettled.forEach((result,idx)=>{
+    if(result.status==='fulfilled'){
+      const list=result.value;
+      total+=list.length;
+      const filtered=list.filter(isCountry);
+      countryMatches.push(...filtered);
+      console.log(`📅 ${dates[idx]}: ${list.length} -> ${filtered.length} country`);
+    }else{
+      console.log(`❌ ${dates[idx]} failed:`, result.reason?.message);
+    }
   });
 
-  // Save all matches at once
-  if(items.length)
-   await CountryMatch.bulkWrite(
-    items.map(m=>({
-     updateOne:{
-      filter:{fixture_id:m.fixture.id},
-      update:{$set:matchData(m)},
-      upsert:true
-     }
-    })),
-    {ordered:false}
-   );
+  // FIXED: Bulk write once (was save() one by one = timeout)
+  if(countryMatches.length){
+    await CountryMatch.bulkWrite(countryMatches.map(m=>({
+      updateOne:{
+        filter:{fixture_id:m.fixture.id},
+        update:{$set:{
+          fixture_id:m.fixture.id,
+          home_team:m.teams.home.name,away_team:m.teams.away.name,
+          home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
+          league:m.league?.name||'International',
+          league_logo:m.league?.logo||'',
+          match_date:new Date(m.fixture.date),
+          status:m.fixture.status?.short||'NS',
+          elapsed:m.fixture.status?.elapsed??null,
+          score_home:m.goals?.home??null,
+          score_away:m.goals?.away??null,
+          last_updated:new Date()
+        }},
+        upsert:true
+      }
+    })),{ordered:false});
+  }
 
-  // Remove records outside the 7-day window
-  const start=new Date(now),end=new Date(now);
+  // Delete old matches outside -3 to +3 range
+  const start=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
+  const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
 
@@ -589,30 +628,31 @@ async function fetchCountryMatches(){
    $or:[{match_date:{$lt:start}},{match_date:{$gt:end}}]
   });
 
-  console.log(`✅ API:${total} Saved:${items.length} Deleted:${d.deletedCount}`);
-
-  return{total,saved:items.length,deleted:d.deletedCount};
-
+  console.log(`✅ API:${total} Saved:${countryMatches.length} Deleted:${d.deletedCount}`);
+  return {total, saved:countryMatches.length, deleted:d.deletedCount};
  }catch(e){
   console.log('❌ FETCH:',e.message);
-  return{total:0,saved:0,deleted:0,error:e.message};
- }finally{
-  fetching=false;
- }
+  return {total:0, saved:0, deleted:0, error:e.message};
+ }finally{fetching=false;}
 }
 
-// Automatic 2-hour sync
+// FOR RENDER ONLY - Vercel uses cron-job.org
+/*
+if(mongoose.connection.readyState===1)fetchCountryMatches();
+else mongoose.connection.once('connected',fetchCountryMatches);
+*/
 
-
-// ================= MATCHES API =================
+/* MATCHES - Returns filtered by tab */
 app.get('/api/matches-country',async(req,res)=>{
  try{
   const tab=(req.query.tab||'upcoming').toLowerCase();
   const now=new Date();
   now.setUTCHours(0,0,0,0);
 
-  const start=new Date(now),end=new Date(now);
+  const start=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
+
+  const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
 
@@ -624,7 +664,7 @@ app.get('/api/matches-country',async(req,res)=>{
    db=db.filter(m=>LIVE.has(m.status));
   else if(['finished','recent','past'].includes(tab))
    db=db.filter(m=>DONE.has(m.status))
-    .sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
+     .sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
   else if(tab==='today'){
    const tomorrow=new Date(now);
    tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
@@ -634,7 +674,7 @@ app.get('/api/matches-country',async(req,res)=>{
    }).sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
   }else
    db=db.filter(m=>!DONE.has(m.status)&&!LIVE.has(m.status))
-    .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
+     .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
 
   res.json({
    success:true,count:db.length,
@@ -654,61 +694,44 @@ app.get('/api/matches-country',async(req,res)=>{
  }
 });
 
-
-// ================= ALL COUNTRY MATCHES =================
+/* ALL - Returns all raw from DB */
 app.get('/api/country-matches',async(req,res)=>{
  try{
   const now=new Date();
   now.setUTCHours(0,0,0,0);
-
-  const start=new Date(now),end=new Date(now);
+  const start=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
+  const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
 
   res.json(await CountryMatch.find({
    match_date:{$gte:start,$lte:end}
   }).sort({match_date:1}).lean());
-
  }catch(e){
   console.log('❌ COUNTRY API:',e.message);
   res.status(500).json([]);
  }
 });
 
-
-// ================= CRON-JOB.ORG =================
-// Called every 2 hours by cron-job.org
+/* MANUAL FOR CRON-JOB.ORG - 2 HOURS ROUTE */
 app.get('/api/fetch-now',async(req,res)=>{
- try{
-  if(fetching)
-   return res.json({success:false,message:'Fetch already running'});
-
-  // Do not reconnect with an undefined URI
-  if(mongoose.connection.readyState!==1)
-   return res.status(503).json({
-    success:false,message:'MongoDB is not connected'
-   });
-
-  const result=await fetchCountryMatches();
-  const totalInDB=await CountryMatch.countDocuments();
-
-  res.json({
-   success:!result.error,
-   message:result.error?'Fetch failed':'Fetch complete - saved to DB',
-   synced:result.saved||0,
-   apiTotal:result.total||0,
-   deleted:result.deleted||0,
-   totalInDB,time:new Date().toISOString()
-  });
-
- }catch(e){
-  console.log('❌ FETCH-NOW:',e.message);
-  res.status(500).json({
-   success:false,message:'Fetch failed',
-   error:e.message,time:new Date().toISOString()
-  });
+ if(fetching)return res.json({success:false,message:'Fetch already running'});
+ 
+ if(mongoose.connection.readyState!==1){
+   await mongoose.connect(process.env.MONGO_URI);
  }
+
+ const result = await fetchCountryMatches();
+ res.json({
+  success:true,
+  message:'Fetch complete - saved to DB',
+  synced: result.saved,
+  apiTotal: result.total,
+  deleted: result.deleted,
+  totalInDB:await CountryMatch.countDocuments(),
+  time: new Date().toISOString()
+ });
 });
  
 // country match end here kjhgcfghhgxuygfxyf
