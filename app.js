@@ -307,9 +307,8 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 
 // new oiufdfgyuiopoiuytrertyuiopoiuytfdfghjk
 
-
-// ================= 2. CONFIG =================
-const API_KEY = "1f6245b3640a4f8dbdcd4ef044526b30";
+ // ================= 2. CONFIG =================
+const API_KEY="1f6245b3640a4f8dbdcd4ef044526b30";
 const API_URL="https://api.football-data.org/v4";
 let isSyncing=false;
 
@@ -319,66 +318,154 @@ const Match=mongoose.model("Match",new mongoose.Schema({
   homeScore:Number,awayScore:Number
 }));
 
-function getDate(n=0){let d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split("T")[0]}
+function getDate(n=0){
+  let d=new Date();
+  d.setDate(d.getDate()+n);
+  return d.toISOString().split("T")[0];
+}
 
 async function api(endpoint,params={}){
   const url=new URL(API_URL+endpoint);
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-  const r=await fetch(url,{headers:{"X-Auth-Token":API_KEY}});
+
+  const r=await fetch(url,{
+    headers:{"X-Auth-Token":API_KEY}
+  });
+
   const data=await r.json();
+
   if(!r.ok)throw Error(data.message||`Football API error: ${r.status}`);
+
   return data;
 }
 
 function calculateMinute(date,status,apiMinute){
-  if(status==="PAUSED")return{minute:45,minuteText:"HT"};
-  if(status!=="IN_PLAY")return{minute:null,minuteText:null};
-  if(typeof apiMinute==="number"&&apiMinute>0)return{minute:apiMinute,minuteText:`${apiMinute}'`};
+  if(status==="PAUSED")
+    return{minute:45,minuteText:"HT"};
 
-  let elapsed=Math.floor((Date.now()-new Date(date))/60000);
+  if(status!=="IN_PLAY")
+    return{minute:null,minuteText:null};
+
+  if(typeof apiMinute==="number"&&apiMinute>0)
+    return{
+      minute:apiMinute,
+      minuteText:`${apiMinute}'`
+    };
+
+  let elapsed=Math.floor(
+    (Date.now()-new Date(date))/60000
+  );
+
   if(elapsed<1)elapsed=1;
-  if(elapsed<=45)return{minute:elapsed,minuteText:`${elapsed}'`};
+
+  if(elapsed<=45)
+    return{
+      minute:elapsed,
+      minuteText:`${elapsed}'`
+    };
 
   let second=elapsed-15;
-  if(second>45&&second<=90)return{minute:second,minuteText:`${second}'`};
-  if(elapsed>105)return{minute:90,minuteText:"FINISH"};
-  return{minute:90,minuteText:"90+'"};
-}
 
-function format(m){
-  const live=calculateMinute(m.utcDate,m.status,m.minute);
+  if(second>45&&second<=90)
+    return{
+      minute:second,
+      minuteText:`${second}'`
+    };
+
+  if(elapsed>105)
+    return{
+      minute:90,
+      minuteText:"FINISH"
+    };
+
   return{
-    _id:String(m.id),date:m.utcDate,status:m.status,
-    minute:live.minute,minuteText:live.minuteText,
-    league:m.competition?.name||"Football",
-    home:{
-      name:m.homeTeam?.name||"Home",
-      logo:m.homeTeam?.id?`https://crests.football-data.org/${m.homeTeam.id}.png`:"https://via.placeholder.com/40"
-    },
-    away:{
-      name:m.awayTeam?.name||"Away",
-      logo:m.awayTeam?.id?`https://crests.football-data.org/${m.awayTeam.id}.png`:"https://via.placeholder.com/40"
-    },
-    homeScore:m.score?.fullTime?.home??m.score?.halfTime?.home??0,
-    awayScore:m.score?.fullTime?.away??m.score?.halfTime?.away??0
+    minute:90,
+    minuteText:"90+'"
   };
 }
 
+function format(m){
+  const live=calculateMinute(
+    m.utcDate,
+    m.status,
+    m.minute
+  );
+
+  return{
+    _id:String(m.id),
+    date:m.utcDate,
+    status:m.status,
+    minute:live.minute,
+    minuteText:live.minuteText,
+
+    league:m.competition?.name||"Football",
+
+    home:{
+      name:m.homeTeam?.name||"Home",
+      logo:m.homeTeam?.id
+        ?`https://crests.football-data.org/${m.homeTeam.id}.png`
+        :"https://via.placeholder.com/40"
+    },
+
+    away:{
+      name:m.awayTeam?.name||"Away",
+      logo:m.awayTeam?.id
+        ?`https://crests.football-data.org/${m.awayTeam.id}.png`
+        :"https://via.placeholder.com/40"
+    },
+
+    homeScore:
+      m.score?.fullTime?.home??
+      m.score?.halfTime?.home??
+      0,
+
+    awayScore:
+      m.score?.fullTime?.away??
+      m.score?.halfTime?.away??
+      0
+  };
+}
+
+
+// ================= FULL SYNC =================
 async function fullSyncToDB(){
-  if(isSyncing)return console.log("[SKIP] Already syncing");
+
+  if(isSyncing)
+    return console.log("[SKIP] Already syncing");
+
   isSyncing=true;
-  console.log(`[SYNC] ${new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})} WAT`);
+
+  console.log(
+    `[SYNC] ${new Date().toLocaleString("en-NG",{
+      timeZone:"Africa/Lagos"
+    })} WAT`
+  );
 
   try{
-    const finished=await api("/matches",{dateFrom:getDate(-7),dateTo:getDate()});
+
+    const finished=await api("/matches",{
+      dateFrom:getDate(-7),
+      dateTo:getDate()
+    });
+
     await new Promise(r=>setTimeout(r,7000));
-    const upcoming=await api("/matches",{dateFrom:getDate(),dateTo:getDate(7)});
+
+    const upcoming=await api("/matches",{
+      dateFrom:getDate(),
+      dateTo:getDate(7)
+    });
 
     const map=new Map();
-    [...(finished.matches||[]),...(upcoming.matches||[])].forEach(m=>map.set(m.id,m));
-    const formatted=[...map.values()].map(format);
+
+    [...(finished.matches||[]),...(upcoming.matches||[])]
+      .forEach(m=>map.set(m.id,m));
+
+    const formatted=[
+      ...map.values()
+    ].map(format);
 
     if(formatted.length){
+
       await Match.bulkWrite(
         formatted.map(m=>({
           updateOne:{
@@ -389,59 +476,163 @@ async function fullSyncToDB(){
         })),
         {ordered:false}
       );
-      console.log(`[SYNCED] ${formatted.length} matches`);
+
+      console.log(
+        `[SYNCED] ${formatted.length} matches`
+      );
     }
+
   }catch(e){
-    console.log("[SYNC ERROR]",e.message);
+
+    console.log(
+      "[SYNC ERROR]",
+      e.message
+    );
+
   }finally{
+
     isSyncing=false;
+
   }
 }
 
+
+// ================= GET MATCHES =================
 async function getMatches(type){
+
   try{
+
     let filter={};
 
     if(type==="today"){
-      const s=new Date();s.setHours(0,0,0,0);
-      const e=new Date();e.setHours(23,59,59,999);
-      filter={date:{$gte:s,$lte:e}};
+
+      const s=new Date();
+      s.setHours(0,0,0,0);
+
+      const e=new Date();
+      e.setHours(23,59,59,999);
+
+      filter={
+        date:{
+          $gte:s,
+          $lte:e
+        }
+      };
     }
 
     if(type==="upcoming")
-      filter={date:{$gte:new Date(getDate()),$lte:new Date(getDate(7))},
-        status:{$in:["SCHEDULED","TIMED","IN_PLAY","PAUSED"]}};
+      filter={
+        date:{
+          $gte:new Date(getDate()),
+          $lte:new Date(getDate(7))
+        },
+        status:{
+          $in:[
+            "SCHEDULED",
+            "TIMED",
+            "IN_PLAY",
+            "PAUSED"
+          ]
+        }
+      };
 
     if(type==="finished")
-      filter={date:{$gte:new Date(getDate(-7)),$lte:new Date()},status:"FINISHED"};
+      filter={
+        date:{
+          $gte:new Date(getDate(-7)),
+          $lte:new Date()
+        },
+        status:"FINISHED"
+      };
 
-    const matches=await Match.find(filter).lean();
+    const matches=await Match
+      .find(filter)
+      .lean();
 
     return matches.sort((a,b)=>{
-      const la=["IN_PLAY","PAUSED"].includes(a.status);
-      const lb=["IN_PLAY","PAUSED"].includes(b.status);
-      if(la&&!lb)return-1;if(!la&&lb)return 1;
+
+      const la=[
+        "IN_PLAY",
+        "PAUSED"
+      ].includes(a.status);
+
+      const lb=[
+        "IN_PLAY",
+        "PAUSED"
+      ].includes(b.status);
+
+      if(la&&!lb)return-1;
+      if(!la&&lb)return 1;
+
       return new Date(a.date)-new Date(b.date);
+
     });
+
   }catch(e){
-    console.log("getMatches error:",e.message);
+
+    console.log(
+      "getMatches error:",
+      e.message
+    );
+
     return[];
+
   }
 }
 
+
+// ================= MATCH API =================
 app.get("/api/matches",async(req,res)=>{
+
   try{
-    res.json({success:true,matches:await getMatches(req.query.tab||"today")});
+
+    res.json({
+      success:true,
+      matches:await getMatches(
+        req.query.tab||"today"
+      )
+    });
+
   }catch(e){
-    res.json({success:true,matches:[]});
+
+    res.json({
+      success:true,
+      matches:[]
+    });
+
   }
+
 });
 
-// EVERY 2 MINUTES
-cron.schedule("*/2 * * * *",()=>fullSyncToDB(),{timezone:"UTC"});
 
-// INITIAL SYNC
-setTimeout(fullSyncToDB,5000);
+// ================= VERCEL CRON SYNC =================
+app.get("/api/sync",async(req,res)=>{
+
+  try{
+
+    await fullSyncToDB();
+
+    res.json({
+      success:true,
+      message:"Sync complete"
+    });
+
+  }catch(e){
+
+    console.log(
+      "[SYNC ERROR]",
+      e.message
+    );
+
+    res.status(500).json({
+      success:false,
+      error:e.message
+    });
+
+  }
+
+});
+
 
 // matach end here kjhgfdghjkjhgfcghjkjhgf
 
@@ -494,29 +685,25 @@ async function getDay(date){
    headers:{'x-apisports-key':API},
    timeout:20000
   });
-
   if(r.data?.errors&&Object.keys(r.data.errors).length){
    console.log(`⚠️ ${date}`,r.data.errors);
    return[];
   }
-
   return r.data?.response||[];
  }catch(e){
   console.log(`❌ ${date}`,e.response?.data||e.message);
   return[];
-}}
+ }
+}
 
 async function save(m){
  if(!m.fixture?.id||!m.teams?.home||!m.teams?.away)return;
-
  await CountryMatch.updateOne(
   {fixture_id:m.fixture.id},
   {$set:{
    fixture_id:m.fixture.id,
-   home_team:m.teams.home.name,
-   away_team:m.teams.away.name,
-   home_logo:m.teams.home.logo||'',
-   away_logo:m.teams.away.logo||'',
+   home_team:m.teams.home.name,away_team:m.teams.away.name,
+   home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
    league:m.league?.name||'International',
    league_logo:m.league?.logo||'',
    match_date:new Date(m.fixture.date),
@@ -531,38 +718,20 @@ async function save(m){
 }
 
 async function fetchCountryMatches(){
- if(fetching){
-  console.log('⏳ Fetch already running');
-  return;
- }
-
- if(!API){
-  console.log('❌ API key missing');
-  return;
- }
-
+ if(fetching)return console.log('⏳ Fetch already running');
+ if(!API)return console.log('❌ API key missing');
  fetching=true;
 
  try{
-  console.log('🔄 COUNTRY API FETCH STARTED');
-
   const now=new Date();
   now.setUTCHours(0,0,0,0);
-
   let total=0,saved=0;
 
   for(let i=-3;i<=3;i++){
-   const date=day(now,i);
-   const list=await getDay(date);
-
+   const date=day(now,i),list=await getDay(date);
    total+=list.length;
-
-   for(const m of list.filter(isCountry)){
-    await save(m);
-    saved++;
-   }
-
-   console.log(`📅 ${date}: ${list.length} matches`);
+   for(const m of list.filter(isCountry)){await save(m);saved++;}
+   console.log(`📅 ${date}: ${list.length}`);
   }
 
   const start=new Date(now);
@@ -573,52 +742,25 @@ async function fetchCountryMatches(){
   end.setUTCHours(23,59,59,999);
 
   const d=await CountryMatch.deleteMany({
-   $or:[
-    {match_date:{$lt:start}},
-    {match_date:{$gt:end}}
-   ]
+   $or:[{match_date:{$lt:start}},{match_date:{$gt:end}}]
   });
 
   console.log(`✅ API:${total} Saved:${saved} Deleted:${d.deletedCount}`);
-  console.log('✅ COUNTRY API FETCH FINISHED');
-
  }catch(e){
   console.log('❌ FETCH:',e.message);
- }finally{
-  fetching=false;
- }
+ }finally{fetching=false;}
 }
 
+// cron.schedule('0 */2 * * *',fetchCountryMatches);
 
-/* ================= AUTO FETCH ================= 
-
-// FIRST FETCH AFTER MONGODB CONNECTS
-mongoose.connection.once('connected',async()=>{
- console.log('🟢 MongoDB connected');
- console.log('🚀 INITIAL API FETCH STARTED');
-
- await fetchCountryMatches();
-
- console.log('✅ INITIAL API FETCH FINISHED');
-});
-*/
-
-// FETCH EVERY 2 HOURS
-cron.schedule('0 */2 * * *',async()=>{
- console.log('🔄 2-HOUR API FETCH STARTED');
-
- await fetchCountryMatches();
-
- console.log('✅ 2-HOUR API FETCH FINISHED');
-});
+if(mongoose.connection.readyState===1)fetchCountryMatches();
+else mongoose.connection.once('connected',fetchCountryMatches);
 
 
 /* MATCHES */
-
 app.get('/apii/matches',async(req,res)=>{
  try{
   const tab=(req.query.tab||'upcoming').toLowerCase();
-
   const now=new Date();
   now.setUTCHours(0,0,0,0);
 
@@ -635,91 +777,53 @@ app.get('/apii/matches',async(req,res)=>{
 
   if(tab==='live')
    db=db.filter(m=>LIVE.has(m.status));
-
   else if(['finished','recent','past'].includes(tab))
-   db=db
-    .filter(m=>DONE.has(m.status))
-    .sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
-
+   db=db.filter(m=>DONE.has(m.status))
+     .sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
   else if(tab==='today'){
    const tomorrow=new Date(now);
    tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
-
-   db=db
-    .filter(m=>{
-     const d=new Date(m.match_date);
-     return d>=now&&d<tomorrow;
-    })
-    .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
-
-  }else{
-   db=db
-    .filter(m=>!DONE.has(m.status)&&!LIVE.has(m.status))
-    .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
-  }
+   db=db.filter(m=>{
+    const d=new Date(m.match_date);
+    return d>=now&&d<tomorrow;
+   }).sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
+  }else
+   db=db.filter(m=>!DONE.has(m.status)&&!LIVE.has(m.status))
+     .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
 
   res.json({
-   success:true,
-   count:db.length,
+   success:true,count:db.length,
    matches:db.map(m=>({
-    id:m.fixture_id,
-    league:m.league,
-    leagueLogo:m.league_logo,
+    id:m.fixture_id,league:m.league,leagueLogo:m.league_logo,
     date:m.match_date,
-    status:DONE.has(m.status)
-     ?'FINISHED'
-     :LIVE.has(m.status)
-     ?'IN_PLAY'
-     :'SCHEDULED',
-    home:{
-     name:m.home_team,
-     logo:m.home_logo
-    },
-    away:{
-     name:m.away_team,
-     logo:m.away_logo
-    },
-    homeScore:m.score_home,
-    awayScore:m.score_away,
-    elapsed:m.elapsed,
-    rawStatus:m.status
+    status:DONE.has(m.status)?'FINISHED':LIVE.has(m.status)?'IN_PLAY':'SCHEDULED',
+    home:{name:m.home_team,logo:m.home_logo},
+    away:{name:m.away_team,logo:m.away_logo},
+    homeScore:m.score_home,awayScore:m.score_away,
+    elapsed:m.elapsed,rawStatus:m.status
    }))
   });
-
  }catch(e){
   console.log('❌ MATCH API:',e.message);
-
-  res.status(500).json({
-   success:false,
-   matches:[],
-   error:e.message
-  });
+  res.status(500).json({success:false,matches:[],error:e.message});
  }
 });
 
 
 /* ALL */
-
 app.get('/api/country-matches',async(req,res)=>{
  try{
   const now=new Date();
   now.setUTCHours(0,0,0,0);
-
   const start=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
-
   const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
 
-  res.json(
-   await CountryMatch.find({
-    match_date:{$gte:start,$lte:end}
-   })
-   .sort({match_date:1})
-   .lean()
-  );
-
+  res.json(await CountryMatch.find({
+   match_date:{$gte:start,$lte:end}
+  }).sort({match_date:1}).lean());
  }catch(e){
   console.log('❌ COUNTRY API:',e.message);
   res.status(500).json([]);
@@ -728,34 +832,16 @@ app.get('/api/country-matches',async(req,res)=>{
 
 
 /* MANUAL */
-
 app.get('/api/fetch-now',async(req,res)=>{
- try{
-  if(fetching){
-   return res.json({
-    success:false,
-    message:'Fetch already running'
-   });
-  }
-
-  await fetchCountryMatches();
-
-  res.json({
-   success:true,
-   message:'Fetch complete',
-   totalInDB:await CountryMatch.countDocuments()
-  });
-
- }catch(e){
-  console.log('❌ MANUAL FETCH:',e.message);
-
-  res.status(500).json({
-   success:false,
-   message:e.message
-  });
- }
+ if(fetching)return res.json({success:false,message:'Fetch already running'});
+ await fetchCountryMatches();
+ res.json({
+  success:true,message:'Fetch complete',
+  totalInDB:await CountryMatch.countDocuments()
+ });
 });
  
+
 // country match end here kjhgcfghhgxuygfxyf
 
 //new ytresrtyuioiuytrertyuioiuytrertyu
