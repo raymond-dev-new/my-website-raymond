@@ -31,18 +31,51 @@
        .btn-watch { background: #dc2626; color: #fff; }
        .no-matches { text-align: center; color: #666; padding: 40px 0; }
        .loading { text-align: center; color: #888; padding: 30px; }
+
+        /* BEAUTIFUL BANNER */
         #breakNotice {
             display: none;
-            border: 2px solid #f59e0b;
-            background: #1a1200;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 18px;
+            background: linear-gradient(135deg, #1a1200 0%, #251a00 100%);
+            border: 1px solid rgba(245,158,11,0.5);
+            border-left: 4px solid #f59e0b;
+            border-radius: 16px;
+            padding: 16px 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(245,158,11,0.15);
+            position: relative;
+        }
+        #breakNotice.title {
+            color: #fbbf24;
+            font-weight: 800;
+            font-size: 15px;
+            margin-bottom: 8px;
             text-align: center;
         }
-        #breakNotice.title { color: #f59e0b; font-weight: 800; font-size: 15px; margin-bottom: 6px; }
-        #breakNotice.desc { color: #d1d5db; font-size: 14px; line-height: 1.4; }
-        #breakNotice.resume { color: #10b981; font-size: 13px; margin-top: 8px; font-weight: 600; }
+        #breakNotice.desc {
+            color: #e5e7eb;
+            font-size: 13.5px;
+            line-height: 1.5;
+            text-align: center;
+        }
+        #breakNotice.resume {
+            background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 10px;
+            color: #34d399;
+            font-size: 12.5px;
+            margin-top: 10px;
+            padding: 9px 10px;
+            font-weight: 600;
+            line-height: 1.4;
+            text-align: center;
+        }
+        #breakNotice.small {
+            color: #9ca3af;
+            font-size: 11.5px;
+            margin-top: 8px;
+            text-align: center;
+        }
+
         @media (max-width: 900px) {.container { width: 90%; } }
         @media (max-width: 600px) {.container { width: 100%; } }
     </style>
@@ -54,30 +87,34 @@
             <button class="tab upcoming active" onclick="loadMatches('upcoming', this)">Upcoming & Live</button>
             <button class="tab finished inactive" onclick="loadMatches('finished', this)">Finished</button>
         </div>
+
         <div id="breakNotice">
             <div class="title">⚠️ Big Leagues on International Break</div>
-            <div class="desc">Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 and Champions League matches have finished for now.</div>
-            <div class="resume">They will resume on Friday 10th October 2026 — Liverpool vs Man City, Arsenal vs Leeds, Real Madrid vs Villarreal, Barcelona vs Getafe.<br>Click on finish tab to check past match</div>
+            <div class="desc">Premier League, LaLiga, Serie A, Bundesliga, Ligue 1 and Champions League are on a 3-week FIFA break.</div>
+            <div class="resume">🔥 Returns Friday 10th Oct 2026<br>Liverpool vs Man City • Arsenal vs Leeds<br>Real Madrid vs Villarreal • Barcelona vs Getafe</div>
+            <div class="small">Showing other leagues below • Check Finished tab for past matches</div>
         </div>
+
         <div id="matches"></div>
     </div>
+
     <script>
         const BASE_URL = "https://raymonddomain.dev";
         const API_MATCHES = `${BASE_URL}/api/matches`;
         const API_LIVE = `${BASE_URL}/api/live`;
         let currentTab = 'upcoming';
-        let currentBtn = null;
         let liveInterval = null;
         let cache = {
             upcoming: JSON.parse(localStorage.getItem('cache_upcoming') || '[]'),
             finished: JSON.parse(localStorage.getItem('cache_finished') || '[]')
         };
-        const BIG_LEAGUE_KEYWORDS = ['Premier League', 'La Liga', 'Primera Division', 'Serie A', 'Bundesliga', 'Ligue 1', 'Champions League', 'PL', 'PD', 'SA', 'BL1', 'FL1', 'CL'];
+
+        const BIG_LEAGUE_KEYWORDS = ['Premier League', 'La Liga', 'Primera Division', 'Serie A', 'Bundesliga', 'Ligue 1', 'Champions League'];
 
         function hasBigLeagueMatch(matches){
             if(!matches || matches.length===0) return false;
             return matches.some(m=>{
-                const league = (m.league || m.competition?.name || m.competition?.code || '').toLowerCase();
+                const league = (m.league || '').toLowerCase();
                 return BIG_LEAGUE_KEYWORDS.some(k=> league.includes(k.toLowerCase()));
             });
         }
@@ -96,25 +133,26 @@
         function groupByDate(matches) {
             const g = {}; matches.forEach(m => { const d = new Date(m.date); const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; if (!g[k]) g[k] = []; g[k].push(m); }); return g;
         }
+
         function renderGrouped(matches, tab) {
             const c = document.getElementById('matches');
             const breakNotice = document.getElementById('breakNotice');
 
-            // NEW LOGIC: Banner on top, matches always below
             if(tab === 'upcoming'){
                 if(hasBigLeagueMatch(matches)){
-                    breakNotice.style.display = 'none'; // Big leagues started -> remove banner
+                    breakNotice.style.display = 'none';
                 } else {
-                    breakNotice.style.display = 'block'; // No big leagues -> show banner on top
+                    breakNotice.style.display = 'block';
                 }
             } else {
-                breakNotice.style.display = 'none'; // Never show on Finished tab
+                breakNotice.style.display = 'none';
             }
 
             if (!matches || matches.length === 0) {
                 c.innerHTML = `<div class="no-matches">No matches found.</div>`;
                 return;
             }
+
             const grouped = groupByDate(matches);
             let html = '';
             let dates = Object.keys(grouped).sort((a, b) => new Date(grouped[a][0].date) - new Date(grouped[b][0].date));
@@ -127,21 +165,29 @@
         }
 
         async function loadMatches(tab, btn) {
-            currentTab = tab; currentBtn = btn;
+            currentTab = tab;
             document.querySelectorAll('.tab').forEach(t => t.classList.add('inactive'));
             btn.classList.remove('inactive');
             const container = document.getElementById('matches');
-            if (cache[tab] && cache[tab].length > 0) { renderGrouped(cache[tab], tab); }
-            else { container.innerHTML = `<div class="loading">Loading matches...</div>`; }
+
+            if (cache[tab] && cache[tab].length > 0) {
+                renderGrouped(cache[tab], tab);
+            } else {
+                container.innerHTML = `<div class="loading">Loading matches...</div>`;
+            }
+
             if (liveInterval) clearInterval(liveInterval);
+
             try {
                 const controller = new AbortController();
                 setTimeout(() => controller.abort(), 25000);
                 let matches = [];
+
                 if (tab === 'upcoming') {
                     const resDB = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
                     const dataDB = await resDB.json();
                     let dbMatches = dataDB.success? (dataDB.matches || []) : [];
+
                     try {
                         const resLive = await fetch(`${API_LIVE}`, { cache: "no-store", signal: controller.signal });
                         const dataLive = await resLive.json();
@@ -149,20 +195,47 @@
                             const liveMap = new Map(dataLive.matches.map(m => [m._id, m]));
                             dbMatches = dbMatches.filter(m =>!liveMap.has(m._id));
                             matches = [...dataLive.matches,...dbMatches];
-                        } else { matches = dbMatches; }
+                        } else {
+                            matches = dbMatches;
+                        }
                     } catch (e) { matches = dbMatches; }
                 } else {
                     const res = await fetch(`${API_MATCHES}?tab=${tab}`, { cache: "no-store", signal: controller.signal });
-                    const data = await res.json(); matches = data.matches || [];
+                    const data = await res.json();
+                    matches = data.matches || [];
                 }
-                cache[tab] = matches;
-                localStorage.setItem('cache_' + tab, JSON.stringify(matches));
-                renderGrouped(matches, tab);
+
+                // CRITICAL FIX: Don't overwrite cache with empty array
+                if(matches && matches.length > 0){
+                    cache[tab] = matches;
+                    localStorage.setItem('cache_' + tab, JSON.stringify(matches));
+                    renderGrouped(matches, tab);
+                } else {
+                    // If API returns 0 but we have old Brazilian matches, keep showing them
+                    if(cache[tab] && cache[tab].length > 0){
+                        renderGrouped(cache[tab], tab);
+                    } else {
+                        renderGrouped(matches, tab);
+                    }
+                }
+
                 const hasLive = matches.some(m => ["IN_PLAY", "LIVE", "PAUSED"].includes(m.status));
-                if (hasLive && tab === "upcoming") { liveInterval = setInterval(() => loadMatches(tab, btn), 60000); }
-            } catch (err) { console.log(err); }
+                if (hasLive && tab === "upcoming") {
+                    liveInterval = setInterval(() => loadMatches(tab, btn), 60000);
+                }
+
+            } catch (err) {
+                console.log(err);
+                if(cache[tab] && cache[tab].length > 0){
+                    renderGrouped(cache[tab], tab);
+                }
+            }
         }
-        window.onload = () => { const firstBtn = document.querySelector('.tab.upcoming'); loadMatches('upcoming', firstBtn); };
+
+        window.onload = () => {
+            const firstBtn = document.querySelector('.tab.upcoming');
+            loadMatches('upcoming', firstBtn);
+        };
     </script>
 </body>
 </html>
