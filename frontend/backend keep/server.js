@@ -463,12 +463,6 @@ app.get("/api/sync", async (req,res)=>{
   res.json({success:true, synced:count, totalInDB, time:new Date().toISOString()});
 });
 
-// EVERY 2 MINUTES (for Render/VPS - Vercel uses cron-job.org)
-cron.schedule("*/2 * * * *",()=>fullSyncToDB(),{timezone:"UTC"});
-
-// INITIAL SYNC
-setTimeout(fullSyncToDB,5000);
-
 // matach end here kjhgfdghjkjhgfcghjkjhgf
 
 
@@ -477,10 +471,10 @@ setTimeout(fullSyncToDB,5000);
  // old e11e83e05b19af09fbdd776affffc3a7
 
 
-
-const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
+  const API=process.env.API_FOOTBALL_KEY||'e11e83e05b19af09fbdd776affffc3a7';
 const BASE='https://v3.football.api-sports.io';
 
+// DB Schema for country matches
 const countrySchema=new mongoose.Schema({
  fixture_id:{type:Number,unique:true},home_team:String,away_team:String,
  home_logo:String,away_logo:String,league:String,league_logo:String,
@@ -490,9 +484,11 @@ const countrySchema=new mongoose.Schema({
 });
 const CountryMatch=mongoose.models.CountryMatch || mongoose.model('CountryMatch',countrySchema);
 
+// Live and finished status
 const LIVE=new Set(['1H','HT','2H','ET','BT','P','LIVE','INT']);
 const DONE=new Set(['FT','AET','PEN']);
 
+// Check if match is country vs country
 function isCountry(m){
  if(m.teams?.home?.national===true&&m.teams?.away?.national===true)return true;
  const n=(m.league?.name||'').toLowerCase();
@@ -507,6 +503,7 @@ function isCountry(m){
  ].some(x=>n.includes(x));
 }
 
+// Helper to get date string
 const day=(d,n)=>{
  const x=new Date(d);
  x.setUTCDate(x.getUTCDate()+n);
@@ -515,6 +512,7 @@ const day=(d,n)=>{
 
 let fetching=false;
 
+// Fetch one day from API
 async function getDay(date){
  try{
   const r=await axios.get(`${BASE}/fixtures`,{
@@ -533,6 +531,7 @@ async function getDay(date){
  }
 }
 
+// Old single save (kept for backup)
 async function save(m){
  if(!m.fixture?.id||!m.teams?.home||!m.teams?.away)return;
  await CountryMatch.updateOne(
@@ -554,6 +553,7 @@ async function save(m){
  );
 }
 
+// Main fetch - FIXED FAST MODE to avoid Vercel 30s timeout
 async function fetchCountryMatches(){
  if(fetching){
    console.log('⏳ Fetch already running');
@@ -572,21 +572,47 @@ async function fetchCountryMatches(){
 
   const now=new Date();
   now.setUTCHours(0,0,0,0);
-  let total=0,saved=0;
 
-  for(let i=-3;i<=3;i++){
-   const date=day(now,i);
-   const list=await getDay(date);
-   total+=list.length;
-   for(const m of list.filter(isCountry)){await save(m);saved++;}
-   console.log(`📅 ${date}: ${list.length} -> ${list.filter(isCountry).length} country`);
-   // wait 1 sec to avoid rate limit
-   await new Promise(r=>setTimeout(r,1000));
+  // FIXED: Fetch 7 days in parallel (was slow loop + 1 sec delay)
+  const dates=Array.from({length:7},(_,k)=>day(now,k-3)); // -3 to +3
+  const allResults=await Promise.all(dates.map(d=>getDay(d)));
+
+  let total=0;
+  const countryMatches=[];
+
+  allResults.forEach((list,idx)=>{
+    total+=list.length;
+    const filtered=list.filter(isCountry);
+    countryMatches.push(...filtered);
+    console.log(`📅 ${dates[idx]}: ${list.length} -> ${filtered.length} country`);
+  });
+
+  // FIXED: Bulk write once (was save() one by one = timeout)
+  if(countryMatches.length){
+    await CountryMatch.bulkWrite(countryMatches.map(m=>({
+      updateOne:{
+        filter:{fixture_id:m.fixture.id},
+        update:{$set:{
+          fixture_id:m.fixture.id,
+          home_team:m.teams.home.name,away_team:m.teams.away.name,
+          home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
+          league:m.league?.name||'International',
+          league_logo:m.league?.logo||'',
+          match_date:new Date(m.fixture.date),
+          status:m.fixture.status?.short||'NS',
+          elapsed:m.fixture.status?.elapsed??null,
+          score_home:m.goals?.home??null,
+          score_away:m.goals?.away??null,
+          last_updated:new Date()
+        }},
+        upsert:true
+      }
+    })),{ordered:false});
   }
 
+  // Delete old matches outside range
   const start=new Date(now);
   start.setUTCDate(start.getUTCDate()-3);
-
   const end=new Date(now);
   end.setUTCDate(end.getUTCDate()+3);
   end.setUTCHours(23,59,59,999);
@@ -595,8 +621,8 @@ async function fetchCountryMatches(){
    $or:[{match_date:{$lt:start}},{match_date:{$gt:end}}]
   });
 
-  console.log(`✅ API:${total} Saved:${saved} Deleted:${d.deletedCount}`);
-  return {total, saved, deleted:d.deletedCount};
+  console.log(`✅ API:${total} Saved:${countryMatches.length} Deleted:${d.deletedCount}`);
+  return {total, saved:countryMatches.length, deleted:d.deletedCount};
  }catch(e){
   console.log('❌ FETCH:',e.message);
   return {total:0, saved:0, deleted:0, error:e.message};
@@ -604,12 +630,13 @@ async function fetchCountryMatches(){
 }
 
 // FOR RENDER ONLY - Vercel uses cron-job.org
-cron.schedule('0 */2 * * *',fetchCountryMatches);
 
+/*
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
+*/
 
-/* MATCHES - FIXED TYPO from /apii/ to /api/ */
+/* MATCHES - Returns filtered by tab */
 app.get('/api/matches-country',async(req,res)=>{
  try{
   const tab=(req.query.tab||'upcoming').toLowerCase();
@@ -661,7 +688,7 @@ app.get('/api/matches-country',async(req,res)=>{
  }
 });
 
-/* ALL */
+/* ALL - Returns all raw from DB */
 app.get('/api/country-matches',async(req,res)=>{
  try{
   const now=new Date();
@@ -682,7 +709,6 @@ app.get('/api/country-matches',async(req,res)=>{
 });
 
 /* MANUAL FOR CRON-JOB.ORG - 2 HOURS ROUTE */
-// METHOD: GET | ROUTE: /api/fetch-now
 app.get('/api/fetch-now',async(req,res)=>{
  if(fetching)return res.json({success:false,message:'Fetch already running'});
  
