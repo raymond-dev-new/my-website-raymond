@@ -1,146 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Live Football - Raymond Directory</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}
 body{background:#0a0a0a;color:#fff;min-height:100vh}
-.top-title{padding:18px 15px 5px;text-align:center}
-.top-title h1{font-size:24px;font-weight:800}
-.top-title p{color:#888;font-size:12px;margin-top:6px}
-.tabs{display:flex;gap:10px;padding:14px}
-.tabs button{flex:1;padding:14px;border:0;border-radius:10px;font-weight:800;cursor:pointer;transition:0.2s}
+.top-loader{height:3px;background:#22c55e;width:0%;animation:loadbar 1.2s infinite;position:fixed;top:0;left:0;z-index:999}
+@keyframes loadbar{0%{width:0%}50%{width:80%}100%{width:100%}}
+.top-title{padding:18px 15px 5px;text-align:center}.top-title h1{font-size:24px;font-weight:800}
+.tabs{display:flex;gap:10px;padding:14px}.tabs button{flex:1;padding:14px;border:0;border-radius:10px;font-weight:800;cursor:pointer}
 .tab-upcoming{background:#1a2e1f;color:#6b8a7a}.tab-upcoming.active{background:#22c55e;color:#000}
 .tab-finished{background:#2e1a1a;color:#7a6b6b}.tab-finished.active{background:#ef4444;color:#fff}
 .date-header{padding:12px 15px;color:#3b82f6;font-weight:700;font-size:14px}
 .match-card{background:#141416;border-radius:16px;margin:0 12px 14px;padding:16px;border:1px solid #232326}
-.match-card.is-live{border-color:#22c55e;box-shadow:0 0 0 1px #22c55e33}
-.league-name{color:#f59e0b;font-weight:700;font-size:13px;margin-bottom:2px}
-.match-time{color:#666;font-size:11px;margin-bottom:12px}
-.teams-row{display:flex;align-items:center;justify-content:space-between}
-.team{flex:1;text-align:center}
+.match-card.is-live{border-color:#22c55e}.league-name{color:#f59e0b;font-weight:700;font-size:13px}.match-time{color:#666;font-size:11px;margin-bottom:12px}
+.teams-row{display:flex;align-items:center;justify-content:space-between}.team{flex:1;text-align:center}
 .team img{width:52px;height:52px;object-fit:contain;background:#fff;border-radius:50%;padding:4px}
-.team span{font-size:12px;display:block;margin-top:8px;font-weight:600;line-height:1.2}
-.score-center{text-align:center;flex:0.9}
-.score-text{font-size:32px;font-weight:900;letter-spacing:1px}
-.status-badge{min-width:64px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:800;margin-top:6px;display:inline-block;text-align:center}
-.live-badge{background:#22c55e;color:#000;animation:pulse 1.5s infinite}
-.live-dot{width:8px;height:8px;background:#000;border-radius:50%;display:inline-block;margin-right:4px;animation:blink 1s infinite}
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.btn-lineup{width:100%;background:#1e293b;color:#e2e8f0;border:0;padding:12px;border-radius:10px;font-weight:700;margin-top:14px;cursor:pointer}
-.btn-watch{width:100%;background:#dc2626;color:#fff;border:0;padding:12px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer}
-.empty{text-align:center;padding:40px;color:#666;font-size:13px}
+.team span{font-size:12px;display:block;margin-top:8px;font-weight:600}.score-center{text-align:center;flex:0.9}.score-text{font-size:32px;font-weight:900}
+.status-badge{min-width:64px;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:800;margin-top:6px;display:inline-block}
+.live-badge{background:#22c55e;color:#000}.btn-watch{width:100%;background:#dc2626;color:#fff;border:0;padding:12px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer}
+.loading-wrap{text-align:center;padding:60px 0}.spinner{width:42px;height:42px;border:4px solid #222;border-top:4px solid #22c55e;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}.empty{text-align:center;padding:40px;color:#666}
 </style>
 </head>
 <body>
-
-   <script>
-    (function(ihosnhw){
-    var d = document,
-        s = d.createElement('script'),
-        l = d.currentScript || d.scripts[d.scripts.length - 1];
-    s.settings = ihosnhw || {};
-    s.src = "\/\/quarrelsomebitter.com\/b_XTV\/s.d\/G\/lO0sYQWtcd\/IeJmL9EuDZFU\/lfk\/PGTpc\/0IMTzHg\/2qNKDhUltaNNzaQXzTOEDuYC0bO_QP";
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-    l.parentNode.insertBefore(s, l);
-    })({})
- </script>
-
-
-<div class="top-title">
-  <h1>Live Football ⚽</h1>
-  <p>Finish Match Will Show In Finished Tab within Some Hours </p>
-</div>
-
-<div class="tabs">
-  <button id="btnUpcoming" class="tab-upcoming active" onclick="switchTab('upcoming')">Upcoming & Live</button>
-  <button id="btnFinished" class="tab-finished" onclick="switchTab('finished')">Finished</button>
-</div>
-
+<div class="top-loader" id="topLoader" style="display:none"></div>
+<div class="top-title"><h1>Live Football ⚽</h1><p>Finish Match Will Show In Finished Tab within Some Hours</p></div>
+<div class="tabs"><button id="btnUpcoming" class="tab-upcoming active" onclick="switchTab('upcoming')">Upcoming & Live</button><button id="btnFinished" class="tab-finished" onclick="switchTab('finished')">Finished</button></div>
 <div class="date-header" id="dateHeader">📅 Loading...</div>
-<div id="list"><div class="empty">Loading matches...</div></div>
-
+<div id="list"></div>
 <script>
-const API_URL = 'https://raymonddomain.dev/api/matches-country';
-let allMatches = [];
-let currentTab = 'upcoming';
+const API_URL='https://raymonddomain.dev/api/matches-country';
+let currentTab='upcoming';
 
-async function loadMatches(){
-  const list = document.getElementById('list');
-  try{
-    const res = await fetch(`${API_URL}?tab=${currentTab}&t=${Date.now()}`, { cache: 'no-store' });
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const json = await res.json();
-    if(Array.isArray(json)) allMatches = json;
-    else if(json && Array.isArray(json.matches)) allMatches = json.matches;
-    else allMatches = [];
-    render();
-  }catch(e){
-    list.innerHTML = `<div class="empty"> Checked Your Internet Conncetion <br><br><button onclick="loadMatches()" style="padding:8px 18px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;
-  }
-}
+function getCache(tab){try{return JSON.parse(localStorage.getItem('c2_'+tab)).matches||[];}catch(e){return[];}}
+function saveCache(tab,m){localStorage.setItem('c2_'+tab,JSON.stringify({time:Date.now(),matches:m}));}
+function showLoading(){document.getElementById('topLoader').style.display='block'; const cached=getCache(currentTab); if(cached.length===0){document.getElementById('list').innerHTML=`<div class="loading-wrap"><div class="spinner"></div><div style="color:#888;font-size:14px">Loading matches...</div></div>`;}}
+function hideLoading(){document.getElementById('topLoader').style.display='none';}
 
-function render(){
-  const list = document.getElementById('list');
-  const header = document.getElementById('dateHeader');
-  header.innerHTML = `📅 ${new Date().toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
-  let filtered = allMatches.filter(m => m && m.home && m.away);
-  if(currentTab === 'finished'){
-    filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
-  } else {
-    filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
-    filtered.sort((a,b) => (b.status === 'IN_PLAY' ? 1 : 0) - (a.status === 'IN_PLAY' ? 1 : 0));
-  }
-  if(filtered.length === 0){
-    list.innerHTML = `<div class="empty">No ${currentTab} matches found</div>`;
-    return;
-  }
-  list.innerHTML = filtered.map(m=>{
-    const d = new Date(m.date);
-    const kickTime = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-    const dayStr = d.toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const isLive = m.status === 'IN_PLAY';
-    const isFinished = m.status === 'FINISHED';
-    const scoreText = `${m.homeScore ?? 0} - ${m.awayScore ?? 0}`;
-    let badgeHTML = '';
-    if(isLive){
-      badgeHTML = `<div class="status-badge live-badge"><span class="live-dot"></span>IN PLAY</div>`;
-    } else if(isFinished){
-      badgeHTML = `<div class="status-badge" style="background:#333;color:#888;">FINISHED</div>`;
-    } else {
-      badgeHTML = `<div class="status-badge" style="background:#2a3441;color:#e2e8f0;">${kickTime}</div>`;
-    }
-    return `
-    <div class="match-card ${isLive ? 'is-live' : ''}">
-      <div class="league-name">${m.league}</div>
-      <div class="match-time">${dayStr} • ${kickTime} ${isLive ? '• <span style="color:#22c55e;font-weight:800">LIVE NOW</span>' : ''}</div>
-      <div class="teams-row">
-        <div class="team"><img src="${m.home.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.home.name}</span></div>
-        <div class="score-center">
-          <div class="score-text">${scoreText}</div>
-          ${badgeHTML}
-        </div>
-        <div class="team"><img src="${m.away.logo}" onerror="this.src='https://via.placeholder.com/50'"><span>${m.away.name}</span></div>
-      </div>
-      <button class="btn-lineup" onclick="alert('Lineups for ${m.home.name} vs ${m.away.name}')">Line Up</button>
-      <button class="btn-watch" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(m.home.name+' vs '+m.away.name+' live')}','_blank')">▶ Watch Live</button>
-    </div>`;
+function render(matches){
+  const list=document.getElementById('list'); const header=document.getElementById('dateHeader');
+  header.innerHTML=`📅 ${new Date().toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
+  if(!matches||matches.length===0){list.innerHTML=`<div class="empty">No ${currentTab} matches<br><br><button onclick="loadMatches()" style="padding:10px 20px;background:#22c55e;border:0;border-radius:10px;font-weight:800">Retry</button></div>`;return;}
+  let f=[...matches].filter(m=>m.home&&m.away);
+  if(currentTab==='finished') f.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  else f.sort((a,b)=>{const al=["IN_PLAY","LIVE","1H","2H"].includes(a.status)?1:0;const bl=["IN_PLAY","LIVE","1H","2H"].includes(b.status)?1:0;return bl-al||new Date(a.date)-new Date(b.date);});
+  list.innerHTML=f.map(m=>{
+    const d=new Date(m.date); const kick=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+    const isLive=["IN_PLAY","LIVE","1H","2H"].includes(m.status);
+    return `<div class="match-card ${isLive?'is-live':''}"><div class="league-name">${m.league}</div><div class="match-time">${d.toDateString()} • ${kick} ${isLive?'• <span style="color:#22c55e">LIVE NOW</span>':''}</div><div class="teams-row"><div class="team"><img src="${m.home.logo}" loading="eager" onerror="this.src='https://via.placeholder.com/50'"><span>${m.home.name}</span></div><div class="score-center"><div class="score-text">${m.homeScore??0}-${m.awayScore??0}</div><div class="status-badge ${isLive?'live-badge':''}" style="${!isLive?'background:#2a3441;color:#e2e8f0':''}">${isLive?(m.minute?m.minute+"'":'LIVE'):m.status==='FINISHED'?'FINISHED':kick}</div></div><div class="team"><img src="${m.away.logo}" loading="eager" onerror="this.src='https://via.placeholder.com/50'"><span>${m.away.name}</span></div></div><button class="btn-watch" onclick="window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(m.home.name+' vs '+m.away.name+' live'),'_blank')">▶ Watch Live</button></div>`;
   }).join('');
 }
 
-function switchTab(t){
-  currentTab = t;
-  document.getElementById('btnUpcoming').className = t==='upcoming' ? 'tab-upcoming active' : 'tab-upcoming';
-  document.getElementById('btnFinished').className = t==='finished' ? 'tab-finished active' : 'tab-finished';
-  loadMatches();
+async function loadMatches(){
+  const cached=getCache(currentTab);
+  if(cached.length>0) render(cached);
+  showLoading();
+  try{
+    const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),6000);
+    const res=await fetch(`${API_URL}?tab=${currentTab}&t=${Date.now()}`,{cache:'no-store',signal:ctrl.signal});
+    const json=await res.json(); const matches=Array.isArray(json)?json:(json.matches||[]);
+    if(matches.length>0){saveCache(currentTab,matches); render(matches);}
+    else if(cached.length===0) render([]);
+  }catch(e){
+    if(cached.length===0) document.getElementById('list').innerHTML=`<div class="empty">Network error<br><button onclick="loadMatches()" style="padding:10px 20px;background:#22c55e;border:0;border-radius:10px;margin-top:10px">Retry</button></div>`;
+  }finally{hideLoading();}
 }
-
+function switchTab(t){currentTab=t;document.getElementById('btnUpcoming').className=t==='upcoming'?'tab-upcoming active':'tab-upcoming';document.getElementById('btnFinished').className=t==='finished'?'tab-finished active':'tab-finished';loadMatches();}
 loadMatches();
-setInterval(loadMatches, 30000);
+setInterval(()=>{if(currentTab==='upcoming') loadMatches();},60000);
 </script>
 </body>
 </html>
