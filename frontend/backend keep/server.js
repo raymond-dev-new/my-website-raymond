@@ -34,11 +34,6 @@ const JWT_SECRET = process.env.JWT_SECRET
 const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
 const url = process.env.MONGO_URL
 
- 
-//app.use(cors())
-/*app.use(cors({ origin: "*",
-  methods: ["GET", "POST" , "DELETE"]
- })); */
 
 app.use(cors({ origin: "*" }));
 app.use(bordyparser.json()); // for metadata
@@ -500,22 +495,40 @@ app.get("/api/live", async(req,res)=>{
 let syncCache = { time: 0, data: null };
 
 // ========== ROUTE 3: /api/sync - PROTECTED ==========
+
 app.get("/api/sync", async(req,res)=>{
   const now = Date.now();
-  
-  // ANTI-BAN LAYER 3: SYNC COOLDOWN - 1 hour
-  // Even if 1000 users click sync, only 1 per hour will actually run
+
+  // 1. If we synced within 1 hour, return cache INSTANTLY (0ms)
   if(now - syncCache.time < 3600000 && syncCache.data){
-    return res.json({success:true, ...syncCache.data, cached:true, message:"Sync cooldown 1hr - serving cache"});
+    return res.json({success:true,...syncCache.data, cached:true, message:"Sync cooldown 1hr - cached"});
   }
 
+  // 2. If already syncing, return INSTANTLY
   if(isSyncing){
-    return res.json({success:false, message:"Sync already running, wait..."});
+    return res.json({success:false, cached:true, message:"Sync already running in background, use /api/matches for now"});
   }
 
-  const r = await fullSyncToDB();
-  syncCache = { time: now, data: r }; // Save for 1 hour
-  res.json({success:true,...r, timeWAT: new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})});
+  // 3. INSTANT RESPONSE - Don't wait for football-data
+  res.json({
+    success:true, 
+    message:"Sync started in background - will finish in 15s, use /api/matches now",
+    cached:false, 
+    timeWAT: new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"})
+  });
+
+  // 4. Do heavy work AFTER response sent - user already got instant reply
+  isSyncing = true;
+  fullSyncToDB()
+    .then(r => {
+      syncCache = { time: Date.now(), data: r };
+      isSyncing = false;
+      console.log("✅ Background sync done:", r);
+    })
+    .catch(e => {
+      console.log("❌ Background sync error:", e.message);
+      isSyncing = false;
+    });
 });
 
 
@@ -693,10 +706,10 @@ async function fetchCountryMatches(){
 }
 
 // FOR RENDER ONLY - Vercel uses cron-job.org
-/*
+
 if(mongoose.connection.readyState===1)fetchCountryMatches();
 else mongoose.connection.once('connected',fetchCountryMatches);
-*/
+
 
 /* MATCHES - Returns filtered by tab */
 app.get('/api/matches-country',async(req,res)=>{
@@ -846,4 +859,3 @@ app.delete('/api/delete-media/:id', async (req, res) => {
 
 
  app.listen(port, console.log('server is running on port 8000'))
-  

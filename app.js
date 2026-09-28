@@ -34,11 +34,6 @@ const JWT_SECRET = process.env.JWT_SECRET
 const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
 const url = process.env.MONGO_URL
 
- 
-
-
-
-
 
 app.use(cors({ origin: "*" }));
 app.use(bordyparser.json()); // for metadata
@@ -789,24 +784,57 @@ app.get('/api/country-matches',async(req,res)=>{
 });
 
 /* MANUAL FOR CRON-JOB.ORG - 2 HOURS ROUTE */
-app.get('/api/fetch-now',async(req,res)=>{
- if(fetching)return res.json({success:false,message:'Fetch already running'});
- 
- if(mongoose.connection.readyState!==1){
-   await mongoose.connect(process.env.MONGO_URI);
- }
+app.get('/api/fetch-now', async(req, res) => {
+  // Prevent Chrome infinite loading - force timeout after 25s
+  req.setTimeout(25000);
+  res.setHeader('Content-Type', 'application/json');
 
- const result = await fetchCountryMatches();
- res.json({
-  success:true,
-  message:'Fetch complete - saved to DB',
-  synced: result.saved,
-  apiTotal: result.total,
-  deleted: result.deleted,
-  totalInDB:await CountryMatch.countDocuments(),
-  time: new Date().toISOString()
- });
-}); 
+  if (fetching) {
+    return res.json({ success: false, message: 'Fetch already running' });
+  }
+
+  try {
+    // Fix: use same env name
+    const MONGO = process.env.MONGO_URI || process.env.MONGO_URL;
+    
+    if (mongoose.connection.readyState !== 1) {
+      console.log('Connecting to Mongo...');
+      await mongoose.connect(MONGO, { serverSelectionTimeoutMS: 5000 });
+    }
+
+    console.log('Starting fetch...');
+    
+    // Race against 20s timeout so Chrome never hangs
+    const fetchPromise = fetchCountryMatches();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Fetch timed out after 20s')), 20000)
+    );
+
+    const result = await Promise.race([fetchPromise, timeoutPromise]);
+
+    const count = await CountryMatch.countDocuments();
+
+    return res.json({
+      success: true,
+      message: 'Fetch complete - saved to DB',
+      synced: result.saved,
+      apiTotal: result.total,
+      deleted: result.deleted,
+      totalInDB: count,
+      time: new Date().toISOString()
+    });
+
+  } catch (e) {
+    console.log('❌ fetch-now error:', e.message);
+    fetching = false; // IMPORTANT: unlock if crashed
+    return res.status(500).json({
+      success: false,
+      message: 'Fetch failed',
+      error: e.message,
+      totalInDB: await CountryMatch.countDocuments().catch(() => 0)
+    });
+  }
+});
 
 // country match end here kjhgcfghhgxuygfxyf
 

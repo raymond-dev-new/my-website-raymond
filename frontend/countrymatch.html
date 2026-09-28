@@ -80,7 +80,7 @@ async function loadMatches(){
     else allMatches = [];
     render();
   }catch(e){
-    list.innerHTML = `<div class="empty">Error loading: ${e.message}<br><br><button onclick="loadMatches()" style="padding:8px 18px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;
+    list.innerHTML = `<div class="empty"> Checked Your Internet Conncetion <br><br><button onclick="loadMatches()" style="padding:8px 18px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;
   }
 }
 
