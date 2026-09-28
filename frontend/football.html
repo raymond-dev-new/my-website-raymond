@@ -14,6 +14,34 @@ body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:0 auto}
 .match-card{background:#111;border:1px solid #222;border-radius:16px;padding:15px;margin-bottom:15px}
 .league{color:#f59e0b;font-weight:700;font-size:15px;margin-bottom:6px}.match-date{color:#9ca3af;font-size:13px;margin-bottom:15px}
 .teams{display:flex;align-items:center;justify-content:space-between;text-align:center;margin-bottom:12px}.team{flex:1}.team img{width:50px;height:50px;object-fit:contain;margin-bottom:8px}.team-name{font-size:14px;font-weight:600}
+
+.break-notice{
+  border: 2.5px solid #ff9d00;
+  background: #161616;
+  border-radius: 16px;
+  padding: 18px 16px;
+  margin: 14px 12px;
+  text-align: center;
+}
+.break-title{
+  color: #ff9d00;
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.break-text{
+  color: #d1d5db;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.break-resume{
+  color: #16a34a;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .score-area{flex:0 0 90px;text-align:center}.score{font-size:28px;font-weight:800;margin-bottom:8px}
 .badge{padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;display:inline-block;background:#2563eb;color:#fff}.badge.live{background:#dc2626;animation:pulse 1s infinite}
 @keyframes pulse{0%{opacity:1}50%{opacity:.6}100%{opacity:1}}
@@ -48,6 +76,22 @@ body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:0 auto}
 <button class="tab upcoming" id="b1-up" onclick="switchTab('upcoming',this)">Upcoming & Live</button>
 <button class="tab finished inactive" id="b1-fin" onclick="switchTab('finished',this)">Finished</button>
 </div>
+
+  <!-- BREAK NOTICE - Put this inside body above -->
+<div class="break-notice">
+  <div class="break-title">⚠️ Big Leagues on International Break</div>
+  <div class="break-text">
+    Premier League, LaLiga, Serie A, Bundesliga,<br>
+    Ligue 1 and Champions League matches have<br>
+    finished for now.
+  </div>
+  <div class="break-resume">
+    They will resume on Friday 10th October 2026<br>
+    — Liverpool vs Man City, Arsenal vs Leeds,<br>
+    Real Madrid vs Villarreal, Barcelona vs Getafe.
+  </div>
+</div>
+
 <div id="matches"></div>
 </div>
 <script>
