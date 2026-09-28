@@ -379,8 +379,8 @@
   // Get badge - LIVE, HT, FT or kick-off time
   function getBadge(m) {
     if (["IN_PLAY", "LIVE", "1H", "2H"].includes(m.status)) return `<span class="badge live">${m.minute? m.minute + "'" : 'LIVE'}</span>`;
-    if (m.status === "HT") return `<span class="badge" style="background:#eab308;color:#000">HT</span>`;
-    if (["FT", "FINISHED"].includes(m.status)) return `<span class="badge" style="background:#16a34a">FT</span>`;
+    if (m.status === "HT") return `<span class="badge" style="background:#eab308;color:#000">HALF TIME</span>`;
+    if (["FT", "FINISHED"].includes(m.status)) return `<span class="badge" style="background:#16a34a">FINISH</span>`;
     return `<span class="badge" style="background:#333">${new Date(m.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>`;
   }
 
