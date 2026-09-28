@@ -384,13 +384,13 @@
     return `<span class="badge" style="background:#333">${new Date(m.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>`;
   }
 
-  
+
   // Render all matches grouped by date
   function render(matches) {
     const c = document.getElementById('matches');
     // If no matches at all
     if (!matches || matches.length === 0) {
-      c.innerHTML = `<div style="text-align:center;padding:40px;color:#666">No past match found within the past 9 days <br><button onclick="loadTab(currentTab)" style="margin-top:15px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;
+      c.innerHTML = `<div style="text-align:center;padding:40px;color:#666">No past match found within the past 7 days <br><button onclick="loadTab(currentTab)" style="margin-top:15px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;
       return;
     }
 
