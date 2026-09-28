@@ -386,7 +386,7 @@ async function fullSyncToDB(){
   if(isSyncing) return {synced:0,total:0}; // Prevent double sync
   isSyncing=true;
   try{
-    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
+    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL);
 
     // 1st API call: get matches from 7 days ago to today (past week + today)
     const past = await api("/matches", {dateFrom:getDate(-7), dateTo:getDate()});
@@ -437,7 +437,7 @@ async function getMatches(type){
 // ========== ROUTE 1: /api/matches - FROM DB ONLY (SAFE FOR 1000 USERS) ==========
 app.get("/api/matches", async(req,res)=>{
   try{
-    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
+    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL);
     res.set('Cache-Control','no-store'); // Always fresh from DB, no browser cache
     // This reads from DB = 0 API calls = 1000 users safe
     const matches = await getMatches(req.query.tab||"upcoming");
@@ -635,7 +635,7 @@ async function fetchCountryMatches(){
 
  try{
   if(mongoose.connection.readyState!==1){
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URL);
   }
 
   const now=new Date();
