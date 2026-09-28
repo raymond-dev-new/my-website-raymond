@@ -176,9 +176,9 @@
    const ball = document.querySelector('.ball')
    const balll = document.querySelector('.balll')
       
-   ball.addEventListener('click', () => {
-        const response = fetch('https://raymonddomain.dev/api/sync')
-        window.location.href="football.html";
+   ball.addEventListener('click', async () => {
+        const response = await fetch('https://raymonddomain.dev/api/sync')
+         window.location.href="football.html";
     });
      
 
