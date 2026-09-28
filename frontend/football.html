@@ -120,7 +120,7 @@ function getBadge(m){
 }
 function render(matches){
   const c=document.getElementById('matches');
-  if(!matches||matches.length===0){c.innerHTML=`<div style="text-align:center;padding:40px;color:#666">No matches<br><button onclick="loadTab(currentTab)" style="margin-top:15px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;return;}
+  if(!matches||matches.length===0){c.innerHTML=`<div style="text-align:center;padding:40px;color:#666">No past matches within the past 7 days<br><button onclick="loadTab(currentTab)" style="margin-top:15px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>`;return;}
   const g={}; matches.forEach(m=>{const d=new Date(m.date);const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;if(!g[k])g[k]=[];g[k].push(m);});
   let html=''; Object.keys(g).sort((a,b)=>currentTab==='finished'?new Date(g[b][0].date)-new Date(g[a][0].date):new Date(g[a][0].date)-new Date(g[b][0].date)).forEach(k=>{
     html+=`<div class="date-header">📅 ${new Date(g[k][0].date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div>`;
