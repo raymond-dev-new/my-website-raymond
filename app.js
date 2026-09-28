@@ -389,13 +389,13 @@ async function fullSyncToDB(){
     if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URI);
 
     // 1st API call: get matches from 7 days ago to today (past week + today)
-    const past = await api("/matches", {dateFrom:getDate(-7), dateTo:getDate()});
+    const past = await api("/matches", {dateFrom:getDate(-9), dateTo:getDate()});
 
     // WAIT 6.5 seconds - MANDATORY for free plan to avoid 429 Too Many Requests / ban
     await new Promise(r=>setTimeout(r,6500));
 
     // 2nd API call: get matches from today to next 7 days (future)
-    const future = await api("/matches", {dateFrom:getDate(), dateTo:getDate(7)});
+    const future = await api("/matches", {dateFrom:getDate(), dateTo:getDate(9)});
 
     // Merge past + future and remove duplicates by id
     const map=new Map();
