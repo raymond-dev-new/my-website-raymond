@@ -29,11 +29,9 @@ select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-r
 .history{background:#202326;border-radius:10px;padding:10px;margin-top:9px;max-height:85px;overflow:auto;color:#aaa;font-size:13px;line-height:1.6}
 .guide{background:#202326;border-radius:11px;margin-top:10px;overflow:hidden}
 .guide summary{padding:14px;cursor:pointer;font-size:15px;font-weight:bold;list-style:none}
-.guide summary:before{content:"📖  "}.guide summary:after{content:"＋";float:right;color:#aaa}
+.guide summary:before{content:"📖 "}.guide summary:after{content:"＋";float:right;color:#aaa}
 .guide[open] summary:after{content:"−"}.guideText{padding:0 14px 15px;color:#ccc;font-size:13px;line-height:1.6}
 .guideText h3{color:#fff;margin:10px 0 3px}
-
-/* PROMOTION */
 .promo{position:fixed;inset:0;background:#000c;z-index:9999;display:none;align-items:center;justify-content:center}
 .pbox{width:285px;background:#25282b;border-radius:14px;padding:20px;text-align:center;box-shadow:0 15px 40px #000}
 .pbox h3{font-size:19px}.pieces{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:15px}
@@ -41,63 +39,48 @@ select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-r
 .pieces button:active{transform:scale(.94);background:#555}
 </style>
 </head>
-
 <body>
 <div class="app">
 <div class="top"><button class="icon" onclick="newGame()">＋</button><h1>♟ Chess</h1><button class="icon" onclick="saveGame()">⋮</button></div>
-
 <div id="blackPlayer" class="player"><div class="avatar">🤖</div><div class="pinfo"><div class="name"> CPU Computer</div><div id="blackCap" class="captured"></div></div></div>
 <div id="board" class="board"></div>
 <div id="whitePlayer" class="player"><div class="avatar">♙</div><div class="pinfo"><div class="name">You</div><div id="whiteCap" class="captured"></div></div></div>
-
 <div id="message" class="message"></div>
-
 <select id="difficulty">
 <option value="1" selected>Computer: Easy</option>
 <option value="2">Computer: Medium</option>
 <option value="3">Computer: Hard</option>
 </select>
-
 <div class="controls">
 <button onclick="undo()">↶ Undo</button>
 <button onclick="newGame()">New Game</button>
 <button onclick="saveGame()">💾 Save</button>
 </div>
-
 <div id="history" class="history"></div>
-
 <details class="guide">
 <summary>How to Play Chess — Beginner's Guide</summary>
 <div class="guideText">
-<h3>🎯 Goal</h3><p>Checkmate the computer's king so it cannot escape.</p>
+<h3>🎯 Goal</h3><p>Capture the computer's king to win.</p>
 <h3>♙ Pawn</h3><p>Moves forward one square, two from its starting square, and captures diagonally.</p>
 <h3>♘ Knight</h3><p>Moves in an L shape and can jump over pieces.</p>
 <h3>♗ Bishop</h3><p>Moves diagonally.</p>
 <h3>♖ Rook</h3><p>Moves horizontally or vertically.</p>
 <h3>♕ Queen</h3><p>Moves horizontally, vertically and diagonally.</p>
 <h3>♔ King</h3><p>Moves one square in any direction.</p>
-<h3>🏰 Castling</h3><p>A special king and rook move.</p>
-<h3>👑 Promotion</h3><p>A pawn reaching the opposite end can become a queen, rook, bishop or knight.</p>
 </div>
 </details>
 </div>
-
-<!-- PROMOTION WINDOW -->
 <div id="promo" class="promo">
 <div class="pbox"><h3>👑 Choose Promotion</h3>
 <div class="pieces">
 <button onclick="promote('q')">♕</button><button onclick="promote('r')">♖</button>
 <button onclick="promote('b')">♗</button><button onclick="promote('n')">♘</button>
 </div></div></div>
-
 <script>
 const KEY="beautiful_chess_v6",
 I={w:{k:"♔",q:"♕",r:"♖",b:"♗",n:"♘",p:"♙"},b:{k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"}},
 V={p:100,n:320,b:330,r:500,q:900,k:2e4};
-
 let B,T,sel=null,past=[],hist=[],ep=null,castle,over=false,thinking=false,promo=null,half=0,rep={};
-
-/* START */
 function reset(){
  B=[["br","bn","bb","bq","bk","bb","bn","br"],["bp","bp","bp","bp","bp","bp","bp","bp"],
  [0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],
@@ -117,8 +100,6 @@ function load(){
  }catch(e){reset();draw()}
 }
 function newGame(){if(confirm("Start a new game?")){reset();saveSilent();draw()}}
-
-/* BOARD */
 function draw(){
  let q=board,ms=sel?legal(...sel):[],k=king(T);q.innerHTML="";
  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
@@ -137,7 +118,6 @@ function draw(){
  captured();status();
  if(!over&&!promo){let x=state();if(x)end(x)}
 }
-
 function clickSquare(r,c){
  if(T!="w"||thinking||over||promo)return;
  let p=B[r][c];
@@ -148,24 +128,27 @@ function clickSquare(r,c){
  }
  if(p?.[0]=="w"){sel=[r,c];draw()}
 }
-
-/* MOVE */
 function move(fr,fc,tr,tc){
  let p=B[fr][fc],cap=B[tr][tc],s=snapshot(),note=notation(fr,fc,tr,tc,p,cap);
+ // KING CAPTURE WIN
+ if(cap && cap[1]=="k"){
+   past.push(s);
+   B[tr][tc]=p;B[fr][fc]=0;
+   hist.push(note+" xK");
+   T=T=="w"?"b":"w";rep[key()]=(rep[key()]||0)+1;saveSilent();draw();
+   if(p[0]=="w") end("I win — You captured the king!");
+   else end("Computer wins — King captured!");
+   return;
+ }
  past.push(s);
-
  if(p[1]=="p"&&fc!=tc&&!cap){let r=p[0]=="w"?tr+1:tr-1;cap=B[r][tc];B[r][tc]=0}
  B[tr][tc]=p;B[fr][fc]=0;
-
  if(p[1]=="k"&&Math.abs(tc-fc)==2){
   let a=tc==6?7:0,b=tc==6?5:3;B[tr][b]=B[tr][a];B[tr][a]=0
  }
-
  rights(p,fr,fc);rights(cap,tr,tc);ep=null;
  if(p[1]=="p"&&Math.abs(tr-fr)==2)ep=[(tr+fr)/2,fc];
  half=p[1]=="p"||cap?0:half+1;
-
- /* PROMOTION */
  if(p[1]=="p"&&(tr==0||tr==7)){
   if(p[0]=="w"){
    promo={r:tr,c:tc,note:note};sel=null;
@@ -177,8 +160,6 @@ function move(fr,fc,tr,tc){
  }
  finish(note)
 }
-
-/* PLAYER PROMOTION */
 function promote(t){
  if(!promo)return;
  B[promo.r][promo.c]="w"+t;
@@ -186,34 +167,27 @@ function promote(t){
  promo=null;document.getElementById("promo").style.display="none";
  board.style.pointerEvents="auto";finish(n)
 }
-
-/* FINISH MOVE */
 function finish(n){
  hist.push(n);T=T=="w"?"b":"w";sel=null;
  rep[key()]=(rep[key()]||0)+1;saveSilent();draw();
  if(over)return;if(state())return;
  if(T=="b"){thinking=true;message.textContent="Computer is thinking...";setTimeout(computer,450)}
 }
-
-/* COMPUTER */
 function computer(){
  if(over||T!="b"){thinking=false;return}
  let m=allMoves("b");if(!m.length)return;
  let best=choose(m);thinking=false;move(...best)
 }
-
-/* EASY MODE = MANY WEAK/RANDOM LEGAL MOVES */
 function choose(ms){
  let lv=+difficulty.value;
-
- /* Very easy: 75% chance of completely random legal move */
  if(lv==1&&Math.random()<.75)
   return ms[Math.floor(Math.random()*ms.length)];
-
  let best=-1e9,a=[];
  for(let m of ms){
   let s=snapshot(),p=B[m[0]][m[1]],cap=B[m[2]][m[3]];
+  let isKingCap = cap && cap[1]=="k";
   let v=(cap?V[cap[1]]*2:0)+(4-Math.abs(3.5-m[2])-Math.abs(3.5-m[3]))*7;
+  if(isKingCap) v+=100000;
   test(...m);if(check("w"))v+=lv*40;
   if(attacked(m[2],m[3],"w"))v-=V[p[1]]*.2;
   restore(s);
@@ -224,8 +198,6 @@ function choose(ms){
  }
  return a[Math.floor(Math.random()*a.length)]
 }
-
-/* LEGAL MOVES */
 function allMoves(col){
  let old=T,a=[];T=col;
  for(let r=0;r<8;r++)for(let c=0;c<8;c++)
@@ -235,22 +207,26 @@ function allMoves(col){
 function legal(r,c){
  let p=B[r][c],a=[];if(!p)return a;
  for(let m of pseudo(r,c)){
-  let s=snapshot();test(r,c,...m);
-  if(!check(p[0]))a.push(m);restore(s)
+   let target = B[m[0]][m[1]];
+   // Always allow king capture in any direction
+   if(target && target[1]=="k" && target[0]!=p[0]){
+     a.push(m); continue;
+   }
+   let s=snapshot();test(r,c,...m);
+   if(!check(p[0]))a.push(m);restore(s)
  }
  return a
 }
 function pseudo(r,c){
  let p=B[r][c],o=[],col=p[0],t=p[1],
- add=(r,c)=>{if(r<0||r>7||c<0||c>7||B[r][c]?.[0]==col||B[r][c]?.[1]=="k")return;o.push([r,c])};
-
+ add=(r,c)=>{if(r<0||r>7||c<0||c>7||B[r][c]?.[0]==col)return;o.push([r,c])};
  if(t=="p"){
   let d=col=="w"?-1:1,z=col=="w"?6:1;
   if(!B[r+d]?.[c]){o.push([r+d,c]);if(r==z&&!B[r+2*d][c])o.push([r+2*d,c])}
   for(let x of[-1,1]){
    let R=r+d,C=c+x;
    if(R>=0&&R<8&&C>=0&&C<8){
-    if(B[R][C]?.[0]!=col&&B[R][C]?.[1]!="k"&&B[R][C])o.push([R,C]);
+    if(B[R][C]?.[0]!=col&&B[R][C])o.push([R,C]);
     if(ep?.[0]==R&&ep?.[1]==C)o.push([R,C])
    }
   }
@@ -266,6 +242,14 @@ function pseudo(r,c){
    if(castle[col].q&&!B[r][1]&&!B[r][2]&&!B[r][3]&&B[r][0]==col+"r"&&!attacked(r,3,e)&&!attacked(r,2,e))o.push([r,2])
   }
  }
+ // --- NEW: Force 4-direction king capture for ANY piece ---
+ let oppKing = col=="w"? "bk" : "wk";
+ for(let d of [[1,0],[-1,0],[0,1],[0,-1]]){
+   let R=r+d[0], C=c+d[1];
+   if(R>=0&&R<8&&C>=0&&C<8&&B[R][C]==oppKing){
+     if(!o.some(m=>m[0]==R&&m[1]==C)) o.push([R,C]);
+   }
+ }
  return o
 }
 function slide(r,c,col,ds,o){
@@ -273,13 +257,11 @@ function slide(r,c,col,ds,o){
   let R=r+d[0],C=c+d[1];
   while(R>=0&&R<8&&C>=0&&C<8){
    if(!B[R][C])o.push([R,C]);
-   else{if(B[R][C][0]!=col&&B[R][C][1]!="k")o.push([R,C]);break}
+   else{if(B[R][C][0]!=col) o.push([R,C]);break}
    R+=d[0];C+=d[1]
   }
  }
 }
-
-/* CHECK */
 function test(fr,fc,tr,tc){
  let p=B[fr][fc];
  if(p[1]=="p"&&fc!=tc&&!B[tr][tc])B[p[0]=="w"?tr+1:tr-1][tc]=0;
@@ -307,8 +289,6 @@ function ray(r,c,col,ds,types){
  }
  return 0
 }
-
-/* RULES */
 function rights(p,r,c){
  if(!p)return;let x=p[0];
  if(p[1]=="k")castle[x].k=castle[x].q=0;
@@ -320,6 +300,8 @@ function rights(p,r,c){
  }
 }
 function state(){
+ let k=king(T);
+ if(!k) return T=="w"? "I win — You captured the king!" : "Computer wins — King captured!";
  let m=allMoves(T);
  if(!m.length)return check(T)?(T=="w"?"Checkmate — Computer wins!":"Checkmate — You win!"):"Stalemate — Draw!";
  if(rep[key()]>=3)return"Draw — Threefold repetition";
@@ -347,8 +329,6 @@ function last(r,c){
  let a=hist.at(-1).match(/[a-h][1-8]/g)?.at(-1);
  return a&&8-a[1]==r&&"abcdefgh".indexOf(a[0])==c
 }
-
-/* CAPTURE / UNDO */
 function captured(){
  let n={q:1,r:2,b:2,n:2,p:8},w="",b="";
  for(let p in n){
