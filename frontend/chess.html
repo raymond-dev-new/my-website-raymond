@@ -9,33 +9,45 @@
 body{background:#111315;color:#fff;font-family:Arial,sans-serif;min-height:100vh;display:flex;justify-content:center}
 .app{width:100%;max-width:500px;padding:8px 8px 25px}
 .top{height:52px;display:flex;align-items:center;justify-content:space-between}
-.top h1{font-size:23px}.icon{background:none;border:0;color:#fff;font-size:28px;padding:5px}
+.top h1{font-size:23px}
+.icon{background:none;border:0;color:#fff;font-size:28px;padding:5px}
 .player{height:62px;display:flex;align-items:center;gap:10px;padding:5px 8px}
 .avatar{width:43px;height:43px;border-radius:50%;background:#292c30;display:flex;align-items:center;justify-content:center;font-size:22px}
-.pinfo{flex:1}.name{font-size:16px;font-weight:bold}.captured{height:18px;color:#aaa;font-size:13px;white-space:nowrap}
+.pinfo{flex:1}
+.name{font-size:16px;font-weight:bold}
+.captured{height:18px;color:#aaa;font-size:13px;white-space:nowrap}
 .board{width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);overflow:hidden;border-radius:7px;box-shadow:0 10px 25px #000,0 0 0 1px #000}
 .s{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none}
-.light{background:#f0d9b5}.dark{background:#b58863}
+.light{background:#f0d9b5}
+.dark{background:#b58863}
 .piece{font-family:"DejaVu Serif","Times New Roman",serif;font-size:clamp(37px,11vw,61px);line-height:1;position:relative;z-index:3;filter:drop-shadow(1px 3px 2px #333)}
 .wp{color:#fff;text-shadow:0 1px 0 #fff,1px 2px 2px #555,0 4px 5px #222}
 .bp{color:#111;text-shadow:0 1px 0 #555,1px 3px 2px #000,0 4px 5px #222}
-.selected{box-shadow:inset 0 0 0 4px #777}.last{background:#d0c09a!important}
+.selected{box-shadow:inset 0 0 0 4px #777}
+.last{background:#d0c09a!important}
 .move:after{content:"";position:absolute;width:22%;height:22%;border-radius:50%;background:#222;opacity:.28}
 .capture:after{content:"";position:absolute;inset:4px;border:4px solid #777;border-radius:50%;opacity:.55}
-.check{background:#777!important}.message{min-height:25px;text-align:center;padding:5px;color:#ddd;font-size:14px}
+.check{background:#777!important}
+.message{min-height:32px;text-align:center;padding:8px;color:#ddd;font-size:14px;transition:all 0.3s ease}
+.message.win{color:#60a5fa;background:linear-gradient(135deg,#1e3a8a,#1e40af);border-radius:12px;font-size:20px;font-weight:900;letter-spacing:1px;padding:12px;box-shadow:0 0 20px rgba(59,130,246,0.6),0 4px 15px rgba(0,0,0,0.3);text-shadow:0 0 10px rgba(96,165,250,0.8);animation:winPop 0.5s ease}
+@keyframes winPop{0%{transform:scale(0.6);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
 select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-radius:10px;padding:13px;font-size:14px;outline:none}
 .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
 .controls button{border:0;border-radius:10px;padding:13px 4px;background:#292c2f;color:#fff;font-size:14px;font-weight:bold}
 .history{background:#202326;border-radius:10px;padding:10px;margin-top:9px;max-height:85px;overflow:auto;color:#aaa;font-size:13px;line-height:1.6}
 .guide{background:#202326;border-radius:11px;margin-top:10px;overflow:hidden}
 .guide summary{padding:14px;cursor:pointer;font-size:15px;font-weight:bold;list-style:none}
-.guide summary:before{content:"📖 "}.guide summary:after{content:"＋";float:right;color:#aaa}
-.guide[open] summary:after{content:"−"}.guideText{padding:0 14px 15px;color:#ccc;font-size:13px;line-height:1.6}
+.guide summary:before{content:"📖 "}
+.guide summary:after{content:"＋";float:right;color:#aaa}
+.guide[open] summary:after{content:"−"}
+.guideText{padding:0 14px 15px;color:#ccc;font-size:13px;line-height:1.6}
 .guideText h3{color:#fff;margin:10px 0 3px}
 .promo{position:fixed;inset:0;background:#000c;z-index:9999;display:none;align-items:center;justify-content:center}
 .pbox{width:285px;background:#25282b;border-radius:14px;padding:20px;text-align:center;box-shadow:0 15px 40px #000}
-.pbox h3{font-size:19px}.pieces{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:15px}
+.pbox h3{font-size:19px}
+.pieces{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:15px}
 .pieces button{font-size:38px;padding:8px;background:#33363a;color:#fff;border:0;border-radius:8px}
+.pieces button:active{transform:scale(.94);background:#555}
 </style>
 </head>
 <body>
@@ -45,84 +57,344 @@ select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-r
 <div id="board" class="board"></div>
 <div id="whitePlayer" class="player"><div class="avatar">♙</div><div class="pinfo"><div class="name">You</div><div id="whiteCap" class="captured"></div></div></div>
 <div id="message" class="message"></div>
-<select id="difficulty"><option value="1" selected>Computer: Easy</option><option value="2">Computer: Medium</option><option value="3">Computer: Hard</option></select>
-<div class="controls"><button onclick="undo()">↶ Undo</button><button onclick="newGame()">New Game</button><button onclick="saveGame()">💾 Save</button></div>
-<div id="history" class="history"></div>
+<select id="difficulty">
+<option value="1" selected>Computer: Easy</option>
+<option value="2">Computer: Medium</option>
+<option value="3">Computer: Hard</option>
+</select>
+<div class="controls">
+<button onclick="undo()">↶ Undo</button>
+<button onclick="newGame()">New Game</button>
+<button onclick="saveGame()">💾 Save</button>
 </div>
-<div id="promo" class="promo"><div class="pbox"><h3>👑 Choose Promotion</h3><div class="pieces"><button onclick="promote('q')">♕</button><button onclick="promote('r')">♖</button><button onclick="promote('b')">♗</button><button onclick="promote('n')">♘</button></div></div></div>
+<div id="history" class="history"></div>
+<details class="guide">
+<summary>How to Play Chess — Beginner's Guide</summary>
+<div class="guideText">
+<h3>🎯 Goal</h3><p>Capture the enemy king in all 4 directions to win - I win!</p>
+<h3>♙ Pawn</h3><p>Moves forward one square, two from its starting square, and captures diagonally.</p>
+<h3>♘ Knight</h3><p>Moves in an L shape and can jump over pieces.</p>
+<h3>♗ Bishop</h3><p>Moves diagonally.</p>
+<h3>♖ Rook</h3><p>Moves horizontally or vertically.</p>
+<h3>♕ Queen</h3><p>Moves horizontally, vertically and diagonally.</p>
+<h3>♔ King</h3><p>Moves one square in any direction.</p>
+</div>
+</details>
+</div>
+<div id="promo" class="promo">
+<div class="pbox"><h3>👑 Choose Promotion</h3>
+<div class="pieces">
+<button onclick="promote('q')">♕</button><button onclick="promote('r')">♖</button>
+<button onclick="promote('b')">♗</button><button onclick="promote('n')">♘</button>
+</div></div></div>
 <script>
-const KEY="beautiful_chess_v6",I={w:{k:"♔",q:"♕",r:"♖",b:"♗",n:"♘",p:"♙"},b:{k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"}},V={p:100,n:320,b:330,r:500,q:900,k:2e4};
+const KEY="beautiful_chess_v6",
+I={w:{k:"♔",q:"♕",r:"♖",b:"♗",n:"♘",p:"♙"},b:{k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"}},
+V={p:100,n:320,b:330,r:500,q:900,k:20000};
 let B,T,sel=null,past=[],hist=[],ep=null,castle,over=false,thinking=false,promo=null,half=0,rep={};
 /* === SWEET SOUNDS === */
 let audioCtx=null;
-function getCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
-function tone(f,type,v,d,s=0,ef=null){ try{ let c=getCtx(),o=c.createOscillator(),g=c.createGain(); o.type=type; o.frequency.setValueAtTime(f,c.currentTime+s); if(ef) o.frequency.exponentialRampToValueAtTime(ef,c.currentTime+s+d); g.gain.setValueAtTime(v,c.currentTime+s); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+s+d); o.connect(g); g.connect(c.destination); o.start(c.currentTime+s); o.stop(c.currentTime+s+d+0.06);}catch(e){} }
+function getCtx(){
+ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+ if(audioCtx.state==='suspended') audioCtx.resume();
+ return audioCtx;
+}
+function tone(f,type,v,d,s=0,ef=null){
+ try{
+  let c=getCtx(),o=c.createOscillator(),g=c.createGain();
+  o.type=type;
+  o.frequency.setValueAtTime(f,c.currentTime+s);
+  if(ef) o.frequency.exponentialRampToValueAtTime(ef,c.currentTime+s+d);
+  g.gain.setValueAtTime(v,c.currentTime+s);
+  g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+s+d);
+  o.connect(g); g.connect(c.destination);
+  o.start(c.currentTime+s); o.stop(c.currentTime+s+d+0.06);
+ }catch(e){}
+}
 function playMove(){ tone(420,'sine',0.18,0.12); tone(600,'triangle',0.08,0.15,0.04); }
 function playCapture(){ tone(320,'sine',0.24,0.16); tone(750,'sine',0.18,0.22,0.06,950); }
 function playCheck(){ tone(520,'sine',0.22,0.32); tone(820,'sine',0.18,0.45,0.1); }
 function playWin(){ tone(523,'sine',0.24,0.35); tone(659,'sine',0.22,0.35,0.11); tone(784,'sine',0.24,0.5,0.22); tone(1046,'triangle',0.18,0.7,0.34); }
 function playPromote(){ tone(620,'triangle',0.2,0.3); tone(920,'sine',0.2,0.5,0.1); }
-function reset(){B=[["br","bn","bb","bq","bk","bb","bn","br"],["bp","bp","bp","bp","bp","bp","bp","bp"],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],["wp","wp","wp","wp","wp","wp","wp","wp"],["wr","wn","wb","wq","wk","wb","wn","wr"]];T="w";sel=null;past=[];hist=[];ep=null;over=0;thinking=0;promo=null;half=0;castle={w:{k:1,q:1},b:{k:1,q:1}};rep={};rep[key()]=1;}
-function saveGame(){saveSilent();message.textContent="Game saved"}
+function reset(){
+ B=[["br","bn","bb","bq","bk","bb","bn","br"],["bp","bp","bp","bp","bp","bp","bp","bp"],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],["wp","wp","wp","wp","wp","wp","wp","wp"],["wr","wn","wb","wq","wk","wb","wn","wr"]];
+ T="w";sel=null;past=[];hist=[];ep=null;over=0;thinking=0;promo=null;half=0;castle={w:{k:1,q:1},b:{k:1,q:1}};rep={};rep[key()]=1;
+}
+function saveGame(){saveSilent();message.textContent="Game saved";message.classList.remove("win")}
 function saveSilent(){localStorage.setItem(KEY,JSON.stringify({B,T,past,hist,ep,castle,over,half,rep}))}
-function load(){ try{ let x=JSON.parse(localStorage.getItem(KEY)); if(!x)throw 0; B=x.B;T=x.T||"w";past=x.past||[];hist=x.hist||[];ep=x.ep||null; castle=x.castle||{w:{k:1,q:1},b:{k:1,q:1}};over=!!x.over;half=x.half||0; rep=x.rep||{};rep[key()]??=1;draw()}catch(e){reset();draw()}}
-function newGame(){ if(confirm("Start a new game?")){reset();saveSilent();draw()}}
-function draw(){ let q=board,ms=sel?legal(...sel):[],k=king(T); q.innerHTML=""; for(let r=0;r<8;r++)for(let c=0;c<8;c++){ let s=document.createElement("div"); s.className="s "+((r+c)%2?"dark":"light"); if(sel?.[0]==r&&sel?.[1]==c)s.classList.add("selected"); if(last(r,c))s.classList.add("last"); if(k?.[0]==r&&k?.[1]==c&&check(T))s.classList.add("check"); if(ms.some(m=>m[0]==r&&m[1]==c))s.classList.add(B[r][c]?"capture":"move"); if(B[r][c]){ let p=document.createElement("span"); p.className="piece "+(B[r][c][0]=="w"?"wp":"bp"); p.textContent=I[B[r][c][0]][B[r][c][1]]; s.appendChild(p)} s.onclick=()=>clickSquare(r,c); q.appendChild(s)} history.innerHTML=hist.map((x,i)=>`${i+1}. ${x}`).join("<br>"); captured(); status(); if(!over&&!promo){ let x=state(); if(x)end(x)}}
-function clickSquare(r,c){ if(T!="w"||thinking||over||promo)return; getCtx(); let p=B[r][c]; if(sel){ let m=legal(...sel).find(x=>x[0]==r&&x[1]==c); if(m)return move(...sel,r,c); sel=p?.[0]=="w"?[r,c]:null; draw(); return} if(p?.[0]=="w"){sel=[r,c]; draw()}}
+function load(){
+ try{
+  let x=JSON.parse(localStorage.getItem(KEY));if(!x)throw 0;
+  B=x.B;T=x.T||"w";past=x.past||[];hist=x.hist||[];ep=x.ep||null;
+  castle=x.castle||{w:{k:1,q:1},b:{k:1,q:1}};over=!!x.over;half=x.half||0;
+  rep=x.rep||{};rep[key()]??=1;draw()
+ }catch(e){reset();draw()}
+}
+function newGame(){if(confirm("Start a new game?")){reset();message.classList.remove("win");saveSilent();draw()}}
+function draw(){
+ let q=board,ms=sel?legal(...sel):[],k=king(T);q.innerHTML="";
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+  let s=document.createElement("div");s.className="s "+((r+c)%2?"dark":"light");
+  if(sel?.[0]==r&&sel?.[1]==c)s.classList.add("selected");
+  if(last(r,c))s.classList.add("last");
+  if(k?.[0]==r&&k?.[1]==c&&check(T))s.classList.add("check");
+  if(ms.some(m=>m[0]==r&&m[1]==c))s.classList.add(B[r][c]?"capture":"move");
+  if(B[r][c]){
+   let p=document.createElement("span");p.className="piece "+(B[r][c][0]=="w"?"wp":"bp");
+   p.textContent=I[B[r][c][0]][B[r][c][1]];s.appendChild(p)
+  }
+  s.onclick=()=>clickSquare(r,c);q.appendChild(s)
+ }
+ history.innerHTML=hist.map((x,i)=>`${i+1}. ${x}`).join("<br>");
+ captured();status();
+ if(!over&&!promo){let x=state();if(x)end(x)}
+}
+function clickSquare(r,c){
+ if(T!="w"||thinking||over||promo)return;
+ getCtx();
+ let p=B[r][c];
+ if(sel){
+  let m=legal(...sel).find(x=>x[0]==r&&x[1]==c);
+  if(m)return move(...sel,r,c);
+  sel=p?.[0]=="w"?[r,c]:null;draw();return
+ }
+ if(p?.[0]=="w"){sel=[r,c];draw()}
+}
 function move(fr,fc,tr,tc){
  let p=B[fr][fc],cap=B[tr][tc],s=snapshot(),note=notation(fr,fc,tr,tc,p,cap);
- if(cap && cap[1]=="k"){ past.push(s); B[tr][tc]=p; B[fr][fc]=0; hist.push(note+" xK"); T=T=="w"?"b":"w"; rep[key()]=(rep[key()]||0)+1; saveSilent(); playCapture(); setTimeout(playWin,180); draw(); end(p[0]=="w"?"I win — You captured the king!":"Computer wins — King captured!"); return; }
+ if(cap && cap[1]=="k"){
+   past.push(s);
+   B[tr][tc]=p;B[fr][fc]=0;
+   hist.push(note+" xK");
+   T=T=="w"?"b":"w";
+   rep[key()]=(rep[key()]||0)+1;
+   saveSilent();
+   playCapture();
+   setTimeout(playWin,180);
+   draw();
+   if(p[0]=="w") end("You win — You captured the king!");
+   else end("Computer wins — King captured!");
+   return;
+ }
  past.push(s);
  if(p[1]=="p"&&fc!=tc&&!cap){let r=p[0]=="w"?tr+1:tr-1;cap=B[r][tc];B[r][tc]=0}
  B[tr][tc]=p;B[fr][fc]=0;
- if(p[1]=="k"&&Math.abs(tc-fc)==2){ let a=tc==6?7:0,b=tc==6?5:3; B[tr][b]=B[tr][a]; B[tr][a]=0 }
+ if(p[1]=="k"&&Math.abs(tc-fc)==2){
+  let a=tc==6?7:0,b=tc==6?5:3;B[tr][b]=B[tr][a];B[tr][a]=0
+ }
  rights(p,fr,fc);rights(cap,tr,tc);ep=null;
  if(p[1]=="p"&&Math.abs(tr-fr)==2)ep=[(tr+fr)/2,fc];
  half=p[1]=="p"||cap?0:half+1;
  if(p[1]=="p"&&(tr==0||tr==7)){
-  if(p[0]=="w"){ promo={r:tr,c:tc,note:note}; sel=null; board.style.pointerEvents="none"; document.getElementById("promo").style.display="flex"; message.textContent="Choose what your pawn becomes"; if(cap) playCapture(); else playMove(); draw(); return }
-  B[tr][tc]="bq"; note+="=Q"
+  if(p[0]=="w"){
+   promo={r:tr,c:tc,note:note};sel=null;
+   board.style.pointerEvents="none";
+   document.getElementById("promo").style.display="flex";
+   message.textContent="Choose what your pawn becomes";
+   message.classList.remove("win");
+   if(cap) playCapture(); else playMove();
+   draw();return
+  }
+  B[tr][tc]="bq";note+="=Q"
  }
  if(cap) playCapture(); else playMove();
  if(p[1]=="p"&&(tr==0||tr==7)) playPromote();
  finish(note)
 }
-function promote(t){ if(!promo)return; B[promo.r][promo.c]="w"+t; let n=promo.note+"="+t.toUpperCase(); promo=null; document.getElementById("promo").style.display="none"; board.style.pointerEvents="auto"; playPromote(); finish(n)}
-function finish(n){ hist.push(n); T=T=="w"?"b":"w"; sel=null; rep[key()]=(rep[key()]||0)+1; saveSilent(); draw(); if(over)return; if(state()){ if(state().includes("check")||check(T)) playCheck(); return;} if(T=="b"){ thinking=true; message.textContent="Computer is thinking..."; setTimeout(computer,450)}}
-function computer(){ if(over||T!="b"){thinking=false;return} let m=allMoves("b"); if(!m.length)return; let best=choose(m); thinking=false; move(...best)}
-function choose(ms){ let lv=+difficulty.value; if(lv==1&&Math.random()<.75) return ms[Math.floor(Math.random()*ms.length)]; let best=-1e9,a=[]; for(let m of ms){ let s=snapshot(),p=B[m[0]][m[1]],cap=B[m[2]][m[3]]; let isKingCap=cap&&cap[1]=="k"; let v=(cap?V[cap[1]]*2:0)+(4-Math.abs(3.5-m[2])-Math.abs(3.5-m[3]))*7; if(isKingCap) v+=100000; test(...m); if(check("w"))v+=lv*40; if(attacked(m[2],m[3],"w"))v-=V[p[1]]*.2; restore(s); if(cap&&lv>2)v+=V[cap[1]]; v+=Math.random()*(lv==1?120:15); if(v>best){best=v;a=[m]} else if(v==best)a.push(m)} return a[Math.floor(Math.random()*a.length)]}
-function allMoves(col){ let old=T,a=[]; T=col; for(let r=0;r<8;r++)for(let c=0;c<8;c++) if(B[r][c]?.[0]==col)legal(r,c).forEach(m=>a.push([r,c,...m])); T=old; return a}
-function legal(r,c){ let p=B[r][c],a=[]; if(!p)return a; for(let m of pseudo(r,c)){ let target=B[m[0]][m[1]]; if(target&&target[1]=="k"&&target[0]!=p[0]){a.push(m); continue;} let s=snapshot(); test(r,c,...m); if(!check(p[0]))a.push(m); restore(s)} return a}
+function promote(t){
+ if(!promo)return;
+ B[promo.r][promo.c]="w"+t;
+ let n=promo.note+"="+t.toUpperCase();
+ promo=null;document.getElementById("promo").style.display="none";
+ board.style.pointerEvents="auto";playPromote();finish(n)
+}
+function finish(n){
+ hist.push(n);T=T=="w"?"b":"w";sel=null;
+ rep[key()]=(rep[key()]||0)+1;saveSilent();draw();
+ if(over)return;if(state()){ if(check(T)) playCheck(); return;}
+ if(T=="b"){thinking=true;message.textContent="Computer is thinking...";message.classList.remove("win");setTimeout(computer,450)}
+}
+function computer(){
+ if(over||T!="b"){thinking=false;return}
+ let m=allMoves("b");if(!m.length)return;
+ let best=choose(m);thinking=false;move(...best)
+}
+function choose(ms){
+ let lv=+difficulty.value;
+ if(lv==1&&Math.random()<.70) return ms[Math.floor(Math.random()*ms.length)];
+ let best=-1000000000,a=[];
+ for(let m of ms){
+  let s=snapshot(),p=B[m[0]][m[1]],cap=B[m[2]][m[3]];
+  let isKingCap=cap&&cap[1]=="k";
+  let v=(cap?V[cap[1]]*2:0)+(4-Math.abs(3.5-m[2])-Math.abs(3.5-m[3]))*7;
+  if(isKingCap) v+=100000;
+  test(...m);if(check("w"))v+=lv*40;
+  if(attacked(m[2],m[3],"w"))v-=V[p[1]]*.2;
+  restore(s);
+  if(cap&&lv>2)v+=V[cap[1]];
+  v+=Math.random()*(lv==1?120:15);
+  if(v>best){best=v;a=[m]}
+  else if(v==best)a.push(m)
+ }
+ return a[Math.floor(Math.random()*a.length)]
+}
+function allMoves(col){
+ let old=T,a=[];T=col;
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++)
+  if(B[r][c]?.[0]==col)legal(r,c).forEach(m=>a.push([r,c,...m]));
+ T=old;return a
+}
+function legal(r,c){
+ let p=B[r][c],a=[];if(!p)return a;
+ for(let m of pseudo(r,c)){
+   let target=B[m[0]][m[1]];
+   if(target&&target[1]=="k"&&target[0]!=p[0]){a.push(m); continue;}
+   let s=snapshot();test(r,c,...m);
+   if(!check(p[0]))a.push(m);restore(s)
+ }
+ return a
+}
 function pseudo(r,c){
- let p=B[r][c],o=[],col=p[0],t=p[1],add=(r,c)=>{if(r<0||r>7||c<0||c>7||B[r][c]?.[0]==col)return;o.push([r,c])};
- if(t=="p"){ let d=col=="w"?-1:1,z=col=="w"?6:1; if(!B[r+d]?.[c]){o.push([r+d,c]); if(r==z&&!B[r+2*d][c])o.push([r+2*d,c])} for(let x of[-1,1]){ let R=r+d,C=c+x; if(R>=0&&R<8&&C>=0&&C<8){ if(B[R][C]?.[0]!=col&&B[R][C])o.push([R,C]); if(ep?.[0]==R&&ep?.[1]==C)o.push([R,C])}}}
+ let p=B[r][c],o=[],col=p[0],t=p[1],
+ add=(r,c)=>{if(r<0||r>7||c<0||c>7||B[r][c]?.[0]==col)return;o.push([r,c])};
+ if(t=="p"){
+  let d=col=="w"?-1:1,z=col=="w"?6:1;
+  if(!B[r+d]?.[c]){o.push([r+d,c]);if(r==z&&!B[r+2*d][c])o.push([r+2*d,c])}
+  for(let x of[-1,1]){
+   let R=r+d,C=c+x;
+   if(R>=0&&R<8&&C>=0&&C<8){
+    if(B[R][C]?.[0]!=col&&B[R][C])o.push([R,C]);
+    if(ep?.[0]==R&&ep?.[1]==C)o.push([R,C])
+   }
+  }
+ }
  if(t=="n")for(let d of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])add(r+d[0],c+d[1]);
  if("bq".includes(t))slide(r,c,col,[[1,1],[1,-1],[-1,1],[-1,-1]],o);
  if("rq".includes(t))slide(r,c,col,[[1,0],[-1,0],[0,1],[0,-1]],o);
- if(t=="k"){ for(let x=-1;x<2;x++)for(let y=-1;y<2;y++)if(x||y)add(r+x,c+y); if(!check(col)){ let e=col=="w"?"b":"w"; if(castle[col].k&&!B[r][5]&&!B[r][6]&&B[r][7]==col+"r"&&!attacked(r,5,e)&&!attacked(r,6,e))o.push([r,6]); if(castle[col].q&&!B[r][1]&&!B[r][2]&&!B[r][3]&&B[r][0]==col+"r"&&!attacked(r,3,e)&&!attacked(r,2,e))o.push([r,2])}}
- let oppKing=col=="w"?"bk":"wk"; for(let d of[[1,0],[-1,0],[0,1],[0,-1]]){ let R=r+d[0],C=c+d[1]; if(R>=0&&R<8&&C>=0&&C<8&&B[R][C]==oppKing){ if(!o.some(m=>m[0]==R&&m[1]==C)) o.push([R,C]);}}
+ if(t=="k"){
+  for(let x=-1;x<2;x++)for(let y=-1;y<2;y++)if(x||y)add(r+x,c+y);
+  if(!check(col)){
+   let e=col=="w"?"b":"w";
+   if(castle[col].k&&!B[r][5]&&!B[r][6]&&B[r][7]==col+"r"&&!attacked(r,5,e)&&!attacked(r,6,e))o.push([r,6]);
+   if(castle[col].q&&!B[r][1]&&!B[r][2]&&!B[r][3]&&B[r][0]==col+"r"&&!attacked(r,3,e)&&!attacked(r,2,e))o.push([r,2])
+  }
+ }
+ let oppKing=col=="w"?"bk":"wk";
+ for(let d of[[1,0],[-1,0],[0,1],[0,-1]]){
+   let R=r+d[0],C=c+d[1];
+   if(R>=0&&R<8&&C>=0&&C<8&&B[R][C]==oppKing){
+     if(!o.some(m=>m[0]==R&&m[1]==C)) o.push([R,C]);
+   }
+ }
  return o
 }
-function slide(r,c,col,ds,o){ for(let d of ds){ let R=r+d[0],C=c+d[1]; while(R>=0&&R<8&&C>=0&&C<8){ if(!B[R][C])o.push([R,C]); else{if(B[R][C][0]!=col) o.push([R,C]); break} R+=d[0];C+=d[1]}}}
-function test(fr,fc,tr,tc){ let p=B[fr][fc]; if(p[1]=="p"&&fc!=tc&&!B[tr][tc])B[p[0]=="w"?tr+1:tr-1][tc]=0; B[tr][tc]=p;B[fr][fc]=0; if(p[1]=="k"&&Math.abs(tc-fc)==2){ let a=tc==6?7:0,b=tc==6?5:3;B[tr][b]=B[tr][a];B[tr][a]=0}}
+function slide(r,c,col,ds,o){
+ for(let d of ds){
+  let R=r+d[0],C=c+d[1];
+  while(R>=0&&R<8&&C>=0&&C<8){
+   if(!B[R][C])o.push([R,C]);
+   else{if(B[R][C][0]!=col) o.push([R,C]);break}
+   R+=d[0];C+=d[1]
+  }
+ }
+}
+function test(fr,fc,tr,tc){
+ let p=B[fr][fc];
+ if(p[1]=="p"&&fc!=tc&&!B[tr][tc])B[p[0]=="w"?tr+1:tr-1][tc]=0;
+ B[tr][tc]=p;B[fr][fc]=0;
+ if(p[1]=="k"&&Math.abs(tc-fc)==2){
+  let a=tc==6?7:0,b=tc==6?5:3;B[tr][b]=B[tr][a];B[tr][a]=0
+ }
+}
 function king(c){for(let r=0;r<8;r++)for(let x=0;x<8;x++)if(B[r][x]==c+"k")return[r,x];return null}
 function check(c){let k=king(c);return k?attacked(...k,c=="w"?"b":"w"):1}
-function attacked(r,c,by){ let d=by=="w"?1:-1; for(let x of[-1,1])if(B[r+d]?.[c+x]==by+"p")return 1; for(let [a,b]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])if(B[r+a]?.[c+b]==by+"n")return 1; for(let a=-1;a<2;a++)for(let b=-1;b<2;b++)if((a||b)&&B[r+a]?.[c+b]==by+"k")return 1; return ray(r,c,by,[[1,0],[-1,0],[0,1],[0,-1]],"rq")||ray(r,c,by,[[1,1],[1,-1],[-1,1],[-1,-1]],"bq")}
-function ray(r,c,col,ds,types){ for(let d of ds){ let R=r+d[0],C=c+d[1]; while(R>=0&&R<8&&C>=0&&C<8){ if(B[R][C])return B[R][C][0]==col&&types.includes(B[R][C][1])?1:0; R+=d[0];C+=d[1]}} return 0}
-function rights(p,r,c){ if(!p)return; let x=p[0]; if(p[1]=="k")castle[x].k=castle[x].q=0; if(p[1]=="r"){ if(x=="w"&&r==7&&c==0)castle.w.q=0; if(x=="w"&&r==7&&c==7)castle.w.k=0; if(x=="b"&&r==0&&c==0)castle.b.q=0; if(x=="b"&&r==0&&c==7)castle.b.k=0}}
-function state(){ let k=king(T); if(!k) return T=="w"? "I win — You captured the king!" : "Computer wins — King captured!"; let m=allMoves(T); if(!m.length)return check(T)?(T=="w"?"Checkmate — Computer wins!":"Checkmate — You win!"):"Stalemate — Draw!"; if(rep[key()]>=3)return"Draw — Threefold repetition"; if(half>=100)return"Draw — 50-move rule"; if(insufficient())return"Draw — Insufficient material"; if(check(T)){ message.textContent=T=="w"?"Your king is in check!":"Computer is in check!"; } return null}
-function end(x){ over=1; thinking=0; message.textContent=x; if(x.includes("I win")||x.includes("You win")) playWin(); else if(x.toLowerCase().includes("checkmate")) playCheck(); saveSilent()}
-function insufficient(){ let a=[]; for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(B[r][c]&&B[r][c][1]!="k")a.push({p:B[r][c],r,c}); if(!a.length||a.length==1&&"bn".includes(a[0].p[1]))return 1; return a.length==2&&a.every(x=>x.p[1]=="b")&&((a[0].r+a[0].c)%2==(a[1].r+a[1].c)%2)}
+function attacked(r,c,by){
+ let d=by=="w"?1:-1;
+ for(let x of[-1,1])if(B[r+d]?.[c+x]==by+"p")return 1;
+ for(let [a,b]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])if(B[r+a]?.[c+b]==by+"n")return 1;
+ for(let a=-1;a<2;a++)for(let b=-1;b<2;b++)if((a||b)&&B[r+a]?.[c+b]==by+"k")return 1;
+ return ray(r,c,by,[[1,0],[-1,0],[0,1],[0,-1]],"rq")||ray(r,c,by,[[1,1],[1,-1],[-1,1],[-1,-1]],"bq")
+}
+function ray(r,c,col,ds,types){
+ for(let d of ds){
+  let R=r+d[0],C=c+d[1];
+  while(R>=0&&R<8&&C>=0&&C<8){
+   if(B[R][C])return B[R][C][0]==col&&types.includes(B[R][C][1])?1:0;
+   R+=d[0];C+=d[1]
+  }
+ }
+ return 0
+}
+function rights(p,r,c){
+ if(!p)return;let x=p[0];
+ if(p[1]=="k")castle[x].k=castle[x].q=0;
+ if(p[1]=="r"){
+  if(x=="w"&&r==7&&c==0)castle.w.q=0;
+  if(x=="w"&&r==7&&c==7)castle.w.k=0;
+  if(x=="b"&&r==0&&c==0)castle.b.q=0;
+  if(x=="b"&&r==0&&c==7)castle.b.k=0
+ }
+}
+function state(){
+ let k=king(T);
+ if(!k) return T=="w"? "I win — You captured the king!" : "Computer wins — King captured!";
+ let m=allMoves(T);
+ if(!m.length)return check(T)?(T=="w"?"Checkmate — Computer wins!":"Checkmate — You win!"):"Stalemate — Draw!";
+ if(rep[key()]>=3)return"Draw — Threefold repetition";
+ if(half>=100)return"Draw — 50-move rule";
+ if(insufficient())return"Draw — Insufficient material";
+ if(check(T)){ message.textContent=T=="w"?"Your king is in check!":"Computer is in check!"; message.classList.remove("win"); }
+ return null
+}
+function end(x){
+ over=1;thinking=0;
+ message.textContent=x;
+ if(x.includes("I win")||x.includes("You win")||x.includes("captured the king")){
+   message.classList.add("win");
+   playWin();
+ } else {
+   message.classList.remove("win");
+   if(x.toLowerCase().includes("checkmate")) playCheck();
+ }
+ saveSilent()
+}
+function insufficient(){
+ let a=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(B[r][c]&&B[r][c][1]!="k")a.push({p:B[r][c],r,c});
+ if(!a.length||a.length==1&&"bn".includes(a[0].p[1]))return 1;
+ return a.length==2&&a.every(x=>x.p[1]=="b")&&((a[0].r+a[0].c)%2==(a[1].r+a[1].c)%2)
+}
 function key(){return B.map(r=>r.join("")).join("/")+"|"+T+"|"+JSON.stringify(castle)+"|"+JSON.stringify(ep)}
 function snapshot(){return JSON.parse(JSON.stringify({B,T,hist,ep,castle,over,half,rep}))}
 function restore(x){({B,T,hist,ep,castle,over,half,rep}=x)}
-function notation(fr,fc,tr,tc,p,cap){ if(p[1]=="k"&&Math.abs(tc-fc)==2)return tc==6?"O-O":"O-O-O"; return(p[1]=="p"?"":p[1].toUpperCase())+(cap?(p[1]=="p"?"abcdefgh"[fc]:"")+"x":"")+sq(tr,tc)}
+function notation(fr,fc,tr,tc,p,cap){
+ if(p[1]=="k"&&Math.abs(tc-fc)==2)return tc==6?"O-O":"O-O-O";
+ return(p[1]=="p"?"":p[1].toUpperCase())+(cap?(p[1]=="p"?"abcdefgh"[fc]:"")+"x":"")+sq(tr,tc)
+}
 function sq(r,c){return"abcdefgh"[c]+(8-r)}
-function last(r,c){ if(!hist.length)return 0; let a=hist.at(-1).match(/[a-h][1-8]/g)?.at(-1); return a&&8-a[1]==r&&"abcdefgh".indexOf(a[0])==c}
-function captured(){ let n={q:1,r:2,b:2,n:2,p:8},w="",b=""; for(let p in n){ let W=count("w"+p),B1=count("b"+p); if(B1<n[p])w+=I.b[p].repeat(n[p]-B1); if(W<n[p])b+=I.w[p].repeat(n[p]-W)} whiteCap.textContent=w; blackCap.textContent=b}
+function last(r,c){
+ if(!hist.length)return 0;
+ let a=hist.at(-1).match(/[a-h][1-8]/g)?.at(-1);
+ return a&&8-a[1]==r&&"abcdefgh".indexOf(a[0])==c
+}
+function captured(){
+ let n={q:1,r:2,b:2,n:2,p:8},w="",b="";
+ for(let p in n){
+  let W=count("w"+p),B1=count("b"+p);
+  if(B1<n[p])w+=I.b[p].repeat(n[p]-B1);
+  if(W<n[p])b+=I.w[p].repeat(n[p]-W)
+ }
+ whiteCap.textContent=w;blackCap.textContent=b
+}
 function count(p){return B.flat().filter(x=>x==p).length}
-function undo(){ if(!past.length||thinking||promo)return; restore(past.pop()); if(T=="b"&&past.length)restore(past.pop()); sel=null; over=0; saveSilent(); draw()}
-function status(){ whitePlayer.classList.toggle("active",T=="w"&&!over); blackPlayer.classList.toggle("active",T=="b"&&!over)}
+function undo(){
+ if(!past.length||thinking||promo)return;
+ restore(past.pop());if(T=="b"&&past.length)restore(past.pop());
+ sel=null;over=0;message.classList.remove("win");saveSilent();draw()
+}
+function status(){
+ whitePlayer.classList.toggle("active",T=="w"&&!over);
+ blackPlayer.classList.toggle("active",T=="b"&&!over)
+}
 addEventListener("beforeunload",saveSilent);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!promo)draw()});
 load();
