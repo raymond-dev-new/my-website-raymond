@@ -344,9 +344,9 @@ function rights(p,r,c){
 }
 function state(){
  let k=king(T);
- if(!k) return T=="w"? "I win — You captured the king!" : "You lose — Computer win!";
+ if(!k) return T=="w"? "You win — You captured the king!" : "You lose — Computer win!";
  let m=allMoves(T);
- if(!m.length)return check(T)?(T=="w"?"You lose — Computer win!":"I win — You captured the king!"):"Stalemate — Draw!";
+ if(!m.length)return check(T)?(T=="w"?"You lose — Computer win!":"You win — You captured the king!"):"Stalemate — Draw!";
  if(rep[key()]>=3)return"Draw — Threefold repetition";
  if(half>=100)return"Draw — 50-move rule";
  if(insufficient())return"Draw — Insufficient material";
@@ -356,9 +356,9 @@ function state(){
 function end(x){
  over=1;thinking=0;
  message.textContent=x;
- if(x.includes("I win")||x.includes("You lose")||x.includes("Computer win")||x.includes("captured the king")){
+ if(x.includes("I win")||x.includes("You ")||x.includes("Computer ")||x.includes("captured ")){
    message.classList.add("win");
-   if(x.includes("I win")){myScore++;} else if(x.includes("You lose")||x.includes("Computer win")){cpuScore++;}
+   if(x.includes("I win")){myScore++;} else if(x.includes("You ")||x.includes("Computer")){cpuScore++;}
    saveScores();updateScoreUI();
    playWin();
  } else {
