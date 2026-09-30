@@ -74,7 +74,7 @@ select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-r
 <details class="guide">
 <summary>How to Play Chess — Beginner's Guide</summary>
 <div class="guideText">
-<h3>🎯 Goal</h3><p>Capture the enemy king in all 4 directions to win - I win!</p>
+<h3>🎯 Goal</h3><p>Capture the enemy king in all 4 directions to win - You win!</p>
 <h3>♙ Pawn</h3><p>Moves forward one square, two from its starting square, and captures diagonally.</p>
 <h3>♘ Knight</h3><p>Moves in an L shape and can jump over pieces.</p>
 <h3>♗ Bishop</h3><p>Moves diagonally.</p>
@@ -179,7 +179,7 @@ function move(fr,fc,tr,tc){
    playCapture();
    setTimeout(playWin,180);
    draw();
-   if(p[0]=="w") end("I win — You captured the king!");
+   if(p[0]=="w") end("You win — You captured the king!");
    else end("You lose — Computer win!");
    return;
  }
