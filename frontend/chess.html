@@ -11,6 +11,9 @@ body{background:#111315;color:#fff;font-family:Arial,sans-serif;min-height:100vh
 .top{height:52px;display:flex;align-items:center;justify-content:space-between}
 .top h1{font-size:23px}
 .icon{background:none;border:0;color:#fff;font-size:28px;padding:5px}
+.scoreBoard{display:flex;justify-content:space-between;align-items:center;background:#202326;border-radius:12px;padding:12px 14px;margin:8px 0;font-weight:bold;font-size:14px;gap:6px}
+.scoreBoard span{background:#292c30;padding:6px 10px;border-radius:8px}
+.scoreBoard button{background:#33363a;color:#fff;border:0;border-radius:8px;padding:6px 10px;font-weight:bold;font-size:13px}
 .player{height:62px;display:flex;align-items:center;gap:10px;padding:5px 8px}
 .avatar{width:43px;height:43px;border-radius:50%;background:#292c30;display:flex;align-items:center;justify-content:center;font-size:22px}
 .pinfo{flex:1}
@@ -53,6 +56,7 @@ select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-r
 <body>
 <div class="app">
 <div class="top"><button class="icon" onclick="newGame()">＋</button><h1>♟ Chess</h1><button class="icon" onclick="saveGame()">⋮</button></div>
+<div class="scoreBoard"><span>🧑 You: <b id="myScore">0</b></span><button onclick="resetScores()">Reset</button><span>🤖 CPU: <b id="cpuScore">0</b></span></div>
 <div id="blackPlayer" class="player"><div class="avatar">🤖</div><div class="pinfo"><div class="name"> CPU Computer</div><div id="blackCap" class="captured"></div></div></div>
 <div id="board" class="board"></div>
 <div id="whitePlayer" class="player"><div class="avatar">♙</div><div class="pinfo"><div class="name">You</div><div id="whiteCap" class="captured"></div></div></div>
@@ -71,7 +75,7 @@ select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-r
 <details class="guide">
 <summary>How to Play Chess — Beginner's Guide</summary>
 <div class="guideText">
-<h3>🎯 Goal</h3><p>Capture the enemy king in all 4 directions to win - You win!</p>
+<h3>🎯 Goal</h3><p>Capture the enemy king in all 4 directions to win - I win!</p>
 <h3>♙ Pawn</h3><p>Moves forward one square, two from its starting square, and captures diagonally.</p>
 <h3>♘ Knight</h3><p>Moves in an L shape and can jump over pieces.</p>
 <h3>♗ Bishop</h3><p>Moves diagonally.</p>
@@ -89,9 +93,15 @@ select{width:100%;margin-top:4px;background:#292c2f;color:#fff;border:0;border-r
 </div></div></div>
 <script>
 const KEY="beautiful_chess_v6",
+SKEY="chess_score_v2",
 I={w:{k:"♔",q:"♕",r:"♖",b:"♗",n:"♘",p:"♙"},b:{k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"}},
 V={p:100,n:320,b:330,r:500,q:900,k:20000};
 let B,T,sel=null,past=[],hist=[],ep=null,castle,over=false,thinking=false,promo=null,half=0,rep={};
+let myScore=0,cpuScore=0;
+function loadScores(){try{let s=JSON.parse(localStorage.getItem(SKEY));if(s){myScore=s.my||0;cpuScore=s.cpu||0}}catch(e){} updateScoreUI()}
+function saveScores(){localStorage.setItem(SKEY,JSON.stringify({my:myScore,cpu:cpuScore}))}
+function updateScoreUI(){document.getElementById("myScore").textContent=myScore;document.getElementById("cpuScore").textContent=cpuScore}
+function resetScores(){if(confirm("Reset scores to 0?")){myScore=0;cpuScore=0;saveScores();updateScoreUI()}}
 let audioCtx=null;
 function getCtx(){
  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
@@ -171,7 +181,7 @@ function move(fr,fc,tr,tc){
    playCapture();
    setTimeout(playWin,180);
    draw();
-   if(p[0]=="w") end("You win — You captured the king!");
+   if(p[0]=="w") end("I win — You captured the king!");
    else end("You lose — Computer win!");
    return;
  }
@@ -336,9 +346,9 @@ function rights(p,r,c){
 }
 function state(){
  let k=king(T);
- if(!k) return T=="w"? "You win — You captured the king!" : "You lose — Computer win!";
+ if(!k) return T=="w"? "I win — You captured the king!" : "You lose — Computer win!";
  let m=allMoves(T);
- if(!m.length)return check(T)?(T=="w"?"You lose — Computer win!":"You win — You captured the king!"):"Stalemate — Draw!";
+ if(!m.length)return check(T)?(T=="w"?"You lose — Computer win!":"I win — You captured the king!"):"Stalemate — Draw!";
  if(rep[key()]>=3)return"Draw — Threefold repetition";
  if(half>=100)return"Draw — 50-move rule";
  if(insufficient())return"Draw — Insufficient material";
@@ -348,8 +358,12 @@ function state(){
 function end(x){
  over=1;thinking=0;
  message.textContent=x;
- if(x.includes("You win")||x.includes("You lose")||x.includes("Computer win")||x.includes("captured the king")){
+ if(x.includes("I win")||x.includes("captured the king")||x.includes("You lose")||x.includes("Computer win")){
    message.classList.add("win");
+   // ONLY ONE SIDE INCREMENTS
+   if(x.startsWith("I win")){ myScore++; }
+   else if(x.startsWith("You lose")){ cpuScore++; }
+   saveScores();updateScoreUI();
    playWin();
  } else {
    message.classList.remove("win");
@@ -396,6 +410,7 @@ function status(){
 }
 addEventListener("beforeunload",saveSilent);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!promo)draw()});
+loadScores();
 load();
 </script>
 </body>
