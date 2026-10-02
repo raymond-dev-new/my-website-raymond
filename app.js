@@ -683,8 +683,6 @@ app.get("/api/sync",async(req,res)=>{
 
 
 // country match ihgfchjjhgviiuyuiodiuuojihuuiub
-
- // old e11e83e05b19af09fbdd776affffc3a7
  
   const API=process.env.API_FOOTBALL_KEY||'069d1eb2c24248bb80a846e1d4ee9d5d';
 const BASE='https://v3.football.api-sports.io';
