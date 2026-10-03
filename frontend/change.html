@@ -237,10 +237,13 @@ html, body {
     if(data.status === 'ok') {
      // localStorage.setItem('token', data.data)
        alert('Password change successfully')
+        
     } else {
       alert(data.error)
     }
+    newPassword.value = '';
    }
+
   </script>
 </body>
 </html>
