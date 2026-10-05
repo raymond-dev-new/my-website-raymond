@@ -680,304 +680,174 @@ app.get("/api/sync",async(req,res)=>{
 });
 
 // matach end here kjhgfdghjkjhgfcghjkjhgf
+// CONFIG
+const API = process.env.API_FOOTBALL_KEY || 'eda8cb97b3fc4c085387a22f48b4e349';
+const BASE = 'https://v3.football.api-sports.io';
+const COOLDOWN = 4*60*60*1000; // 4 hours
 
-
-// country match ihgfchjjhgviiuyuiodiuuojihuuiub
- 
-  const API=process.env.API_FOOTBALL_KEY||'069d1eb2c24248bb80a846e1d4ee9d5d';
-const BASE='https://v3.football.api-sports.io';
-
-// DB Schema for country matches
-const countrySchema=new mongoose.Schema({
- fixture_id:{type:Number,unique:true},home_team:String,away_team:String,
- home_logo:String,away_logo:String,league:String,league_logo:String,
- match_date:Date,status:String,elapsed:{type:Number,default:null},
- score_home:{type:Number,default:null},score_away:{type:Number,default:null},
- last_updated:{type:Date,default:Date.now}
+// DB SCHEMAS
+const countrySchema = new mongoose.Schema({
+  fixture_id:{type:Number,unique:true}, home_team:String, away_team:String,
+  home_logo:String, away_logo:String, league:String, league_logo:String,
+  match_date:Date, status:String, elapsed:Number, score_home:Number, score_away:Number,
+  last_updated:{type:Date,default:Date.now}
 });
-const CountryMatch=mongoose.models.CountryMatch || mongoose.model('CountryMatch',countrySchema);
+const CountryMatch = mongoose.models.CountryMatch || mongoose.model('CountryMatch', countrySchema);
 
-// Live and finished status
-const LIVE=new Set(['1H','HT','2H','ET','BT','P','LIVE','INT']);
-const DONE=new Set(['FT','AET','PEN']);
+const controlSchema = new mongoose.Schema({
+  _id:{type:String,default:'country-api'}, lastFetch:{type:Date,default:new Date(0)}, lockedUntil:{type:Date,default:new Date(0)}
+},{timestamps:true});
+const FetchControl = mongoose.models.CountryFetchControl || mongoose.model('CountryFetchControl', controlSchema);
 
-// Check if match is country vs country
-function isCountry(m){
- if(m.teams?.home?.national===true&&m.teams?.away?.national===true)return true;
- const n=(m.league?.name||'').toLowerCase();
- return[
-  'world cup','world cup qualification','world cup qualifiers','euro',
-  'european championship','european championship qualification',
-  'euro qualification','nations league','africa cup of nations','afcon',
-  'africa cup','african nations','asian cup','afc asian cup','copa america',
-  'concacaf','gold cup','concacaf nations league','oceania nations cup',
-  'ofc nations cup','international friendly','international friendlies',
-  'friendlies'
- ].some(x=>n.includes(x));
-}
+// STATUS
+const LIVE = new Set(['1H','HT','2H','ET','BT','P','LIVE','INT']);
+const DONE = new Set(['FT','AET','PEN']);
 
-// Helper to get date string
-const day=(d,n)=>{
- const x=new Date(d);
- x.setUTCDate(x.getUTCDate()+n);
- return x.toISOString().slice(0,10);
+// HELPERS
+const day = (d,n) => { const x=new Date(d); x.setUTCDate(x.getUTCDate()+n); return x.toISOString().slice(0,10); };
+const isCountry = (m) => {
+  if(m.teams?.home?.national && m.teams?.away?.national) return true;
+  const n=(m.league?.name||'').toLowerCase();
+  return ['world cup','euro','nations league','afcon','asian cup','copa america','concacaf','gold cup','oceania','international friendly','friendlies'].some(x=>n.includes(x));
 };
 
-let fetching=false;
-
-// Fetch one day from API - FIXED timeout 8s not 20s to avoid Vercel 30s timeout
-async function getDay(date){
- try{
-  const r=await axios.get(`${BASE}/fixtures`,{
-   params:{date},
-   headers:{'x-apisports-key':API},
-   timeout:8000 // FIXED: was 20000 = cause timeout
-  });
-  if(r.data?.errors&&Object.keys(r.data.errors).length){
-   console.log(`⚠️ ${date}`,r.data.errors);
-   return[];
-  }
-  return r.data?.response||[];
- }catch(e){
-  console.log(`❌ ${date}`,e.response?.data||e.message);
-  return[];
- }
+// ONE API CALL FOR 7 DAYS
+async function getDays(from,to){
+  try{
+    const r=await axios.get(`${BASE}/fixtures`,{params:{from,to},headers:{'x-apisports-key':API},timeout:20000});
+    if(r.data?.errors && Object.keys(r.data.errors).length){ console.log('⚠️ API ERROR:',r.data.errors); return []; }
+    return r.data?.response||[];
+  }catch(e){ console.log('❌ API FETCH:',e.response?.data||e.message); throw e; }
 }
 
-// Old single save (kept for backup)
-async function save(m){
- if(!m.fixture?.id||!m.teams?.home||!m.teams?.away)return;
- await CountryMatch.updateOne(
-  {fixture_id:m.fixture.id},
-  {$set:{
-   fixture_id:m.fixture.id,
-   home_team:m.teams.home.name,away_team:m.teams.away.name,
-   home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
-   league:m.league?.name||'International',
-   league_logo:m.league?.logo||'',
-   match_date:new Date(m.fixture.date),
-   status:m.fixture.status?.short||'NS',
-   elapsed:m.fixture.status?.elapsed??null,
-   score_home:m.goals?.home??null,
-   score_away:m.goals?.away??null,
-   last_updated:new Date()
-  }},
-  {upsert:true}
- );
-}
-
-// Main fetch - FIXED FAST MODE to avoid Vercel 30s timeout + 3 DAYS BACK/FRONT LOGIC
-async function fetchCountryMatches(){
- if(fetching){
-   console.log('⏳ Fetch already running');
-   return {total:0, saved:0, deleted:0};
- }
- if(!API){
-   console.log('❌ API key missing');
-   return {total:0, saved:0, deleted:0};
- }
- fetching=true;
-
- try{
-  if(mongoose.connection.readyState!==1){
-    await mongoose.connect(process.env.MONGO_URL);
-  }
-
+// RESERVE 4-HOUR SLOT (MongoDB lock so Vercel cold start safe)
+async function reserveSlot(){
   const now=new Date();
-  now.setUTCHours(0,0,0,0);
-
-  // FIXED: 3 DAYS BACK AND FRONT LOGIC (-3 to +3) = 7 days
-  // k-3 gives: -3,-2,-1,0,1,2,3
-  const dates=Array.from({length:7},(_,k)=>day(now,k-3));
+  await FetchControl.updateOne({_id:'country-api'},{$setOnInsert:{lastFetch:new Date(0),lockedUntil:new Date(0)}},{upsert:true});
+  const c=await FetchControl.findById('country-api').lean();
+  if(!c) return {allowed:false,reason:'control unavailable'};
+  if(c.lockedUntil && new Date(c.lockedUntil)>now) return {allowed:false,running:true,reason:'Fetch already running'};
   
-  // FIXED: allSettled not all (if 1 fails, others still save) + avoids 30s hang
-  const allResultsSettled=await Promise.allSettled(dates.map(d=>getDay(d)));
+  const last=new Date(c.lastFetch||0), elapsed=now-last;
+  if(elapsed<COOLDOWN){
+    return {allowed:false,cooldown:true,lastFetch:last,nextAvailable:new Date(last.getTime()+COOLDOWN)};
+  }
+  // Lock 30 sec to prevent double fetch
+  const locked=await FetchControl.findOneAndUpdate({_id:'country-api',lockedUntil:{$lte:now},$or:[{lastFetch:{$lte:new Date(now-COOLDOWN)}} ,{lastFetch:{$exists:false}}]},{$set:{lockedUntil:new Date(now.getTime()+30000)}},{new:true}).lean();
+  if(!locked) return {allowed:false,running:true,reason:'Another fetch claimed slot'};
+  return {allowed:true,lastFetch:last};
+}
+async function recordFetch(){ await FetchControl.updateOne({_id:'country-api'},{$set:{lastFetch:new Date()}}); }
+async function releaseLock(){ try{ await FetchControl.updateOne({_id:'country-api'},{$set:{lockedUntil:new Date(0)}}); }catch{} }
 
-  let total=0;
-  const countryMatches=[];
+// MAIN SYNC: -3 to +3 days
+async function fetchCountryMatches(){
+  if(!API) return {total:0,saved:0,deleted:0,error:'API key missing'};
+  if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL||process.env.MONGO_URI);
+  
+  const now=new Date(); now.setUTCHours(0,0,0,0);
+  const from=day(now,-3), to=day(now,3);
+  
+  const list=await getDays(from,to);
+  const country=list.filter(isCountry);
+  console.log(`📅 ${from}->${to}: ${list.length} total -> ${country.length} country`);
 
-  allResultsSettled.forEach((result,idx)=>{
-    if(result.status==='fulfilled'){
-      const list=result.value;
-      total+=list.length;
-      const filtered=list.filter(isCountry);
-      countryMatches.push(...filtered);
-      console.log(`📅 ${dates[idx]}: ${list.length} -> ${filtered.length} country`);
-    }else{
-      console.log(`❌ ${dates[idx]} failed:`, result.reason?.message);
-    }
-  });
-
-  // FIXED: Bulk write once (was save() one by one = timeout)
-  if(countryMatches.length){
-    await CountryMatch.bulkWrite(countryMatches.map(m=>({
-      updateOne:{
-        filter:{fixture_id:m.fixture.id},
-        update:{$set:{
-          fixture_id:m.fixture.id,
-          home_team:m.teams.home.name,away_team:m.teams.away.name,
-          home_logo:m.teams.home.logo||'',away_logo:m.teams.away.logo||'',
-          league:m.league?.name||'International',
-          league_logo:m.league?.logo||'',
-          match_date:new Date(m.fixture.date),
-          status:m.fixture.status?.short||'NS',
-          elapsed:m.fixture.status?.elapsed??null,
-          score_home:m.goals?.home??null,
-          score_away:m.goals?.away??null,
-          last_updated:new Date()
-        }},
-        upsert:true
-      }
-    })),{ordered:false});
+  if(country.length){
+    await CountryMatch.bulkWrite(country.map(m=>({updateOne:{
+      filter:{fixture_id:m.fixture.id},
+      update:{$set:{
+        fixture_id:m.fixture.id, home_team:m.teams.home.name, away_team:m.teams.away.name,
+        home_logo:m.teams.home.logo||'', away_logo:m.teams.away.logo||'',
+        league:m.league?.name||'International', league_logo:m.league?.logo||'',
+        match_date:new Date(m.fixture.date), status:m.fixture.status?.short||'NS',
+        elapsed:m.fixture.status?.elapsed??null, score_home:m.goals?.home??null, score_away:m.goals?.away??null,
+        last_updated:new Date()
+      }}, upsert:true
+    }})),{ordered:false});
   }
 
-  // Delete old matches outside -3 to +3 range
-  const start=new Date(now);
-  start.setUTCDate(start.getUTCDate()-3);
-  const end=new Date(now);
-  end.setUTCDate(end.getUTCDate()+3);
-  end.setUTCHours(23,59,59,999);
-
-  const d=await CountryMatch.deleteMany({
-   $or:[{match_date:{$lt:start}},{match_date:{$gt:end}}]
-  });
-
-  console.log(`✅ API:${total} Saved:${countryMatches.length} Deleted:${d.deletedCount}`);
-  return {total, saved:countryMatches.length, deleted:d.deletedCount};
- }catch(e){
-  console.log('❌ FETCH:',e.message);
-  return {total:0, saved:0, deleted:0, error:e.message};
- }finally{fetching=false;}
+  // Keep only -3 to +3
+  const start=new Date(now); start.setUTCDate(start.getUTCDate()-3);
+  const end=new Date(now); end.setUTCDate(end.getUTCDate()+3); end.setUTCHours(23,59,59,999);
+  const d=await CountryMatch.deleteMany({$or:[{match_date:{$lt:start}},{match_date:{$gt:end}}]});
+  
+  console.log(`✅ API:${list.length} Saved:${country.length} Deleted:${d.deletedCount}`);
+  return {total:list.length,saved:country.length,deleted:d.deletedCount};
 }
 
-// FOR RENDER ONLY - Vercel uses cron-job.org
+// API: GET /api/matches-country?tab=upcoming|finished|live|today
+app.get('/api/matches-country', async(req,res)=>{
+  try{
+    const tab=(req.query.tab||'upcoming').toLowerCase();
+    const now=new Date(); now.setUTCHours(0,0,0,0);
+    const start=new Date(now); start.setUTCDate(start.getUTCDate()-3);
+    const end=new Date(now); end.setUTCDate(end.getUTCDate()+3); end.setUTCHours(23,59,59,999);
 
-if(mongoose.connection.readyState===1)fetchCountryMatches();
-else mongoose.connection.once('connected',fetchCountryMatches);
+    let db=await CountryMatch.find({match_date:{$gte:start,$lte:end}}).lean();
 
-
-/* MATCHES - Returns filtered by tab */
-app.get('/api/matches-country',async(req,res)=>{
- try{
-  const tab=(req.query.tab||'upcoming').toLowerCase();
-  const now=new Date();
-  now.setUTCHours(0,0,0,0);
-
-  const start=new Date(now);
-  start.setUTCDate(start.getUTCDate()-3);
-
-  const end=new Date(now);
-  end.setUTCDate(end.getUTCDate()+3);
-  end.setUTCHours(23,59,59,999);
-
-  let db=await CountryMatch.find({
-   match_date:{$gte:start,$lte:end}
-  }).lean();
-
-  if(tab==='live')
-   db=db.filter(m=>LIVE.has(m.status));
-  else if(['finished','recent','past'].includes(tab))
-   db=db.filter(m=>DONE.has(m.status))
-     .sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
-  else if(tab==='today'){
-   const tomorrow=new Date(now);
-   tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
-   db=db.filter(m=>{
-    const d=new Date(m.match_date);
-    return d>=now&&d<tomorrow;
-   }).sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
-  }else
-   db=db.filter(m=>!DONE.has(m.status)&&!LIVE.has(m.status))
-     .sort((a,b)=>new Date(a.match_date)-new Date(b.match_date));
-
-  res.json({
-   success:true,count:db.length,
-   matches:db.map(m=>({
-    id:m.fixture_id,league:m.league,leagueLogo:m.league_logo,
-    date:m.match_date,
-    status:DONE.has(m.status)?'FINISHED':LIVE.has(m.status)?'IN_PLAY':'SCHEDULED',
-    home:{name:m.home_team,logo:m.home_logo},
-    away:{name:m.away_team,logo:m.away_logo},
-    homeScore:m.score_home,awayScore:m.score_away,
-    elapsed:m.elapsed,rawStatus:m.status
-   }))
-  });
- }catch(e){
-  console.log('❌ MATCH API:',e.message);
-  res.status(500).json({success:false,matches:[],error:e.message});
- }
-});
-
-/* ALL - Returns all raw from DB */
-app.get('/api/country-matches',async(req,res)=>{
- try{
-  const now=new Date();
-  now.setUTCHours(0,0,0,0);
-  const start=new Date(now);
-  start.setUTCDate(start.getUTCDate()-3);
-  const end=new Date(now);
-  end.setUTCDate(end.getUTCDate()+3);
-  end.setUTCHours(23,59,59,999);
-
-  res.json(await CountryMatch.find({
-   match_date:{$gte:start,$lte:end}
-  }).sort({match_date:1}).lean());
- }catch(e){
-  console.log('❌ COUNTRY API:',e.message);
-  res.status(500).json([]);
- }
-});
-
-/* MANUAL FOR CRON-JOB.ORG - 2 HOURS ROUTE */
-app.get('/api/fetch-now', async(req, res) => {
-  // Prevent Chrome infinite loading - force timeout after 25s
-  req.setTimeout(25000);
-  res.setHeader('Content-Type', 'application/json');
-
-  if (fetching) {
-    return res.json({ success: false, message: 'Fetch already running' });
-  }
-
-  try {
-    // Fix: use same env name
-    const MONGO = process.env.MONGO_URI || process.env.MONGO_URL;
-    
-    if (mongoose.connection.readyState !== 1) {
-      console.log('Connecting to Mongo...');
-      await mongoose.connect(MONGO, { serverSelectionTimeoutMS: 5000 });
+    if(tab==='live'){
+      db=db.filter(m=>LIVE.has(m.status)).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date)); // recent first
+    }else if(['finished','recent','past'].includes(tab)){
+      db=db.filter(m=>DONE.has(m.status)).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date)); // past matches at top
+    }else if(tab==='today'){
+      const tom=new Date(now); tom.setUTCDate(tom.getUTCDate()+1);
+      db=db.filter(m=>{const d=new Date(m.match_date); return d>=now&&d<tom;}).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
+    }else{
+      // upcoming: LIVE first, then recent at top (Sep 29 top)
+      db=db.filter(m=>!DONE.has(m.status)).sort((a,b)=>{
+        const al=LIVE.has(a.status)?1:0, bl=LIVE.has(b.status)?1:0;
+        if(bl!==al) return bl-al;
+        return new Date(b.match_date)-new Date(a.match_date); // FIXED: b-a = recent first
+      });
     }
 
-    console.log('Starting fetch...');
+    res.json({success:true,count:db.length,matches:db.map(m=>({
+      id:m.fixture_id, league:m.league, leagueLogo:m.league_logo, date:m.match_date,
+      status:DONE.has(m.status)?'FINISHED':LIVE.has(m.status)?'IN_PLAY':'SCHEDULED',
+      home:{name:m.home_team,logo:m.home_logo}, away:{name:m.away_team,logo:m.away_logo},
+      homeScore:m.score_home, awayScore:m.score_away, elapsed:m.elapsed, rawStatus:m.status
+    }))});
+  }catch(e){ res.status(500).json({success:false,matches:[],error:e.message}); }
+});
+
+app.get('/api/country-matches', async(req,res)=>{
+  try{
+    const now=new Date(); now.setUTCHours(0,0,0,0);
+    const s=new Date(now); s.setUTCDate(s.getUTCDate()-3);
+    const e=new Date(now); e.setUTCDate(e.getUTCDate()+3); e.setUTCHours(23,59,59,999);
+    res.json(await CountryMatch.find({match_date:{$gte:s,$lte:e}}).sort({match_date:-1}).lean()); // -1 = recent first
+  }catch(e){ res.status(500).json([]); }
+});
+
+// ONLY THIS ROUTE CALLS API - 4 HOUR COOLDOWN
+app.get('/api/fetch-now', async(req,res)=>{
+  req.setTimeout(25000);
+  res.setHeader('Content-Type','application/json');
+  let slot=null;
+  try{
+    const MONGO=process.env.MONGO_URI||process.env.MONGO_URL;
+    if(!MONGO) return res.status(500).json({success:false,message:'MongoDB missing'});
+    if(mongoose.connection.readyState!==1) await mongoose.connect(MONGO,{serverSelectionTimeoutMS:5000});
+
+    slot=await reserveSlot();
+    if(!slot.allowed && slot.running) return res.json({success:false,cached:true,running:true,message:'Fetch already running. No new API call.'});
+    if(!slot.allowed && slot.cooldown){
+      const ms=slot.nextAvailable-Date.now(), h=Math.floor(ms/3600000), m=Math.ceil((ms%3600000)/60000);
+      return res.json({success:false,cached:true,cooldown:true,message:`Cooldown active. Try again in ${h}h ${m}m.`,lastFetch:slot.lastFetch,nextAvailable:slot.nextAvailable,cooldownHours:4});
+    }
+    if(!slot.allowed) return res.status(500).json({success:false,message:slot.reason});
+
+    console.log('🚀 Cooldown passed. ONE API fetch...');
+    await recordFetch(); // record BEFORE api call
+    const result=await fetchCountryMatches();
+    await releaseLock();
     
-    // Race against 20s timeout so Chrome never hangs
-    const fetchPromise = fetchCountryMatches();
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Fetch timed out after 20s')), 20000)
-    );
-
-    const result = await Promise.race([fetchPromise, timeoutPromise]);
-
-    const count = await CountryMatch.countDocuments();
-
-    return res.json({
-      success: true,
-      message: 'Fetch complete - saved to DB',
-      synced: result.saved,
-      apiTotal: result.total,
-      deleted: result.deleted,
-      totalInDB: count,
-      time: new Date().toISOString()
-    });
-
-  } catch (e) {
-    console.log('❌ fetch-now error:', e.message);
-    fetching = false; // IMPORTANT: unlock if crashed
-    return res.status(500).json({
-      success: false,
-      message: 'Fetch failed',
-      error: e.message,
-      totalInDB: await CountryMatch.countDocuments().catch(() => 0)
-    });
+    const count=await CountryMatch.countDocuments();
+    return res.json({success:!result.error,message:result.error?'Fetch failed':'Fetch complete',synced:result.saved,apiTotal:result.total,deleted:result.deleted,totalInDB:count,cooldownHours:4,nextAvailable:new Date(Date.now()+COOLDOWN),time:new Date().toISOString()});
+  }catch(e){
+    await releaseLock();
+    console.log('❌ fetch-now error:',e.message);
+    return res.status(500).json({success:false,message:'Fetch failed',error:e.message,cooldownHours:4,nextAvailable:slot?.lastFetch?new Date(new Date(slot.lastFetch).getTime()+COOLDOWN):null,totalInDB:await CountryMatch.countDocuments().catch(()=>0)});
   }
 });
 
