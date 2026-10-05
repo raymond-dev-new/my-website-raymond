@@ -104,7 +104,7 @@
       const json=await res.json();
       render(json.matches||[]);
     }catch(e){
-      document.getElementById('list').innerHTML=`<div class="empty">DB error<br><button onclick="loadMatches()" style="padding:10px 20px;background:#22c55e;border:0;border-radius:10px;margin-top:10px">Retry</button></div>`;
+      document.getElementById('list').innerHTML=`<div class="empty">Network error<br><button onclick="loadMatches()" style="padding:10px 20px;background:#22c55e;border:0;border-radius:10px;margin-top:10px">Retry</button></div>`;
     }finally{hideLoading();}
   }
 
@@ -116,7 +116,7 @@
   }
 
   loadMatches();
-  setInterval(()=>{ if(currentTab==='upcoming') loadMatches(); },60000);
+  setInterval(()=>{ if(currentTab==='upcoming') loadMatches(); },300000);
 </script>
 </body>
 </html>
