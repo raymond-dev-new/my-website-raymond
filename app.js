@@ -681,7 +681,7 @@ app.get("/api/sync",async(req,res)=>{
 
 // matach end here kjhgfdghjkjhgfcghjkjhgf
 // CONFIG
-const API = process.env.API_FOOTBALL_KEY || 'eda8cb97b3fc4c085387a22f48b4e349';
+const API = process.env.API_FOOTBALL_KEY || '19ff9a571eb3c1a7bf5dc828fe578ffb';
 const BASE = 'https://v3.football.api-sports.io';
 const COOLDOWN = 4*60*60*1000; // 4 hours
 
@@ -711,36 +711,44 @@ const isCountry = (m) => {
   return ['world cup','euro','nations league','afcon','asian cup','copa america','concacaf','gold cup','oceania','international friendly','friendlies'].some(x=>n.includes(x));
 };
 
-// ONE API CALL FOR 7 DAYS
+// FIXED FOR FREE PLAN: fetch day-by-day (from/to not allowed on free)
 async function getDays(from,to){
-  try{
-    const r=await axios.get(`${BASE}/fixtures`,{params:{from,to},headers:{'x-apisports-key':API},timeout:20000});
-    if(r.data?.errors && Object.keys(r.data.errors).length){ console.log('⚠️ API ERROR:',r.data.errors); return []; }
-    return r.data?.response||[];
-  }catch(e){ console.log('❌ API FETCH:',e.response?.data||e.message); throw e; }
+  const dates=[]; let cur=new Date(from); let end=new Date(to);
+  while(cur<=end){ dates.push(cur.toISOString().slice(0,10)); cur.setUTCDate(cur.getUTCDate()+1); }
+  
+  let all=[];
+  for(const d of dates){
+    try{
+      const r=await axios.get(`${BASE}/fixtures`,{
+        params:{date:d}, // FREE plan uses date= not from/to
+        headers:{'x-apisports-key':API},
+        timeout:20000
+      });
+      console.log(`📅 ${d}: ${r.data?.results||0} matches`);
+      if(r.data?.errors && Object.keys(r.data.errors).length) console.log('⚠️', r.data.errors);
+      if(r.data?.response) all=all.concat(r.data.response);
+      await new Promise(x=>setTimeout(x,650)); // avoid rate limit
+    }catch(e){ console.log(`❌ ${d}:`, e.response?.data||e.message); }
+  }
+  return all;
 }
 
-// RESERVE 4-HOUR SLOT (MongoDB lock so Vercel cold start safe)
 async function reserveSlot(){
   const now=new Date();
   await FetchControl.updateOne({_id:'country-api'},{$setOnInsert:{lastFetch:new Date(0),lockedUntil:new Date(0)}},{upsert:true});
   const c=await FetchControl.findById('country-api').lean();
   if(!c) return {allowed:false,reason:'control unavailable'};
-  if(c.lockedUntil && new Date(c.lockedUntil)>now) return {allowed:false,running:true,reason:'Fetch already running'};
-  
-  const last=new Date(c.lastFetch||0), elapsed=now-last;
-  if(elapsed<COOLDOWN){
-    return {allowed:false,cooldown:true,lastFetch:last,nextAvailable:new Date(last.getTime()+COOLDOWN)};
-  }
-  // Lock 30 sec to prevent double fetch
-  const locked=await FetchControl.findOneAndUpdate({_id:'country-api',lockedUntil:{$lte:now},$or:[{lastFetch:{$lte:new Date(now-COOLDOWN)}} ,{lastFetch:{$exists:false}}]},{$set:{lockedUntil:new Date(now.getTime()+30000)}},{new:true}).lean();
-  if(!locked) return {allowed:false,running:true,reason:'Another fetch claimed slot'};
+  if(c.lockedUntil && new Date(c.lockedUntil)>now) return {allowed:false,running:true,reason:'Fetch running'};
+  const last=new Date(c.lastFetch||0);
+  if(now-last < COOLDOWN) return {allowed:false,cooldown:true,lastFetch:last,nextAvailable:new Date(last.getTime()+COOLDOWN)};
+  const locked=await FetchControl.findOneAndUpdate({_id:'country-api',lockedUntil:{$lte:now}},{$set:{lockedUntil:new Date(now.getTime()+30000)}},{new:true}).lean();
+  if(!locked) return {allowed:false,running:true,reason:'Slot taken'};
   return {allowed:true,lastFetch:last};
 }
 async function recordFetch(){ await FetchControl.updateOne({_id:'country-api'},{$set:{lastFetch:new Date()}}); }
 async function releaseLock(){ try{ await FetchControl.updateOne({_id:'country-api'},{$set:{lockedUntil:new Date(0)}}); }catch{} }
 
-// MAIN SYNC: -3 to +3 days
+// MAIN SYNC: -3 to +3 days, 1 batch (7 API calls = 1 fetch per 4h)
 async function fetchCountryMatches(){
   if(!API) return {total:0,saved:0,deleted:0,error:'API key missing'};
   if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL||process.env.MONGO_URI);
@@ -748,7 +756,7 @@ async function fetchCountryMatches(){
   const now=new Date(); now.setUTCHours(0,0,0,0);
   const from=day(now,-3), to=day(now,3);
   
-  const list=await getDays(from,to);
+  const list=await getDays(from,to); // all matches in 7 days
   const country=list.filter(isCountry);
   console.log(`📅 ${from}->${to}: ${list.length} total -> ${country.length} country`);
 
@@ -765,8 +773,6 @@ async function fetchCountryMatches(){
       }}, upsert:true
     }})),{ordered:false});
   }
-
-  // Keep only -3 to +3
   const start=new Date(now); start.setUTCDate(start.getUTCDate()-3);
   const end=new Date(now); end.setUTCDate(end.getUTCDate()+3); end.setUTCHours(23,59,59,999);
   const d=await CountryMatch.deleteMany({$or:[{match_date:{$lt:start}},{match_date:{$gt:end}}]});
@@ -775,31 +781,19 @@ async function fetchCountryMatches(){
   return {total:list.length,saved:country.length,deleted:d.deletedCount};
 }
 
-// API: GET /api/matches-country?tab=upcoming|finished|live|today
+// API: DB ONLY - NO API CALL
 app.get('/api/matches-country', async(req,res)=>{
   try{
     const tab=(req.query.tab||'upcoming').toLowerCase();
     const now=new Date(); now.setUTCHours(0,0,0,0);
     const start=new Date(now); start.setUTCDate(start.getUTCDate()-3);
     const end=new Date(now); end.setUTCDate(end.getUTCDate()+3); end.setUTCHours(23,59,59,999);
-
     let db=await CountryMatch.find({match_date:{$gte:start,$lte:end}}).lean();
 
-    if(tab==='live'){
-      db=db.filter(m=>LIVE.has(m.status)).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date)); // recent first
-    }else if(['finished','recent','past'].includes(tab)){
-      db=db.filter(m=>DONE.has(m.status)).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date)); // past matches at top
-    }else if(tab==='today'){
-      const tom=new Date(now); tom.setUTCDate(tom.getUTCDate()+1);
-      db=db.filter(m=>{const d=new Date(m.match_date); return d>=now&&d<tom;}).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
-    }else{
-      // upcoming: LIVE first, then recent at top (Sep 29 top)
-      db=db.filter(m=>!DONE.has(m.status)).sort((a,b)=>{
-        const al=LIVE.has(a.status)?1:0, bl=LIVE.has(b.status)?1:0;
-        if(bl!==al) return bl-al;
-        return new Date(b.match_date)-new Date(a.match_date); // FIXED: b-a = recent first
-      });
-    }
+    if(tab==='live') db=db.filter(m=>LIVE.has(m.status)).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
+    else if(['finished','recent','past'].includes(tab)) db=db.filter(m=>DONE.has(m.status)).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date));
+    else if(tab==='today'){ const tom=new Date(now); tom.setUTCDate(tom.getUTCDate()+1); db=db.filter(m=>{const d=new Date(m.match_date); return d>=now&&d<tom;}).sort((a,b)=>new Date(b.match_date)-new Date(a.match_date)); }
+    else db=db.filter(m=>!DONE.has(m.status)).sort((a,b)=>{ const al=LIVE.has(a.status)?1:0, bl=LIVE.has(b.status)?1:0; if(bl!==al) return bl-al; return new Date(b.match_date)-new Date(a.match_date); }); // FIXED: recent at top
 
     res.json({success:true,count:db.length,matches:db.map(m=>({
       id:m.fixture_id, league:m.league, leagueLogo:m.league_logo, date:m.match_date,
@@ -815,13 +809,15 @@ app.get('/api/country-matches', async(req,res)=>{
     const now=new Date(); now.setUTCHours(0,0,0,0);
     const s=new Date(now); s.setUTCDate(s.getUTCDate()-3);
     const e=new Date(now); e.setUTCDate(e.getUTCDate()+3); e.setUTCHours(23,59,59,999);
-    res.json(await CountryMatch.find({match_date:{$gte:s,$lte:e}}).sort({match_date:-1}).lean()); // -1 = recent first
+    res.json(await CountryMatch.find({match_date:{$gte:s,$lte:e}}).sort({match_date:-1}).lean());
   }catch(e){ res.status(500).json([]); }
 });
 
-// ONLY THIS ROUTE CALLS API - 4 HOUR COOLDOWN
+// ONLY THIS ROUTE CALLS API - 4 HOUR COOLDOWN + FORCE RESET
+// Normal:  localhost:8000/api/fetch-now
+// Force:   localhost:8000/api/fetch-now?reset=1
 app.get('/api/fetch-now', async(req,res)=>{
-  req.setTimeout(25000);
+  req.setTimeout(30000);
   res.setHeader('Content-Type','application/json');
   let slot=null;
   try{
@@ -829,16 +825,20 @@ app.get('/api/fetch-now', async(req,res)=>{
     if(!MONGO) return res.status(500).json({success:false,message:'MongoDB missing'});
     if(mongoose.connection.readyState!==1) await mongoose.connect(MONGO,{serverSelectionTimeoutMS:5000});
 
+    if(req.query.reset==='1' || req.query.force==='true'){
+      await FetchControl.deleteOne({_id:'country-api'});
+      console.log('⚠️ COOLDOWN RESET - FORCED FETCH');
+    }
+
     slot=await reserveSlot();
-    if(!slot.allowed && slot.running) return res.json({success:false,cached:true,running:true,message:'Fetch already running. No new API call.'});
+    if(!slot.allowed && slot.running) return res.json({success:false,cached:true,running:true,message:'Fetch already running.'});
     if(!slot.allowed && slot.cooldown){
       const ms=slot.nextAvailable-Date.now(), h=Math.floor(ms/3600000), m=Math.ceil((ms%3600000)/60000);
-      return res.json({success:false,cached:true,cooldown:true,message:`Cooldown active. Try again in ${h}h ${m}m.`,lastFetch:slot.lastFetch,nextAvailable:slot.nextAvailable,cooldownHours:4});
+      return res.json({success:false,cached:true,cooldown:true,message:`Cooldown active. Try again in ${h}h ${m}m. Use ?reset=1 to force`,lastFetch:slot.lastFetch,nextAvailable:slot.nextAvailable,cooldownHours:4});
     }
-    if(!slot.allowed) return res.status(500).json({success:false,message:slot.reason});
 
-    console.log('🚀 Cooldown passed. ONE API fetch...');
-    await recordFetch(); // record BEFORE api call
+    console.log('🚀 Fetching -3 to +3 days...');
+    await recordFetch();
     const result=await fetchCountryMatches();
     await releaseLock();
     
@@ -847,7 +847,7 @@ app.get('/api/fetch-now', async(req,res)=>{
   }catch(e){
     await releaseLock();
     console.log('❌ fetch-now error:',e.message);
-    return res.status(500).json({success:false,message:'Fetch failed',error:e.message,cooldownHours:4,nextAvailable:slot?.lastFetch?new Date(new Date(slot.lastFetch).getTime()+COOLDOWN):null,totalInDB:await CountryMatch.countDocuments().catch(()=>0)});
+    return res.status(500).json({success:false,message:'Fetch failed',error:e.message,totalInDB:await CountryMatch.countDocuments().catch(()=>0)});
   }
 });
 
