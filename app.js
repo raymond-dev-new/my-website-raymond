@@ -683,7 +683,7 @@ app.get("/api/sync",async(req,res)=>{
 // CONFIG
 const API = process.env.API_FOOTBALL_KEY || '19ff9a571eb3c1a7bf5dc828fe578ffb';
 const BASE = 'https://v3.football.api-sports.io';
-const COOLDOWN = 2*60*60*1000; // 4 hours
+const COOLDOWN = 2*60*60*1000; // 2 hours
 
 // DB SCHEMAS
 const countrySchema = new mongoose.Schema({
@@ -834,7 +834,7 @@ app.get('/api/fetch-now', async(req,res)=>{
     if(!slot.allowed && slot.running) return res.json({success:false,cached:true,running:true,message:'Fetch already running.'});
     if(!slot.allowed && slot.cooldown){
       const ms=slot.nextAvailable-Date.now(), h=Math.floor(ms/3600000), m=Math.ceil((ms%3600000)/60000);
-      return res.json({success:false,cached:true,cooldown:true,message:`Cooldown active. Try again in ${h}h ${m}m. Use ?reset=1 to force`,lastFetch:slot.lastFetch,nextAvailable:slot.nextAvailable,cooldownHours:4});
+      return res.json({success:false,cached:true,cooldown:true,message:`Cooldown active. Try again in ${h}h ${m}m. Use ?reset=1 to force`,lastFetch:slot.lastFetch,nextAvailable:slot.nextAvailable,cooldownHours:2});
     }
 
     console.log('🚀 Fetching -3 to +3 days...');
