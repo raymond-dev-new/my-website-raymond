@@ -683,7 +683,7 @@ app.get("/api/sync",async(req,res)=>{
 // CONFIG
 const API = process.env.API_FOOTBALL_KEY || '19ff9a571eb3c1a7bf5dc828fe578ffb';
 const BASE = 'https://v3.football.api-sports.io';
-const COOLDOWN = 4*60*60*1000; // 4 hours
+const COOLDOWN = 2*60*60*1000; // 4 hours
 
 // DB SCHEMAS
 const countrySchema = new mongoose.Schema({
