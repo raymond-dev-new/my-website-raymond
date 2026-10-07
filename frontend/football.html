@@ -11,7 +11,14 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
 body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
-.header-text{text-align:center;font-size:25px;margin-bottom:15px}
+.header-text{text-align:center;font-size:25px;margin-bottom:5px}
+small{
+ display: flex;
+ justify-content: center; 
+ font-size: 19px;
+ margin-bottom: 15px;
+ font-weight: 700;
+}
 .tabs{display:flex;gap:10px;margin-bottom:20px}
 .tab{flex:1;padding:14px;border:0;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer}
 .upcoming{background:#16a34a;color:#fff}.finished{background:#8956db;color:#fff}.inactive{opacity:.5}
@@ -38,8 +45,31 @@ body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
 .loading-text{color:#888;font-size:14px}
 .top-loader{height:3px;background:#22c55e;width:0;animation:loadbar 1.5s infinite;position:fixed;top:0;left:0;z-index:999}
 @keyframes loadbar{50%{width:70%}100%{width:100%}}
-@media(max-width:900px){.container{width:90%}}
-@media(max-width:600px){.container{width:100%}}
+@media(max-width:900px){
+  .container{
+    width:90%
+  }
+
+small{
+ display: flex;
+ justify-content: center; 
+ font-size: 17px;
+ margin-bottom: 15px;
+ font-weight: 700;
+}
+}
+@media(max-width:600px){
+  .container{width:100%}
+   
+  small{
+ display: flex;
+ justify-content: center; 
+ font-size: 12px;
+ margin-bottom: 15px;
+ font-weight: 700;
+}
+
+}
 </style>
 </head>
 
@@ -61,6 +91,8 @@ body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
 
 <div class="container">
 <h1 class="header-text">Live Football ⚽</h1>
+
+<small> Scores will display after the end of each match on Finished Tab </small>
 
 <div class="tabs">
 <button class="tab upcoming" onclick="switchTab('upcoming',this)">Upcoming & Live</button>
