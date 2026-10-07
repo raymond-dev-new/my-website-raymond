@@ -15,10 +15,16 @@ body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
 small{
  display: flex;
  justify-content: center; 
- font-size: 19px;
- margin-bottom: 15px;
+ font-size: 21px;
  font-weight: 700;
 }
+
+.sm{
+  display: flex;
+ justify-content: center; 
+  margin-bottom: 15px;
+}
+
 .tabs{display:flex;gap:10px;margin-bottom:20px}
 .tab{flex:1;padding:14px;border:0;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer}
 .upcoming{background:#16a34a;color:#fff}.finished{background:#8956db;color:#fff}.inactive{opacity:.5}
@@ -53,10 +59,17 @@ small{
 small{
  display: flex;
  justify-content: center; 
- font-size: 17px;
- margin-bottom: 15px;
+ font-size: 19px;
  font-weight: 700;
 }
+
+.sm{
+  display: flex;
+ justify-content: center; 
+  margin-bottom: 15px;
+}
+
+ 
 }
 @media(max-width:600px){
   .container{width:100%}
@@ -64,9 +77,14 @@ small{
   small{
  display: flex;
  justify-content: center; 
- font-size: 12px;
- margin-bottom: 15px;
+ font-size: 15px;
  font-weight: 700;
+}
+
+.sm{
+  display: flex;
+ justify-content: center; 
+  margin-bottom: 15px;
 }
 
 }
@@ -92,7 +110,9 @@ small{
 <div class="container">
 <h1 class="header-text">Live Football ⚽</h1>
 
-<small> Scores will display after the end of each match on Finished Tab </small>
+<small> Scores will display after the end of each match </small>
+<small> on Finished Tab </small>
+<small class="sm"> Click on watch highlight to get live match updates </small>
 
 <div class="tabs">
 <button class="tab upcoming" onclick="switchTab('upcoming',this)">Upcoming & Live</button>
