@@ -518,7 +518,7 @@ app.get("/api/sync",async(req,res)=>{
     if(now-syncCache.time<COOLDOWN&&syncCache.data)
       return res.json({
         success:true,...syncCache.data,cached:true,
-        message:"Sync cooldown 30min - RAM cached"
+        message:"Sync cooldown 5min - RAM cached"
       });
 
     // MongoDB cache 30min
