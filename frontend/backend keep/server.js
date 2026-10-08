@@ -901,6 +901,7 @@ app.get('/api/get-media', async (req, res) => {
   res.json(result);
 });
 
+
 // 5. DELETE
 app.delete('/api/delete-media/:id', async (req, res) => {
   await Media.findByIdAndDelete(req.params.id);
