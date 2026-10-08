@@ -1,35 +1,19 @@
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="referrer" content="no-referrer-when-downgrade">
+<meta name="referrer" content="no-referrer-when-downgrade" />
 <title>Live Football</title>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
 body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
-.header-text{text-align:center;font-size:25px;margin-bottom:5px}
-small{
- display: flex;
- justify-content: center; 
- font-size: 21px;
- font-weight: 700;
-}
-
-.sm{
-  display: flex;
- justify-content: center; 
-  margin-bottom: 15px;
-}
-
+.header-text{text-align:center;font-size:25px;margin-bottom:15px}
 .tabs{display:flex;gap:10px;margin-bottom:20px}
 .tab{flex:1;padding:14px;border:0;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer}
-.upcoming{background:#16a34a;color:#fff}.finished{background:#8956db;color:#fff}.inactive{opacity:.5}
-.break-notice{border:2.5px solid #ff9d00;display:none;background:#161616;border-radius:16px;padding:18px 16px;margin:14px 0;text-align:center}
+.upcoming{background:#16a34a;color:#fff}.finished{background:#dc2626;color:#fff}.inactive{opacity:.5}
+.break-notice{border:2.5px solid #ff9d00; display:none; background:#161616;border-radius:16px;padding:18px 16px;margin:14px 0;text-align:center}
 .break-title{color:#ff9d00;font-size:16px;font-weight:800;margin-bottom:8px}
 .break-text{color:#d1d5db;font-size:14px;line-height:1.4;margin-bottom:12px}
 .break-resume{color:#16a34a;font-size:13.5px;font-weight:600;line-height:1.45}
@@ -52,49 +36,15 @@ small{
 .loading-text{color:#888;font-size:14px}
 .top-loader{height:3px;background:#22c55e;width:0;animation:loadbar 1.5s infinite;position:fixed;top:0;left:0;z-index:999}
 @keyframes loadbar{50%{width:70%}100%{width:100%}}
-@media(max-width:900px){
-  .container{
-    width:90%
-  }
-
-small{
- display: flex;
- justify-content: center; 
- font-size: 19px;
- font-weight: 700;
-}
-
-.sm{
-  display: flex;
- justify-content: center; 
-  margin-bottom: 15px;
-}
-
- 
-}
-@media(max-width:600px){
-  .container{width:100%}
-   
-  small{
- display: flex;
- justify-content: center; 
- font-size: 13px;
- font-weight: 700;
-}
-
-.sm{
-  display: flex;
- justify-content: center; 
-  font-size: 13px;
-  margin-bottom: 15px;
-}
-
-}
+@media(max-width:900px){.container{width:90%}}
+@media(max-width:600px){.container{width:100%}}
 </style>
 </head>
 
 <body>
-  <script>
+
+<!-- Advertisement -->
+   <script>
     (function(ihosnhw){
     var d = document,
         s = d.createElement('script'),
@@ -105,16 +55,13 @@ small{
     s.referrerPolicy = 'no-referrer-when-downgrade';
     l.parentNode.insertBefore(s, l);
     })({})
- </script>
+  </script> 
+
 
 <div class="top-loader" id="topLoader" style="display:none"></div>
 
 <div class="container">
 <h1 class="header-text">Live Football ⚽</h1>
-
-<small> Scores will display after the end of each match </small>
-<small> on Finished Tab </small>
-<small class="sm"> Click on watch highlight to get live match updates </small>
 
 <div class="tabs">
 <button class="tab upcoming" onclick="switchTab('upcoming',this)">Upcoming & Live</button>
@@ -125,7 +72,8 @@ small{
 <div class="break-title">⚠️ Big Leagues on International Break</div>
 <div class="break-text">
 Premier League, LaLiga, Serie A, Bundesliga,<br>
-Ligue 1 and Champions League matches have<br>finished for now.
+Ligue 1 and Champions League matches have<br>
+finished for now.
 </div>
 <div class="break-resume">
 They will resume on Friday 10th October 2026<br>
@@ -142,56 +90,37 @@ Click on finish tab to check past match
 <script>
 // ========== BACKEND API ==========
 const API_BASE="https://raymonddomain.dev",
-API_MATCHES=API_BASE+"/api/matches",
-API_LIVE=API_BASE+"/api/live";
+      API_MATCHES=API_BASE+"/api/matches",
+      API_LIVE=API_BASE+"/api/live";
 
-let currentTab="upcoming",liveMatches=[];
+let currentTab="upcoming";
 
 // ========== LOADING ==========
 function showLoading(){
   topLoader.style.display="block";
-  matches.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div class="loading-text">Loading matches...</div></div>';
+  matches.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div class="loading-text">Loading matches...</div></div>'
 }
-function hideLoading(){topLoader.style.display="none"}
 
+function hideLoading(){topLoader.style.display="none"}
 
 // ========== WATCH LIVE ==========
 function watchLive(h,a){
   location.href="https://www.youtube.com/results?search_query="+
-    encodeURIComponent(h+" vs "+a+" live");
+    encodeURIComponent(h+" vs "+a+" live")
 }
-
 
 // ========== DATE ==========
 function formatDate(d){
   return new Date(d).toLocaleString("en-GB",{
     weekday:"long",day:"numeric",month:"long",year:"numeric",
     hour:"2-digit",minute:"2-digit",hour12:false
-  });
+  })
 }
-
-
-// ========== LIVE MINUTE ==========
-// API gives the latest real minute every 2 minutes.
-// Between API calls we continue the minute locally.
-function liveMinute(m){
-  if(m.status==="PAUSED"||m.status==="HT")return "HT";
-
-  if(!["IN_PLAY","LIVE"].includes(m.status))
-    return null;
-
-  let base=Number(m.minute)||0,
-      updated=m.updatedAt?new Date(m.updatedAt).getTime():Date.now(),
-      extra=Math.floor((Date.now()-updated)/60000);
-
-  return Math.max(base,base+extra)+"'";
-}
-
 
 // ========== STATUS ==========
 function getBadge(m){
-  if(["IN_PLAY","LIVE"].includes(m.status))
-    return `<span class="badge live">${liveMinute(m)||"LIVE"}</span>`;
+  if(["IN_PLAY","LIVE","1H","2H"].includes(m.status))
+    return `<span class="badge live">${m.minute?m.minute+"'":"LIVE"}</span>`;
 
   if(["PAUSED","HT"].includes(m.status))
     return '<span class="badge" style="background:#eab308;color:#000">HALF TIME</span>';
@@ -201,113 +130,116 @@ function getBadge(m){
 
   return `<span class="badge">${new Date(m.date).toLocaleTimeString(
     "en-GB",{hour:"2-digit",minute:"2-digit"}
-  )}</span>`;
+  )}</span>`
 }
 
-
-// ========== RENDER FROM DATABASE/API ==========
+// ========== RENDER FROM DATABASE ==========
 function render(ms){
   if(!ms?.length){
     matches.innerHTML='<div style="text-align:center;padding:40px;color:#666">'+
-    'No match found within the last 9 days<br><button onclick="loadTab(currentTab)" style="margin-top:15px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>';
-    return;
+      'No match found within the last 9 days <br><button onclick="loadTab(currentTab)" style="margin-top:15px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px;font-weight:800">Retry</button></div>';
+    return
   }
 
   let g={};
   ms.forEach(m=>{
-    let d=new Date(m.date),k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    (g[k]??=[]).push(m);
+    let d=new Date(m.date),
+        k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    (g[k]??=[]).push(m)
   });
 
+  
   let html="";
 
   Object.keys(g)
-  .sort((a,b)=>currentTab==="finished"
-    ?new Date(g[b][0].date)-new Date(g[a][0].date)
-    :new Date(g[a][0].date)-new Date(g[b][0].date))
-  .forEach(k=>{
+    .sort((a,b)=>currentTab==="finished"
+      ?new Date(g[b][0].date)-new Date(g[a][0].date)
+      :new Date(g[a][0].date)-new Date(g[b][0].date))
+    .forEach(k=>{
 
-    html+=`<div class="date-header">📅 ${
-      new Date(g[k][0].date).toLocaleDateString("en-GB",{
-        weekday:"long",day:"numeric",month:"long"
+      html+=`<div class="date-header">📅 ${
+        new Date(g[k][0].date).toLocaleDateString("en-GB",{
+          weekday:"long",day:"numeric",month:"long"
+        })
+      }</div>`;
+
+      g[k].sort((a,b)=>
+        +["IN_PLAY","LIVE","1H","2H"].includes(b.status)-
+        +["IN_PLAY","LIVE","1H","2H"].includes(a.status)
+      ).forEach(m=>{
+
+        let h=m.home?.name||"Home",
+            a=m.away?.name||"Away";
+
+        html+=`
+        <div class="match-card">
+          <div class="league">${m.league||"Unknown League"}</div>
+          <div class="match-date">${formatDate(m.date)}</div>
+
+          <div class="teams">
+            <div class="team">
+              <img src="${m.home?.logo||""}"
+                   onerror="this.src='https://via.placeholder.com/50'">
+              <div class="team-name">${h}</div>
+            </div>
+
+            <div class="score-area">
+              <div class="score">${m.homeScore??0}-${m.awayScore??0}</div>
+              ${getBadge(m)}
+            </div>
+
+            <div class="team">
+              <img src="${m.away?.logo||""}"
+                   onerror="this.src='https://via.placeholder.com/50'">
+              <div class="team-name">${a}</div>
+            </div>
+          </div>
+
+          <button class="btn btn-watch"
+            onclick='watchLive(${JSON.stringify(h)},${JSON.stringify(a)})'>
+            ▶ Watch Live
+          </button>
+        </div>`;
       })
-    }</div>`;
-
-    g[k].sort((a,b)=>
-      +["IN_PLAY","LIVE","PAUSED"].includes(b.status)-
-      +["IN_PLAY","LIVE","PAUSED"].includes(a.status)
-    ).forEach(m=>{
-
-      let h=m.home?.name||"Home",a=m.away?.name||"Away";
-
-      html+=`
-      <div class="match-card">
-        <div class="league">${m.league||"Unknown League"}</div>
-        <div class="match-date">${formatDate(m.date)}</div>
-
-        <div class="teams">
-          <div class="team">
-            <img src="${m.home?.logo||""}" onerror="this.src='https://via.placeholder.com/50'">
-            <div class="team-name">${h}</div>
-          </div>
-
-          <div class="score-area">
-            <div class="score">${m.homeScore??0}-${m.awayScore??0}</div>
-            ${getBadge(m)}
-          </div>
-
-          <div class="team">
-            <img src="${m.away?.logo||""}" onerror="this.src='https://via.placeholder.com/50'">
-            <div class="team-name">${a}</div>
-          </div>
-        </div>
-
-        <button class="btn btn-watch"
-        onclick='watchLive(${JSON.stringify(h)},${JSON.stringify(a)})'>
-        ▶ Watch Youtube Highlight</button>
-      </div>`;
     });
-  });
 
-  matches.innerHTML=html;
+  matches.innerHTML=html
 }
 
-
-// ========== FETCH DIRECTLY FROM DB + LIVE API ==========
+// ========== FETCH DIRECTLY FROM DB API ==========
 async function fastFetch(tab){
-  const c=new AbortController();
+  let c=new AbortController();
   setTimeout(()=>c.abort(),8000);
 
   if(tab==="upcoming"){
-    const [a,b]=await Promise.all([
+    let [a,b]=await Promise.all([
       fetch(`${API_MATCHES}?tab=upcoming&t=${Date.now()}`,
         {cache:"no-store",signal:c.signal}).then(r=>r.json()),
+
       fetch(`${API_LIVE}?t=${Date.now()}`,
         {cache:"no-store",signal:c.signal}).then(r=>r.json())
     ]);
 
-    let db=a.matches||[],live=b.matches||[];
+    let db=a.matches||[],
+        live=b.matches||[];
 
-    // Replace DB copies with fresh live API copies.
+    // Put live matches first and prevent duplicates
     if(live.length){
-      const ids=new Set(live.map(x=>String(x._id)));
+      let ids=new Set(live.map(x=>String(x._id)));
       db=db.filter(x=>!ids.has(String(x._id)));
-      liveMatches=live;
-      return [...live,...db];
+      return [...live,...db]
     }
 
-    liveMatches=[];
-    return db;
+    return db
   }
 
-  const r=await fetch(
+  let r=await fetch(
     `${API_MATCHES}?tab=finished&t=${Date.now()}`,
     {cache:"no-store",signal:c.signal}
   );
 
-  return (await r.json()).matches||[];
+  return (await r.json()).matches||[]
 }
-
 
 // ========== LOAD ==========
 async function loadTab(tab){
@@ -315,47 +247,38 @@ async function loadTab(tab){
   showLoading();
 
   try{
-    render(await fastFetch(tab));
+    // Fresh data only — NO localStorage
+    let fresh=await fastFetch(tab);
+    render(fresh);
   }catch(e){
     console.error("Backend error:",e);
-    matches.innerHTML='<div style="text-align:center;padding:40px;color:#888">'+
-    'Check Your Internet Connection<br><button onclick="loadTab(currentTab)" style="margin-top:10px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px">Retry</button></div>';
-  }finally{hideLoading();}
+
+    matches.innerHTML=
+      '<div style="text-align:center;padding:40px;color:#888">'+
+      'Check Your Internet Connection <br>'+
+      '<button onclick="loadTab(currentTab)" style="margin-top:10px;padding:10px 20px;background:#22c55e;border:0;border-radius:8px">Retry</button></div>';
+  }finally{
+    hideLoading()
+  }
 }
-
-
-// ========== UPDATE LIVE MINUTES LOCALLY ==========
-// No API call here.
-// This only changes the displayed minute every 30 seconds.
-setInterval(()=>{
-  if(currentTab==="upcoming"&&liveMatches.length)
-    render(liveMatches);
-},30000);
-
-
-// ========== API REFRESH ==========
-// The backend only performs a real football-data API call every 2 minutes.
-// This frontend also asks the backend for the newest cached/live result every 2 minutes.
-setInterval(()=>{
-  loadTab(currentTab);
-},120000);
-
 
 // ========== TAB SWITCH ==========
 function switchTab(tab,btn){
   currentTab=tab;
-  document.querySelectorAll(".tab").forEach(x=>x.classList.add("inactive"));
-  btn.classList.remove("inactive");
-  loadTab(tab);
-}
 
+  document.querySelectorAll(".tab")
+    .forEach(x=>x.classList.add("inactive"));
+
+  btn.classList.remove("inactive");
+  loadTab(tab)
+}
 
 // ========== START ==========
 window.onload=()=>loadTab("upcoming");
 
-/*One important point: the "updatedAt" used for local minute counting must be the time the backend received the live API result. The backend code I gave you already sets that when "format()" runs. So the frontend can keep advancing the displayed minute during the 2-minute period without making extra API calls.*/
+// Refresh directly from DB every 2 minutes
+setInterval(()=>loadTab(currentTab),120000);
 </script>
 
 </body>
 </html>
-
