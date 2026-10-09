@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create Account</title>
+<style>
+*{box-sizing:border-box;font-family: Segoe UI,sans-serif;margin:0;padding:0}
+body{background:#f5f7fb;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.card{background:white;border-radius:20px;padding:28px;width:100%;max-width:380px;box-shadow:0 10px 30px rgba(0,0,0,0.07)}
+h2{font-size:24px;color:#0a0e2e} p{font-size:13px;color:#666;margin:6px 0 18px}
+.input{width:100%;padding:14px;border-radius:12px;border:1px solid #ddd;margin:8px 0;font-size:15px}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;background:#0a0e2e;color:white;font-weight:700;font-size:15px;cursor:pointer;margin-top:10px}
+a{color:#1a5cff;text-decoration:none;font-weight:600;font-size:13px}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Create Wallet</h2>
+<p>Get your own NGN & USD dashboard in 5 seconds</p>
+<input class="input" id="email" placeholder="Email address">
+<input class="input" id="password" type="password" placeholder="Password">
+<button class="btn" onclick="signup()">Create Account →</button>
+<div style="text-align:center;margin-top:14px"><a href="loginn.html">Already have account? Login</a></div>
+</div>
+<script>
+const API = "https://raymonddomain.dev";
+async function signup(){
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  if(!email || !password) return alert("Fill all");
+
+  const res = await fetch(API+'/api/signup', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({email,password})
+  });
+
+  const data = await res.json();
+
+  if(data.error) return alert(data.error);
+  localStorage.setItem('token', data.token);
+  alert("Account created! Your Ref: "+data.referenceCode);
+  location.href='dashboard.html';
+}
+</script>
+</body>
+</html>

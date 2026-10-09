@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wallet - Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+body{background:#f5f7fb;color:#1a1a1a}
+.topbar{background:#0a0e2e;color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.topbar h2{font-size:18px}
+.badge{background:#1e2450;padding:6px 12px;border-radius:20px;font-size:12px}
+.admin-badge{background:#ff3b3b;color:white;padding:6px 12px;border-radius:20px;font-size:11px;border:none;font-weight:700;cursor:pointer;margin-left:8px}
+.container{padding:20px;max-width:500px;margin:auto}
+.card{background:white;border-radius:18px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.06);margin-bottom:18px}
+.balance-card{background:linear-gradient(135deg,#0a0e2e,#2a2f6b);color:white;border-radius:20px;padding:22px}
+.balance-card small{opacity:0.7;font-size:12px;letter-spacing:1px}
+.balance-card h1{font-size:32px;margin:8px 0}
+.row{display:flex;gap:12px;margin-top:14px}
+.mini{flex:1;background:rgba(255,255,255,0.12);border-radius:12px;padding:12px}
+.mini small{display:block;opacity:0.7;font-size:11px}
+.mini b{font-size:16px}
+.ref-box{background:#eef1ff;border:1px dashed #6c72ff;border-radius:12px;padding:12px;text-align:center;margin-top:12px}
+.ref-box b{font-size:18px;letter-spacing:2px;color:#2a2f6b}
+.section-title{font-size:14px;font-weight:700;margin:6px 2px 10px;color:#555}
+.input{width:100%;padding:14px;border-radius:12px;border:1px solid #ddd;margin:10px 0;font-size:15px}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-weight:700;font-size:15px;cursor:pointer}
+.btn-primary{background:#0a0e2e;color:white}
+.btn-outline{background:white;border:1px solid #ddd}
+.bank-info{background:#f9f9ff;border-radius:12px;padding:14px;font-size:13px;line-height:1.6;margin:10px 0}
+.tag{display:inline-block;background:#e6ffec;color:#0a7a2e;font-size:11px;padding:4px 8px;border-radius:20px;font-weight:700}
+.hidden{display:none !important}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:#f5f7fb;z-index:100;overflow:auto;padding:20px}
+.success-icon{width:70px;height:70px;background:#e6ffec;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin:20px auto}
+label{font-size:13px;font-weight:600;color:#555}
+.tx-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #f0f0f0}
+.tx-left{display:flex;gap:12px;align-items:center}
+.tx-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h2>raymonddomain</h2>
+  <div style="display:flex;align-items:center">
+    <div class="badge" id="email">...</div>
+    <button id="adminBtn" class="admin-badge hidden" onclick="location.href='admin.html'">ADMIN</button>
+  </div>
+</div>
+
+<div class="container" id="mainDashboard">
+  <div class="card balance-card">
+    <small>TOTAL NGN BALANCE</small>
+    <h1>₦<span id="ngn">0.00</span></h1>
+    <div class="row">
+      <div class="mini"><small>USD Balance</small><b>$<span id="usd">0.00</span></b></div>
+      <div class="mini"><small>Ref Code</small><b id="ref">USER----</b></div>
+    </div>
+    <div class="ref-box">Your Payment Reference<br><b id="ref2">USER----</b></div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:15px">
+    <button class="btn" style="background:#0a0e2e;color:white;flex:1" onclick="showWithdraw()">⬆️ Withdraw</button>
+    <button class="btn btn-outline" style="flex:1" onclick="loadMe()">↻ Refresh</button>
+  </div>
+
+  <div class="section-title">DEPOSIT FUNDS</div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>🇳🇬 Naira Deposit</b><span class="tag">MANUAL</span></div>
+    <div class="bank-info">
+      Bank: <b>PalmPay</b><br>
+      Account No: <b>8115614822</b><br>
+      Account Name: <b>PROGRESS SUNDAY</b><br>
+      Narration: <b id="ref3" style="color:#ff2a2a"></b> (MUST USE)
+    </div>
+    <input class="input" id="ngnAmount" type="number" placeholder="How much did you send? e.g 5000">
+    <button class="btn btn-primary" onclick="claimNGN()">I have sent NGN →</button>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>🇺🇸 USD Deposit</b><span class="tag">MANUAL</span></div>
+    <div class="bank-info">
+      Bank: <b>GeegPay</b><br>
+      USD Account: <b>REPLACE WITH YOUR GEEGPAY</b><br>
+      Reference: <b id="ref4" style="color:#ff2a2a"></b>
+    </div>
+    <input class="input" id="usdAmount" type="number" placeholder="How much USD? e.g 100">
+    <button class="btn btn-primary" style="background:#1a5cff" onclick="claimUSD()">I have sent USD →</button>
+  </div>
+
+  <!-- TRANSACTION HISTORY -->
+  <div class="section-title">TRANSACTION HISTORY</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <b>Recent Activity</b>
+      <span style="font-size:12px;color:#1a5cff;cursor:pointer" onclick="loadTransactions()">↻ Refresh</span>
+    </div>
+    <div id="txList">
+      <p style="text-align:center;color:#999;padding:20px;font-size:13px">No transactions yet</p>
+    </div>
+  </div>
+
+  <button class="btn btn-outline" onclick="logout()" style="margin-top:10px">Logout</button>
+</div>
+
+<!-- WITHDRAW PAGE -->
+<div id="withdrawPage" class="modal hidden">
+  <div style="max-width:500px;margin:auto">
+    <button onclick="hideWithdraw()" style="background:none;border:none;font-size:18px;font-weight:700">← Back to Dashboard</button>
+    <h2 style="margin:15px 0">Withdraw Funds</h2>
+    <div class="card">
+      <label>Withdrawal Type</label>
+      <select id="wType" class="input">
+        <option value="ngn">NGN → Nigerian Bank</option>
+        <option value="usd">USD → GeegPay / Wise</option>
+      </select>
+      <label>Amount to Withdraw</label>
+      <input id="wAmount" class="input" type="number" placeholder="e.g 5000">
+      <label>Bank Name / Platform</label>
+      <input id="wBank" class="input" placeholder="e.g GTB, Opay, PalmPay, GeegPay">
+      <label>Account Number</label>
+      <input id="wNumber" class="input" placeholder="e.g 0123456789">
+      <label>Account Name</label>
+      <input id="wName" class="input" placeholder="e.g Raymond O...">
+      <button class="btn btn-primary" style="margin-top:10px" onclick="submitWithdraw()">Confirm Withdraw →</button>
+      <p style="font-size:11px;color:#888;text-align:center;margin-top:10px">Funds will be deducted immediately and held pending approval</p>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS PAGE -->
+<div id="successPage" class="modal hidden">
+  <div style="max-width:400px;margin:60px auto;text-align:center" class="card">
+    <div class="success-icon">✓</div>
+    <h2>Withdrawal Request Sent!</h2>
+    <p style="font-size:14px;color:#666;margin:12px 0;line-height:1.6">Your withdrawal of <b id="successAmount"></b> will be approved within <b>10 minutes - 2 hours</b>. You will receive funds in your provided account.<br><br>Thank you for using raymonddomain.</p>
+    <button class="btn btn-primary" onclick="hideSuccess()">Back to Dashboard</button>
+  </div>
+</div>
+
+<script>
+const API = "https://raymonddomain.dev";
+const token = localStorage.getItem('token');
+if(!token) location.href='login.html';
+
+async function loadMe(){
+  const res = await fetch(API+'/api/me', { headers: { Authorization: 'Bearer '+token } });
+  const data = await res.json();
+  if(data.error){ localStorage.clear(); location.href='login.html'; return; }
+  document.getElementById('email').innerText = data.email.split('@')[0];
+  document.getElementById('ref').innerText = data.referenceCode;
+  document.getElementById('ref2').innerText = data.referenceCode;
+  document.getElementById('ref3').innerText = data.referenceCode;
+  document.getElementById('ref4').innerText = data.referenceCode;
+  document.getElementById('ngn').innerText = Number(data.ngnBalance).toLocaleString();
+  document.getElementById('usd').innerText = Number(data.usdBalance).toLocaleString();
+
+  // SHOW ADMIN BUTTON ONLY FOR YOU
+  if(data.email === "letswintrade@gmail.com"){
+    document.getElementById('adminBtn').classList.remove('hidden');
+  }
+
+  loadTransactions();
+}
+loadMe();
+
+async function loadTransactions(){
+  const res = await fetch(API+'/api/transactions', { headers: { Authorization: 'Bearer '+token } });
+  const data = await res.json();
+  
+  if(!data || data.length === 0){
+    document.getElementById('txList').innerHTML = '<p style="text-align:center;color:#999;padding:20px;font-size:13px">No transactions yet</p>';
+    return;
+  }
+
+  document.getElementById('txList').innerHTML = data.map(t => {
+    const isWithdraw = t.type.includes('withdraw');
+    const isNGN = t.type.includes('ngn');
+    const icon = isWithdraw ? '⬆️' : '⬇️';
+    const bg = isWithdraw ? '#ffe6e6' : '#e6ffec';
+    const color = isWithdraw ? '#ff3b3b' : '#0a7a2e';
+    const date = new Date(t.createdAt);
+    const dateStr = date.toLocaleDateString();
+    const timeStr = date.toLocaleTimeString();
+
+    return `
+      <div class="tx-item">
+        <div class="tx-left">
+          <div class="tx-icon" style="background:${bg}">${icon}</div>
+          <div>
+            <b style="font-size:13px">${t.type.replace('-',' ').toUpperCase()}</b><br>
+            <small style="color:#888; font-size:11px">${dateStr} • ${timeStr}</small><br>
+            <small style="color:#aaa; font-size:11px">${t.details || ''} • ${t.status}</small>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <b style="color:${color}; font-size:14px">${isWithdraw ? '-' : '+'}${isNGN ? '₦' : '$'}${Number(t.amount).toLocaleString()}</b>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function claimNGN(){
+  const amount = document.getElementById('ngnAmount').value;
+  if(!amount) return alert("Enter amount");
+  await fetch(API+'/api/deposit/claim-ngn', { method:'POST', headers: { 'Content-Type':'application/json', Authorization: 'Bearer '+token }, body: JSON.stringify({ amount }) });
+  alert("✅ Claim sent! Admin will approve in 2 mins");
+  document.getElementById('ngnAmount').value='';
+  loadTransactions();
+}
+
+async function claimUSD(){
+  const amount = document.getElementById('usdAmount').value;
+  if(!amount) return alert("Enter amount");
+  await fetch(API+'/api/deposit/claim-usd', { method:'POST', headers: { 'Content-Type':'application/json', Authorization: 'Bearer '+token }, body: JSON.stringify({ amount }) });
+  alert("✅ Claim sent! Admin will approve");
+  document.getElementById('usdAmount').value='';
+  loadTransactions();
+}
+
+function showWithdraw(){ document.getElementById('withdrawPage').classList.remove('hidden'); }
+function hideWithdraw(){ document.getElementById('withdrawPage').classList.add('hidden'); }
+function hideSuccess(){ document.getElementById('successPage').classList.add('hidden'); loadMe(); }
+
+async function submitWithdraw(){
+  const type = document.getElementById('wType').value;
+  const amount = Number(document.getElementById('wAmount').value);
+  const bankName = document.getElementById('wBank').value;
+  const accountNumber = document.getElementById('wNumber').value;
+  const accountName = document.getElementById('wName').value;
+
+  if(!amount || !bankName || !accountNumber || !accountName) return alert("Fill all fields");
+
+  // CHECK BALANCE BEFORE SEND
+  const ngnBal = Number(document.getElementById('ngn').innerText.replace(/,/g,''));
+  const usdBal = Number(document.getElementById('usd').innerText.replace(/,/g,''));
+
+  if(type==='ngn' && amount > ngnBal){
+    return alert("❌ Insufficient funds! Your NGN balance is ₦"+ngnBal.toLocaleString());
+  }
+  if(type==='usd' && amount > usdBal){
+    return alert("❌ Insufficient funds! Your USD balance is $"+usdBal.toLocaleString());
+  }
+
+  const res = await fetch(API+'/api/withdraw/request', { 
+    method:'POST', 
+    headers: { 'Content-Type':'application/json', Authorization: 'Bearer '+token }, 
+    body: JSON.stringify({ type, amount, bankName, accountNumber, accountName }) 
+  });
+  
+  const result = await res.json();
+  if(result.error) return alert(result.error);
+
+  document.getElementById('successAmount').innerText = (type==='ngn'?'₦':'$')+amount.toLocaleString();
+  document.getElementById('withdrawPage').classList.add('hidden');
+  document.getElementById('successPage').classList.remove('hidden');
+  
+  document.getElementById('wAmount').value=''; 
+  document.getElementById('wBank').value=''; 
+  document.getElementById('wNumber').value=''; 
+  document.getElementById('wName').value='';
+}
+
+function logout(){ localStorage.clear(); location.href='login.html'; }
+</script>
+</body>
+</html>

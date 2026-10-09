@@ -10,15 +10,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+const port = 5000
+const url = process.env.MONGO_URL
+
 app.use((req, res, next) => {
    console.log(`  ${req.method}  ${req.url}`);
    next();
 })
 
-const port = 5000
-const JWT_SECRET = "ihfghjkdjhvhjdhvbnfkerufyhijihekjdfenechvbejy";
+
+const NEWJWT_SECRET = "ihfghjkdjhvhjdhvbnfkerufyhijihekjdfenechvbejy";
 const ADMIN_PASSWORD = "123456";
-const url = process.env.MONGO_URL
+
 
 mongoose.connect(url)
 .then(() => console.log("MongoDB Connected"))
@@ -80,7 +84,7 @@ app.post('/api/signup', async (req,res)=>{
   const hashed = await bcrypt.hash(password, 10);
   const user = await NewUser.create({ email, password: hashed, referenceCode: ref });
   
-  const token = jwt.sign({ id: user._id }, JWT_SECRET);
+  const token = jwt.sign({ id: user._id }, NEWJWT_SECRET);
   res.json({ token, referenceCode: ref, email });
 });
 
@@ -90,7 +94,7 @@ app.post('/api/login', async (req,res)=>{
   if(!user) return res.json({error: "No user"});
   const ok = await bcrypt.compare(password, user.password);
   if(!ok) return res.json({error: "Wrong password"});
-  const token = jwt.sign({ id: user._id }, JWT_SECRET);
+  const token = jwt.sign({ id: user._id }, NEWJWT_SECRET);
   res.json({ token, referenceCode: user.referenceCode, email });
 });
 
@@ -98,7 +102,7 @@ function authMiddleware(req,res,next){
   const token = req.headers.authorization?.split(' ')[1];
   if(!token) return res.json({error: "No token"});
   try{
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, NEWJWT_SECRET);
     req.userId = decoded.id;
     next();
   }catch{ 

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Dashboard - Raymond</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #f5f7fb;
+  padding: 20px;
+}
+
+.container {
+  max-width: 650px;
+  margin: auto;
+}
+
+.card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  margin: 14px 0;
+}
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #0a0e2e;
+  color: white;
+}
+
+.btn-green {
+  background: #0a7a2e;
+  color: white;
+  border-radius: 10px;
+  padding: 12px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 1;
+}
+
+.btn-red {
+  background: #ff3b3b;
+  color: white;
+  border-radius: 10px;
+  padding: 12px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 1;
+}
+
+.input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 30px 0 10px;
+  color: #0a0e2e;
+}
+
+.detail-box {
+  background: #f9f9ff;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-ngn {
+  background: #e6ffec;
+  color: #0a7a2e;
+}
+
+.badge-usd {
+  background: #e6f0ff;
+  color: #1a5cff;
+}
+
+.topbar {
+  background: #0a0e2e;
+  color: white;
+  padding: 18px 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- LOGIN DIV -->
+  <div id="loginDiv">
+    <div class="topbar">
+      <h2>Admin Panel</h2>
+      <span style="font-size:12px; opacity:0.7">Raymond Domain</span>
+    </div>
+
+    <div class="card" style="text-align:center">
+      <h3>Enter Admin Password</h3>
+      <p style="font-size:13px; color:#666; margin:8px 0 15px">Only you can access this page</p>
+      
+      <input 
+        id="pass" 
+        type="password" 
+        class="input" 
+        placeholder="Enter admin password"
+      >
+      
+      <button 
+        onclick="login()" 
+        class="btn btn-primary" 
+        style="margin-top:15px"
+      >
+        Unlock Dashboard →
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN DIV -->
+  <div id="mainDiv" style="display:none">
+
+    <div class="topbar">
+      <h2>Admin Dashboard</h2>
+      <button onclick="location.reload()" style="background:#1e2450; color:white; border:none; padding:8px 14px; border-radius:20px">Logout</button>
+    </div>
+
+    <!-- DEPOSITS SECTION -->
+    <div class="section-title">📥 Pending Deposits</div>
+    
+    <button onclick="loadDeposits()" class="btn btn-primary" style="background:white; color:#0a0e2e; border:1px solid #ddd; margin-bottom:10px">
+      ↻ Refresh Deposits
+    </button>
+
+    <div id="depositList">
+      <div class="card" style="text-align:center; color:#999">
+        Loading deposits...
+      </div>
+    </div>
+
+    <!-- WITHDRAWALS SECTION -->
+    <div class="section-title">💸 Withdrawal Requests</div>
+    
+    <button onclick="loadWithdraw()" class="btn btn-primary" style="background:white; color:#0a0e2e; border:1px solid #ddd; margin-bottom:10px">
+      ↻ Refresh Withdrawals
+    </button>
+
+    <div id="withdrawList">
+      <div class="card" style="text-align:center; color:#999">
+        Loading withdrawals...
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const API = "https://raymonddomain.dev";
+
+// ================= LOGIN =================
+function login() {
+  const password = document.getElementById('pass').value;
+
+  fetch(API + '/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('loginDiv').style.display = 'none';
+      document.getElementById('mainDiv').style.display = 'block';
+      loadDeposits();
+      loadWithdraw();
+    } else {
+      alert("Wrong admin password!");
+    }
+  });
+}
+
+// ================= DEPOSITS =================
+async function loadDeposits() {
+  const res = await fetch(API + '/api/admin/pending-deposits');
+  const data = await res.json();
+
+  if (data.length === 0) {
+    document.getElementById('depositList').innerHTML = `
+      <div class="card" style="text-align:center; opacity:0.6">
+        No pending deposits
+      </div>
+    `;
+    return;
+  }
+
+  document.getElementById('depositList').innerHTML = data.map(p => `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <b>${p.referenceCode}</b>
+        <span class="badge ${p.type === 'ngn' ? 'badge-ngn' : 'badge-usd'}">
+          ${p.type.toUpperCase()}
+        </span>
+      </div>
+
+      <div style="margin:8px 0">
+        <small style="color:#888">${p.email || 'No email'}</small><br>
+        <span style="font-size:20px; font-weight:800">
+          ${p.type === 'ngn' ? '₦' : '$'}${p.amount}
+        </span>
+      </div>
+
+      <button onclick="approveDeposit('${p.referenceCode}', ${p.amount}, '${p.type}')" class="btn btn-primary">
+        APPROVE ${p.type.toUpperCase()} →
+      </button>
+    </div>
+  `).join('');
+}
+
+async function approveDeposit(ref, amount, type) {
+  const check = confirm(`Did you see ₦${amount} or $${amount} in your PalmPay/GeegPay with ref ${ref}?`);
+
+  if (!check) return;
+
+  const url = type === 'ngn' ? '/api/admin/credit-ngn' : '/api/admin/credit-usd';
+
+  await fetch(API + url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ referenceCode: ref, amount })
+  });
+
+  alert("✅ Approved!");
+  loadDeposits();
+}
+
+// ================= WITHDRAWALS =================
+async function loadWithdraw() {
+  const res = await fetch(API + '/api/admin/withdrawals');
+  const data = await res.json();
+
+  if (data.length === 0) {
+    document.getElementById('withdrawList').innerHTML = `
+      <div class="card" style="text-align:center; opacity:0.6">
+        No pending withdrawals
+      </div>
+    `;
+    return;
+  }
+
+  document.getElementById('withdrawList').innerHTML = data.map(w => `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between">
+        <b>${w.referenceCode}</b>
+        <span class="badge ${w.type === 'ngn' ? 'badge-ngn' : 'badge-usd'}">
+          ${w.type.toUpperCase()}
+        </span>
+      </div>
+
+      <small style="color:#888">${w.email}</small>
+
+      <div style="font-size:22px; font-weight:800; margin:8px 0">
+        ${w.type === 'ngn' ? '₦' : '$'}${w.amount}
+      </div>
+
+      <div class="detail-box">
+        Bank Name: <b>${w.bankName}</b><br>
+        Account No: <b>${w.accountNumber}</b><br>
+        Account Name: <b>${w.accountName}</b><br>
+        Date: ${new Date(w.createdAt).toLocaleString()}
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px">
+        <button onclick="approveW('${w._id}')" class="btn-green">
+          I HAVE SENT MONEY ✓
+        </button>
+        
+        <button onclick="rejectW('${w._id}')" class="btn-red">
+          Reject & Refund
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function approveW(id) {
+  const check = confirm("Confirm you have sent the money to user manually via PalmPay/GeegPay?");
+
+  if (!check) return;
+
+  await fetch(API + '/api/admin/approve-withdraw', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id })
+  });
+
+  alert("✅ Withdrawal Approved!");
+  loadWithdraw();
+}
+
+async function rejectW(id) {
+  const check = confirm("Reject this withdrawal and refund user balance?");
+
+  if (!check) return;
+
+  await fetch(API + '/api/admin/reject-withdraw', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id })
+  });
+
+  alert("✅ Refunded to user");
+  loadWithdraw();
+}
+</script>
+
+</body>
+</html>
