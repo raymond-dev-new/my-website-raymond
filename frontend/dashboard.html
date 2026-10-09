@@ -141,7 +141,7 @@ label{font-size:13px;font-weight:600;color:#555}
 <script>
 const API = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
-if(!token) location.href='login.html';
+if(!token) location.href='loginn.html';
 
 async function loadMe(){
   const res = await fetch(API+'/api/me', { headers: { Authorization: 'Bearer '+token } });
