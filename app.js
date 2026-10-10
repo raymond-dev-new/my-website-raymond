@@ -40,8 +40,12 @@ app.use(bordyparser.json()); // for metadata
 app.use(express.json({ limit: '50mb' })); // important for base64
  app.use(express.static(path.join(__dirname, 'frontend')))
 
+  app.use((req, res, next) => {
+    console.log(`  ${req.method}  ${req.url}`);
+    next();
+ })
 
- //start her sdfyuiopiuytrewrtyuiopoiuytretkjhgf
+ //start here sdfyuiopiuytrewrtyuiopoiuytretkjhgf
 
     // 1. CONNECT MONGODB with Mongoose
 mongoose.connect(url)
@@ -305,7 +309,7 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
    // ========== CONFIG ==========
    //1f6245b3640a4f8dbdcd4ef044526b30
    
-   const API_KEY="04dfe64c981e43e88c16b3fd4b0003bc"; // Your football-data.org free key
+   const API_KEY="04dfe64c981e43e88c16b3fd4b0003bc"; // Your football-data.org free key - 10 req/min limit
 const API_URL="https://api.football-data.org/v4";
 
 // ========== ANTI-BAN SYSTEM - MAIN PROTECTION FOR 1000 USERS ==========
@@ -319,23 +323,24 @@ let isSyncing=false;
 // WITHOUT cache: 1000 API calls in 1 minute = you get banned instantly (429 error).
 // WITH this cache: First user triggers 1 real API call, we save result + time. For next 60 seconds,
 // we serve the saved result from server RAM to the other 999 users. So 1000 users = 1 API call/min = SAFE.
-let liveCache={data:[],time:0};
+let liveCache={data:[], time:0};
 
 // visitorCache = ANTI-SPAM for single IP.
 // If 1 person refreshes page 20 times in 10 seconds, without this = 20 API calls.
 // With this: same IP within 10 seconds gets cached data immediately.
 let visitorCache=new Map();
 
-// syncCache = PROTECTION FOR /api/sync - 1hr cooldown so users can't spam sync and ban you.
-// FIXED: Defined only once at top - duplicate at bottom crashed app.
+// syncCache = PROTECTION FOR /api/sync - 2min cooldown so users can't spam sync and ban you.
 let syncCache={time:0,data:null};
 
 // ========== DATABASE MODEL ==========
 // We save matches in MongoDB so we NEVER call football-data for normal page loads.
 // Upcoming/Finished tabs read from this DB = 0 API calls = can handle unlimited users.
+// FIXED: Added watDate field - saves Lagos date (YYYY-MM-DD) so 10th night games don't shift to 11th
 const Match=mongoose.models.Match||mongoose.model("Match",new mongoose.Schema({
   _id:String,
-  date:Date,
+  date:Date, // UTC date from API
+  watDate:String, // FIXED: Lagos date string e.g. "2026-10-10" - this fixes today disappearing
   status:String,
   minute:Number,
   minuteText:String,
@@ -366,10 +371,15 @@ async function api(endpoint,params={}){
 }
 
 // ========== HELPER: FORMAT API DATA FOR OUR DB ==========
+// FIXED: Now saves watDate = Lagos date so grouping in frontend uses Lagos date
 function format(m){
+  const utc=new Date(m.utcDate);
+  // FIXED: Convert UTC to Lagos date string. Example: 2026-10-10T23:00Z was shifting to 11th. watDate fixes it.
+  const watDate=utc.toLocaleDateString("en-CA",{timeZone:"Africa/Lagos"});
   return{
     _id:String(m.id),
-    date:new Date(m.utcDate),
+    date:utc, // keep UTC for sorting
+    watDate:watDate, // FIXED: keep Lagos YYYY-MM-DD for display grouping - fixes today issue
     status:m.status,
     minute:m.minute||null,
     minuteText:m.status==="IN_PLAY"?`${m.minute||0}'`:
@@ -392,7 +402,7 @@ function format(m){
 
 // ========== CORE: SYNC 9 DAYS BACK + 9 DAYS FRONT TO DB ==========
 async function fullSyncToDB(){
-  if(isSyncing)return{synced:0,total:0};
+  if(isSyncing)return{synced:0,total:0}; // Lock check
   isSyncing=true;
   try{
     if(!process.env.MONGO_URL)throw Error("MONGO_URL missing in env vars");
@@ -403,7 +413,7 @@ async function fullSyncToDB(){
       dateFrom:getDate(-9),
       dateTo:getDate()
     });
-    await new Promise(r=>setTimeout(r,6500));
+    await new Promise(r=>setTimeout(r,6500)); // Wait 6.5 sec to avoid 10 req/min ban
     const future=await api("/matches",{
       dateFrom:getDate(1),
       dateTo:getDate(9)
@@ -430,57 +440,32 @@ async function fullSyncToDB(){
 }
 
 // ========== CORE: GET MATCHES FROM DB - FIXED TODAY ISSUE ==========
-// FIXED: Wide range -2 days to +9 days so today 10th Oct never disappears due to timezone
 async function getMatches(type){
   let filter={};
-
   const now = new Date();
-  const startPast = new Date();
-  startPast.setDate(now.getDate() - 2);
-  startPast.setHours(0,0,0,0);
-
-  const endFuture = new Date();
-  endFuture.setDate(now.getDate() + 9);
-  endFuture.setHours(23,59,59,999);
-
-  const start9DaysAgo = new Date();
-  start9DaysAgo.setDate(now.getDate() - 9);
-  start9DaysAgo.setHours(0,0,0,0);
-
-  const endTomorrow = new Date();
-  endTomorrow.setDate(now.getDate() + 1);
-  endTomorrow.setHours(23,59,59,999);
+  const startPast = new Date(); startPast.setDate(now.getDate() - 2); startPast.setHours(0,0,0,0);
+  const endFuture = new Date(); endFuture.setDate(now.getDate() + 9); endFuture.setHours(23,59,59,999);
+  const start9DaysAgo = new Date(); start9DaysAgo.setDate(now.getDate() - 9); start9DaysAgo.setHours(0,0,0,0);
+  const endTomorrow = new Date(); endTomorrow.setDate(now.getDate() + 1); endTomorrow.setHours(23,59,59,999);
 
   if(type==="upcoming"){
-    filter={
-      date:{$gte:startPast,$lte:endFuture},
-      status:{$in:["SCHEDULED","TIMED","IN_PLAY","LIVE","PAUSED"]}
-    };
-  }else if(type==="finished"){
-    filter={
-      date:{$gte:start9DaysAgo,$lte:endTomorrow},
-      status:{$in:["FINISHED","AWARDED"]}
-    };
+    filter={ date:{$gte:startPast,$lte:endFuture}, status:{$in:["SCHEDULED","TIMED","IN_PLAY","LIVE","PAUSED"]} };
+  }else{
+    filter={ date:{$gte:start9DaysAgo,$lte:endTomorrow}, status:{$in:["FINISHED","AWARDED"]} };
   }
-
   const matches=await Match.find(filter).lean();
-  if(type==="finished"){
-    return matches.sort((a,b)=>new Date(b.date)-new Date(a.date));
-  }
+  if(type==="finished"){ return matches.sort((a,b)=>new Date(b.date)-new Date(a.date)); }
   return matches.sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
 
 // ========== ROUTE 1: /api/matches ==========
 app.get("/api/matches",async(req,res)=>{
   try{
-    if(mongoose.connection.readyState!==1)
-      await mongoose.connect(process.env.MONGO_URL);
+    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL);
     res.set("Cache-Control","no-store");
     const matches=await getMatches(req.query.tab||"upcoming");
     res.json({success:true,matches});
-  }catch(e){
-    res.json({success:false,matches:[],error:e.message});
-  }
+  }catch(e){ res.json({success:false,matches:[],error:e.message}); }
 });
 
 // ========== ROUTE 2: /api/live ==========
@@ -493,18 +478,16 @@ app.get("/api/live",async(req,res)=>{
       return res.json({success:true,matches:liveCache.data,cached:true});
     }
     visitorCache.set(ip,now);
-    if(now-liveCache.time<60000&&liveCache.data){
+    if(now-liveCache.time<60000&&liveCache.data.length>0){
       return res.json({success:true,matches:liveCache.data,cached:true});
     }
     const today=await api("/matches",{dateFrom:getDate(),dateTo:getDate()});
     const live=(today.matches||[]).filter(m=>["IN_PLAY","PAUSED","LIVE"].includes(m.status));
     const formatted=live.map(format);
-    liveCache={data:formatted,time:now};
+    liveCache={data:formatted, time:now};
     res.json({success:true,matches:formatted,cached:false});
   }catch(e){
-    if(liveCache.data.length>0){
-      return res.json({success:true,matches:liveCache.data,cached:true});
-    }
+    if(liveCache.data.length>0){ return res.json({success:true,matches:liveCache.data,cached:true}); }
     res.json({success:false,matches:[],error:e.message});
   }
 });
@@ -512,10 +495,9 @@ app.get("/api/live",async(req,res)=>{
 // ========== ROUTE 3: /api/sync ==========
 app.get("/api/sync",async(req,res)=>{
   const now=Date.now();
-  const COOLDOWN = 2*60*1000; // 2 minutes
+  const COOLDOWN = 2*60*1000;
   try{
-    if(mongoose.connection.readyState!==1)
-      await mongoose.connect(process.env.MONGO_URL);
+    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL);
     if(now-syncCache.time<COOLDOWN && syncCache.data){
       return res.json({success:true,...syncCache.data,cached:true,message:"Sync cooldown 2min - RAM cached"});
     }
@@ -523,15 +505,11 @@ app.get("/api/sync",async(req,res)=>{
     if(last && now - new Date(last.updatedAt).getTime() < COOLDOWN){
       return res.json({success:true,cached:true,total: await Match.countDocuments(),message:"Sync cooldown 2min - DB cached"});
     }
-    if(isSyncing){
-      return res.json({success:false,cached:true,message:"Sync already running"});
-    }
+    if(isSyncing){ return res.json({success:false,cached:true,message:"Sync already running"}); }
     const r=await fullSyncToDB();
     syncCache={time:Date.now(),data:r};
     return res.json({success:true,...r,cached:false,timeWAT:new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"}),message:`Synced ${r.synced} matches to DB`});
-  }catch(e){
-    return res.json({success:false,error:e.message});
-  }
+  }catch(e){ return res.json({success:false,error:e.message}); }
 });
 
 // matach end here kjhgfdghjkjhgfcghjkjhgf
@@ -764,12 +742,6 @@ app.delete('/api/delete-media/:id', async (req, res) => {
 
 
 //online banking iugfghdjhgcghsuhgcgdhsuhg
-
-
- app.use((req, res, next) => {
-    console.log(`  ${req.method}  ${req.url}`);
-    next();
- })
  
  
  const NEWJWT_SECRET = "ihfghjkdjhvhjdhvbnfkerufyhijihekjdfenechvbejy";
