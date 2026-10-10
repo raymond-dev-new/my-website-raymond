@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer-when-downgrade" />
 <title>Live Football</title>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
 body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
@@ -32,7 +30,7 @@ body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
 .btn{width:100%;padding:12px;margin-top:10px;border:0;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer}
 .btn-watch{background:#6111e2;color:#fff}
 .loading-wrap{text-align:center;padding:50px 0}
-.spinner{width:40px;height:40px;border:4px solid #222;border-top:4px solid #22c55e;border-radius:50%;animation:spin .8s linear infinite;margin:auto auto 15px}
+.spinner{width:40px;height:40px;border:4px solid #222;border-top:4px solid #22c55e;border-radius:50%;animation:spin.8s linear infinite;margin:auto auto 15px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{color:#888;font-size:14px}
 .top-loader{height:3px;background:#22c55e;width:0;animation:loadbar 1.5s infinite;position:fixed;top:0;left:0;z-index:999}
@@ -41,22 +39,19 @@ body{background:#000;color:#fff;padding:15px}.container{width:80%;margin:auto}
 @media(max-width:600px){.container{width:100%}}
 </style>
 </head>
-
 <body>
-
   <script>
 (function(lfin){
 var d = document,
     s = d.createElement('script'),
     l = d.currentScript || d.scripts[d.scripts.length - 1];
 s.settings = lfin || {};
-s.src = "\/\/quarrelsomebitter.com\/b.X\/VRsLdKGFlp0RYYWMcf\/ue\/mD9puCZCUtlbktP\/TAc\/0rMkzagv1_OpDsE\/t_NtzWQVzvOODrUt4ENuQo";
+s.src = "\/\/quarrelsomebitter.com\/b.X\/VRsLdKGFl0RYYWMcf\/ue\/mD9puCZCUtlbktP\/TAc\/0rMkzagv1_OpDsE\/t_NtzWQVzvOODrUt4ENuQo";
 s.async = true;
 s.referrerPolicy = 'no-referrer-when-downgrade';
 l.parentNode.insertBefore(s, l);
 })({})
 </script>
-
 <!--video slider-->
 <script>
 (function(pngej){
@@ -64,24 +59,19 @@ var d = document,
     s = d.createElement('script'),
     l = d.currentScript || d.scripts[d.scripts.length - 1];
 s.settings = pngej || {};
-s.src = "\/\/quarrelsomebitter.com\/bbXpVQs\/d.Gxlj0JY_Wacj\/AeTm\/9\/uJZXUxlOkvPoTTcN0\/MLzvgP2\/NKDOUWtqN\/zcQGzcOlDqYs0rOGQh";
+s.src = "\/\/quarrelsomebitter.com\/bbXpVQs\/d.Gxlj0JY_Wacj0Y_Wacj\/AeTm\/9\/uJZXUxlOkvPoTTcN0\/MLzvgP2\/NKDOUWtqN\/zcQGzcOlDqYs0rOGQh";
 s.async = true;
 s.referrerPolicy = 'no-referrer-when-downgrade';
 l.parentNode.insertBefore(s, l);
 })({})
 </script>
-
-
 <div class="top-loader" id="topLoader" style="display:none"></div>
-
 <div class="container">
 <h1 class="header-text">Live Football ⚽</h1>
-
 <div class="tabs">
 <button class="tab upcoming" onclick="switchTab('upcoming',this)">Upcoming & Live</button>
 <button class="tab finished inactive" onclick="switchTab('finished',this)">Finished</button>
 </div>
-
 <div class="break-notice">
 <div class="break-title">⚠️ Big Leagues on International Break</div>
 <div class="break-text">
@@ -96,11 +86,9 @@ Real Madrid vs Villarreal, Barcelona vs Getafe.<br>
 Click on finish tab to check past match
 </div>
 </div>
-
 <!-- Matches come directly from the database API -->
 <div id="matches"></div>
 </div>
-
 <script>
 // ========== BACKEND API ==========
 const API_BASE="https://raymonddomain.dev",
@@ -114,7 +102,6 @@ function showLoading(){
   topLoader.style.display="block";
   matches.innerHTML='<div class="loading-wrap"><div class="spinner"></div><div class="loading-text">Loading matches...</div></div>'
 }
-
 function hideLoading(){topLoader.style.display="none"}
 
 // ========== WATCH LIVE ==========
@@ -135,13 +122,11 @@ function formatDate(d){
 function getBadge(m){
   if(["IN_PLAY","LIVE","1H","2H"].includes(m.status))
     return `<span class="badge live">${m.minute?m.minute+"'":"LIVE"}</span>`;
-
   if(["PAUSED","HT"].includes(m.status))
     return '<span class="badge" style="background:#eab308;color:#000">HALF TIME</span>';
-
   if(["FT","FINISHED"].includes(m.status))
     return '<span class="badge" style="background:#16a34a">FINISH</span>';
-
+  // FIX: Show time for TIMED/SCHEDULED/TODAY matches
   return `<span class="badge">${new Date(m.date).toLocaleTimeString(
     "en-GB",{hour:"2-digit",minute:"2-digit"}
   )}</span>`
@@ -157,19 +142,19 @@ function render(ms){
 
   let g={};
   ms.forEach(m=>{
+    // FIX: Use toDateString for proper TODAY grouping
     let d=new Date(m.date),
-        k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        k=d.toDateString();
     (g[k]??=[]).push(m)
   });
 
-  
   let html="";
 
   Object.keys(g)
-    .sort((a,b)=>currentTab==="finished"
-      ?new Date(g[b][0].date)-new Date(g[a][0].date)
+   .sort((a,b)=>currentTab==="finished"
+     ?new Date(g[b][0].date)-new Date(g[a][0].date)
       :new Date(g[a][0].date)-new Date(g[b][0].date))
-    .forEach(k=>{
+   .forEach(k=>{
 
       html+=`<div class="date-header">📅 ${
         new Date(g[k][0].date).toLocaleDateString("en-GB",{
@@ -185,30 +170,30 @@ function render(ms){
         let h=m.home?.name||"Home",
             a=m.away?.name||"Away";
 
+        // FIX: If match not started today, show VS not 0-0
+        let isTodayNotStarted = ["TIMED","SCHEDULED"].includes(m.status) || (m.homeScore==null && m.awayScore==null);
+        let scoreText = isTodayNotStarted? "VS" : `${m.homeScore??0}-${m.awayScore??0}`;
+
         html+=`
         <div class="match-card">
           <div class="league">${m.league||"Unknown League"}</div>
           <div class="match-date">${formatDate(m.date)}</div>
-
           <div class="teams">
             <div class="team">
               <img src="${m.home?.logo||""}"
                    onerror="this.src='https://via.placeholder.com/50'">
               <div class="team-name">${h}</div>
             </div>
-
             <div class="score-area">
-              <div class="score">${m.homeScore??0}-${m.awayScore??0}</div>
+              <div class="score">${scoreText}</div>
               ${getBadge(m)}
             </div>
-
             <div class="team">
               <img src="${m.away?.logo||""}"
                    onerror="this.src='https://via.placeholder.com/50'">
               <div class="team-name">${a}</div>
             </div>
           </div>
-
           <button class="btn btn-watch"
             onclick='watchLive(${JSON.stringify(h)},${JSON.stringify(a)})'>
             ▶ Watch Youtube Highlight
@@ -216,7 +201,6 @@ function render(ms){
         </div>`;
       })
     });
-
   matches.innerHTML=html
 }
 
@@ -229,29 +213,23 @@ async function fastFetch(tab){
     let [a,b]=await Promise.all([
       fetch(`${API_MATCHES}?tab=upcoming&t=${Date.now()}`,
         {cache:"no-store",signal:c.signal}).then(r=>r.json()),
-
       fetch(`${API_LIVE}?t=${Date.now()}`,
         {cache:"no-store",signal:c.signal}).then(r=>r.json())
     ]);
-
     let db=a.matches||[],
         live=b.matches||[];
-
     // Put live matches first and prevent duplicates
     if(live.length){
       let ids=new Set(live.map(x=>String(x._id)));
       db=db.filter(x=>!ids.has(String(x._id)));
       return [...live,...db]
     }
-
     return db
   }
-
   let r=await fetch(
     `${API_MATCHES}?tab=finished&t=${Date.now()}`,
     {cache:"no-store",signal:c.signal}
   );
-
   return (await r.json()).matches||[]
 }
 
@@ -259,14 +237,12 @@ async function fastFetch(tab){
 async function loadTab(tab){
   currentTab=tab;
   showLoading();
-
   try{
     // Fresh data only — NO localStorage
     let fresh=await fastFetch(tab);
     render(fresh);
   }catch(e){
     console.error("Backend error:",e);
-
     matches.innerHTML=
       '<div style="text-align:center;padding:40px;color:#888">'+
       'Check Your Internet Connection <br>'+
@@ -279,10 +255,8 @@ async function loadTab(tab){
 // ========== TAB SWITCH ==========
 function switchTab(tab,btn){
   currentTab=tab;
-
   document.querySelectorAll(".tab")
-    .forEach(x=>x.classList.add("inactive"));
-
+   .forEach(x=>x.classList.add("inactive"));
   btn.classList.remove("inactive");
   loadTab(tab)
 }
@@ -293,6 +267,5 @@ window.onload=()=>loadTab("upcoming");
 // Refresh directly from DB every 8 minutes
 setInterval(()=>loadTab(currentTab),480000);
 </script>
-
 </body>
 </html>

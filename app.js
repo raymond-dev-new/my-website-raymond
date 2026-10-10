@@ -303,7 +303,9 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 // new oiufdfgyuiopoiuytrertyuiopoiuytfdfghjk
 
    // ========== CONFIG ==========
-const API_KEY="1f6245b3640a4f8dbdcd4ef044526b30"; // Your football-data.org free key
+   //1f6245b3640a4f8dbdcd4ef044526b30
+   
+   const API_KEY="04dfe64c981e43e88c16b3fd4b0003bc"; // Your football-data.org free key
 const API_URL="https://api.football-data.org/v4";
 
 // ========== ANTI-BAN SYSTEM - MAIN PROTECTION FOR 1000 USERS ==========
@@ -328,7 +330,6 @@ let visitorCache=new Map();
 // FIXED: Defined only once at top - duplicate at bottom crashed app.
 let syncCache={time:0,data:null};
 
-
 // ========== DATABASE MODEL ==========
 // We save matches in MongoDB so we NEVER call football-data for normal page loads.
 // Upcoming/Finished tabs read from this DB = 0 API calls = can handle unlimited users.
@@ -346,7 +347,6 @@ const Match=mongoose.models.Match||mongoose.model("Match",new mongoose.Schema({
   updatedAt:Date
 }));
 
-
 // ========== HELPER: GET DATE STRING ==========
 // Returns YYYY-MM-DD for today +/- n days. Used to ask football-data for range.
 function getDate(n=0){
@@ -355,19 +355,15 @@ function getDate(n=0){
   return d.toISOString().split("T")[0];
 }
 
-
 // ========== HELPER: CALL FOOTBALL-DATA API ==========
 async function api(endpoint,params={}){
   const url=new URL(API_URL+endpoint);
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-
   const r=await fetch(url,{headers:{"X-Auth-Token":API_KEY}});
   const data=await r.json();
-
   if(!r.ok)throw Error(data.message||"API Error");
   return data;
 }
-
 
 // ========== HELPER: FORMAT API DATA FOR OUR DB ==========
 function format(m){
@@ -388,56 +384,33 @@ function format(m){
       name:m.awayTeam?.name,
       logo:`https://crests.football-data.org/${m.awayTeam.id}.png`
     },
-    homeScore:m.score?.fullTime?.home??m.score?.halfTime?.home??0,
-    awayScore:m.score?.fullTime?.away??m.score?.halfTime?.away??0,
+    homeScore:m.score?.fullTime?.home??m.score?.halfTime?.home??null,
+    awayScore:m.score?.fullTime?.away??m.score?.halfTime?.away??null,
     updatedAt:new Date()
   };
 }
 
-
 // ========== CORE: SYNC 9 DAYS BACK + 9 DAYS FRONT TO DB ==========
-// This runs when /api/sync is opened manually or by cron.
-// ANTI-BAN LOGIC HERE:
-// Free plan: 10 req/min max. We make only 2 API calls per sync.
-// We wait 6.5 seconds between the 2 calls to avoid 429 errors.
 async function fullSyncToDB(){
-
   if(isSyncing)return{synced:0,total:0};
-
   isSyncing=true;
-
   try{
-    // FIXED: Using ONLY MONGO_URL as per your env file
     if(!process.env.MONGO_URL)throw Error("MONGO_URL missing in env vars");
     if(mongoose.connection.readyState!==1)
       await mongoose.connect(process.env.MONGO_URL);
 
-    // 1st API call: 9 days ago through today
-    // This gets past matches + today's matches.
     const past=await api("/matches",{
       dateFrom:getDate(-9),
       dateTo:getDate()
     });
-
-    // WAIT 6.5 seconds - MANDATORY for free plan to avoid 429
     await new Promise(r=>setTimeout(r,6500));
-
-    // 2nd API call: tomorrow through 9 days forward
-    // This completes the full 9-days-back + 9-days-front window.
     const future=await api("/matches",{
       dateFrom:getDate(1),
       dateTo:getDate(9)
     });
-
-    // Merge both API results and remove duplicate match IDs.
     const map=new Map();
-
-    [...(past.matches||[]),...(future.matches||[])]
-      .forEach(m=>map.set(m.id,m));
-
+    [...(past.matches||[]),...(future.matches||[])].forEach(m=>map.set(m.id,m));
     const formatted=[...map.values()].map(format);
-
-    // Save to DB: update existing matches or insert new matches.
     if(formatted.length){
       await Match.bulkWrite(
         formatted.map(m=>({
@@ -450,232 +423,114 @@ async function fullSyncToDB(){
         {ordered:false}
       );
     }
-
-    return{
-      synced:formatted.length,
-      total:await Match.countDocuments()
-    };
-
+    return{synced:formatted.length,total:await Match.countDocuments()};
   }finally{
-    isSyncing=false; // Release lock
+    isSyncing=false;
   }
 }
 
-
-// ========== CORE: GET MATCHES FROM DB (0 API COST) ==========
-// ANTI-BAN: This function is WHY 1000 users don't ban you.
-// All users reading upcoming/finished read from YOUR MongoDB, not football-data.
-// 1000 users = 0 API calls to football-data here.
+// ========== CORE: GET MATCHES FROM DB - FIXED TODAY ISSUE ==========
+// FIXED: Wide range -2 days to +9 days so today 10th Oct never disappears due to timezone
 async function getMatches(type){
-
-  const now=new Date();
   let filter={};
 
+  const now = new Date();
+  const startPast = new Date();
+  startPast.setDate(now.getDate() - 2);
+  startPast.setHours(0,0,0,0);
+
+  const endFuture = new Date();
+  endFuture.setDate(now.getDate() + 9);
+  endFuture.setHours(23,59,59,999);
+
+  const start9DaysAgo = new Date();
+  start9DaysAgo.setDate(now.getDate() - 9);
+  start9DaysAgo.setHours(0,0,0,0);
+
+  const endTomorrow = new Date();
+  endTomorrow.setDate(now.getDate() + 1);
+  endTomorrow.setHours(23,59,59,999);
+
   if(type==="upcoming"){
-    const start=new Date();
-    start.setDate(start.getDate()-7);
-    start.setHours(0,0,0,0);
-
-    const end=new Date();
-    end.setDate(end.getDate()+7);
-    end.setHours(23,59,59,999);
-
     filter={
-      date:{$gte:start,$lte:end},
+      date:{$gte:startPast,$lte:endFuture},
       status:{$in:["SCHEDULED","TIMED","IN_PLAY","LIVE","PAUSED"]}
     };
-
   }else if(type==="finished"){
-
-    const start=new Date();
-    start.setDate(start.getDate()-7);
-
     filter={
-      date:{$gte:start,$lte:now},
-      status:"FINISHED"
+      date:{$gte:start9DaysAgo,$lte:endTomorrow},
+      status:{$in:["FINISHED","AWARDED"]}
     };
   }
 
   const matches=await Match.find(filter).lean();
+  if(type==="finished"){
+    return matches.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  }
   return matches.sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
 
-
-// ========== ROUTE 1: /api/matches - FROM DB ONLY (SAFE FOR 1000 USERS) ==========
+// ========== ROUTE 1: /api/matches ==========
 app.get("/api/matches",async(req,res)=>{
   try{
-
-    // FIXED: Using ONLY MONGO_URL
     if(mongoose.connection.readyState!==1)
       await mongoose.connect(process.env.MONGO_URL);
-
     res.set("Cache-Control","no-store");
-
-    // This reads from DB = 0 API calls = 1000 users safe.
     const matches=await getMatches(req.query.tab||"upcoming");
-
     res.json({success:true,matches});
-
   }catch(e){
-    res.json({
-      success:false,
-      matches:[],
-      error:e.message
-    });
+    res.json({success:false,matches:[],error:e.message});
   }
 });
 
-
-// ========== ROUTE 2: /api/live - DIRECT API BUT WITH 60s CACHE (ANTI-BAN) ==========
-// This gives REAL minute like 67' and real score 2-1.
-// WITHOUT cache: 1000 users = 1000 API calls in 1 min = BAN.
-// WITH cache: 1000 users = 1 API call per minute = SAFE.
+// ========== ROUTE 2: /api/live ==========
 app.get("/api/live",async(req,res)=>{
-
   res.set("Cache-Control","no-store");
-
   try{
     const now=Date.now();
     const ip=req.headers["x-forwarded-for"]||req.ip;
-
-    // ANTI-BAN LAYER 1: IP DEDUPLICATION
-    // Same IP within 10s gets cached data immediately.
     if(visitorCache.has(ip)&&now-visitorCache.get(ip)<10000){
-      return res.json({
-        success:true,
-        matches:liveCache.data,
-        cached:true
-      });
+      return res.json({success:true,matches:liveCache.data,cached:true});
     }
-
     visitorCache.set(ip,now);
-
-    // ANTI-BAN LAYER 2: GLOBAL 60s CACHE
-    // All users share this cache. Only 1 API request per 60 seconds.
     if(now-liveCache.time<60000&&liveCache.data){
-      return res.json({
-        success:true,
-        matches:liveCache.data,
-        cached:true
-      });
+      return res.json({success:true,matches:liveCache.data,cached:true});
     }
-
-    // Only after cache expires do we call football-data API.
-    const today=await api("/matches",{
-      dateFrom:getDate(),
-      dateTo:getDate()
-    });
-
-    const live=(today.matches||[])
-      .filter(m=>["IN_PLAY","PAUSED","LIVE"].includes(m.status));
-
+    const today=await api("/matches",{dateFrom:getDate(),dateTo:getDate()});
+    const live=(today.matches||[]).filter(m=>["IN_PLAY","PAUSED","LIVE"].includes(m.status));
     const formatted=live.map(format);
-
-    liveCache={
-      data:formatted,
-      time:now
-    };
-
-    res.json({
-      success:true,
-      matches:formatted,
-      cached:false
-    });
-
+    liveCache={data:formatted,time:now};
+    res.json({success:true,matches:formatted,cached:false});
   }catch(e){
-
-    // If API fails or gives 429, serve old cache so frontend doesn't break.
     if(liveCache.data.length>0){
-      return res.json({
-        success:true,
-        matches:liveCache.data,
-        cached:true
-      });
+      return res.json({success:true,matches:liveCache.data,cached:true});
     }
-
-    res.json({
-      success:false,
-      matches:[],
-      error:e.message
-    });
+    res.json({success:false,matches:[],error:e.message});
   }
 });
 
-
- // ========== ROUTE 3: /api/sync - MANUAL SYNC / CRON ==========
-// Open https://raymonddomain.dev/api/sync manually after deploy.
-// It fetches 9 days back + 9 days front and saves matches into MongoDB.
-// ANTI-BAN FOR 5000 TRAFFIC:
-// - RAM cache 30min: fastest, no DB call
-// - MongoDB cache 30min: survives Vercel cold start & multi-instance (100% bulletproof)
-// - isSyncing lock: prevents double sync in same instance
+// ========== ROUTE 3: /api/sync ==========
 app.get("/api/sync",async(req,res)=>{
-
   const now=Date.now();
-  const COOLDOWN = 5*60*1000; // 5 minutes in ms
-
+  const COOLDOWN = 2*60*1000; // 2 minutes
   try{
-    // FIXED: Using ONLY MONGO_URL
     if(mongoose.connection.readyState!==1)
       await mongoose.connect(process.env.MONGO_URL);
-
-    // 1. RAM cache check (0 DB calls, fastest for 5000 users)
-    // If we synced within 30 min in THIS instance, return cached
     if(now-syncCache.time<COOLDOWN && syncCache.data){
-      return res.json({
-        success:true,
-        ...syncCache.data,
-        cached:true,
-        message:"Sync cooldown 5min - RAM cached"
-      });
+      return res.json({success:true,...syncCache.data,cached:true,message:"Sync cooldown 2min - RAM cached"});
     }
-
-    // 2. MongoDB check (survives Vercel redeploy & multi-instance)
-    // Even if Vercel creates 10 instances for 5000 users, all instances check same DB
-    // So only 1 instance will do real API calls, other 9 get DB cached
     const last = await Match.findOne().sort({updatedAt:-1});
     if(last && now - new Date(last.updatedAt).getTime() < COOLDOWN){
-      return res.json({
-        success:true,
-        cached:true,
-        total: await Match.countDocuments(),
-        message:"Sync cooldown 5min - DB cached"
-      });
+      return res.json({success:true,cached:true,total: await Match.countDocuments(),message:"Sync cooldown 2min - DB cached"});
     }
-
-    // 3. If another sync is already running in THIS instance
     if(isSyncing){
-      return res.json({
-        success:false,
-        cached:true,
-        message:"Sync already running"
-      });
+      return res.json({success:false,cached:true,message:"Sync already running"});
     }
-
-    // 4. WAIT for sync to finish before sending response
-    // Vercel can kill unfinished background work after response
     const r=await fullSyncToDB();
-
-    syncCache={
-      time:Date.now(),
-      data:r
-    };
-
-    return res.json({
-      success:true,
-      ...r,
-      cached:false,
-      timeWAT:new Date().toLocaleString("en-NG",{
-        timeZone:"Africa/Lagos"
-      }),
-      message:`Synced ${r.synced} matches to DB`
-    });
-
+    syncCache={time:Date.now(),data:r};
+    return res.json({success:true,...r,cached:false,timeWAT:new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"}),message:`Synced ${r.synced} matches to DB`});
   }catch(e){
-    return res.json({
-      success:false,
-      error:e.message
-    });
+    return res.json({success:false,error:e.message});
   }
 });
 
@@ -919,11 +774,6 @@ app.delete('/api/delete-media/:id', async (req, res) => {
  
  const NEWJWT_SECRET = "ihfghjkdjhvhjdhvbnfkerufyhijihekjdfenechvbejy";
  const ADMIN_PASSWORD = "123456";
- 
- 
- mongoose.connect(url)
- .then(() => console.log("MongoDB Connected"))
- .catch(err => console.log(err));
  
  // --- MODELS ---
  const UserSchema = new mongoose.Schema({
