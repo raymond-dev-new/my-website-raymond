@@ -176,10 +176,28 @@ app.delete('/api/users/avatar', authh, async (req,res)=>{
   if(!user) return res.status(404).json({msg:"Not found"});
   user.avatar = ""; await user.save(); res.json(user);
 });
-app.get('/api/users/me/profile', authh, async (req, res) => {
-  const user = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
+
+  app.get('/api/users/me/profile', authh, async (req, res) => {
+  const user = await Userd.findById(req.userId).populate('followers','username avatar bio displayName link').populate('following','username avatar bio displayName link');
   const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
   res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
+});
+
+// THIS IS WHAT YOU ARE MISSING - FOR OTHER PEOPLE TO SEE YOUR BIO
+app.get('/api/users/:id/profile', authh, async (req, res) => {
+  try{
+    const user = await Userd.findById(req.params.id).populate('followers','username avatar').populate('following','username avatar');
+    const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
+    res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
+  }catch(e){ res.status(500).json({msg:e.message}) }
+});
+
+app.get('/api/users/:id', async (req,res)=>{
+  try{
+    const user = await Userd.findById(req.params.id);
+    const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
+    res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
+  }catch(e){ res.status(500).json({msg:e.message}) }
 });
 
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
