@@ -1,333 +1,322 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Messages</title>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
-.top{height:60px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#000;position:sticky;top:0;z-index:5;flex-shrink:0}
+body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
+.top{height:60px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:0 16px;justify-content:space-between;background:#000;position:sticky;top:0;z-index:5}
 .top-user{flex:1;display:flex;align-items:center;gap:10px;cursor:pointer}
-.top-avatar,.av{border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden;flex-shrink:0}
-.top-avatar{width:36px;height:36px}.av{width:52px;height:52px;font-size:20px}
-.top-avatar img,.av img{width:100%;height:100%;object-fit:cover}
-.list{flex:1;overflow-y:auto;padding:12px}
+.top-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden}
+.top-avatar img{width:100%;height:100%;object-fit:cover}
+.list{flex:1;overflow-y:auto;padding:12px;background:#000}
 .row{padding:14px 12px;display:flex;gap:12px;align-items:center;background:#111;border-radius:16px;margin-bottom:10px;cursor:pointer;position:relative}
 .row.new-msg{border:1px solid #0095f6}
-.badge,.total-badge{background:#ff3040;color:#fff;border-radius:12px;font-size:12px;font-weight:700}
-.badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;padding:0 7px}
-.badge.hide{display:none}.total-badge{padding:3px 8px;margin-left:8px}
+.av{width:52px;height:52px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex-shrink:0;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ff3040;color:#fff;min-width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;padding:0 7px}
+.badge.hide{display:none}
+.total-badge{background:#ff3040;color:#fff;padding:3px 8px;border-radius:12px;font-size:12px;margin-left:8px;font-weight:700}
 .chat{position:fixed;inset:0;background:#000;z-index:20;display:none;flex-direction:column}
 .chat.open{display:flex}
-.msgs{flex:1;overflow-y:auto;padding:18px 14px;display:flex;flex-direction:column;gap:2px}
+.msgs{flex:1;overflow-y:auto;padding:18px 14px;display:flex;flex-direction:column;gap:2px;background:#000}
 .bubble-wrap{max-width:85%;display:flex;flex-direction:column;margin-bottom:2px}
-.bubble-wrap.me{align-self:flex-end;align-items:flex-end}.bubble-wrap.other{align-self:flex-start}
-.b{padding:11px 16px;border-radius:22px;font-size:15px;line-height:19px;word-break:break-word;max-width:100%;cursor:pointer}
-.b.me{background:linear-gradient(135deg,#0095f6,#0064e0);border-bottom-right-radius:6px}
-.b.other{background:#262626;border-bottom-left-radius:6px}
-.b audio{width:220px;max-width:100%;height:40px;display:block}
+.bubble-wrap.me{align-self:flex-end;align-items:flex-end}
+.bubble-wrap.other{align-self:flex-start}
+.b{padding:11px 16px;border-radius:22px;font-size:15px;line-height:19px;word-break:break-word;position:relative;cursor:pointer;max-width:100%}
+.b.me{background:linear-gradient(135deg,#0095f6,#0064e0);color:#fff;border-bottom-right-radius:6px}
+.b.other{background:#262626;color:#fff;border-bottom-left-radius:6px}
+.b audio{width:220px;height:40px;display:block}
 .time-row{display:flex;align-items:center;gap:6px;margin:4px 8px 12px;font-size:11px;color:#8a8a8a}
-.time-row.me{justify-content:flex-end}.tick{font-size:12px}.tick.read{color:#0095f6}
+.time-row.me{justify-content:flex-end}
+.tick{font-size:12px}
+.tick.read{color:#0095f6}
 .bar{padding:12px;border-top:1px solid #1e1e1e;display:flex;gap:10px;align-items:center;background:#000}
-.bar input{flex:1;min-width:0;background:#1e1e1e;border:0;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px}
-.send-btn,.mic-btn{width:44px;height:44px;border-radius:50%;border:0;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.send-btn{background:#0095f6;font-size:18px}.mic-btn{background:#262626;font-size:20px}
+.bar input{flex:1;background:#1e1e1e;border:none;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px}
+.send-btn{width:44px;height:44px;border-radius:50%;background:#0095f6;border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mic-btn{width:44px;height:44px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .mic-btn.rec{background:#ff3040;animation:pulse 1s infinite}
-@keyframes pulse{50%{transform:scale(1.1)}}
-.menu{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#262626;border:1px solid #333;border-radius:16px;padding:8px;min-width:240px;z-index:100;display:none;box-shadow:0 10px 30px #0009}
-.menu.open{display:block}.menu div{padding:14px 16px;border-radius:10px;cursor:pointer;font-size:15px}
-.menu div:hover{background:#333}.menu .del{color:#ff3040}
-.edit-box{display:none;position:fixed;inset:0;background:#000c;z-index:200;align-items:center;justify-content:center;padding:20px}
-.edit-box.open{display:flex}.edit-card{background:#1a1a1a;width:100%;max-width:360px;border-radius:20px;padding:20px;border:1px solid #333}
-.edit-card input{width:100%;background:#262626;border:0;padding:14px 16px;border-radius:12px;color:#fff;font-size:15px;margin:12px 0}
-.edit-card button{width:100%;padding:12px;border-radius:12px;border:0;font-weight:700;cursor:pointer;margin-top:8px}
-.btn-save{background:#0095f6;color:#fff}.btn-cancel{background:#262626;color:#fff}
-.recording-info{font-size:12px;color:#ff3040;margin-left:6px;display:none}.recording-info.on{display:inline}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.menu{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#262626;border-radius:16px;padding:8px;min-width:240px;z-index:100;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6);border:1px solid #333}
+.menu.open{display:block}
+.menu div{padding:14px 16px;border-radius:10px;cursor:pointer;font-size:15px;display:flex;gap:10px;align-items:center}
+.menu div:hover{background:#333}
+.menu.del{color:#ff3040}
+.edit-box{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:20px}
+.edit-box.open{display:flex}
+.edit-card{background:#1a1a1a;width:100%;max-width:360px;border-radius:20px;padding:20px;border:1px solid #333}
+.edit-card input{width:100%;background:#262626;border:none;padding:14px 16px;border-radius:12px;color:#fff;font-size:15px;outline:none;margin:12px 0}
+.edit-card button{width:100%;padding:12px;border-radius:12px;border:none;font-weight:700;cursor:pointer;margin-top:8px}
+.btn-save{background:#0095f6;color:#fff}
+.btn-cancel{background:#262626;color:#fff}
+.recording-info{font-size:12px;color:#ff3040;margin-left:6px;display:none}
+.recording-info.on{display:inline}
 .live-dot{width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;margin-left:6px;animation:pulse 1s infinite}
 </style>
 </head>
 <body>
 <div class="top"><b>Messages <span id="totalUnread" class="total-badge" style="display:none">0</span> <span class="live-dot" title="Live auto-refresh ON"></span></b><span onclick="location.href='feed.html'" style="cursor:pointer;font-size:22px">←</span></div>
 <div class="list" id="list"></div>
-
 <div class="chat" id="chat">
-  <div class="top">
-    <div class="top-user" onclick="goToProfile()"><div class="top-avatar" id="topAvatar">U</div><div><b id="cName"></b><div style="font-size:11px;color:#888">Tap to view profile • Live</div></div></div>
-    <span onclick="closeChat()" style="cursor:pointer;font-size:22px">✕</span>
+<div class="top">
+  <div class="top-user" onclick="goToProfile()">
+    <div class="top-avatar" id="topAvatar">U</div>
+    <div><b id="cName"></b><div style="font-size:11px;color:#888">Tap to view profile • Live</div></div>
   </div>
-  <div class="msgs" id="msgs"></div>
-  <div class="bar">
-    <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button>
-    <span id="recInfo" class="recording-info">● Recording...</span>
-    <input id="inp" placeholder="Message..." onkeydown="if(event.key==='Enter')send()">
-    <button class="send-btn" onclick="send()">➤</button>
-  </div>
+  <span onclick="closeChat()" style="cursor:pointer;font-size:22px">✕</span>
 </div>
-
-<div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
+<div class="msgs" id="msgs"></div>
+<div class="bar">
+  <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button><span id="recInfo" class="recording-info">● Recording...</span>
+  <input id="inp" placeholder="Message..." onkeydown="if(event.key==='Enter')send()"><button class="send-btn" onclick="send()">➤</button>
+</div>
+</div>
+<div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
 <div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
-
 <script>
-// CONFIG AND HELPERS
-const BASE="https://raymonddomain.dev",token=localStorage.getItem('token');
-if(!token)location.href='login.html';
+const BASE="https://raymonddomain.dev";
+const token=localStorage.getItem('token');
+if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
-function getCache(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
-function setCache(k,v){localStorage.setItem(k,JSON.stringify(v))}
-function fixUrl(u){if(!u)return"";if(u.startsWith('data:')||u.startsWith('http'))return u;if(u.startsWith('/api/'))return BASE+u;return u}
-function formatTime(s){return new Date(s).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-function goToProfile(){if(active)location.href='profile.html?id='+active}
-function closeBox(){document.getElementById('editBox').classList.remove('open')}
+function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
+function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
+function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+function goToProfile(){ if(active) location.href='profile.html?id='+active; }
+function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
 
-let active="",unreadMap={},selectedMsg=null,selectedIsMe=false,msgsCache=[],usersCache=[];
+let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[];
 
-// SOCKET.IO
-const socket=io(BASE,{transports:['websocket','polling'],reconnection:true,reconnectionAttempts:100,reconnectionDelay:1000});
-socket.on('connect',()=>{socket.emit('join',myId());console.log('socket connected')});
-socket.on('disconnect',()=>console.log('socket disconnected'));
+const socket=io(BASE,{transports:['websocket','polling'], reconnection:true, reconnectionAttempts:100, reconnectionDelay:1000});
+socket.on('connect',()=>{ socket.emit('join',myId()); });
+socket.on('disconnect',()=>{});
 
-// UNREAD COUNTS
-async function loadUnread(){try{let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}});unreadMap=await r.json();updateBadges()}catch{}}
+async function loadUnread(silent=false){
+ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{}
+}
 function updateBadges(){
-  let total=Object.values(unreadMap).reduce((a,b)=>a+b,0),el=document.getElementById('totalUnread');
-  el.style.display=total?'inline':'none';el.innerText=total;
-  Object.keys(unreadMap).forEach(id=>{let b=document.getElementById('badge-'+id);if(b){b.innerText=unreadMap[id];b.classList.toggle('hide',!unreadMap[id])}});
+ let total=Object.values(unreadMap).reduce((a,b)=>a+b,0);
+ const tot=document.getElementById('totalUnread');
+ if(total>0){tot.style.display='inline'; tot.innerText=total;} else tot.style.display='none';
+ Object.keys(unreadMap).forEach(uid=>{
+  const b=document.getElementById('badge-'+uid);
+  if(b){ const c=unreadMap[uid]; if(c>0){b.innerText=c; b.classList.remove('hide');} else b.classList.add('hide'); }
+ });
 }
-
-// CHAT LIST
 function renderUsers(users){
-  usersCache=users;const el=document.getElementById('list');
-  if(!users.length){el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>';return}
-  el.innerHTML=users.map(u=>{
-    const id=u._id,name=u.username||'user',count=unreadMap[id]||0;
-    const avatar=u.avatar?`<img src="${fixUrl(u.avatar)}">`:name[0].toUpperCase();
-    return `<div class="row ${count?'new-msg':''}" onclick="openC('${id}','${name.replace(/'/g,"&#39;")}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count?count+' new message(s) • Tap to chat':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
-  }).join('');
+ const el=document.getElementById('list');
+ usersCache=users;
+ if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>'; return; }
+ el.innerHTML=users.map(u=>{
+  const id=u._id; const name=u.username||'user'; const letter=name[0].toUpperCase();
+  const count=unreadMap[id]||0;
+  const avatar=u.avatar?`<img src="${fixUrl(u.avatar)}">`:letter;
+  const hasUnread=count>0?' new-msg':'';
+  return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count? count+' new message(s) • Tap to chat':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
+ }).join('');
 }
-
 async function load(){
-  const el=document.getElementById('list'),cached=getCache('chat_users');
-  if(cached)renderUsers(cached);else el.innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading chats...</div>';
-  try{
-    let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}}),users=await r.json();
-    if(!users.length){
-      let p=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}}),d=await p.json();
-      users=[...(d.user?.followers||[]),...(d.user?.following||[])];
-      users=[...new Map(users.map(u=>[u._id,u])).values()];
-    }
-    setCache('chat_users',users);renderUsers(users);await loadUnread();
-  }catch(e){if(!cached)el.innerHTML='Error: '+e.message}
+ const el=document.getElementById('list');
+ const cachedUsers=getCache('chat_users');
+ if(cachedUsers){ renderUsers(cachedUsers); } else { el.innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading chats...</div>'; }
+ try{
+  let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
+  let users=await r.json();
+  if(!users.length){
+   let r2=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
+   let d2=await r2.json();
+   users=[...(d2.user.followers||[]),...(d2.user.following||[])];
+   users=[...new Map(users.map(u=>[u._id,u])).values()];
+  }
+  setCache('chat_users', users);
+  renderUsers(users);
+  await loadUnread();
+ }catch(e){ if(!cachedUsers) el.innerHTML='Error: '+e.message; }
 }
-
-// RENDER MESSAGES
 function renderMsg(m){
-  const isMe=(m.sender?._id||m.sender)==myId(),edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'',time=formatTime(m.createdAt);
-  let text=m.text||"",tick=isMe?(m.read?'<span class="tick read">✓✓</span>':'<span class="tick">✓</span>'):'',inner;
-  if(text.startsWith('VOICE:')||text.startsWith('data:audio')){
-    const src=text.startsWith('VOICE:')?text.slice(6):text;
-    inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls preload="none" src="${src}"></audio></div>${edited}`;
-  }else inner=text+edited;
-  const safe=text.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').substring(0,200);
-  return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${safe}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span>${tick}</div></div>`;
+ const isMe=(m.sender._id||m.sender)==myId();
+ const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
+ const time=formatTime(m.createdAt);
+ let tick=''; if(isMe) tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`;
+ let content=m.text||m.mediaUrl||"";
+ let inner="";
+ if(content.startsWith('VOICE:') || content.startsWith('data:audio') || (m.mediaUrl && m.mediaUrl.length>5)){
+  let src=content.replace('VOICE:','');
+  if(m.mediaUrl) src=fixUrl(m.mediaUrl);
+  else src=fixUrl(src);
+  if(src) inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
+  else inner=`🎤 Voice${edited}`;
+ }else{ inner=content+edited; }
+ return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').startsWith('VOICE:')||(m.text||'').startsWith('data:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
 function renderAll(){
-  const el=document.getElementById('msgs');
-  if(!msgsCache.length){el.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>';return}
-  el.innerHTML=msgsCache.map(renderMsg).join('');el.scrollTop=el.scrollHeight;
-  if(active)setCache('chat_'+active,msgsCache);
+ const container=document.getElementById('msgs');
+ if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; return; }
+ // FIX DOUBLE SEND: dedupe by _id
+ msgsCache = [...new Map(msgsCache.map(m=>[m._id,m])).values()];
+ container.innerHTML=msgsCache.map(m=>renderMsg(m)).join('');
+ container.scrollTop=container.scrollHeight;
+ if(active){
+  try{
+   let small = msgsCache.filter(m=>!(m.text||'').startsWith('VOICE:') &&!(m.text||'').startsWith('data:'));
+   if(small.length) setCache('chat_'+active, small.slice(-50));
+  }catch{}
+ }
 }
-
-// OPEN AND CLOSE CHAT
 async function openC(id,name){
-  active=id;document.getElementById('cName').innerText=name;
-  document.getElementById('topAvatar').innerText=name[0].toUpperCase();
-  document.getElementById('chat').classList.add('open');
-  const cached=getCache('chat_'+id);
-  if(cached){msgsCache=cached;renderAll()}else document.getElementById('msgs').innerHTML='Loading...';
-  try{
-    await fetch(BASE+'/api/messages/'+id+'/read',{method:'POST',headers:{authorization:token}});
-    unreadMap[id]=0;updateBadges();
-    let r=await fetch(BASE+'/api/messages/'+id,{headers:{authorization:token}});
-    msgsCache=await r.json();setCache('chat_'+id,msgsCache);renderAll();
-  }catch(e){console.log(e)}
-}
-function closeChat(){document.getElementById('chat').classList.remove('open');active=""}
-
-// SEND TEXT
-async function send(){
-  const input=document.getElementById('inp'),text=input.value.trim();
-  if(!text||!active)return;
-  input.value='';
-  const receiver=active,tempId='temp_'+Date.now();
-  msgsCache.push({_id:tempId,sender:{_id:myId()},receiver:{_id:receiver},text,createdAt:new Date().toISOString(),read:false});
+ active=id;
+ document.getElementById('cName').innerText=name;
+ document.getElementById('topAvatar').innerText=name[0].toUpperCase();
+ document.getElementById('chat').classList.add('open');
+ const cachedMsgs=getCache('chat_'+id);
+ if(cachedMsgs){ msgsCache=cachedMsgs; renderAll(); }
+ else { document.getElementById('msgs').innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading...</div>'; }
+ try{
+  await fetch(BASE+'/api/messages/'+id+'/read',{method:'POST',headers:{authorization:token}});
+  unreadMap[id]=0; updateBadges();
+  let r=await fetch(BASE+'/api/messages/'+id,{headers:{authorization:token}});
+  msgsCache=await r.json();
   renderAll();
-  try{
-    const r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver,text})});
-    const saved=await r.json();
-    if(!r.ok||!saved._id)throw Error(saved.message||'Send failed');
-    if(active===receiver){msgsCache=msgsCache.filter(m=>m._id!==tempId);if(!msgsCache.some(m=>m._id===saved._id))msgsCache.push(saved);renderAll()}
-  }catch(e){console.error(e);msgsCache=msgsCache.filter(m=>m._id!==tempId);renderAll();alert('Message could not be sent.')}
+ }catch(e){ console.log(e); }
 }
-
-// VOICE RECORDING — FIXED
-let mediaRecorder=null,audioChunks=[],isRecording=false;
-
+function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
+async function send(){
+ let t=document.getElementById('inp').value.trim(); if(!t||!active) return;
+ document.getElementById('inp').value='';
+ const tempId='temp_'+Date.now();
+ const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
+ msgsCache.push(tempMsg); renderAll();
+ try{
+  let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
+  let saved=await r.json();
+  msgsCache=msgsCache.filter(x=>x._id!==tempId);
+  if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+  renderAll();
+ }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
+}
+let mediaRecorder=null, audioChunks=[], isRecording=false;
 async function toggleRecord(){
-  const btn=document.getElementById('micBtn'),info=document.getElementById('recInfo');
-
-  if(!isRecording){
-    if(!active)return alert('Open a chat first.');
-    let stream;
-
+ const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
+ if(!isRecording){
+  try{
+   const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus', bitsPerSecond:32000});
+   audioChunks=[];
+   mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
+   mediaRecorder.onstop=async ()=>{
+    const blob=new Blob(audioChunks,{type:'audio/webm'});
+    audioChunks=[];
+    stream.getTracks().forEach(s=>s.stop());
+    if(!blob || blob.size===0) return;
+    const tempId='temp_voice_'+Date.now();
+    const localUrl = URL.createObjectURL(blob);
+    const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:'VOICE:'+localUrl, mediaUrl: localUrl, createdAt:new Date().toISOString(), read:false};
+    msgsCache.push(tempMsg);
+    renderAll();
     try{
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      const receiver=active;
-      const opts=MediaRecorder.isTypeSupported('audio/webm')?{mimeType:'audio/webm'}:{};
-      mediaRecorder=new MediaRecorder(stream,opts);audioChunks=[];
-
-      mediaRecorder.ondataavailable=e=>{if(e.data.size)audioChunks.push(e.data)};
-
-      mediaRecorder.onstop=async()=>{
-        const tempId='temp_'+Date.now(),key='chat_'+receiver;
-        let tempMsg;
-
-        try{
-          if(!audioChunks.length)throw Error('No audio recorded');
-          const blob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
-          if(!blob.size)throw Error('Empty recording');
-
-          const audio=await new Promise((resolve,reject)=>{
-            const reader=new FileReader();
-            reader.onload=()=>resolve(reader.result);
-            reader.onerror=()=>reject(Error('Could not read audio'));
-            reader.readAsDataURL(blob);
-          });
-
-          tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:receiver},text:'VOICE:'+audio,createdAt:new Date().toISOString(),read:false};
-
-          // Cache the recording immediately; don't discard it on failure.
-          const cached=getCache(key)||[];cached.push(tempMsg);setCache(key,cached);
-          if(active===receiver){msgsCache.push(tempMsg);renderAll()}
-
-          const r=await fetch(BASE+'/api/messages',{
-            method:'POST',
-            headers:{'Content-Type':'application/json',authorization:token},
-            body:JSON.stringify({receiver,text:tempMsg.text})
-          });
-          const saved=await r.json();
-          if(!r.ok||!saved?._id)throw Error(saved?.message||'Server did not save the recording');
-
-          // Only replace the temporary message after server success.
-          setCache(key,[...(getCache(key)||[]).filter(m=>m._id!==tempId&&m._id!==saved._id),saved]);
-          if(active===receiver){
-            msgsCache=msgsCache.filter(m=>m._id!==tempId&&m._id!==saved._id);
-            msgsCache.push(saved);renderAll();
-          }
-        }catch(e){
-          console.error('Voice message error:',e);
-          alert('Voice message was not confirmed as saved. It remains visible; check your connection or server.');
-        }finally{
-          stream.getTracks().forEach(t=>t.stop());audioChunks=[];
-        }
-      };
-
-      mediaRecorder.start();isRecording=true;
-      btn.classList.add('rec');btn.innerText='⏹️';info.classList.add('on');
-    }catch(e){
-      if(stream)stream.getTracks().forEach(t=>t.stop());
-      console.error(e);alert('Could not access the microphone. Check microphone permission.');
-    }
-  }else{
-    if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop();
-    isRecording=false;btn.classList.remove('rec');btn.innerText='🎤';info.classList.remove('on');
-  }
+     const fd = new FormData();
+     fd.append('receiver', active);
+     fd.append('file', blob, 'voice_'+Date.now()+'.webm');
+     let r = await fetch(BASE+'/api/messages',{method:'POST', headers:{authorization:token}, body:fd});
+     if(r.ok){
+      let saved = await r.json();
+      // FIX: replace temp with saved - only 1 voice, not 2
+      msgsCache = msgsCache.filter(x=> x._id!==tempId);
+      if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+      renderAll();
+     }else{
+      // keep temp if failed
+      console.log('voice upload failed', r.status);
+     }
+    }catch(e){ console.log('voice error', e); }
+   };
+   mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
+  }catch{ alert('Mic denied'); }
+ }else{
+  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on');
+ }
 }
-
-// EDIT AND UNSEND
 function openMenu(el){
-  selectedMsg=el.dataset.id;if(selectedMsg.startsWith('temp_'))return;
-  selectedIsMe=el.dataset.me==='true';
-  const text=el.dataset.text;
-  document.getElementById('editInput').value=text.startsWith('VOICE:')?'':text;
-  document.getElementById('editOpt').style.display=selectedIsMe&&!text.startsWith('VOICE:')?'block':'none';
-  document.getElementById('menu').classList.add('open');
+ selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
+ selectedIsMe=el.dataset.me==='true';
+ let txt=el.dataset.text||"";
+ document.getElementById('editInput').value=txt.startsWith('VOICE:')?'':txt;
+ document.getElementById('editOpt').style.display=selectedIsMe && txt &&!txt.startsWith('VOICE:') &&!txt.startsWith('data:')? 'flex':'none';
+ document.getElementById('menu').classList.add('open');
 }
-function closeMenu(){document.getElementById('menu').classList.remove('open')}
-function startEdit(){if(!selectedIsMe)return;closeMenu();document.getElementById('editBox').classList.add('open')}
-
+function closeMenu(){ document.getElementById('menu').classList.remove('open'); }
+function startEdit(){ if(!selectedIsMe) return; closeMenu(); document.getElementById('editBox').classList.add('open'); }
 async function saveEdit(){
-  const text=document.getElementById('editInput').value.trim();if(!text)return;
-  try{
-    const r=await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text})});
-    if(!r.ok)throw Error();
-    closeBox();
-    const response=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
-    if(response.ok){msgsCache=await response.json();renderAll()}
-  }catch{alert('Could not edit message.')}
+ let newText=document.getElementById('editInput').value.trim(); if(!newText) return;
+ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})});
+ closeBox();
 }
-
 async function deleteMsg(){
-  if(!confirm('Unsend?'))return;
-  closeMenu();
-  const id=selectedMsg,old=msgsCache.find(m=>m._id===id);
-  msgsCache=msgsCache.filter(m=>m._id!==id);renderAll();
-  try{
-    const r=await fetch(BASE+'/api/messages/msg/'+id,{method:'DELETE',headers:{authorization:token}});
-    if(!r.ok)throw Error();
-    if(active)setCache('chat_'+active,msgsCache);
-  }catch{
-    if(old)msgsCache.push(old);renderAll();alert('Could not unsend message.');
-  }
+ if(!confirm('Unsend?')) return; closeMenu();
+ msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll();
+ try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{}
 }
-
-// LIVE SOCKET EVENTS
 socket.on('receiveMessage',m=>{
-  const sender=m.sender?._id||m.sender,receiver=m.receiver?._id||m.receiver;
-  if(sender==active||receiver==active){
-    if(!msgsCache.some(x=>x._id===m._id)){msgsCache.push(m);renderAll()}
-    if(sender!=myId())fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
-  }else if(receiver==myId()){
-    unreadMap[sender]=(unreadMap[sender]||0)+1;updateBadges();
-    renderUsers(usersCache.length?usersCache:getCache('chat_users')||[]);
-    const cached=getCache('chat_'+sender)||[];
-    if(!cached.some(x=>x._id===m._id)){cached.push(m);setCache('chat_'+sender,cached)}
-  }
+ let senderId=m.sender._id||m.sender; let receiverId=m.receiver._id||m.receiver;
+ if(String(senderId)==String(myId())) return; // FIX: don't add my own echo - stops double voice
+ if(senderId==active || receiverId==active){
+  if(!msgsCache.find(x=>x._id===m._id)){ msgsCache.push(m); renderAll(); }
+  fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
+ }else if(receiverId==myId()){
+  unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges(); renderUsers(usersCache.length?usersCache:getCache('chat_users')||[]);
+ }
 });
-socket.on('messageEdited',m=>{const i=msgsCache.findIndex(x=>x._id==m._id);if(i>-1){msgsCache[i]=m;renderAll()}});
-socket.on('messageDeleted',d=>{msgsCache=msgsCache.filter(m=>m._id!=d._id);renderAll();if(active)setCache('chat_'+active,msgsCache)});
-socket.on('messagesSeen',()=>{msgsCache.forEach(m=>{if((m.sender?._id||m.sender)==myId())m.read=true});renderAll()});
+socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll();}});
+socket.on('messageDeleted',data=>{ msgsCache=msgsCache.filter(x=>x._id!=data._id); renderAll(); });
+socket.on('messagesSeen',()=>{ msgsCache.forEach(m=>{ if((m.sender._id||m.sender)==myId()) m.read=true; }); renderAll(); });
 
-// BACKGROUND REFRESH
 async function autoPoll(){
-  try{
-    await loadUnread();
-    if(active){
-      const chatId=active;
-      const r=await fetch(BASE+'/api/messages/'+chatId,{headers:{authorization:token}});
-      const fresh=await r.json();
-      if(Array.isArray(fresh)&&active===chatId){
-        // Merge server data without dropping pending voice messages.
-        const pending=msgsCache.filter(m=>String(m._id).startsWith('temp_'));
-        const merged=[...fresh];
-        pending.forEach(m=>{if(!merged.some(x=>x._id===m._id))merged.push(m)});
-        if(merged.length!==msgsCache.length||merged.some(m=>!msgsCache.some(x=>x._id===m._id))){
-          msgsCache=merged;renderAll();
-        }
-      }
-    }else{
-      const r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
-      const users=await r.json();
-      if(Array.isArray(users)&&JSON.stringify(users)!==JSON.stringify(usersCache)){
-        setCache('chat_users',users);renderUsers(users);
-      }
+ try{
+  await loadUnread(true);
+  if(active){
+   let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
+   let fresh=await r.json();
+   let tempVoices = msgsCache.filter(x=> String(x._id).startsWith('temp_'));
+   let nonTempCount = msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length;
+   if(fresh.length!==nonTempCount){
+    const existingIds=new Set(msgsCache.map(x=>x._id));
+    fresh.forEach(m=>{ if(!existingIds.has(m._id)) msgsCache.push(m); });
+    // if fresh contains the voice we just sent, remove temp
+    tempVoices.forEach(tv=>{
+     if(fresh.some(f=> f._id!==tv._id)) {
+       // if server has saved version, remove temp duplicate
+       if(fresh.length>0) msgsCache = msgsCache.filter(x=>x._id!==tv._id || fresh.some(f=>f._id===x._id));
+     }
+    });
+    // final dedupe - only 1 of each
+    msgsCache = [...new Map(msgsCache.map(m=>[m._id,m])).values()];
+    // remove leftover temp if fresh arrived
+    if(fresh.length>0){
+     msgsCache = msgsCache.filter(m=>!String(m._id).startsWith('temp_') ||!fresh.some(f=> f.createdAt===m.createdAt));
+     // keep only fresh + any still pending temp that is not in fresh
+     let stillPending = tempVoices.filter(tv=>!fresh.some(f=> Math.abs(new Date(f.createdAt)-new Date(tv.createdAt))<2000));
+     if(stillPending.length===0) msgsCache = fresh;
+     else msgsCache = [...fresh,...stillPending];
     }
-  }catch(e){console.log('Refresh error:',e)}
+    renderAll();
+    fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
+   }
+  }else{
+   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
+   let users=await r.json();
+   if(users.length && JSON.stringify(users)!==JSON.stringify(usersCache)){
+    setCache('chat_users', users);
+    renderUsers(users);
+   }
+  }
+ }catch{}
 }
+setInterval(autoPoll, 3000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoPoll(); load(); } });
 
-setInterval(autoPoll,3000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){autoPoll();load()}});
 load();
 setInterval(loadUnread,4000);
 </script>
