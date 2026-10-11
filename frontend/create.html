@@ -3,74 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>New Post</title>
+<title>Create</title>
 <style>
 body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
-.box{background:#111;width:100%;max-width:400px;margin-top:30px;padding:20px;border:1px solid #222;border-radius:10px}
-input,select,textarea{width:100%;background:#222;border:1px solid #333;color:#fff;padding:12px;margin:8px 0;border-radius:8px;box-sizing:border-box}
-button{width:100%;background:#0095f6;border:none;color:#fff;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer}
-#preview{width:100%;max-height:300px;object-fit:cover;margin:10px 0;display:none;border-radius:10px}
+.box{width:100%;max-width:470px;padding:16px}
+input, textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:10px 0}
+button.postBtn{width:100%;background:#0095f6;color:#fff;border:none;padding:12px;border-radius:8px;font-weight:700;cursor:pointer}
+.preview{width:100%;background:#111;min-height:300px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;margin:10px 0}
+.preview img,.preview video{width:100%;max-height:500px;object-fit:contain}
 </style>
 </head>
 <body>
 <div class="box">
-<h3 style="text-align:center">New Post</h3>
-<p>Create new post</p>
-
-<select id="type">
-<option value="image">Image</option>
-<option value="video">Video</option>
-<option value="reel">Reel (TikTok)</option>
-<option value="text">Text only</option>
-</select>
-
-<input type="file" id="file" accept="image/*,video/*"> <!-- SELECT FROM DEVICE LIKE INSTAGRAM -->
-<img id="preview">
+<h3>Create Post</h3>
+<input type="file" id="file" accept="image/*,video/*">
+<div class="preview" id="preview">No file selected</div>
 <textarea id="caption" placeholder="Write a caption..."></textarea>
-<button onclick="createPost()">Share</button>
+<button class="postBtn" onclick="upload()">Share</button>
 <p id="status"></p>
 </div>
-
 <script>
+const BASE = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
 const fileInput = document.getElementById('file');
 const preview = document.getElementById('preview');
-
-fileInput.onchange = ()=>{
+fileInput.onchange = () => {
   const file = fileInput.files[0];
-  if(file){
-    preview.style.display='block';
-    preview.src = URL.createObjectURL(file);
-    if(file.type.startsWith('video')){ preview.style.display='none'; }
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  if(file.type.startsWith('video')){
+    preview.innerHTML = `<video src="${url}" controls></video>`;
+  }else{
+    preview.innerHTML = `<img src="${url}">`;
   }
 };
-
-async function createPost(){
-  const caption = document.getElementById('caption').value;
-  const type = document.getElementById('type').value;
+async function upload(){
   const file = fileInput.files[0];
+  if(!file) return alert('Select image or video');
   document.getElementById('status').innerText = 'Uploading...';
-
-  let mediaUrl = '';
-  if(file){
-    const form = new FormData();
-    form.append('file', file);
-    const upRes = await fetch('https://raymonddomain.dev/api/upload', { method:'POST', headers:{ authorization: token }, body: form });
-    const upData = await upRes.json();
-    mediaUrl = upData.url; // /uploads/...
-  }
-
-  const res = await fetch('https://raymonddomain.dev/api/posts', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json', authorization: token },
-    body: JSON.stringify({ caption, type, mediaUrl })
-  });
-  const data = await res.json();
-  if(data._id){
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('caption', document.getElementById('caption').value);
+  try{
+    const res = await fetch(BASE+'/api/posts',{
+      method:'POST',
+      headers:{ authorization: token },
+      body: fd
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.msg||'Failed');
     document.getElementById('status').innerText = 'Posted!';
-    window.location='feed.html';
-  }else{
-    document.getElementById('status').innerText = 'Failed: ' + JSON.stringify(data);
+    setTimeout(()=> location.href='feed.html', 800);
+  }catch(e){
+    document.getElementById('status').innerText = 'Error: '+e.message;
   }
 }
 </script>
