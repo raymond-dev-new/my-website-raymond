@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Instagram • Feed</title>
+<title>Feed</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
@@ -13,7 +13,9 @@ a{color:inherit;text-decoration:none}
 .wrap{max-width:470px;margin:0 auto;width:100%}
 .post{background:#000;border-bottom:1px solid #262626;padding-bottom:12px}
 .post-head{padding:12px 12px;display:flex;align-items:center;gap:10px}
-.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:bold}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:bold;overflow:hidden;cursor:pointer}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.post-head b{cursor:pointer}
 .media{width:100%;background:#111;min-height:300px;display:flex;align-items:center;justify-content:center}
 .media img,.media video{width:100%;max-height:580px;object-fit:contain;display:block}
 .cap{padding:8px 12px}
@@ -52,21 +54,16 @@ a{color:inherit;text-decoration:none}
 <div class="sidebar" id="sidebar">
   <div class="sidebar-top"><b>RAyMoNd Menu</b><span class="close" onclick="closeAll()">×</span></div>
   <div class="sidebar-links">
-    <div class="side-link" onclick="openPage('league')"><span>🏆</span> <a href="football.html"> League Match</a></div>
-    <div class="side-link" onclick="openPage('country')"><span>🌍</span> <a href="countrymatch.html"> Country Match </a></div>
-    <div class="side-link" onclick="openPage('savedPics')"><span>🖼️</span> <a href="media.html"> Saved Pictures </a></div>
-    <div class="side-link" onclick="openPage('savedNote')"><span>📝</span> <a href="note.html"> Saved Note </a></div>
-    <div class="side-link" onclick="openPage('dashboard')"><span>📊</span> <a href="next.html"> Games </a></div>
+    <div class="side-link"><span>🏆</span> <a href="football.html"> League Match</a></div>
+    <div class="side-link"><span>🌍</span> <a href="countrymatch.html"> Country Match </a></div>
+    <div class="side-link"><span>🖼️</span> <a href="media.html"> Saved Pictures </a></div>
+    <div class="side-link"><span>📝</span> <a href="note.html"> Saved Note </a></div>
+    <div class="side-link"><span>📊</span> <a href="next.html"> Games </a></div>
   </div>
   <div style="margin-top:auto;padding:16px;border-top:1px solid #262626">
     <div class="side-link" onclick="logout()"><span>🚪</span> Logout</div>
   </div>
 </div>
-<div class="full-page" id="page-league"><div class="full-head"><button onclick="closeAll()">←</button><b>League Match</b></div><div class="full-body" id="leagueBody"><p>Loading leagues...</p></div></div>
-<div class="full-page" id="page-country"><div class="full-head"><button onclick="closeAll()">←</button><b>Country Match</b></div><div class="full-body" id="countryBody"><p>Loading...</p></div></div>
-<div class="full-page" id="page-savedPics"><div class="full-head"><button onclick="closeAll()">←</button><b>Saved Pictures</b></div><div class="full-body" id="savedPicsBody"></div></div>
-<div class="full-page" id="page-savedNote"><div class="full-head"><button onclick="closeAll()">←</button><b>Saved Note</b></div><div class="full-body"><div class="card"><textarea id="noteArea" style="width:100%;height:200px;background:#000;color:#fff;border:1px solid #262626;border-radius:8px;padding:10px" placeholder="Write your note..."></textarea><br><br><button onclick="saveNote()" style="background:#0095f6;color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:600">Save Note</button></div><div id="notesList"></div></div></div>
-<div class="full-page" id="page-dashboard"><div class="full-head"><button onclick="closeAll()">←</button><b>Dashboard</b></div><div class="full-body" id="dashBody"></div></div>
 <div class="top"><div class="wrap" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center"><span class="hamburger" onclick="openSidebar()">☰</span><span class="logo">RAyMoNd</span></div><div style="display:flex;gap:14px;align-items:center"><a href="notifications.html" style="font-size:22px">🤍</a><span class="logout" onclick="logout()">Logout</span></div></div></div>
 <div class="wrap" id="feed">Loading...</div>
 <div class="bottom"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a><a href="reels.html">🎬</a><a href="notification.html"> 🔔 </a><a href="profile.html">👤</a></div>
@@ -74,73 +71,69 @@ a{color:inherit;text-decoration:none}
 const BASE = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
 if(!token) location.href = "login.html";
-
-function getCache(k){ try{ const d=localStorage.getItem(k); return d? JSON.parse(d): null }catch{ return null } }
+function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null')}catch{return null} }
 function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-
-function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
 function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
-function closeAll(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); document.querySelectorAll('.full-page').forEach(p=>p.classList.remove('open')); }
-function openPage(name){ closeAll(); setTimeout(()=>{ document.getElementById('page-'+name).classList.add('open'); document.getElementById('overlay').classList.add('show'); if(name==='savedPics') loadSavedPics(); if(name==='dashboard') loadDash(); if(name==='league') loadLeague(); if(name==='country') loadCountry(); if(name==='savedNote') loadNotes(); }, 200); }
-async function loadLeague(){ const c=getCache('league_cache'); if(c) document.getElementById('leagueBody').innerHTML=c; document.getElementById('leagueBody').innerHTML = `<div class="card">🏆 Premier League</div>`; setCache('league_cache', document.getElementById('leagueBody').innerHTML); }
-async function loadCountry(){ const c=getCache('country_cache'); if(c) document.getElementById('countryBody').innerHTML=c; document.getElementById('countryBody').innerHTML = `<div class="card">🌍 World Cup Qualifiers</div>`; setCache('country_cache', document.getElementById('countryBody').innerHTML); }
-async function loadSavedPics(){ try{ let r=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}}); let d=await r.json(); let posts=d.user.savedPosts||[]; document.getElementById('savedPicsBody').innerHTML=posts.length?posts.map(id=>`<div class="card">${id}</div>`).join(''):"<p>No saved</p>"; }catch(e){ document.getElementById('savedPicsBody').innerHTML="No saved yet"; } }
-function saveNote(){ let txt=document.getElementById('noteArea').value; if(!txt) return; let notes=JSON.parse(localStorage.getItem('myNotes')||'[]'); notes.unshift({text:txt,date:new Date().toLocaleString()}); localStorage.setItem('myNotes',JSON.stringify(notes)); document.getElementById('noteArea').value=''; loadNotes(); }
-function loadNotes(){ let notes=JSON.parse(localStorage.getItem('myNotes')||'[]'); document.getElementById('notesList').innerHTML=notes.map((n,i)=>`<div class="card"><small>${n.date}</small><p>${n.text}</p><button onclick="delNote(${i})">Delete</button></div>`).join(''); }
-function delNote(i){ let notes=JSON.parse(localStorage.getItem('myNotes')||'[]'); notes.splice(i,1); localStorage.setItem('myNotes',JSON.stringify(notes)); loadNotes(); }
-async function loadDash(){ const c=getCache('dash_cache'); if(c) document.getElementById('dashBody').innerHTML=c; let r=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}}); let d=await r.json(); const html=`<div class="card"><b>${d.user.username}</b></div><div class="card">Followers: ${d.followersCount}</div>`; document.getElementById('dashBody').innerHTML=html; setCache('dash_cache', html); }
-async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); let map=await r.json(); let total=Object.values(map).reduce((a,b)=>a+b,0); let el=document.getElementById('msgCount'); if(total>0){el.innerText=total; el.classList.remove('hide');} else el.classList.add('hide'); }catch(e){} }
+function closeAll(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+function goToProfile(userId){ if(!userId) return; location.href='profile.html?id='+userId; }
+async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); let map=await r.json(); let total=Object.values(map).reduce((a,b)=>a+b,0); let el=document.getElementById('msgCount'); if(total>0){el.innerText=total; el.classList.remove('hide');} else el.classList.add('hide'); }catch{} }
 
 function renderFeed(posts){
  const f=document.getElementById('feed');
  if(!posts.length){ f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet</p>"; return; }
  f.innerHTML=posts.map(p=>{
-  const raw=p.mediaUrl||""; const mediaUrl=fixUrl(raw);
-  const isVid=p.type==='video'||raw.includes('/api/media-file');
+  const raw=p.mediaUrl||"";
+  const mediaUrl=fixUrl(raw);
+  const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
   const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline></video>`:`<img src="${mediaUrl}" />`;
-  return `<div class="post"><div class="post-head"><div class="avatar">${(p.user?.username||'R')[0].toUpperCase()}</div><b>${p.user?.username}</b><span style="margin-left:auto" onclick="delPost('${p._id}')">⋯</span></div><div class="media">${mediaHtml}</div><div class="actions"><span onclick="like('${p._id}')">${p.likes.includes(getMyId())?'❤️':'🤍'}</span><span>💬</span><span onclick="saveP('${p._id}')">🔖</span></div><div class="likes">${p.likes.length} likes</div><div class="cap"><b>${p.user?.username}</b> ${p.caption||''}</div><div id="c-${p._id}">${p.comments.map(c=>`<div class="comment"><b>${c.user?.username}</b> ${c.text}</div>`).join('')}</div><div class="input-row"><input id="i-${p._id}" placeholder="Add comment..."><button onclick="comment('${p._id}')">Post</button></div></div>`;
+  const userId=p.user?._id||p.user;
+  const username=p.user?.username||'user';
+  const avatarUrl=fixUrl(p.user?.avatar);
+  const avatarHtml=avatarUrl?`<img src="${avatarUrl}" onclick="goToProfile('${userId}')">`:username[0].toUpperCase();
+  return `<div class="post">
+  <div class="post-head">
+    <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
+    <b onclick="goToProfile('${userId}')">${username}</b>
+    <span style="margin-left:auto;cursor:pointer" onclick="delPost('${p._id}')">⋯</span>
+  </div>
+  <div class="media" ondblclick="like('${p._id}')">${mediaHtml}</div>
+  <div class="actions"><span onclick="like('${p._id}')">${p.likes.includes(getMyId())?'❤️':'🤍'}</span><span onclick="goToProfile('${userId}')">💬</span><span onclick="saveP('${p._id}')">🔖</span></div>
+  <div class="likes">${p.likes.length} likes</div>
+  <div class="cap"><b style="cursor:pointer" onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div>
+  <div id="c-${p._id}">${(p.comments||[]).map(c=>`<div class="comment"><b style="cursor:pointer" onclick="goToProfile('${c.user?._id||''}')">${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div>
+  <div class="input-row"><input id="i-${p._id}" placeholder="Add comment..."><button onclick="comment('${p._id}')">Post</button></div>
+  </div>`;
  }).join('');
 }
 
 async function load(){
- // 1. SHOW CACHED INSTANTLY
  const cached = getCache('feed_posts');
- if(cached){
-   renderFeed(cached);
- }
-
- // 2. FETCH FRESH
+ if(cached) renderFeed(cached);
  try{
    const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
    const posts=await r.json();
    renderFeed(posts);
    setCache('feed_posts', posts);
- }catch(e){
-   if(!cached) document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#777'>Offline - no cached feed</p>";
- }
+ }catch(e){ if(!cached) document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#777'>Offline</p>"; }
 }
-
 async function like(id){
-  // optimistic update in cache
   let posts=getCache('feed_posts')||[];
   let p=posts.find(x=>x._id===id);
   if(p){ if(p.likes.includes(getMyId())) p.likes=p.likes.filter(x=>x!==getMyId()); else p.likes.push(getMyId()); renderFeed(posts); setCache('feed_posts', posts); }
   await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}});
-  load();
 }
 async function comment(id){
   const t=document.getElementById('i-'+id).value; if(!t)return;
   await fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
-  // clear cache so new comment shows
-  localStorage.removeItem('feed_posts');
-  load();
+  localStorage.removeItem('feed_posts'); load();
 }
 async function saveP(id){ await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); alert('Saved!'); }
 async function delPost(id){ if(!confirm('Delete?'))return; await fetch(BASE+'/api/posts/'+id,{method:'DELETE',headers:{authorization:token}}); localStorage.removeItem('feed_posts'); load(); }
 function logout(){ localStorage.removeItem('token'); location.href='login.html'; }
-
 load(); loadMsgBadge();
+setInterval(loadMsgBadge,5000);
 </script>
 </body>
 </html>
