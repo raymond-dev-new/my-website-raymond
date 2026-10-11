@@ -81,7 +81,7 @@ const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
-function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ /* voice too big - don't crash */ console.log('cache full, skip'); } }
+function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ console.log('cache skip - too big'); } }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
@@ -145,9 +145,7 @@ function renderMsg(m){
   let src=content.replace('VOICE:','');
   inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
  }else{ inner=content+edited; }
- // FIX: don't put huge base64 in data-text attribute
- let safeText = content.startsWith('VOICE:') || content.startsWith('data:audio')? '' : (m.text||'').replace(/"/g,'&quot;').substring(0,200);
- return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${safeText}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
+ return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
 function renderAll(){
  const container=document.getElementById('msgs');
@@ -155,11 +153,12 @@ function renderAll(){
  container.innerHTML=msgsCache.map(m=>renderMsg(m)).join('');
  container.scrollTop=container.scrollHeight;
  if(active){
-  // FIX: don't cache voices to avoid quota crash - cache only text messages
-  let toCache = msgsCache.filter(m=>!(m.text||'').startsWith('VOICE:') &&!(m.text||'').startsWith('data:audio') );
-  // if only voices, keep last 20 anyway but without base64? keep as is but try
-  if(toCache.length===0) toCache = msgsCache.slice(-20);
-  setCache('chat_'+active, toCache);
+  // FIX: don't try to cache huge voice base64, only cache small messages to prevent crash
+  try{
+   let smallCache = msgsCache.filter(m=>!(m.text||'').startsWith('VOICE:'));
+   if(smallCache.length>0) setCache('chat_'+active, smallCache);
+   else setCache('chat_'+active, msgsCache.slice(-10).map(m=>({...m, text: (m.text||'').substring(0,500)})));
+  }catch{}
  }
 }
 async function openC(id,name){
@@ -206,10 +205,9 @@ async function toggleRecord(){
     const blob=new Blob(audioChunks,{type:'audio/webm'});
     const reader=new FileReader();
     reader.onload=async ()=>{
-     const base64=reader.result;
-     const t='VOICE:'+base64;
+     const base64=reader.result; const t='VOICE:'+base64;
      const tempId='temp_voice_'+Date.now();
-     // FIX: keep temp voice visible instantly and never delete until server confirms
+     // FIX: first voice stays - push and keep
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
      msgsCache.push(tempMsg);
      renderAll();
@@ -217,28 +215,24 @@ async function toggleRecord(){
      try{
       let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
       let saved=await r.json();
-      // replace temp with real saved - keeps it visible
-      msgsCache=msgsCache.map(x=> x._id===tempId? saved : x);
+      // FIX: replace temp with saved, but keep it visible
+      msgsCache = msgsCache.map(x=> x._id===tempId? saved : x);
       if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
       renderAll();
      }catch(e){
-      // FIX: don't delete on error, keep voice so user can retry
-      console.log('voice send failed, keeping temp',e);
+      console.log('voice send error, keeping first voice',e);
+      // FIX: don't delete on error - keep first voice
       renderAll();
      }
     };
-    reader.readAsDataURL(blob);
-    stream.getTracks().forEach(s=>s.stop());
+    reader.readAsDataURL(blob); stream.getTracks().forEach(s=>s.stop());
    };
    mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
   }catch{ alert('Mic denied'); }
- }else{
-  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
-  isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on');
- }
+ }else{ mediaRecorder.stop(); isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on'); }
 }
 function openMenu(el){
- selectedMsg=el.dataset.id; if(selectedMsg.startsWith('temp_')) return;
+ selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
  selectedIsMe=el.dataset.me==='true';
  let txt=el.dataset.text;
  document.getElementById('editInput').value=txt.startsWith('VOICE:')?'':txt;
@@ -279,26 +273,13 @@ async function autoPoll(){
   if(active){
    let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
    let fresh=await r.json();
-   // FIX: keep temp voices that are not yet saved
+   // FIX: keep temp voices when polling
    let tempVoices = msgsCache.filter(x=> String(x._id).startsWith('temp_'));
-   let existingIds=new Set(msgsCache.map(x=>x._id));
-   let merged = [...msgsCache];
-   fresh.forEach(f=>{
-    if(!existingIds.has(f._id)) merged.push(f);
-   });
-   // avoid duplicate removal of temp voices
-   if(merged.length!==msgsCache.length || fresh.length!==msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length){
-    // keep temps + fresh
-    let nonTempFresh = fresh;
-    msgsCache = [...nonTempFresh.filter(f=>!tempVoices.some(t=> t.text===f.text)),...tempVoices.filter(t=>!fresh.some(f=> f.text===t.text))];
-    // actually simpler: if fresh has more, replace non-temp part
-    if(fresh.length>0){
-     let nonTemps = msgsCache.filter(x=>!String(x._id).startsWith('temp_'));
-     // if fresh is newer, use fresh + keep temps that not yet in fresh
-     if(fresh.length>=nonTemps.length){
-      msgsCache = [...fresh,...tempVoices.filter(tv=>!fresh.some(f=> f.text===tv.text))];
-     }
-    }
+   if(fresh.length!==msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length){
+    const existingIds=new Set(msgsCache.map(x=>x._id));
+    fresh.forEach(m=>{ if(!existingIds.has(m._id)) msgsCache.push(m); });
+    // keep temp voices
+    tempVoices.forEach(tv=>{ if(!fresh.some(f=>f.text===tv.text)) { /* keep */ } else { msgsCache = msgsCache.filter(x=>x._id!==tv._id); } });
     renderAll();
     fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
    }
