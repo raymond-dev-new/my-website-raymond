@@ -57,7 +57,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 </style>
 </head>
 <body>
-<div class="top"><b>Messages <span id="totalUnread" class="total-badge" style="display:none">0</span> <span class="live-dot" title="Live auto-refresh ON"></span></b><span onclick="location.href='feed.html'" style="cursor:pointer;font-size:22px">←</span></div>
+<div class="top"><b>Messages <span id="totalUnread" class="total-badge" style="display:none">0</span> <span class="live-dot"></span></b><span onclick="location.href='feed.html'" style="cursor:pointer;font-size:22px">←</span></div>
 <div class="list" id="list"></div>
 <div class="chat" id="chat">
 <div class="top">
@@ -82,7 +82,7 @@ if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
 function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
 function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
@@ -91,9 +91,8 @@ let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[],
 
 const socket=io(BASE,{transports:['websocket','polling'], reconnection:true, reconnectionAttempts:100, reconnectionDelay:1000});
 socket.on('connect',()=>{ socket.emit('join',myId()); });
-socket.on('disconnect',()=>{});
 
-async function loadUnread(silent=false){
+async function loadUnread(){
  try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{}
 }
 function updateBadges(){
@@ -114,13 +113,13 @@ function renderUsers(users){
   const count=unreadMap[id]||0;
   const avatar=u.avatar?`<img src="${fixUrl(u.avatar)}">`:letter;
   const hasUnread=count>0?' new-msg':'';
-  return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count? count+' new message(s) • Tap to chat':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
+  return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count? count+' new':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
  }).join('');
 }
 async function load(){
  const el=document.getElementById('list');
  const cachedUsers=getCache('chat_users');
- if(cachedUsers){ renderUsers(cachedUsers); } else { el.innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading chats...</div>'; }
+ if(cachedUsers) renderUsers(cachedUsers);
  try{
   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
   let users=await r.json();
@@ -133,37 +132,27 @@ async function load(){
   setCache('chat_users', users);
   renderUsers(users);
   await loadUnread();
- }catch(e){ if(!cachedUsers) el.innerHTML='Error: '+e.message; }
+ }catch(e){}
 }
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
  const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
  const time=formatTime(m.createdAt);
  let tick=''; if(isMe) tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`;
- let content=m.text||m.mediaUrl||"";
+ let content=m.text||"";
  let inner="";
- if(content.startsWith('VOICE:') || content.startsWith('data:audio') || (m.mediaUrl && m.mediaUrl.length>5)){
+ if(content.startsWith('VOICE:') || content.startsWith('data:audio')){
   let src=content.replace('VOICE:','');
-  if(m.mediaUrl) src=fixUrl(m.mediaUrl);
-  else src=fixUrl(src);
-  if(src) inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
-  else inner=`🎤 Voice${edited}`;
+  inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
  }else{ inner=content+edited; }
- return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').startsWith('VOICE:')||(m.text||'').startsWith('data:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
+ return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
 function renderAll(){
  const container=document.getElementById('msgs');
  if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; return; }
- // FIX DOUBLE SEND: dedupe by _id
  msgsCache = [...new Map(msgsCache.map(m=>[m._id,m])).values()];
  container.innerHTML=msgsCache.map(m=>renderMsg(m)).join('');
  container.scrollTop=container.scrollHeight;
- if(active){
-  try{
-   let small = msgsCache.filter(m=>!(m.text||'').startsWith('VOICE:') &&!(m.text||'').startsWith('data:'));
-   if(small.length) setCache('chat_'+active, small.slice(-50));
-  }catch{}
- }
 }
 async function openC(id,name){
  active=id;
@@ -172,14 +161,13 @@ async function openC(id,name){
  document.getElementById('chat').classList.add('open');
  const cachedMsgs=getCache('chat_'+id);
  if(cachedMsgs){ msgsCache=cachedMsgs; renderAll(); }
- else { document.getElementById('msgs').innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading...</div>'; }
  try{
   await fetch(BASE+'/api/messages/'+id+'/read',{method:'POST',headers:{authorization:token}});
   unreadMap[id]=0; updateBadges();
   let r=await fetch(BASE+'/api/messages/'+id,{headers:{authorization:token}});
   msgsCache=await r.json();
   renderAll();
- }catch(e){ console.log(e); }
+ }catch(e){}
 }
 function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
 async function send(){
@@ -202,37 +190,40 @@ async function toggleRecord(){
  if(!isRecording){
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus', bitsPerSecond:32000});
+   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus', bitsPerSecond:16000});
    audioChunks=[];
    mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
    mediaRecorder.onstop=async ()=>{
     const blob=new Blob(audioChunks,{type:'audio/webm'});
-    audioChunks=[];
     stream.getTracks().forEach(s=>s.stop());
+    audioChunks=[];
     if(!blob || blob.size===0) return;
-    const tempId='temp_voice_'+Date.now();
-    const localUrl = URL.createObjectURL(blob);
-    const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:'VOICE:'+localUrl, mediaUrl: localUrl, createdAt:new Date().toISOString(), read:false};
-    msgsCache.push(tempMsg);
-    renderAll();
-    try{
-     const fd = new FormData();
-     fd.append('receiver', active);
-     fd.append('file', blob, 'voice_'+Date.now()+'.webm');
-     let r = await fetch(BASE+'/api/messages',{method:'POST', headers:{authorization:token}, body:fd});
-     if(r.ok){
-      let saved = await r.json();
-      // FIX: replace temp with saved - only 1 voice, not 2
-      msgsCache = msgsCache.filter(x=> x._id!==tempId);
-      if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+    const reader=new FileReader();
+    reader.onload=async ()=>{
+     const base64=reader.result;
+     const t='VOICE:'+base64;
+     const tempId='temp_voice_'+Date.now();
+     const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
+     msgsCache.push(tempMsg);
+     renderAll();
+     try{
+      let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
+      let saved=await r.json();
+      // FIX: replace temp with saved - only 1
+      msgsCache = msgsCache.filter(x=>x._id!==tempId);
+      if(saved && saved._id){
+       if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+      }
       renderAll();
-     }else{
-      // keep temp if failed
-      console.log('voice upload failed', r.status);
+     }catch(e){
+      console.log('keep voice even if error',e);
+      // keep it - don't delete first voice
      }
-    }catch(e){ console.log('voice error', e); }
+    };
+    reader.readAsDataURL(blob);
    };
-   mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
+   mediaRecorder.start();
+   isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
   }catch{ alert('Mic denied'); }
  }else{
   if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
@@ -242,81 +233,53 @@ async function toggleRecord(){
 function openMenu(el){
  selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
  selectedIsMe=el.dataset.me==='true';
- let txt=el.dataset.text||"";
- document.getElementById('editInput').value=txt.startsWith('VOICE:')?'':txt;
- document.getElementById('editOpt').style.display=selectedIsMe && txt &&!txt.startsWith('VOICE:') &&!txt.startsWith('data:')? 'flex':'none';
  document.getElementById('menu').classList.add('open');
 }
 function closeMenu(){ document.getElementById('menu').classList.remove('open'); }
-function startEdit(){ if(!selectedIsMe) return; closeMenu(); document.getElementById('editBox').classList.add('open'); }
-async function saveEdit(){
- let newText=document.getElementById('editInput').value.trim(); if(!newText) return;
- await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})});
- closeBox();
-}
+function startEdit(){}
+async function saveEdit(){}
 async function deleteMsg(){
  if(!confirm('Unsend?')) return; closeMenu();
  msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll();
  try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{}
 }
 socket.on('receiveMessage',m=>{
- let senderId=m.sender._id||m.sender; let receiverId=m.receiver._id||m.receiver;
- if(String(senderId)==String(myId())) return; // FIX: don't add my own echo - stops double voice
+ let senderId=m.sender._id||m.sender;
+ if(String(senderId)==String(myId())) return;
+ let receiverId=m.receiver._id||m.receiver;
  if(senderId==active || receiverId==active){
   if(!msgsCache.find(x=>x._id===m._id)){ msgsCache.push(m); renderAll(); }
   fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  }else if(receiverId==myId()){
-  unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges(); renderUsers(usersCache.length?usersCache:getCache('chat_users')||[]);
+  unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges();
  }
 });
-socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll();}});
 socket.on('messageDeleted',data=>{ msgsCache=msgsCache.filter(x=>x._id!=data._id); renderAll(); });
 socket.on('messagesSeen',()=>{ msgsCache.forEach(m=>{ if((m.sender._id||m.sender)==myId()) m.read=true; }); renderAll(); });
 
 async function autoPoll(){
  try{
-  await loadUnread(true);
+  await loadUnread();
   if(active){
    let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
    let fresh=await r.json();
-   let tempVoices = msgsCache.filter(x=> String(x._id).startsWith('temp_'));
-   let nonTempCount = msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length;
-   if(fresh.length!==nonTempCount){
-    const existingIds=new Set(msgsCache.map(x=>x._id));
-    fresh.forEach(m=>{ if(!existingIds.has(m._id)) msgsCache.push(m); });
-    // if fresh contains the voice we just sent, remove temp
-    tempVoices.forEach(tv=>{
-     if(fresh.some(f=> f._id!==tv._id)) {
-       // if server has saved version, remove temp duplicate
-       if(fresh.length>0) msgsCache = msgsCache.filter(x=>x._id!==tv._id || fresh.some(f=>f._id===x._id));
-     }
-    });
-    // final dedupe - only 1 of each
-    msgsCache = [...new Map(msgsCache.map(m=>[m._id,m])).values()];
-    // remove leftover temp if fresh arrived
-    if(fresh.length>0){
-     msgsCache = msgsCache.filter(m=>!String(m._id).startsWith('temp_') ||!fresh.some(f=> f.createdAt===m.createdAt));
-     // keep only fresh + any still pending temp that is not in fresh
-     let stillPending = tempVoices.filter(tv=>!fresh.some(f=> Math.abs(new Date(f.createdAt)-new Date(tv.createdAt))<2000));
-     if(stillPending.length===0) msgsCache = fresh;
-     else msgsCache = [...fresh,...stillPending];
+   // only add new ones, don't duplicate voice
+   let existingIds = new Set(msgsCache.map(x=>x._id));
+   let newOnes = fresh.filter(x=>!existingIds.has(x._id) &&!String(x._id).startsWith('temp_'));
+   if(newOnes.length){
+    // if fresh has our voice, remove temp voice
+    let hasMyVoiceInFresh = fresh.some(f=> f.sender._id==myId() || f.sender==myId());
+    if(hasMyVoiceInFresh){
+     msgsCache = msgsCache.filter(x=>!String(x._id).startsWith('temp_voice_'));
     }
+    newOnes.forEach(m=> msgsCache.push(m));
     renderAll();
-    fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
-   }
-  }else{
-   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
-   let users=await r.json();
-   if(users.length && JSON.stringify(users)!==JSON.stringify(usersCache)){
-    setCache('chat_users', users);
-    renderUsers(users);
    }
   }
  }catch{}
 }
-setInterval(autoPoll, 3000);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoPoll(); load(); } });
-
+setInterval(autoPoll, 2000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) autoPoll(); });
 load();
 setInterval(loadUnread,4000);
 </script>
