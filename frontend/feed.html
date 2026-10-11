@@ -74,25 +74,22 @@ a{color:inherit;text-decoration:none}
 const BASE = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
 if(!token) location.href = "login.html";
-
-function getCache(k){ try{ const d=localStorage.getItem(k); return d? JSON.parse(d): null }catch{ return null } }
-function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
 function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
 function closeAll(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); document.querySelectorAll('.full-page').forEach(p=>p.classList.remove('open')); }
 function openPage(name){ closeAll(); setTimeout(()=>{ document.getElementById('page-'+name).classList.add('open'); document.getElementById('overlay').classList.add('show'); if(name==='savedPics') loadSavedPics(); if(name==='dashboard') loadDash(); if(name==='league') loadLeague(); if(name==='country') loadCountry(); if(name==='savedNote') loadNotes(); }, 200); }
-async function loadLeague(){ const c=getCache('league_cache'); if(c) document.getElementById('leagueBody').innerHTML=c; document.getElementById('leagueBody').innerHTML = `<div class="card">🏆 Premier League</div>`; setCache('league_cache', document.getElementById('leagueBody').innerHTML); }
-async function loadCountry(){ const c=getCache('country_cache'); if(c) document.getElementById('countryBody').innerHTML=c; document.getElementById('countryBody').innerHTML = `<div class="card">🌍 World Cup Qualifiers</div>`; setCache('country_cache', document.getElementById('countryBody').innerHTML); }
+async function loadLeague(){ document.getElementById('leagueBody').innerHTML = `<div class="card">🏆 Premier League</div>`; }
+async function loadCountry(){ document.getElementById('countryBody').innerHTML = `<div class="card">🌍 World Cup Qualifiers</div>`; }
 async function loadSavedPics(){ try{ let r=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}}); let d=await r.json(); let posts=d.user.savedPosts||[]; document.getElementById('savedPicsBody').innerHTML=posts.length?posts.map(id=>`<div class="card">${id}</div>`).join(''):"<p>No saved</p>"; }catch(e){ document.getElementById('savedPicsBody').innerHTML="No saved yet"; } }
 function saveNote(){ let txt=document.getElementById('noteArea').value; if(!txt) return; let notes=JSON.parse(localStorage.getItem('myNotes')||'[]'); notes.unshift({text:txt,date:new Date().toLocaleString()}); localStorage.setItem('myNotes',JSON.stringify(notes)); document.getElementById('noteArea').value=''; loadNotes(); }
 function loadNotes(){ let notes=JSON.parse(localStorage.getItem('myNotes')||'[]'); document.getElementById('notesList').innerHTML=notes.map((n,i)=>`<div class="card"><small>${n.date}</small><p>${n.text}</p><button onclick="delNote(${i})">Delete</button></div>`).join(''); }
 function delNote(i){ let notes=JSON.parse(localStorage.getItem('myNotes')||'[]'); notes.splice(i,1); localStorage.setItem('myNotes',JSON.stringify(notes)); loadNotes(); }
-async function loadDash(){ const c=getCache('dash_cache'); if(c) document.getElementById('dashBody').innerHTML=c; let r=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}}); let d=await r.json(); const html=`<div class="card"><b>${d.user.username}</b></div><div class="card">Followers: ${d.followersCount}</div>`; document.getElementById('dashBody').innerHTML=html; setCache('dash_cache', html); }
+async function loadDash(){ let r=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}}); let d=await r.json(); document.getElementById('dashBody').innerHTML=`<div class="card"><b>${d.user.username}</b></div><div class="card">Followers: ${d.followersCount}</div>`; }
 async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); let map=await r.json(); let total=Object.values(map).reduce((a,b)=>a+b,0); let el=document.getElementById('msgCount'); if(total>0){el.innerText=total; el.classList.remove('hide');} else el.classList.add('hide'); }catch(e){} }
-
-function renderFeed(posts){
+async function load(){
+ const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
+ const posts=await r.json();
  const f=document.getElementById('feed');
  if(!posts.length){ f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet</p>"; return; }
  f.innerHTML=posts.map(p=>{
@@ -102,45 +99,12 @@ function renderFeed(posts){
   return `<div class="post"><div class="post-head"><div class="avatar">${(p.user?.username||'R')[0].toUpperCase()}</div><b>${p.user?.username}</b><span style="margin-left:auto" onclick="delPost('${p._id}')">⋯</span></div><div class="media">${mediaHtml}</div><div class="actions"><span onclick="like('${p._id}')">${p.likes.includes(getMyId())?'❤️':'🤍'}</span><span>💬</span><span onclick="saveP('${p._id}')">🔖</span></div><div class="likes">${p.likes.length} likes</div><div class="cap"><b>${p.user?.username}</b> ${p.caption||''}</div><div id="c-${p._id}">${p.comments.map(c=>`<div class="comment"><b>${c.user?.username}</b> ${c.text}</div>`).join('')}</div><div class="input-row"><input id="i-${p._id}" placeholder="Add comment..."><button onclick="comment('${p._id}')">Post</button></div></div>`;
  }).join('');
 }
-
-async function load(){
- // 1. SHOW CACHED INSTANTLY
- const cached = getCache('feed_posts');
- if(cached){
-   renderFeed(cached);
- }
-
- // 2. FETCH FRESH
- try{
-   const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
-   const posts=await r.json();
-   renderFeed(posts);
-   setCache('feed_posts', posts);
- }catch(e){
-   if(!cached) document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#777'>Offline - no cached feed</p>";
- }
-}
-
-async function like(id){
-  // optimistic update in cache
-  let posts=getCache('feed_posts')||[];
-  let p=posts.find(x=>x._id===id);
-  if(p){ if(p.likes.includes(getMyId())) p.likes=p.likes.filter(x=>x!==getMyId()); else p.likes.push(getMyId()); renderFeed(posts); setCache('feed_posts', posts); }
-  await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}});
-  load();
-}
-async function comment(id){
-  const t=document.getElementById('i-'+id).value; if(!t)return;
-  await fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
-  // clear cache so new comment shows
-  localStorage.removeItem('feed_posts');
-  load();
-}
+async function like(id){ await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); load(); }
+async function comment(id){ const t=document.getElementById('i-'+id).value; if(!t)return; await fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})}); load(); }
 async function saveP(id){ await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); alert('Saved!'); }
-async function delPost(id){ if(!confirm('Delete?'))return; await fetch(BASE+'/api/posts/'+id,{method:'DELETE',headers:{authorization:token}}); localStorage.removeItem('feed_posts'); load(); }
+async function delPost(id){ if(!confirm('Delete?'))return; await fetch(BASE+'/api/posts/'+id,{method:'DELETE',headers:{authorization:token}}); load(); }
 function logout(){ localStorage.removeItem('token'); location.href='login.html'; }
-
 load(); loadMsgBadge();
 </script>
 </body>
-</html>
+</html
