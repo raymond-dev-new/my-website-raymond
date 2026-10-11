@@ -2,11 +2,7 @@ import express from 'express'
 import dotenv from 'dotenv'
 dotenv.config()
 import { fileURLToPath } from 'url'
-// Recreate __dirname for ESM
-
 import mongoose from 'mongoose'
-import user from './model/user.js';
-// import mongodb from './model/schema.js';
 import cors from 'cors'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
@@ -20,63 +16,28 @@ import {v2 as cloudinary } from 'cloudinary';
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 import cron from "node-cron"
-import fetch from "node-fetch"; // npm i node-fetch
+import fetch from "node-fetch";
 import http from 'http'
 import { Server } from 'socket.io'
 
 const app = express()
-
-//Raymond123
 const port = process.env.PORT || 8000
 const JWT_SECRET = process.env.JWT_SECRET
-const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
+const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
 const url = process.env.MONGO_URL
 
-
 app.use(cors({ origin: "*" }));
-app.use(bordyparser.json()); // for metadata
-app.use(express.json({ limit: '50mb' })); // important for base64
- app.use(express.static(path.join(__dirname, 'frontend')))
+app.use(bordyparser.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.static(path.join(__dirname, 'frontend')))
+app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); })
 
-  app.use((req, res, next) => {
-    console.log(`  ${req.method}  ${req.url}`);
-    next();
- })
+mongoose.connect(url).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
+app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'register.html')); })
 
- //start here sdfyuiopiuytrewrtyuiopoiuytretkjhgf
-
-    // 1. CONNECT MONGODB with Mongoose
-mongoose.connect(url)
-.then(() => console.log("MongoDB Connected"))
-.catch(err => console.log(err));
-
-
- 
-  app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'register.html'));
- }) 
-
-
-// full blog website jdhghjksajhgfdsfghjkjhgfdsfghjhgfdghjgfd
-// uytresdtyguhijiuytdrsertfyghjikoijugytdhjhgfdgytdrsdfgh
-// jhgfdxcvbnkpdsrezrxcvhbjknuyxtcvjbknlkjhgfdtyuihiuyvuyctxt
-
-//const server = http.createServer(app);
-//const io = new Server(server, { cors: { origin: "*" } });
-// for local
-
-let io
-
-if (process.env.NODE_ENV !== 'production') {
-  const server = http.createServer(app);
-   io = new Server(server, { cors: { origin: "*" } });
-  // your io.on connection here
-  //server.listen(5000, () => console.log("Local running"));
-}
-
-/*const urll = 'mongodb+srv://raymond77252_db_user:TZbdSfSq6NDT4V0F@cluster0.uip3fi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0' */
+let io;
+const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
 const SECRET = "secret123";
-
 function authh(req, res, next) {
   const tokenN = req.headers.authorization;
   if (!tokenN) return res.status(401).json({ msg: "No token" });
@@ -84,22 +45,10 @@ function authh(req, res, next) {
   catch { return res.status(401).json({ msg: "Invalid" }); }
 }
 
+const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
-if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
-const sstorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const uploadd = multer({ sstorage });
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.post('/api/upload', authh, uploadd.single('file'), (req, res) => {
-  res.json({ url: '/uploads/' + req.file.filename });
-});
-
-
-/*mongoose.connect(urll).then(() => console.log("MongoDB Connected Successfully")).catch(err => console.log(err)); */
-
-const Userd = mongoose.model('User', new mongoose.Schema({
+// ========== MODELS - FIXED ==========
+const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -108,7 +57,10 @@ const Userd = mongoose.model('User', new mongoose.Schema({
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
-}, { timestamps: true }));
+}, { timestamps: true });
+
+// FIX: model name is 'User' to match all ref:'User', but keep old collection 'raymondusers' so you don't lose data
+const Userd = mongoose.model('User', UserSchema, 'raymondusers');
 
 const Post = mongoose.model('Post', new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -138,6 +90,13 @@ const Notification = mongoose.model('Notification', new mongoose.Schema({
   read: { type: Boolean, default: false }
 }, { timestamps: true }));
 
+const MediaSchema = new mongoose.Schema({
+  userId: String,
+  img: { data: Buffer, contentType: String },
+  createdAt: { type: Date, default: Date.now }
+});
+const Media = mongoose.model('Media', MediaSchema);
+
 async function createNotif(receiverId, senderId, type, postId=null, text=""){
   if(receiverId.toString()===senderId.toString()) return;
   if(type==='like'){
@@ -146,10 +105,11 @@ async function createNotif(receiverId, senderId, type, postId=null, text=""){
   }
   const n = await Notification.create({ receiver:receiverId, sender:senderId, type, post:postId, text });
   const populated = await Notification.findById(n._id).populate('sender','username avatar').populate('post','mediaUrl caption');
-  io.to(receiverId.toString()).emit('newNotification', populated);
+  safeEmit(receiverId.toString(), 'newNotification', populated);
   return populated;
 }
 
+// AUTH
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password } = req.body;
   const hashed = await bcrypt.hash(password, 10);
@@ -167,41 +127,80 @@ app.post('/api/auth/login', async (req, res) => {
   res.json({ token, user });
 });
 
-// ========== FACEBOOK STYLE AVATAR ADD / UPDATE ANYTIME ==========
-app.put('/api/users/avatar', authh, uploadd.single('file'), async (req, res) => {
-  const user = await Userd.findById(req.userId);
-  if(!user) return res.status(404).json({msg:"User not found"});
-  if(!req.file) return res.status(400).json({msg:"No file"});
-  user.avatar = '/uploads/' + req.file.filename;
-  await user.save();
-  res.json(user);
+app.post('/api/messages', authh, async (req, res) => {
+  try{
+    const { receiver, text } = req.body;
+    if(!receiver || !text) return res.status(400).json({msg:"Missing fields"});
+    const m = await Message.create({ sender: req.userId, receiver, text, read: false });
+    const populated = await Message.findById(m._id).populate('sender','username avatar').populate('receiver','username avatar');
+    safeEmit(receiver, 'receiveMessage', populated);
+    safeEmit(req.userId, 'receiveMessage', populated);
+    // create notif
+    await createNotif(receiver, req.userId, 'message', null, text.slice(0,30));
+    res.json(populated);
+  }catch(e){ res.status(500).json({msg:e.message}); }
 });
 
+app.post('/api/upload', authh, uploadd.single('file'), (req, res) => {
+  if(!req.file) return res.status(400).json({msg:"No file"});
+  const b64 = req.file.buffer.toString('base64');
+  const dataUrl = `data:${req.file.mimetype};base64,${b64}`;
+  res.json({ url: dataUrl });
+});
+
+app.put('/api/users/avatar', authh, uploadd.single('file'), async (req, res) => {
+  const userDoc = await Userd.findById(req.userId);
+  if(!userDoc) return res.status(404).json({msg:"User not found"});
+  if(!req.file) return res.status(400).json({msg:"No file"});
+  const b64 = req.file.buffer.toString('base64');
+  userDoc.avatar = `data:${req.file.mimetype};base64,${b64}`;
+  await userDoc.save();
+  res.json(userDoc);
+});
 app.delete('/api/users/avatar', authh, async (req,res)=>{
   const user = await Userd.findById(req.userId);
   if(!user) return res.status(404).json({msg:"Not found"});
-  user.avatar = "";
-  await user.save();
-  res.json(user);
+  user.avatar = ""; await user.save(); res.json(user);
 });
-
 app.get('/api/users/me/profile', authh, async (req, res) => {
   const user = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
   const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
   res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
 });
-// ========== END AVATAR ==========
 
-app.post('/api/posts', authh, async (req, res) => {
-  const post = await Post.create({ user: req.userId,...req.body });
-  res.json(post);
+app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
+  try{
+    let mediaUrl = req.body.mediaUrl || "";
+    let type = req.body.type || 'image';
+    if(req.file){
+      if(req.file.mimetype.startsWith('video')){
+        if(req.file.size > 30*1024*1024) return res.status(400).json({msg: "Video too big max 30MB"});
+        const media = await Media.create({
+          userId: req.userId,
+          img: { data: req.file.buffer, contentType: req.file.mimetype }
+        });
+        mediaUrl = `/api/media-file/${media._id}`;
+        type = 'video';
+      } else {
+        if(req.file.size > 6*1024*1024) return res.status(400).json({msg: "Image too big max 6MB"});
+        const b64 = req.file.buffer.toString('base64');
+        mediaUrl = `data:${req.file.mimetype};base64,${b64}`;
+        type = 'image';
+      }
+    }
+    const post = await Post.create({ user: req.userId, caption: req.body.caption || "", mediaUrl, type });
+    res.json(post);
+  }catch(e){
+    console.error(e);
+    res.status(500).json({msg: e.message});
+  }
 });
+
 app.delete('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   if (!post) return res.status(404).json({ msg: "Post not found" });
   if (post.user.toString()!== req.userId) return res.status(403).json({ msg: "Not yours" });
-  await Post.findByIdAndDelete(req.params.id);
-  res.json({ msg: "Deleted" });
+  await Post.findByIdAndDelete(req.params.id); res.json({ msg: "Deleted" });
 });
 app.put('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findByIdAndUpdate(req.params.id, { caption: req.body.caption }, { new: true });
@@ -212,7 +211,7 @@ app.get('/api/posts/feed', authh, async (req, res) => {
   res.json(posts);
 });
 app.get('/api/posts/reels', async (req, res) => {
-  const reels = await Post.find({ mediaUrl: { $regex: '\\.(mp4|mov|webm|mkv)$', $options: 'i' } }).populate('user').populate('comments.user').sort({ createdAt: -1 });
+  const reels = await Post.find({ type: 'video' }).populate('user').populate('comments.user').sort({ createdAt: -1 });
   res.json(reels);
 });
 app.get('/api/posts/:id', authh, async (req, res) => {
@@ -220,7 +219,6 @@ app.get('/api/posts/:id', authh, async (req, res) => {
   if (!post) return res.status(404).json({ msg: "Post not found" });
   res.json(post);
 });
-
 app.post('/api/posts/:id/like', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   const isLiked = post.likes.includes(req.userId);
@@ -231,7 +229,6 @@ app.post('/api/posts/:id/like', authh, async (req, res) => {
   const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
   res.json(updated);
 });
-
 app.post('/api/posts/:id/comment', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   post.comments.push({ user: req.userId, text: req.body.text });
@@ -240,23 +237,20 @@ app.post('/api/posts/:id/comment', authh, async (req, res) => {
   const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
   res.json(updated);
 });
-
 app.post('/api/posts/:id/share', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  post.shares += 1;
-  await post.save();
-  res.json(post);
+  const post = await Post.findById(req.params.id); post.shares += 1; await post.save(); res.json(post);
 });
 app.post('/api/posts/:id/save', authh, async (req, res) => {
   const me = await Userd.findById(req.userId);
   me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
-  await me.save();
-  res.json(me.savedPosts);
+  await me.save(); res.json(me.savedPosts);
 });
-app.post('/api/posts/:id/view', async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  if(!post) return res.status(404).json({ msg: "Not found" });
-  post.views += 1; await post.save(); res.json({ views: post.views });
+
+ app.post('/api/posts/:id/view', async (req,res)=>{
+ try{
+  const p = await Post.findByIdAndUpdate(req.params.id, {$inc:{views:1}}, {new:true});
+  res.json({views:p.views});
+ }catch(e){ res.status(500).json({msg:e.message}) }
 });
 
 app.get('/api/users/:id', async (req, res) => {
@@ -265,7 +259,6 @@ app.get('/api/users/:id', async (req, res) => {
   const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
   res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
 });
-
 app.post('/api/users/:id/follow', authh, async (req, res) => {
   if(req.params.id === req.userId) return res.status(400).json({ msg: "Can't follow yourself" });
   const target = await Userd.findById(req.params.id);
@@ -283,14 +276,12 @@ app.post('/api/users/:id/follow', authh, async (req, res) => {
   const updatedTarget = await Userd.findById(target._id).populate('followers','username').populate('following','username');
   res.json({ me, target: updatedTarget, isFollowing:!isFollowing });
 });
-
 app.get('/api/explore', async (req, res) => {
   const q = req.query.q;
   if (q) { const users = await Userd.find({ username: { $regex: q, $options: 'i' } }); return res.json(users); }
   const posts = await Post.find().populate('user').sort({ likes: -1 }).limit(20);
   res.json(posts);
 });
-
 app.get('/api/notifications', authh, async (req, res) => {
   const notifs = await Notification.find({ receiver: req.userId }).populate('sender','username avatar').populate('post','mediaUrl').sort({ createdAt: -1 }).limit(50);
   res.json(notifs);
@@ -303,7 +294,6 @@ app.post('/api/notifications/read', authh, async (req, res) => {
   await Notification.updateMany({ receiver: req.userId, read: false }, { read: true });
   res.json({ ok:true });
 });
-
 app.get('/api/messages/users', authh, async (req, res) => {
   const me = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
   if(!me) return res.json([]);
@@ -320,7 +310,7 @@ app.get('/api/messages/unread/counts', authh, async (req, res) => {
 });
 app.post('/api/messages/:id/read', authh, async (req, res) => {
   await Message.updateMany({ sender: req.params.id, receiver: req.userId, read: false }, { read: true });
-  io.to(req.params.id).emit('messagesSeen', { by: req.userId });
+  safeEmit(req.params.id, 'messagesSeen', { by: req.userId });
   res.json({ ok: true });
 });
 app.get('/api/messages/:id', authh, async (req, res) => {
@@ -333,8 +323,8 @@ app.put('/api/messages/msg/:msgId', authh, async (req, res) => {
   if(m.sender.toString()!== req.userId) return res.status(403).json({msg:"Not yours"});
   m.text = req.body.text; m.edited = true; await m.save();
   const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
-  io.to(m.receiver.toString()).emit('messageEdited', populated);
-  io.to(m.sender.toString()).emit('messageEdited', populated);
+  safeEmit(m.receiver.toString(), 'messageEdited', populated);
+  safeEmit(m.sender.toString(), 'messageEdited', populated);
   res.json(populated);
 });
 app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
@@ -345,26 +335,47 @@ app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
   if(!isSender &&!isReceiver) return res.status(403).json({msg:"Not allowed"});
   const data = { _id: m._id, sender: m.sender, receiver: m.receiver };
   await Message.findByIdAndDelete(req.params.msgId);
-  io.to(data.receiver.toString()).emit('messageDeleted', data);
-  io.to(data.sender.toString()).emit('messageDeleted', data);
+  safeEmit(data.receiver.toString(), 'messageDeleted', data);
+  safeEmit(data.sender.toString(), 'messageDeleted', data);
   res.json({ok:true});
 });
 
-io.on('connection', (socket) => {
-  socket.on('join', (id) => socket.join(id));
-  socket.on('sendMessage', async (d) => {
-    const m = await Message.create({ sender: d.sender, receiver: d.receiver, text: d.text, read: false });
-    const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
-    io.to(d.receiver).emit('receiveMessage', populated);
-    io.to(d.sender).emit('receiveMessage', populated);
-  });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+
+app.post('/api/save-media', upload.single('file'), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const newMedia = new Media({ userId, img: { data: req.file.buffer, contentType: req.file.mimetype } });
+    await newMedia.save(); res.json({ success: true, id: newMedia._id });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+app.get('/api/get-media', async (req, res) => {
+  const { userId } = req.query;
+  const media = await Media.find({ userId }).sort({ createdAt: -1 });
+  const result = media.map(m => ({ _id: m._id, src: `data:${m.img.contentType};base64,${m.img.data.toString('base64')}` }));
+  res.json(result);
+});
+app.get('/api/media-file/:id', async (req, res) => {
+  try{
+    const media = await Media.findById(req.params.id);
+    if(!media) return res.status(404).send('Not found');
+    res.set('Content-Type', media.img.contentType);
+    res.set('Cache-Control', 'public, max-age=31536000');
+    res.send(media.img.data);
+  }catch(e){ res.status(500).send(e.message); }
+});
+app.delete('/api/delete-media/:id', async (req, res) => {
+  await Media.findByIdAndDelete(req.params.id); res.json({ success: true });
 });
 
+// blog end here uytrewdrtgyhujkluytrrtyuiuytrevcdfgh
+// ytrefghjkkjhgfdfghjklkjhgfdsfghjklkjhgfdsfiuyfdjhg
+// uytrewuioiuytrertylkjhgfdghjhgfdfghjktretyiuytrjhg
 
-// full blog end here iuystdyugiooiuytrtyughijooiuytryuiuytuiu
-// hgfdsrytuyujliuys6ssdf;ilkuyjtrxulkljkhjtzdiukyxjvk,jmhlkju
-// uytrxfghdsrtdyfuighoiuydttufigohiuytyuihiuydtuigohiuytuiohi
- 
+
+
+
 
   let token = '';
 
@@ -1000,22 +1011,22 @@ app.get('/api/fetch-now', async(req,res)=>{
 
 
 // 1. SCHEMA: SAVE IMAGE AS BUFFER
-const MediaSchema = new mongoose.Schema({
+const oldMediaSchema = new mongoose.Schema({
   userId: String,
   img: { data: Buffer, contentType: String }, // THIS SAVES THE FILE
   createdAt: { type: Date, default: Date.now }
 });
-const Media = mongoose.model('Media', MediaSchema);
+const oldMedia = mongoose.model('oldMedia', oldMediaSchema);
 
 // 2. MULTER: SAVE TO MEMORY
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+const storagedd = multer.memoryStorage();
+const uploaddd = multer({ storage: storagedd, limits: { fileSize: 100 * 1024 * 1024 } });
 
 // 3. UPLOAD ROUTE
-app.post('/api/save-media', upload.single('file'), async (req, res) => {
+app.post('/api/save-media', uploaddd.single('file'), async (req, res) => {
   try {
     const { userId } = req.body;
-    const newMedia = new Media({
+    const newMedia = new oldMedia({
       userId,
       img: {
         data: req.file.buffer, // raw bytes
@@ -1032,7 +1043,7 @@ app.post('/api/save-media', upload.single('file'), async (req, res) => {
 // 4. GET ROUTE - SEND AS BASE64
 app.get('/api/get-media', async (req, res) => {
   const { userId } = req.query;
-  const media = await Media.find({ userId }).sort({ createdAt: -1 });
+  const media = await oldMedia.find({ userId }).sort({ createdAt: -1 });
   
   // Convert buffer to base64 so frontend can display
   const result = media.map(m => ({
@@ -1044,7 +1055,7 @@ app.get('/api/get-media', async (req, res) => {
 
 // 5. DELETE
 app.delete('/api/delete-media/:id', async (req, res) => {
-  await Media.findByIdAndDelete(req.params.id);
+  await oldMedia.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });  
 
@@ -1056,14 +1067,14 @@ app.delete('/api/delete-media/:id', async (req, res) => {
  const ADMIN_PASSWORD = "123456";
  
  // --- MODELS ---
- const UserSchema = new mongoose.Schema({
+ const newUserSchema = new mongoose.Schema({
    email: String,
    password: String,
    referenceCode: String,
    ngnBalance: { type: Number, default: 0 },
    usdBalance: { type: Number, default: 0 },
  });
- const NewUser = mongoose.model('NewUser', UserSchema);
+ const NewUser = mongoose.model('NewUser', newUserSchema);
  
  const PendingSchema = new mongoose.Schema({
    referenceCode: String,
@@ -1257,4 +1268,18 @@ app.delete('/api/delete-media/:id', async (req, res) => {
  // online banking end here tdsdtyuiuytrdfuiuyt
 
 
- app.listen(port, console.log('server is running on port 8000'))
+if (process.env.NODE_ENV!== 'production') {
+  const server = http.createServer(app);
+  io = new Server(server, { cors: { origin: "*" } });
+  io.on('connection', (socket) => {
+    socket.on('join', (id) => socket.join(id));
+    socket.on('sendMessage', async (d) => {
+      const m = await Message.create({ sender: d.sender, receiver: d.receiver, text: d.text, read: false });
+      const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
+      safeEmit(d.receiver, 'receiveMessage', populated);
+      safeEmit(d.sender, 'receiveMessage', populated);
+    });
+  });
+  server.listen(port, () => console.log('server is running on port ' + port));
+}
+export default app;

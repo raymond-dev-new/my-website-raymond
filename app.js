@@ -245,11 +245,14 @@ app.post('/api/posts/:id/save', authh, async (req, res) => {
   me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
   await me.save(); res.json(me.savedPosts);
 });
-app.post('/api/posts/:id/view', async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  if(!post) return res.status(404).json({ msg: "Not found" });
-  post.views += 1; await post.save(); res.json({ views: post.views });
+
+ app.post('/api/posts/:id/view', async (req,res)=>{
+ try{
+  const p = await Post.findByIdAndUpdate(req.params.id, {$inc:{views:1}}, {new:true});
+  res.json({views:p.views});
+ }catch(e){ res.status(500).json({msg:e.message}) }
 });
+
 app.get('/api/users/:id', async (req, res) => {
   const user = await Userd.findById(req.params.id).populate('followers', 'username avatar').populate('following', 'username avatar');
   if (!user) return res.status(404).json({ msg: "User not found" });
