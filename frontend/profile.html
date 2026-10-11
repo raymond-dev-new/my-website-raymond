@@ -7,8 +7,8 @@
 <style>
 body{margin:0;background:#000;color:#fff;font-family:Arial}
 .header{max-width:935px;margin:0 auto;padding:12px 15px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center}
-.profile-info{max-width:935px;margin:0 auto;padding:20px 15px;display:flex;gap:20px;align-items:center}
-.avatar-wrap{position:relative;width:90px;height:90px;cursor:pointer}
+.profile-info{max-width:935px;margin:0 auto;padding:20px 15px;display:flex;gap:20px;align-items:flex-start}
+.avatar-wrap{position:relative;width:90px;height:90px;cursor:pointer;flex-shrink:0}
 .circle{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;overflow:hidden;border:2px solid #262626}
 .circle img{width:100%;height:100%;object-fit:cover;display:block}
 .cam{position:absolute;bottom:2px;right:2px;background:#0095f6;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #000}
@@ -17,6 +17,12 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 .follow-btn{margin-top:10px;padding:7px 18px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
 .follow{background:#0095f6;color:#fff}
 .following{background:#262626;color:#fff;border:1px solid #555}
+.bio-wrap{margin-top:10px;max-width:320px;font-size:14px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.bio-name{font-weight:700;display:block}
+.bio-text{color:#fff;display:block;margin-top:2px}
+.bio-link a{color:#e0f1ff;font-weight:600;text-decoration:none}
+.bio-empty{color:#777;cursor:pointer}
+.edit-bio-btn{margin-top:8px;background:#363636;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
 .posts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;max-width:935px;margin:10px auto;padding-bottom:70px}
 .post-box{aspect-ratio:1/1;background:#111;overflow:hidden;cursor:pointer;position:relative}
 .post-box img,.post-box video{width:100%;height:100%;object-fit:cover;display:block}
@@ -61,6 +67,13 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 .btn-blue{background:#0095f6;color:#fff}
 .btn-gray{background:#262626;color:#fff}
 .btn-red{background:#111;color:#ff3040;border:1px solid #333}
+.bio-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;justify-content:center;align-items:center;padding:20px}
+.bio-modal.open{display:flex}
+.bio-card{background:#262626;width:100%;max-width:420px;border-radius:12px;padding:20px}
+.bio-card textarea,.bio-card input{width:100%;background:#121212;border:1px solid #333;border-radius:8px;color:#fff;padding:12px;outline:none;margin-top:8px;font-size:14px}
+.bio-card textarea{height:90px;resize:none}
+.bio-card label{font-size:12px;color:#aaa}
+.bio-card button{width:100%;margin-top:12px;padding:12px;border:none;border-radius:8px;font-weight:700;cursor:pointer}
 @media(max-width:700px){.modal-box{flex-direction:column;max-height:95vh}.modal-media img,.modal-media video{max-height:50vh}}
 </style>
 </head>
@@ -72,13 +85,22 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 <div class="circle" id="letter">R</div>
 <div class="cam" id="camIcon" style="display:none">📷</div>
 </div>
-<div>
+<div style="flex:1">
 <h3 id="name">raymond</h3>
 <div class="stats">
 <span><b id="pc">0</b> posts</span>
 <span onclick="showFollowers()"><b id="followersCount">0</b> followers</span>
 <span onclick="showFollowing()"><b id="followingCount">0</b> following</span>
 </div>
+
+<!-- BIO LIKE FB / IG -->
+<div class="bio-wrap" id="bioWrap">
+  <span class="bio-name" id="bioDisplayName"></span>
+  <span class="bio-text" id="bioText"></span>
+  <div class="bio-link" id="bioLink"></div>
+  <button class="edit-bio-btn" id="editBioBtn" style="display:none" onclick="openBioModal()">Edit bio</button>
+</div>
+
 <button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button>
 <div id="ownActions" style="text-align:left;padding:0;margin-top:10px;display:flex;gap:8px">
 <a href="create.html" style="background:#0095f6;color:#fff;padding:7px 16px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">+ Post</a>
@@ -96,10 +118,21 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 <div id="avatarLetter" class="circle" style="width:180px;height:180px;margin:0 auto 16px;font-size:64px">R</div>
 <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarSelect(this)">
 <button class="btn-blue" onclick="document.getElementById('avatarInput').click()">📁 Choose New Photo</button>
-<button class="btn-blue" id="saveAvatarBtn" onclick="uploadAvatar()" style="display:none">💾 Save as Profile Picture</button>
+<button class="btn-blue" id="saveAvatarBtn" onclick="uploadAvatar()" style="display:none">💾 Save</button>
 <button class="btn-gray" onclick="closeAvatarModal()">Cancel</button>
-<button class="btn-red" id="removeAvatarBtn" onclick="removeAvatar()" style="display:none">🗑️ Remove current photo</button>
-<p style="color:#888;font-size:11px;margin-top:12px">Like Facebook - you can change anytime, stored in MongoDB</p>
+<button class="btn-red" id="removeAvatarBtn" onclick="removeAvatar()" style="display:none">🗑️ Remove</button>
+</div>
+</div>
+
+<!-- BIO EDIT MODAL -->
+<div class="bio-modal" id="bioModal" onclick="if(event.target===this) closeBioModal()">
+<div class="bio-card">
+<h3 style="text-align:center">Edit Bio</h3>
+<label>Display Name</label><input id="bioNameInput" placeholder="e.g. Raymond">
+<label style="margin-top:10px;display:block">Bio - like Facebook/Instagram (150 chars)</label><textarea id="bioInput" maxlength="150" placeholder="🎨 Designer | 📍 Edo, NG | ✨ Dream big | Your story..."></textarea><small style="color:#777;float:right"><span id="bioCount">0</span>/150</small>
+<label style="margin-top:20px;display:block">Link / Website</label><input id="linkInput" placeholder="https://yourlink.com">
+<button class="btn-blue" id="saveBioBtn" onclick="saveBio()">Save Bio</button>
+<button class="btn-gray" onclick="closeBioModal()">Cancel</button>
 </div>
 </div>
 
@@ -127,12 +160,7 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 </div>
 
 <div class="nav">
-<a href="feed.html">🏠</a>
-<a href="explore.html">🔍</a>
-<a href="create.html">➕</a>
-<a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a>
-<a href="reels.html">🎬</a>
-<a href="profile.html">👤</a>
+<a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a><a href="reels.html">🎬</a><a href="profile.html">👤</a>
 </div>
 
 <script>
@@ -146,34 +174,16 @@ if(!token) location.href = "login.html";
 
 function getMyId(){ try{ return JSON.parse(atob(token.split('.')[1])).id }catch{ return "" } }
 function getParamId(){ return new URLSearchParams(window.location.search).get('id'); }
-
-// CACHE HELPERS - NEW
-function getCache(key){
-  try{ const d = localStorage.getItem(key); return d? JSON.parse(d) : null }catch{ return null }
-}
+function getCache(key){ try{ return JSON.parse(localStorage.getItem(key)||null)}catch{return null} }
 function setCache(key, data){ localStorage.setItem(key, JSON.stringify(data)); }
-
-function fixUrl(u){
-  if(!u) return "";
-  if(u.startsWith('data:')) return u;
-  if(u.startsWith('/api/')) return BASE+u;
-  if(u.startsWith('/uploads')) return BASE+u;
-  if(u.startsWith('http')) return u;
-  return u;
-}
-function isVideoFile(url){
-  if(!url) return false;
-  return url.includes('/api/media-file') || url.endsWith('.mp4') || url.endsWith('.mov') || url.endsWith('.webm');
-}
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; if(u.startsWith('http')) return u; return u; }
+function isVideoFile(url){ if(!url) return false; return url.includes('/api/media-file') || url.endsWith('.mp4') || url.endsWith('.mov') || url.endsWith('.webm'); }
 
 function renderAvatar(user){
   const letterEl = document.getElementById('letter');
-  const topLetter = user.username[0].toUpperCase();
-  if(user.avatar){
-    letterEl.innerHTML = `<img src="${fixUrl(user.avatar)}">`;
-  } else {
-    letterEl.innerText = topLetter;
-  }
+  const topLetter = (user.username||'U')[0].toUpperCase();
+  if(user.avatar){ letterEl.innerHTML = `<img src="${fixUrl(user.avatar)}">`; }
+  else { letterEl.innerText = topLetter; }
   const prev = document.getElementById('avatarPreview');
   const letterModal = document.getElementById('avatarLetter');
   if(user.avatar){
@@ -187,26 +197,38 @@ function renderAvatar(user){
 
 function renderProfileUI(data){
   profileData = data;
-  document.getElementById("name").innerText = data.user.username;
-  document.getElementById("topname").innerText = data.user.username;
+  const u = data.user;
+  document.getElementById("name").innerText = u.username;
+  document.getElementById("topname").innerText = u.username;
   document.getElementById("pc").innerText = data.posts.length;
-  document.getElementById("followersCount").innerText = data.followersCount;
-  document.getElementById("followingCount").innerText = data.followingCount;
-  renderAvatar(data.user);
+  document.getElementById("followersCount").innerText = data.followersCount||u.followers?.length||0;
+  document.getElementById("followingCount").innerText = data.followingCount||u.following?.length||0;
+
+  // BIO - FB/IG STYLE
+  document.getElementById('bioDisplayName').innerText = u.displayName||'';
+  const bioEl = document.getElementById('bioText');
+  if(u.bio){ bioEl.innerText = u.bio; bioEl.style.display='block'; }
+  else {
+    if(isOwnProfile){ bioEl.innerText='Add bio - Tell people about yourself ✏️'; bioEl.className='bio-text bio-empty'; bioEl.onclick=openBioModal; }
+    else { bioEl.innerText=''; bioEl.style.display='none'; }
+  }
+  const linkEl = document.getElementById('bioLink');
+  if(u.link) linkEl.innerHTML = `<a href="${u.link.startsWith('http')?u.link:'https://'+u.link}" target="_blank">🔗 ${u.link}</a>`;
+  else linkEl.innerHTML='';
+  document.getElementById('editBioBtn').style.display = isOwnProfile? 'block':'none';
+
+  renderAvatar(u);
   const followBtn = document.getElementById('followBtn');
   const ownActions = document.getElementById('ownActions');
   const camIcon = document.getElementById('camIcon');
   if(isOwnProfile){
-    followBtn.style.display='none';
-    ownActions.style.display='flex';
-    camIcon.style.display='flex';
+    followBtn.style.display='none'; ownActions.style.display='flex'; camIcon.style.display='flex';
     document.getElementById('delBtn').style.display='block';
   } else {
-    ownActions.style.display='none';
-    camIcon.style.display='none';
+    ownActions.style.display='none'; camIcon.style.display='none';
     followBtn.style.display='block';
     document.getElementById('delBtn').style.display='none';
-    const followers = data.user.followers || [];
+    const followers = u.followers || [];
     const isFollowing = followers.some(f => (f._id||f) == getMyId());
     followBtn.innerText = isFollowing? 'Following' : 'Follow';
     followBtn.className = isFollowing? 'follow-btn following' : 'follow-btn follow';
@@ -214,8 +236,7 @@ function renderProfileUI(data){
   const grid = document.getElementById("grid");
   let html = "";
   for(let p of data.posts){
-    const raw = p.mediaUrl||"";
-    const url = fixUrl(raw);
+    const raw = p.mediaUrl||""; const url = fixUrl(raw);
     const isVid = p.type === 'video' || p.type === 'reel' || isVideoFile(raw);
     if(isVid) html += `<div class="post-box" onclick="openWide('${p._id}')"><video src="${url}" muted></video><span class="vid-badge">🎬</span></div>`;
     else html += `<div class="post-box" onclick="openWide('${p._id}')"><img src="${url}"></div>`;
@@ -227,123 +248,87 @@ async function loadProfile(){
   const viewingId = getParamId() || getMyId();
   isOwnProfile = viewingId === getMyId();
   const cacheKey = `profile_${viewingId}`;
-
-  // 1. SHOW CACHED INSTANTLY - NO EMPTY SCREEN
   const cached = getCache(cacheKey);
-  if(cached){
-    renderProfileUI(cached);
-  }
-
-  // 2. FETCH FRESH AND UPDATE
+  if(cached) renderProfileUI(cached);
   try{
-    const res = await fetch(BASE + "/api/users/" + viewingId);
+    // try /api/users/me/profile first for own
+    let url = isOwnProfile? `${BASE}/api/users/me/profile` : `${BASE}/api/users/${viewingId}/profile`;
+    let res = await fetch(url,{headers:{authorization:token}});
+    if(!res.ok && isOwnProfile){ res = await fetch(`${BASE}/api/users/${viewingId}`,{headers:{authorization:token}}); }
     const data = await res.json();
-    renderProfileUI(data);
-    setCache(cacheKey, data);
-  }catch(e){
-    console.log("Offline, using cache", e);
-    if(!cached) document.getElementById("grid").innerHTML = `<p style="grid-column:1/4;text-align:center;color:#777">Offline</p>`;
-  }
+    // normalize if old API returns {user, posts...}
+    const norm = data.user? data : { user:data, posts:data.posts||[], followersCount:data.followersCount||data.user?.followers?.length||0, followingCount:data.followingCount||data.user?.following?.length||0 };
+    renderProfileUI(norm);
+    setCache(cacheKey, norm);
+  }catch(e){ console.log(e); }
 }
 
-function openAvatarModal(){
+// BIO FUNCTIONS
+function openBioModal(){
  if(!isOwnProfile) return;
- document.getElementById('avatarModal').classList.add('open');
+ const u=profileData?.user||{};
+ document.getElementById('bioNameInput').value=u.displayName||'';
+ document.getElementById('bioInput').value=u.bio||'';
+ document.getElementById('linkInput').value=u.link||'';
+ document.getElementById('bioCount').innerText=(u.bio||'').length;
+ document.getElementById('bioModal').classList.add('open');
 }
-function closeAvatarModal(){
- document.getElementById('avatarModal').classList.remove('open');
- selectedAvatarFile=null;
- document.getElementById('saveAvatarBtn').style.display='none';
- document.getElementById('avatarInput').value='';
-}
-function handleAvatarSelect(input){
- if(input.files && input.files[0]){
-  selectedAvatarFile = input.files[0];
-  const url = URL.createObjectURL(selectedAvatarFile);
-  const prev = document.getElementById('avatarPreview');
-  prev.src = url; prev.style.display='block';
-  document.getElementById('avatarLetter').style.display='none';
-  document.getElementById('saveAvatarBtn').style.display='block';
- }
-}
-async function uploadAvatar(){
- if(!selectedAvatarFile) return alert('Choose photo first');
- const btn = document.getElementById('saveAvatarBtn');
- btn.innerText='Uploading...'; btn.disabled=true;
- const fd = new FormData();
- fd.append('file', selectedAvatarFile);
+function closeBioModal(){ document.getElementById('bioModal').classList.remove('open'); }
+document.getElementById('bioInput')?.addEventListener('input', e=> document.getElementById('bioCount').innerText=e.target.value.length);
+
+async function saveBio(){
+ const btn=document.getElementById('saveBioBtn'); btn.innerText='Saving...'; btn.disabled=true;
+ const payload={
+  displayName: document.getElementById('bioNameInput').value.trim(),
+  bio: document.getElementById('bioInput').value.trim(),
+  link: document.getElementById('linkInput').value.trim()
+ };
  try{
-  const res = await fetch(BASE+'/api/users/avatar', { method:'PUT', headers:{ authorization: token }, body: fd });
-  const updated = await res.json();
-  if(updated.avatar || updated._id){
-    localStorage.removeItem(`profile_${getMyId()}`);
-    closeAvatarModal();
-    loadProfile();
-    alert('Profile picture updated ✅');
-  } else alert('Failed: '+JSON.stringify(updated));
- }catch(e){ alert('Error: '+e.message); }
- btn.innerText='💾 Save as Profile Picture'; btn.disabled=false;
+  let r=await fetch(BASE+'/api/users/me',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});
+  if(!r.ok) r=await fetch(BASE+'/api/users/update',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});
+  if(!r.ok) r=await fetch(BASE+'/api/users/me/update',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});
+  const j=await r.json();
+  localStorage.removeItem(`profile_${getMyId()}`);
+  closeBioModal(); loadProfile();
+ }catch(e){ alert('Failed: '+e.message); }
+ btn.innerText='Save Bio'; btn.disabled=false;
 }
-async function removeAvatar(){
- if(!confirm('Remove profile picture?')) return;
- try{ await fetch(BASE+'/api/users/avatar', { method:'DELETE', headers:{ authorization: token } }); }catch{}
- localStorage.removeItem(`profile_${getMyId()}`);
- closeAvatarModal();
- setTimeout(loadProfile,500);
+
+// avatar + other funcs
+function openAvatarModal(){ if(!isOwnProfile) return; document.getElementById('avatarModal').classList.add('open'); }
+function closeAvatarModal(){ document.getElementById('avatarModal').classList.remove('open'); selectedAvatarFile=null; document.getElementById('saveAvatarBtn').style.display='none'; document.getElementById('avatarInput').value=''; }
+function handleAvatarSelect(input){ if(input.files && input.files[0]){ selectedAvatarFile=input.files[0]; const url=URL.createObjectURL(selectedAvatarFile); const prev=document.getElementById('avatarPreview'); prev.src=url; prev.style.display='block'; document.getElementById('avatarLetter').style.display='none'; document.getElementById('saveAvatarBtn').style.display='block'; } }
+async function uploadAvatar(){
+ if(!selectedAvatarFile) return alert('Choose photo');
+ const btn=document.getElementById('saveAvatarBtn'); btn.innerText='Uploading...'; btn.disabled=true;
+ const fd=new FormData(); fd.append('file',selectedAvatarFile);
+ try{ const res=await fetch(BASE+'/api/users/avatar',{method:'PUT',headers:{authorization:token},body:fd}); localStorage.removeItem(`profile_${getMyId()}`); closeAvatarModal(); loadProfile(); }catch(e){ alert(e.message); }
+ btn.innerText='💾 Save'; btn.disabled=false;
 }
-async function toggleFollow(){
-  const viewingId = getParamId() || getMyId();
-  await fetch(BASE + "/api/users/" + viewingId + "/follow", { method:'POST', headers:{ authorization: token } });
-  localStorage.removeItem(`profile_${viewingId}`);
-  loadProfile();
-}
-function showFollowers(){
-  if(!profileData) return;
-  document.getElementById('listTitle').innerText = 'Followers';
-  const list = profileData.user.followers || [];
-  document.getElementById('listBody').innerHTML = list.map(u => {
-    const id = u._id || u; const name = u.username || id; const letter = (name[0]||'U').toUpperCase();
-    const avatar = u.avatar? `<img src="${fixUrl(u.avatar)}" style="width:100%;height:100%;object-fit:cover">` : letter;
-    return `<div class="user-row" onclick="goToUser('${id}')"><div class="avatar-sm">${avatar}</div><div><b>${name}</b></div></div>`;
-  }).join('') || '<p style="padding:15px;color:#777">No followers yet</p>';
-  document.getElementById('followModal').style.display='flex';
-}
-function showFollowing(){
-  if(!profileData) return;
-  document.getElementById('listTitle').innerText = 'Following';
-  const list = profileData.user.following || [];
-  document.getElementById('listBody').innerHTML = list.map(u => {
-    const id = u._id || u; const name = u.username || id; const letter = (name[0]||'U').toUpperCase();
-    const avatar = u.avatar? `<img src="${fixUrl(u.avatar)}" style="width:100%;height:100%;object-fit:cover">` : letter;
-    return `<div class="user-row" onclick="goToUser('${id}')"><div class="avatar-sm">${avatar}</div><div><b>${name}</b></div></div>`;
-  }).join('') || '<p style="padding:15px;color:#777">Not following anyone</p>';
-  document.getElementById('followModal').style.display='flex';
-}
-function goToUser(id){ closeList(); location.href = 'profile.html?id=' + id; }
+async function removeAvatar(){ if(!confirm('Remove photo?')) return; try{ await fetch(BASE+'/api/users/avatar',{method:'DELETE',headers:{authorization:token}});}catch{} localStorage.removeItem(`profile_${getMyId()}`); closeAvatarModal(); setTimeout(loadProfile,400); }
+async function toggleFollow(){ const viewingId=getParamId()||getMyId(); await fetch(BASE+"/api/users/"+viewingId+"/follow",{method:'POST',headers:{authorization:token}}); localStorage.removeItem(`profile_${viewingId}`); loadProfile(); }
+function showFollowers(){ if(!profileData) return; document.getElementById('listTitle').innerText='Followers'; const list=profileData.user.followers||[]; document.getElementById('listBody').innerHTML=list.map(u=>{ const id=u._id||u; const name=u.username||id; const letter=(name[0]||'U').toUpperCase(); const avatar=u.avatar? `<img src="${fixUrl(u.avatar)}">`:letter; return `<div class="user-row" onclick="goToUser('${id}')"><div class="avatar-sm">${avatar}</div><b>${name}</b></div>`; }).join('')||'<p style="padding:15px;color:#777">No followers</p>'; document.getElementById('followModal').style.display='flex'; }
+function showFollowing(){ if(!profileData) return; document.getElementById('listTitle').innerText='Following'; const list=profileData.user.following||[]; document.getElementById('listBody').innerHTML=list.map(u=>{ const id=u._id||u; const name=u.username||id; const letter=(name[0]||'U').toUpperCase(); const avatar=u.avatar? `<img src="${fixUrl(u.avatar)}">`:letter; return `<div class="user-row" onclick="goToUser('${id}')"><div class="avatar-sm">${avatar}</div><b>${name}</b></div>`; }).join('')||'<p style="padding:15px;color:#777">None</p>'; document.getElementById('followModal').style.display='flex'; }
+function goToUser(id){ closeList(); location.href='profile.html?id='+id; }
 function closeList(){ document.getElementById('followModal').style.display='none'; }
 async function openWide(id){
-currentId = id;
-const res = await fetch(BASE + "/api/posts/" + id, { headers:{ authorization: token } });
-const p = await res.json();
-const raw = p.mediaUrl||"";
-const url = fixUrl(raw);
-const isVid = p.type === 'video' || p.type === 'reel' || isVideoFile(raw);
-const mediaDiv = document.getElementById("wideMedia");
-if(isVid) mediaDiv.innerHTML = `<video src="${url}" controls autoplay playsinline style="width:100%"></video>`;
-else mediaDiv.innerHTML = `<img src="${url}">`;
-document.getElementById("wideUser").innerHTML = `<span style="cursor:pointer" onclick="goToUser('${p.user._id}')">@${p.user.username}</span>`;
-document.getElementById("likesCount").innerText = p.likes.length + " likes";
-document.getElementById("likeBtn").innerText = p.likes.includes(getMyId())? "❤️" : "🤍";
-let cmtHtml = "";
-for(let c of p.comments) cmtHtml += `<div class="cmt"><a href="profile.html?id=${c.user._id}" style="color:#fff;text-decoration:none"><b>${c.user.username}</b></a> ${c.text}</div>`;
-if(!cmtHtml) cmtHtml = "<p style='color:#777;font-size:13px'>No comments yet</p>";
-document.getElementById("commentList").innerHTML = cmtHtml;
-document.getElementById("wide").style.display = "flex";
+currentId=id;
+const res=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}});
+const p=await res.json();
+const raw=p.mediaUrl||""; const url=fixUrl(raw); const isVid=p.type==='video'||p.type==='reel'||isVideoFile(raw);
+document.getElementById("wideMedia").innerHTML=isVid? `<video src="${url}" controls autoplay playsinline style="width:100%"></video>`:`<img src="${url}">`;
+document.getElementById("wideUser").innerHTML=`<span style="cursor:pointer" onclick="goToUser('${p.user._id}')">@${p.user.username}</span>`;
+document.getElementById("likesCount").innerText=p.likes.length+" likes";
+document.getElementById("likeBtn").innerText=p.likes.includes(getMyId())?"❤️":"🤍";
+let cmtHtml=""; for(let c of p.comments) cmtHtml+=`<div class="cmt"><a href="profile.html?id=${c.user._id}" style="color:#fff;text-decoration:none"><b>${c.user.username}</b></a> ${c.text}</div>`;
+document.getElementById("commentList").innerHTML=cmtHtml||"<p style='color:#777;font-size:13px'>No comments</p>";
+document.getElementById("wide").style.display="flex";
 }
-function closeWide(){ document.getElementById("wide").style.display = "none"; }
-async function likePost(){ await fetch(BASE + "/api/posts/" + currentId + "/like", { method:"POST", headers:{ authorization: token } }); openWide(currentId); loadProfile(); }
-async function addComment(){ const text = document.getElementById("cmtInput").value; if(!text) return; await fetch(BASE + "/api/posts/" + currentId + "/comment", { method:"POST", headers:{ "Content-Type":"application/json", authorization: token }, body: JSON.stringify({ text }) }); document.getElementById("cmtInput").value = ""; openWide(currentId); }
-async function deletePost(){ if(!confirm("Delete this post?")) return; await fetch(BASE + "/api/posts/" + currentId, { method:"DELETE", headers:{ authorization: token } }); closeWide(); const vid = getParamId() || getMyId(); localStorage.removeItem(`profile_${vid}`); loadProfile(); }
+function closeWide(){ document.getElementById("wide").style.display="none"; }
+async function likePost(){ await fetch(BASE+"/api/posts/"+currentId+"/like",{method:"POST",headers:{authorization:token}}); openWide(currentId); loadProfile(); }
+async function addComment(){ const text=document.getElementById("cmtInput").value; if(!text) return; await fetch(BASE+"/api/posts/"+currentId+"/comment",{method:"POST",headers:{"Content-Type":"application/json",authorization:token},body:JSON.stringify({text})}); document.getElementById("cmtInput").value=""; openWide(currentId); }
+async function deletePost(){ if(!confirm("Delete?")) return; await fetch(BASE+"/api/posts/"+currentId,{method:"DELETE",headers:{authorization:token}}); closeWide(); const vid=getParamId()||getMyId(); localStorage.removeItem(`profile_${vid}`); loadProfile(); }
+
 loadProfile();
 </script>
 </body>

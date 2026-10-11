@@ -49,6 +49,9 @@ const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
+  displayName: String,
+  bio: { type: String, default: "" },
+  link: { type: String, default: "" },
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -59,8 +62,19 @@ const UserSchema = new mongoose.Schema({
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
 }, { timestamps: true });
 
+
 // FIX: model name is 'User' to match all ref:'User', but keep old collection 'raymondusers' so you don't lose data
 const Userd = mongoose.model('User', UserSchema, 'raymondusers');
+
+app.put('/api/users/me', authh, async (req,res)=>{
+  const u = await Userd.findById(req.userId);
+  if(req.body.displayName!==undefined) u.displayName=req.body.displayName;
+  if(req.body.bio!==undefined) u.bio=req.body.bio;
+  if(req.body.link!==undefined) u.link=req.body.link;
+  if(req.body.avatar) u.avatar=req.body.avatar;
+  await u.save(); res.json({user:u});
+});
+
 
 const Post = mongoose.model('Post', new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
