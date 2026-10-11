@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recover Password</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.card{background:#121212;border:1px solid #262626;border-radius:16px;padding:24px;width:100%;max-width:380px}
+h2{margin:0 0 8px}small{color:#888}
+input{width:100%;background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:13px;color:#fff;margin-top:12px;outline:none;font-size:15px}
+button{width:100%;background:#0095f6;border:none;border-radius:10px;padding:13px;color:#fff;font-weight:700;margin-top:14px;cursor:pointer;font-size:15px}
+button:disabled{opacity:.5}
+.back{margin-top:12px;text-align:center;display:block;color:#888;text-decoration:none;font-size:13px}
+.msg{margin-top:12px;padding:10px;border-radius:8px;font-size:13px;display:none}
+.msg.ok{display:block;background:#0a2a12;color:#8f8;border:1px solid #1a5a1a}
+.msg.err{display:block;background:#2a0a0a;color:#f88;border:1px solid #5a1a1a}
+.step{display:none}.step.active{display:block}
+</style>
+</head>
+<body>
+<div class="card">
+  <!-- STEP 1: Send code -->
+  <div id="step1" class="step active">
+    <h2>Recover password</h2><small>Enter your email to get reset code</small>
+    <input id="email" placeholder="Email address" type="email">
+    <button id="btn1" onclick="sendCode()">Send code</button>
+  </div>
+  <!-- STEP 2: Verify + New password -->
+  <div id="step2" class="step">
+    <h2>Reset password</h2><small>Code sent to <b id="showEmail"></b></small>
+    <input id="code" placeholder="6-digit code">
+    <input id="newPass" placeholder="New password" type="password">
+    <input id="confirmPass" placeholder="Confirm password" type="password">
+    <button id="btn2" onclick="resetPass()">Change password</button>
+    <a href="#" onclick="back1()" style="color:#888;font-size:12px;display:block;margin-top:10px;text-align:center">Back</a>
+  </div>
+  <div id="msg" class="msg"></div>
+  <a href="login.html" class="back">Back to login</a>
+</div>
+<script>
+const BASE="https://raymonddomain.dev";
+function showMsg(t,ok){const el=document.getElementById('msg');el.innerText=t;el.className='msg '+(ok?'ok':'err');}
+
+async function sendCode(){
+  const email=document.getElementById('email').value.trim();
+  if(!email) return showMsg('Enter email',false);
+  const b=document.getElementById('btn1'); b.disabled=true; b.innerText='Sending...';
+  try{
+    let r=await fetch(BASE+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    let d=await r.json();
+    if(!r.ok) throw new Error(d.message||'Failed');
+    showMsg('Code sent to '+email,true);
+    document.getElementById('showEmail').innerText=email;
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step2').classList.add('active');
+  }catch(e){ showMsg(e.message,false); }
+  b.disabled=false; b.innerText='Send code';
+}
+function back1(){
+  document.getElementById('step2').classList.remove('active');
+  document.getElementById('step1').classList.add('active');
+}
+async function resetPass(){
+  const email=document.getElementById('email').value.trim();
+  const code=document.getElementById('code').value.trim();
+  const np=document.getElementById('newPass').value.trim();
+  const cp=document.getElementById('confirmPass').value.trim();
+  if(!code||!np) return showMsg('Fill all fields',false);
+  if(np!==cp) return showMsg('Passwords not match',false);
+  if(np.length<6) return showMsg('Password too short (min 6)',false);
+  const b=document.getElementById('btn2'); b.disabled=true; b.innerText='Resetting...';
+  try{
+    let r=await fetch(BASE+'/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,code,code:code,newPassword:np,password:np})});
+    let d=await r.json();
+    if(!r.ok) throw new Error(d.message||'Invalid code');
+    showMsg('Password changed! Redirecting to login...',true);
+    setTimeout(()=> location.href='login.html',1500);
+  }catch(e){ showMsg(e.message,false); }
+  b.disabled=false; b.innerText='Change password';
+}
+</script>
+</body>
+</html>
