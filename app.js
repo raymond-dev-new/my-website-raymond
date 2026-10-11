@@ -3,7 +3,6 @@ import dotenv from 'dotenv'
 dotenv.config()
 import { fileURLToPath } from 'url'
 import mongoose from 'mongoose'
-//import user from './model/user.js';
 import cors from 'cors'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
@@ -48,8 +47,8 @@ function authh(req, res, next) {
 
 const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
-// MODELS - DEFINED EARLY
-const Userd = mongoose.model('Raymonduser', new mongoose.Schema({
+// ========== MODELS - FIXED ==========
+const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -58,7 +57,10 @@ const Userd = mongoose.model('Raymonduser', new mongoose.Schema({
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
-}, { timestamps: true }));
+}, { timestamps: true });
+
+// FIX: model name is 'User' to match all ref:'User', but keep old collection 'raymondusers' so you don't lose data
+const Userd = mongoose.model('User', UserSchema, 'raymondusers');
 
 const Post = mongoose.model('Post', new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -152,7 +154,6 @@ app.get('/api/users/me/profile', authh, async (req, res) => {
   res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
 });
 
-// POSTS - IMAGE + VIDEO BOTH WORKING
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   try{
     let mediaUrl = req.body.mediaUrl || "";
@@ -351,9 +352,9 @@ app.delete('/api/delete-media/:id', async (req, res) => {
   await Media.findByIdAndDelete(req.params.id); res.json({ success: true });
 });
 
-// blog web end here iuytressdfghjkytrewdhjklkytredfghjkljhgfd
-// jtrtfyughijokjihugytdrdyfugihojpihugytdryuijoiuyftuiytryuil
-// igfdsa4sdyufighojpoiuydtsrayuighojoiuytuklkfhthukgyftjhgf
+// blog end here uytrewdrtgyhujkluytrrtyuiuytrevcdfgh
+// ytrefghjkkjhgfdfghjklkjhgfdsfghjklkjhgfdsfiuyfdjhg
+// uytrewuioiuytrertylkjhgfdghjhgfdfghjktretyiuytrjhg
 
 
 
@@ -1049,14 +1050,14 @@ app.delete('/api/delete-media/:id', async (req, res) => {
  const ADMIN_PASSWORD = "123456";
  
  // --- MODELS ---
- const UserSchema = new mongoose.Schema({
+ const newUserSchema = new mongoose.Schema({
    email: String,
    password: String,
    referenceCode: String,
    ngnBalance: { type: Number, default: 0 },
    usdBalance: { type: Number, default: 0 },
  });
- const NewUser = mongoose.model('NewUser', UserSchema);
+ const NewUser = mongoose.model('NewUser', newUserSchema);
  
  const PendingSchema = new mongoose.Schema({
    referenceCode: String,
@@ -1248,9 +1249,6 @@ app.delete('/api/delete-media/:id', async (req, res) => {
  });
  
  // online banking end here tdsdtyuiuytrdfuiuyt
-
-
-
 
 
 if (process.env.NODE_ENV!== 'production') {
