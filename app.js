@@ -24,12 +24,6 @@ import fetch from "node-fetch"; // npm i node-fetch
 import http from 'http'
 import { Server } from 'socket.io'
 
-
-
-
-
-
-
 const app = express()
 
 //Raymond123
@@ -67,8 +61,19 @@ mongoose.connect(url)
 // uytresdtyguhijiuytdrsertfyghjikoijugytdhjhgfdgytdrsdfgh
 // jhgfdxcvbnkpdsrezrxcvhbjknuyxtcvjbknlkjhgfdtyuihiuyvuyctxt
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+//const server = http.createServer(app);
+//const io = new Server(server, { cors: { origin: "*" } });
+// for local
+
+let io
+
+if (process.env.NODE_ENV !== 'production') {
+  const server = http.createServer(app);
+   io = new Server(server, { cors: { origin: "*" } });
+  // your io.on connection here
+  //server.listen(5000, () => console.log("Local running"));
+}
+
 /*const urll = 'mongodb+srv://raymond77252_db_user:TZbdSfSq6NDT4V0F@cluster0.uip3fi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0' */
 const SECRET = "secret123";
 
