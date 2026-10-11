@@ -9,11 +9,12 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 .reel-container { height:100vh; overflow-y:scroll; scroll-snap-type:y mandatory; }
 .reel { height:100vh; scroll-snap-align:start; position:relative; display:flex; align-items:center; justify-content:center; background:#111; }
 .reel video { height:100%; width:100%; object-fit:cover; }
-.info { position:absolute; bottom:80px; left:10px; right:80px; }
-.info b{cursor:pointer}
-.actions { position:absolute; right:10px; bottom:80px; display:flex; flex-direction:column; gap:20px; font-size:24px; text-align:center; }
-.view-badge{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.6);padding:6px 10px;border-radius:20px;font-size:12px;display:flex;gap:6px;align-items:center}
-.bottom-nav { position:fixed; bottom:0; width:100%; background:#000; border-top:1px solid #222; display:flex; justify-content:space-around; padding:12px 0; z-index:10; }
+.info { position:absolute; bottom:135px; left:12px; right:85px; z-index:5; line-height:1.4; font-size:14px; text-shadow:0 1px 4px rgba(0,0,0,.8); }
+.info b{cursor:pointer;font-size:15px}
+.actions { position:absolute; right:10px; bottom:135px; display:flex; flex-direction:column; gap:22px; font-size:24px; text-align:center; z-index:5; }
+.actions small{font-size:12px;display:block;margin-top:2px}
+.view-badge{position:absolute;top:18px;left:12px;background:rgba(0,0,0,.65);padding:6px 12px;border-radius:20px;font-size:12px;z-index:5;display:flex;gap:6px;align-items:center}
+.bottom-nav { position:fixed; bottom:0; width:100%; background:#000; border-top:1px solid #222; display:flex; justify-content:space-around; padding:14px 0; padding-bottom:20px; z-index:10; }
 .bottom-nav a { color:#fff; text-decoration:none; font-size:20px; position:relative }
 .msg-badge{position:absolute;top:-6px;right:-8px;background:#ff3040;color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
 .hide{display:none}
@@ -34,7 +35,7 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 <div class="reel-container" id="reels"></div>
 <div class="bottom-nav">
 <a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a>
-<a href="message.html" style="font-size:22px">💬<span id="msgCount" class="msg-badge hide">0</span></a>
+<a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a>
 <a href="reels.html">🎬</a><a href="profile.html">👤</a>
 </div>
 <div class="comment-modal" id="cmtModal" onclick="if(event.target===this) closeComments()">
@@ -70,7 +71,7 @@ function renderReels(reels){
   const views=r.views||0;
   return `<div class="reel" data-id="${r._id}">
    <div class="view-badge">👁️ <span id="view-${r._id}">${views}</span> views</div>
-   <video src="${url}" autoplay loop muted playsinline onclick="this.muted=!this.muted; addView('${r._id}')"></video>
+   <video src="${url}" loop muted playsinline onclick="this.muted=!this.muted; addView('${r._id}')" ></video>
    <div class="info">
     <b onclick="location.href='profile.html?id=${r.user?._id}'">@${r.user?.username||'user'}</b><br>
     ${r.caption||''}
@@ -86,10 +87,8 @@ function renderReels(reels){
 }
 
 async function loadReels(){
- // 1. SHOW CACHE INSTANTLY
  const cached=getCache('reels_cache');
  if(cached){ reelsData=cached; renderReels(cached); }
-
  try{
   const res=await fetch(BASE+'/api/posts/reels',{headers:{authorization:token}});
   let reels=await res.json();
@@ -106,13 +105,11 @@ async function loadReels(){
 }
 
 async function addView(id){
- if(viewedSet.has(id)) return; // count once per user per session cache
+ if(viewedSet.has(id)) return;
  viewedSet.add(id);
  localStorage.setItem('viewed_reels', JSON.stringify([...viewedSet]));
- // optimistic UI
  const el=document.getElementById('view-'+id);
  if(el) el.innerText=parseInt(el.innerText||0)+1;
- // update cache
  let cache=getCache('reels_cache')||[];
  let r=cache.find(x=>x._id===id);
  if(r){ r.views=(r.views||0)+1; setCache('reels_cache', cache); }
@@ -127,19 +124,15 @@ function observeViews(){
 }
 
 async function like(id){
- // optimistic
  let cache=getCache('reels_cache')||[];
  let r=cache.find(x=>x._id===id);
  if(r){
   const my=getMyId();
-  if(r.likes.includes(my)) r.likes=r.likes.filter(x=>x!==my);
-  else r.likes.push(my);
+  if(r.likes.includes(my)) r.likes=r.likes.filter(x=>x!==my); else r.likes.push(my);
   setCache('reels_cache', cache);
   renderReels(cache);
  }
  await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}});
- // refresh in background
- try{ const res=await fetch(BASE+'/api/posts/reels',{headers:{authorization:token}}); let reels=await res.json(); setCache('reels_cache', reels.filter(x=>x.type==='video'||(x.mediaUrl||'').includes('/api/media-file'))); }catch{}
 }
 
 async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); alert('Link copied!'); }catch{} }
@@ -164,8 +157,6 @@ async function sendComment(){
  const text=document.getElementById('cmtInput').value.trim(); if(!text||!activeReelId) return;
  await fetch(BASE+`/api/posts/${activeReelId}/comment`,{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text})});
  document.getElementById('cmtInput').value=''; openComments(activeReelId);
- // update cache comment count
- let cache=getCache('reels_cache')||[]; let r=cache.find(x=>x._id===activeReelId); if(r){ r.comments.push({text}); setCache('reels_cache', cache); }
 }
 
 async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); let map=await r.json(); let total=Object.values(map).reduce((a,b)=>a+b,0); let el=document.getElementById('msgCount'); if(total>0){el.innerText=total; el.classList.remove('hide');} else el.classList.add('hide'); }catch{} }
