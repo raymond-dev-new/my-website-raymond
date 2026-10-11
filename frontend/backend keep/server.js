@@ -60,11 +60,135 @@ const UserSchema = new mongoose.Schema({
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
-}, { timestamps: true });
 
+  // ADD THESE 2 FOR PASSWORD RECOVERY
+  passwordResetCode: { type: String, default: "" },
+  passwordResetExpires: { type: Date, default: null },
+
+}, { timestamps: true });
 
 // FIX: model name is 'User' to match all ref:'User', but keep old collection 'raymondusers' so you don't lose data
 const Userd = mongoose.model('User', UserSchema, 'raymondusers');
+
+
+  // ========== FORGOT PASSWORD & RESET ==========
+
+// 1. Send reset code to email
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if(!email) return res.status(400).json({ message: "Email required" });
+    
+    const user = await Userd.findOne({ email: email.toLowerCase().trim() });
+    if(!user) return res.status(404).json({ message: "Email not found" });
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+    
+    user.passwordResetCode = code;
+    user.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 mins
+    await user.save();
+
+    // In production replace this with email sending (nodemailer)
+    console.log(`[PASSWORD RESET] ${email} -> CODE: ${code}`);
+
+    // For now we return code in response so you can test
+    // REMOVE `code` in production
+    res.json({ message: "Reset code sent to email", code: code });
+
+    // TODO PRODUCTION EMAIL EXAMPLE:
+    // await sendEmail(email, `Your reset code is ${code}`)
+
+  } catch(e){ res.status(500).json({ message: e.message }); }
+});
+
+// 2. Verify code and set new password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword, password } = req.body;
+    const finalPass = newPassword || password;
+
+    if(!email || !code || !finalPass) return res.status(400).json({ message: "All fields required" });
+    if(finalPass.length < 6) return res.status(400).json({ message: "Password too short" });
+
+    const user = await Userd.findOne({ email: email.toLowerCase().trim() });
+    if(!user) return res.status(404).json({ message: "User not found" });
+
+    if(!user.passwordResetCode || user.passwordResetCode !== code.toString()){
+      return res.status(400).json({ message: "Invalid code" });
+    }
+    if(Date.now() > new Date(user.passwordResetExpires).getTime()){
+      return res.status(400).json({ message: "Code expired, request new one" });
+    }
+
+    user.password = await bcrypt.hash(finalPass, 10);
+    user.passwordResetCode = "";
+    user.passwordResetExpires = null;
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+
+  } catch(e){ res.status(500).json({ message: e.message }); }
+});
+
+
+// ========== FORGOT PASSWORD & RESET ==========
+
+// 1. Send reset code to email
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if(!email) return res.status(400).json({ message: "Email required" });
+    
+    const user = await Userd.findOne({ email: email.toLowerCase().trim() });
+    if(!user) return res.status(404).json({ message: "Email not found" });
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+    
+    user.passwordResetCode = code;
+    user.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 mins
+    await user.save();
+
+    // In production replace this with email sending (nodemailer)
+    console.log(`[PASSWORD RESET] ${email} -> CODE: ${code}`);
+
+    // For now we return code in response so you can test
+    // REMOVE `code` in production
+    res.json({ message: "Use the code above", code: code });
+
+    // TODO PRODUCTION EMAIL EXAMPLE:
+    // await sendEmail(email, `Your reset code is ${code}`)
+
+  } catch(e){ res.status(500).json({ message: e.message }); }
+});
+
+// 2. Verify code and set new password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword, password } = req.body;
+    const finalPass = newPassword || password;
+
+    if(!email || !code || !finalPass) return res.status(400).json({ message: "All fields required" });
+    if(finalPass.length < 6) return res.status(400).json({ message: "Password too short" });
+
+    const user = await Userd.findOne({ email: email.toLowerCase().trim() });
+    if(!user) return res.status(404).json({ message: "User not found" });
+
+    if(!user.passwordResetCode || user.passwordResetCode !== code.toString()){
+      return res.status(400).json({ message: "Invalid code" });
+    }
+    if(Date.now() > new Date(user.passwordResetExpires).getTime()){
+      return res.status(400).json({ message: "Code expired, request new one" });
+    }
+
+    user.password = await bcrypt.hash(finalPass, 10);
+    user.passwordResetCode = "";
+    user.passwordResetExpires = null;
+    await user.save();
+
+    res.json({ message: "Password reset successful" });
+
+  } catch(e){ res.status(500).json({ message: e.message }); }
+});
 
 app.put('/api/users/me', authh, async (req,res)=>{
   const u = await Userd.findById(req.userId);
