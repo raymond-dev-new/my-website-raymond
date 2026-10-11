@@ -81,7 +81,7 @@ const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
-function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ /* voice too big - don't crash */ console.log('cache full, skip'); } }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
@@ -89,10 +89,9 @@ function closeBox(){ document.getElementById('editBox').classList.remove('open')
 
 let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[];
 
-// SOCKET WITH AUTO RECONNECT
 const socket=io(BASE,{transports:['websocket','polling'], reconnection:true, reconnectionAttempts:100, reconnectionDelay:1000});
-socket.on('connect',()=>{ socket.emit('join',myId()); console.log('socket connected'); });
-socket.on('disconnect',()=>{ console.log('socket disconnected - polling will keep alive'); });
+socket.on('connect',()=>{ socket.emit('join',myId()); });
+socket.on('disconnect',()=>{});
 
 async function loadUnread(silent=false){
  try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{}
@@ -146,14 +145,22 @@ function renderMsg(m){
   let src=content.replace('VOICE:','');
   inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
  }else{ inner=content+edited; }
- return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
+ // FIX: don't put huge base64 in data-text attribute
+ let safeText = content.startsWith('VOICE:') || content.startsWith('data:audio')? '' : (m.text||'').replace(/"/g,'&quot;').substring(0,200);
+ return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${safeText}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
 function renderAll(){
  const container=document.getElementById('msgs');
  if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; return; }
  container.innerHTML=msgsCache.map(m=>renderMsg(m)).join('');
  container.scrollTop=container.scrollHeight;
- if(active) setCache('chat_'+active, msgsCache);
+ if(active){
+  // FIX: don't cache voices to avoid quota crash - cache only text messages
+  let toCache = msgsCache.filter(m=>!(m.text||'').startsWith('VOICE:') &&!(m.text||'').startsWith('data:audio') );
+  // if only voices, keep last 20 anyway but without base64? keep as is but try
+  if(toCache.length===0) toCache = msgsCache.slice(-20);
+  setCache('chat_'+active, toCache);
+ }
 }
 async function openC(id,name){
  active=id;
@@ -199,23 +206,36 @@ async function toggleRecord(){
     const blob=new Blob(audioChunks,{type:'audio/webm'});
     const reader=new FileReader();
     reader.onload=async ()=>{
-     const base64=reader.result; const t='VOICE:'+base64;
-     const tempId='temp_'+Date.now();
+     const base64=reader.result;
+     const t='VOICE:'+base64;
+     const tempId='temp_voice_'+Date.now();
+     // FIX: keep temp voice visible instantly and never delete until server confirms
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
-     msgsCache.push(tempMsg); renderAll();
+     msgsCache.push(tempMsg);
+     renderAll();
+     audioChunks=[];
      try{
       let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
       let saved=await r.json();
-      msgsCache=msgsCache.filter(x=>x._id!==tempId);
+      // replace temp with real saved - keeps it visible
+      msgsCache=msgsCache.map(x=> x._id===tempId? saved : x);
       if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
       renderAll();
-     }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
+     }catch(e){
+      // FIX: don't delete on error, keep voice so user can retry
+      console.log('voice send failed, keeping temp',e);
+      renderAll();
+     }
     };
-    reader.readAsDataURL(blob); stream.getTracks().forEach(s=>s.stop());
+    reader.readAsDataURL(blob);
+    stream.getTracks().forEach(s=>s.stop());
    };
    mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
   }catch{ alert('Mic denied'); }
- }else{ mediaRecorder.stop(); isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on'); }
+ }else{
+  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on');
+ }
 }
 function openMenu(el){
  selectedMsg=el.dataset.id; if(selectedMsg.startsWith('temp_')) return;
@@ -239,7 +259,6 @@ async function deleteMsg(){
  if(active) setCache('chat_'+active, msgsCache);
 }
 
-// LIVE SOCKET EVENTS
 socket.on('receiveMessage',m=>{
  let senderId=m.sender._id||m.sender; let receiverId=m.receiver._id||m.receiver;
  if(senderId==active || receiverId==active){
@@ -254,28 +273,36 @@ socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>
 socket.on('messageDeleted',data=>{ msgsCache=msgsCache.filter(x=>x._id!=data._id); renderAll(); if(active) setCache('chat_'+active, msgsCache); });
 socket.on('messagesSeen',()=>{ msgsCache.forEach(m=>{ if((m.sender._id||m.sender)==myId()) m.read=true; }); renderAll(); });
 
-// ---- AUTO REFRESH IN BACKGROUND - NO HARD REFRESH NEEDED ----
 async function autoPoll(){
  try{
-  // 1. Update unread counts in background
   await loadUnread(true);
-  // 2. If chat is open, auto fetch new messages silently
   if(active){
    let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
    let fresh=await r.json();
-   if(fresh.length!==msgsCache.length){
-    // only update if new messages exist
-    const existingIds=new Set(msgsCache.map(x=>x._id));
-    const newOnes=fresh.filter(x=>!existingIds.has(x._id));
-    if(newOnes.length){
-     fresh.forEach(m=>{ if(!msgsCache.find(x=>x._id===m._id)) msgsCache.push(m); });
-     renderAll();
-     // mark read
-     fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
+   // FIX: keep temp voices that are not yet saved
+   let tempVoices = msgsCache.filter(x=> String(x._id).startsWith('temp_'));
+   let existingIds=new Set(msgsCache.map(x=>x._id));
+   let merged = [...msgsCache];
+   fresh.forEach(f=>{
+    if(!existingIds.has(f._id)) merged.push(f);
+   });
+   // avoid duplicate removal of temp voices
+   if(merged.length!==msgsCache.length || fresh.length!==msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length){
+    // keep temps + fresh
+    let nonTempFresh = fresh;
+    msgsCache = [...nonTempFresh.filter(f=>!tempVoices.some(t=> t.text===f.text)),...tempVoices.filter(t=>!fresh.some(f=> f.text===t.text))];
+    // actually simpler: if fresh has more, replace non-temp part
+    if(fresh.length>0){
+     let nonTemps = msgsCache.filter(x=>!String(x._id).startsWith('temp_'));
+     // if fresh is newer, use fresh + keep temps that not yet in fresh
+     if(fresh.length>=nonTemps.length){
+      msgsCache = [...fresh,...tempVoices.filter(tv=>!fresh.some(f=> f.text===tv.text))];
+     }
     }
+    renderAll();
+    fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
    }
   }else{
-   // If not in chat, refresh user list silently to get new chatters
    let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
    let users=await r.json();
    if(users.length && JSON.stringify(users)!==JSON.stringify(usersCache)){
@@ -285,10 +312,7 @@ async function autoPoll(){
   }
  }catch{}
 }
-
-// Run poll every 3 seconds
 setInterval(autoPoll, 2000);
-// Also refresh when user comes back to app
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoPoll(); load(); } });
 
 load();
