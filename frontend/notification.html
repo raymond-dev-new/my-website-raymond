@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Notifications</title>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+.top{height:60px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:0 16px;justify-content:space-between;position:sticky;top:0;background:#000;z-index:10}
+.list{padding:10px}
+.notif{display:flex;gap:12px;padding:14px 12px;background:#111;border-radius:14px;margin-bottom:8px;align-items:center}
+.notif.unread{background:#1a1a1a;border:1px solid #222}
+.av{width:44px;height:44px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.info{flex:1;font-size:14px;line-height:18px}
+.info b{font-weight:600}
+.time{font-size:11px;color:#888;margin-top:2px}
+.icon{font-size:20px}
+.thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:#222}
+.tabs{display:flex;gap:8px;padding:10px 12px;overflow-x:auto}
+.tab{padding:8px 16px;border-radius:20px;background:#1a1a1a;border:1px solid #222;font-size:13px;cursor:pointer;white-space:nowrap}
+.tab.active{background:#fff;color:#000;font-weight:600}
+.dot{width:8px;height:8px;background:#0095f6;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="top"><b>Notifications</b><span onclick="location.href='feed.html'" style="font-size:22px;cursor:pointer">←</span></div>
+<div class="tabs">
+<div class="tab active" onclick="filterNotif('all',this)">All</div>
+<div class="tab" onclick="filterNotif('like',this)">Likes ❤️</div>
+<div class="tab" onclick="filterNotif('comment',this)">Comments 💬</div>
+<div class="tab" onclick="filterNotif('follow',this)">Follows 👤</div>
+</div>
+<div class="list" id="list">Loading...</div>
+
+<script>
+const BASE="https://raymonddomain.dev";
+const token=localStorage.getItem('token');
+if(!token) location.href='/blog/login.html';
+function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
+const socket=io(BASE);
+socket.on('connect',()=>socket.emit('join',myId()));
+
+let allNotifs=[];
+
+function formatTime(d){
+ const date=new Date(d);
+ const now=new Date();
+ const diff=(now-date)/1000;
+ if(diff<60) return `${Math.floor(diff)}s`;
+ if(diff<3600) return `${Math.floor(diff/60)}m`;
+ if(diff<86400) return `${Math.floor(diff/3600)}h`;
+ if(diff<604800) return `${Math.floor(diff/86400)}d`;
+ return date.toLocaleDateString();
+}
+
+function render(filter='all'){
+ const list=document.getElementById('list');
+ let data=allNotifs;
+ if(filter!=='all') data=data.filter(n=>n.type===filter);
+ if(!data.length){ list.innerHTML=`<p style="text-align:center;color:#777;margin-top:60px">No ${filter} notifications yet</p>`; return; }
+ list.innerHTML=data.map(n=>{
+  const name=n.sender?.username||'user';
+  const letter=name[0].toUpperCase();
+  const avatar=n.sender?.avatar?`<img src="${BASE+n.sender.avatar}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`:`<div class="av">${letter}</div>`;
+  let icon='', text='';
+  if(n.type==='like'){ icon='❤️'; text=`<b>${name}</b> liked your post`; }
+  if(n.type==='comment'){ icon='💬'; text=`<b>${name}</b> commented: "${n.text}"`; }
+  if(n.type==='follow'){ icon='👤'; text=`<b>${name}</b> started following you`; }
+  const thumb=n.post?.mediaUrl?`<img class="thumb" src="${BASE+n.post.mediaUrl}">`:'';
+  return `<div class="notif ${n.read?'':'unread'}">
+   ${avatar}
+   <div class="info">${text}<div class="time">${formatTime(n.createdAt)} ago</div></div>
+   <div style="display:flex;align-items:center;gap:8px">${thumb}<div style="font-size:16px">${icon}</div>${!n.read?'<div class="dot"></div>':''}</div>
+  </div>`;
+ }).join('');
+}
+
+async function load(){
+ let r=await fetch(BASE+'/api/notifications',{headers:{authorization:token}});
+ allNotifs=await r.json();
+ render('all');
+ // mark all read like Instagram
+ await fetch(BASE+'/api/notifications/read',{method:'POST',headers:{authorization:token}});
+}
+
+function filterNotif(type, el){
+ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+ el.classList.add('active');
+ render(type);
+}
+
+socket.on('newNotification', n=>{
+ allNotifs.unshift(n);
+ render(document.querySelector('.tab.active').innerText.toLowerCase().includes('like')?'like':document.querySelector('.tab.active').innerText.toLowerCase().includes('comment')?'comment':document.querySelector('.tab.active').innerText.toLowerCase().includes('follow')?'follow':'all');
+ // optional: show browser notification
+ if(Notification && Notification.permission==="granted"){ new Notification(n.sender.username+" "+n.type); }
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explore • Instagram</title>
+<style>
+body{margin:0;background:#000;color:#fff;font-family:Arial}
+.top{position:sticky;top:0;z-index:10;background:#000;border-bottom:1px solid #262626;padding:10px}
+.search-wrap{max-width:600px;margin:0 auto;display:flex;gap:10px}
+.search-wrap input{flex:1;background:#262626;border:none;color:#fff;padding:10px 15px;border-radius:8px;outline:none}
+.search-wrap button{background:#0095f6;border:none;color:#fff;padding:10px 15px;border-radius:8px;font-weight:bold;cursor:pointer}
+.users{max-width:600px;margin:10px auto;padding:0 10px}
+.user-row{display:flex;align-items:center;gap:12px;padding:10px;background:#111;border-radius:8px;margin-bottom:8px;cursor:pointer}
+.user-row:hover{background:#222}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-weight:bold}
+.posts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;max-width:935px;margin:10px auto;padding-bottom:70px}
+.post-box{aspect-ratio:1/1;background:#111;overflow:hidden;cursor:pointer}
+.post-box img,.post-box video{width:100%;height:100%;object-fit:cover}
+.nav{position:fixed;bottom:0;width:100%;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
+.nav a{color:#fff;text-decoration:none;font-size:22px}
+.empty{text-align:center;padding:40px;color:#777}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="search-wrap">
+<input id="q" type="text" placeholder="Search username..." oninput="doSearch()">
+<button onclick="doSearch()">Search</button>
+</div>
+</div>
+
+<div id="userResults" class="users"></div>
+<div id="postGrid" class="posts"></div>
+
+<div class="nav">
+<a href="feed.html">🏠</a>
+<a href="explore.html">🔍</a>
+<a href="create.html">➕</a>
+<a href="reels.html">🎬</a>
+<a href="messages.html" style="font-size:22px">💬<span id="msgCount" class="msg-badge hide">0</span></a>
+<a href="notification.html"> 🔔 </a>
+<a href="profile.html">👤</a>
+</div>
+
+<script>
+const BASE = "https://raymonddomain.dev"; // base - FROM DATABASE
+const token = localStorage.getItem('token'); // token
+if(!token) location.href = "login.html"; // no token
+
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('/uploads')) return BASE+u; return u; }
+
+async function doSearch(){ // search like Instagram - FROM MONGODB
+  const query = document.getElementById('q').value.trim(); // query
+  const userDiv = document.getElementById('userResults'); // users
+  const postDiv = document.getElementById('postGrid'); // posts
+
+  if(!query){ // empty - show explore posts from DB
+    userDiv.innerHTML = "";
+    const res = await fetch(BASE + '/api/explore'); // all posts from DB
+    const posts = await res.json(); // posts
+    postDiv.innerHTML = posts.map(p => {
+      const url = fixUrl(p.mediaUrl);
+      const isVid = url.endsWith('.mp4') || url.endsWith('.mov');
+      return `<div class="post-box" onclick="openPost('${p._id}')">${isVid?`<video src="${url}" muted></video>`:`<img src="${url}">`}</div>`;
+    }).join('') || `<div class="empty">No posts yet</div>`;
+    return;
+  }
+
+  // SEARCH USER - calls your backend /api/explore?q= - FROM DATABASE NOT localStorage
+  const res = await fetch(BASE + '/api/explore?q=' + encodeURIComponent(query));
+  const data = await res.json();
+
+  // data can be users array when q is present
+  if(Array.isArray(data) && data.length && data[0].username){
+    userDiv.innerHTML = data.map(u => `
+      <div class="user-row" onclick="location.href='profile.html?id=${u._id}'">
+        <div class="avatar">${u.username[0].toUpperCase()}</div>
+        <div><b>${u.username}</b><br><small style="color:#aaa">${u.email||''}</small></div>
+      </div>
+    `).join('');
+    postDiv.innerHTML = "";
+  } else {
+    userDiv.innerHTML = `<div class="empty">No user found for "${query}"</div>`;
+    postDiv.innerHTML = "";
+  }
+}
+
+function openPost(id){ // open post
+  location.href = 'feed.html'; // or post.html?id=...
+}
+
+doSearch(); // load initial explore from DB
+</script>
+</body>
+</html>

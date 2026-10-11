@@ -21,8 +21,12 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 import cron from "node-cron"
 import fetch from "node-fetch"; // npm i node-fetch
-//import { handleUpload } from '@vercel/blob/client';
-//import { del } from '@vercel/blob';
+import http from 'http'
+import { Server } from 'socket.io'
+
+
+
+
 
 
 
@@ -40,13 +44,316 @@ app.use(bordyparser.json()); // for metadata
 app.use(express.json({ limit: '50mb' })); // important for base64
  app.use(express.static(path.join(__dirname, 'frontend')))
 
+  app.use((req, res, next) => {
+    console.log(`  ${req.method}  ${req.url}`);
+    next();
+ })
 
- //start her sdfyuiopiuytrewrtyuiopoiuytretkjhgf
+ //start here sdfyuiopiuytrewrtyuiopoiuytretkjhgf
 
     // 1. CONNECT MONGODB with Mongoose
 mongoose.connect(url)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
+
+
+
+// full blog website jdhghjksajhgfdsfghjkjhgfdsfghjhgfdghjgfd
+// uytresdtyguhijiuytdrsertfyghjikoijugytdhjhgfdgytdrsdfgh
+// jhgfdxcvbnkpdsrezrxcvhbjknuyxtcvjbknlkjhgfdtyuihiuyvuyctxt
+
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+/*const urll = 'mongodb+srv://raymond77252_db_user:TZbdSfSq6NDT4V0F@cluster0.uip3fi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0' */
+const SECRET = "secret123";
+
+function auth(req, res, next) {
+  const tokenN = req.headers.authorization;
+  if (!tokenN) return res.status(401).json({ msg: "No token" });
+  try { req.userId = jwt.verify(tokenN, SECRET).id; next(); }
+  catch { return res.status(401).json({ msg: "Invalid" }); }
+}
+
+
+if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
+const sstorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const uploadd = multer({ sstorage });
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.post('/api/upload', auth, uploadd.single('file'), (req, res) => {
+  res.json({ url: '/uploads/' + req.file.filename });
+});
+
+
+/*mongoose.connect(urll).then(() => console.log("MongoDB Connected Successfully")).catch(err => console.log(err)); */
+
+const Userd = mongoose.model('User', new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  avatar: { type: String, default: "" },
+  bio: { type: String, default: "" },
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+}, { timestamps: true }));
+
+const Post = mongoose.model('Post', new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  type: { type: String, default: 'image' },
+  mediaUrl: String,
+  caption: String,
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  comments: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, text: String, createdAt: { type: Date, default: Date.now } }],
+  views: { type: Number, default: 0 },
+  shares: { type: Number, default: 0 }
+}, { timestamps: true }));
+
+const Message = mongoose.model('Message', new mongoose.Schema({
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  text: String,
+  read: { type: Boolean, default: false },
+  edited: { type: Boolean, default: false }
+}, { timestamps: true }));
+
+const Notification = mongoose.model('Notification', new mongoose.Schema({
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  type: { type: String, enum: ['like','comment','follow','message'] },
+  post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', default: null },
+  text: { type: String, default: "" },
+  read: { type: Boolean, default: false }
+}, { timestamps: true }));
+
+async function createNotif(receiverId, senderId, type, postId=null, text=""){
+  if(receiverId.toString()===senderId.toString()) return;
+  if(type==='like'){
+    const exists = await Notification.findOne({ receiver:receiverId, sender:senderId, type:'like', post:postId });
+    if(exists){ await Notification.findByIdAndDelete(exists._id); return null; }
+  }
+  const n = await Notification.create({ receiver:receiverId, sender:senderId, type, post:postId, text });
+  const populated = await Notification.findById(n._id).populate('sender','username avatar').populate('post','mediaUrl caption');
+  io.to(receiverId.toString()).emit('newNotification', populated);
+  return populated;
+}
+
+app.post('/api/auth/register', async (req, res) => {
+  const { username, email, password } = req.body;
+  const hashed = await bcrypt.hash(password, 10);
+  const user = await Userd.create({ username, email, password: hashed });
+  const token = jwt.sign({ id: user._id }, SECRET);
+  res.json({ token, user });
+});
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await Userd.findOne({ email });
+  if (!user) return res.json({ msg: "Not found" });
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) return res.json({ msg: "Wrong pass" });
+  const token = jwt.sign({ id: user._id }, SECRET);
+  res.json({ token, user });
+});
+
+// ========== FACEBOOK STYLE AVATAR ADD / UPDATE ANYTIME ==========
+app.put('/api/users/avatar', auth, uploadd.single('file'), async (req, res) => {
+  const user = await Userd.findById(req.userId);
+  if(!user) return res.status(404).json({msg:"User not found"});
+  if(!req.file) return res.status(400).json({msg:"No file"});
+  user.avatar = '/uploads/' + req.file.filename;
+  await user.save();
+  res.json(user);
+});
+
+app.delete('/api/users/avatar', auth, async (req,res)=>{
+  const user = await Userd.findById(req.userId);
+  if(!user) return res.status(404).json({msg:"Not found"});
+  user.avatar = "";
+  await user.save();
+  res.json(user);
+});
+
+app.get('/api/users/me/profile', auth, async (req, res) => {
+  const user = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
+  const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
+  res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
+});
+// ========== END AVATAR ==========
+
+app.post('/api/posts', auth, async (req, res) => {
+  const post = await Post.create({ user: req.userId,...req.body });
+  res.json(post);
+});
+app.delete('/api/posts/:id', auth, async (req, res) => {
+  const post = await Post.findById(req.params.id);
+  if (!post) return res.status(404).json({ msg: "Post not found" });
+  if (post.user.toString()!== req.userId) return res.status(403).json({ msg: "Not yours" });
+  await Post.findByIdAndDelete(req.params.id);
+  res.json({ msg: "Deleted" });
+});
+app.put('/api/posts/:id', auth, async (req, res) => {
+  const post = await Post.findByIdAndUpdate(req.params.id, { caption: req.body.caption }, { new: true });
+  res.json(post);
+});
+app.get('/api/posts/feed', auth, async (req, res) => {
+  const posts = await Post.find().populate('user').populate('comments.user').sort({ createdAt: -1 });
+  res.json(posts);
+});
+app.get('/api/posts/reels', async (req, res) => {
+  const reels = await Post.find({ mediaUrl: { $regex: '\\.(mp4|mov|webm|mkv)$', $options: 'i' } }).populate('user').populate('comments.user').sort({ createdAt: -1 });
+  res.json(reels);
+});
+app.get('/api/posts/:id', auth, async (req, res) => {
+  const post = await Post.findById(req.params.id).populate('user').populate('comments.user');
+  if (!post) return res.status(404).json({ msg: "Post not found" });
+  res.json(post);
+});
+
+app.post('/api/posts/:id/like', auth, async (req, res) => {
+  const post = await Post.findById(req.params.id);
+  const isLiked = post.likes.includes(req.userId);
+  if(isLiked) post.likes.pull(req.userId); else post.likes.push(req.userId);
+  await post.save();
+  if(!isLiked) await createNotif(post.user, req.userId, 'like', post._id);
+  else { await Notification.deleteMany({ receiver:post.user, sender:req.userId, type:'like', post:post._id }); }
+  const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
+  res.json(updated);
+});
+
+app.post('/api/posts/:id/comment', auth, async (req, res) => {
+  const post = await Post.findById(req.params.id);
+  post.comments.push({ user: req.userId, text: req.body.text });
+  await post.save();
+  await createNotif(post.user, req.userId, 'comment', post._id, req.body.text);
+  const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
+  res.json(updated);
+});
+
+app.post('/api/posts/:id/share', auth, async (req, res) => {
+  const post = await Post.findById(req.params.id);
+  post.shares += 1;
+  await post.save();
+  res.json(post);
+});
+app.post('/api/posts/:id/save', auth, async (req, res) => {
+  const me = await Userd.findById(req.userId);
+  me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
+  await me.save();
+  res.json(me.savedPosts);
+});
+app.post('/api/posts/:id/view', async (req, res) => {
+  const post = await Post.findById(req.params.id);
+  if(!post) return res.status(404).json({ msg: "Not found" });
+  post.views += 1; await post.save(); res.json({ views: post.views });
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  const user = await Userd.findById(req.params.id).populate('followers', 'username avatar').populate('following', 'username avatar');
+  if (!user) return res.status(404).json({ msg: "User not found" });
+  const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
+  res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
+});
+
+app.post('/api/users/:id/follow', auth, async (req, res) => {
+  if(req.params.id === req.userId) return res.status(400).json({ msg: "Can't follow yourself" });
+  const target = await Userd.findById(req.params.id);
+  const me = await Userd.findById(req.userId);
+  if (!target ||!me) return res.status(404).json({ msg: "User not found" });
+  const isFollowing = me.following.includes(target._id);
+  if (isFollowing) {
+    me.following.pull(target._id); target.followers.pull(me._id);
+    await Notification.deleteMany({ receiver:target._id, sender:me._id, type:'follow' });
+  } else {
+    me.following.push(target._id); target.followers.push(me._id);
+    await createNotif(target._id, me._id, 'follow');
+  }
+  await me.save(); await target.save();
+  const updatedTarget = await Userd.findById(target._id).populate('followers','username').populate('following','username');
+  res.json({ me, target: updatedTarget, isFollowing:!isFollowing });
+});
+
+app.get('/api/explore', async (req, res) => {
+  const q = req.query.q;
+  if (q) { const users = await Userd.find({ username: { $regex: q, $options: 'i' } }); return res.json(users); }
+  const posts = await Post.find().populate('user').sort({ likes: -1 }).limit(20);
+  res.json(posts);
+});
+
+app.get('/api/notifications', auth, async (req, res) => {
+  const notifs = await Notification.find({ receiver: req.userId }).populate('sender','username avatar').populate('post','mediaUrl').sort({ createdAt: -1 }).limit(50);
+  res.json(notifs);
+});
+app.get('/api/notifications/count', auth, async (req, res) => {
+  const count = await Notification.countDocuments({ receiver: req.userId, read: false });
+  res.json({ count });
+});
+app.post('/api/notifications/read', auth, async (req, res) => {
+  await Notification.updateMany({ receiver: req.userId, read: false }, { read: true });
+  res.json({ ok:true });
+});
+
+app.get('/api/messages/users', auth, async (req, res) => {
+  const me = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
+  if(!me) return res.json([]);
+  const combined = [...me.followers,...me.following];
+  const unique = [...new Map(combined.map(u => [u._id.toString(), u])).values()];
+  res.json(unique);
+});
+app.get('/api/messages/unread/counts', auth, async (req, res) => {
+  const unread = await Message.aggregate([
+    { $match: { receiver: new mongoose.Types.ObjectId(req.userId), read: false } },
+    { $group: { _id: "$sender", count: { $sum: 1 } } }
+  ]);
+  const map = {}; unread.forEach(u => map[u._id.toString()] = u.count); res.json(map);
+});
+app.post('/api/messages/:id/read', auth, async (req, res) => {
+  await Message.updateMany({ sender: req.params.id, receiver: req.userId, read: false }, { read: true });
+  io.to(req.params.id).emit('messagesSeen', { by: req.userId });
+  res.json({ ok: true });
+});
+app.get('/api/messages/:id', auth, async (req, res) => {
+  const msgs = await Message.find({ $or: [{ sender: req.userId, receiver: req.params.id }, { sender: req.params.id, receiver: req.userId }] }).sort({ createdAt: 1 }).populate('sender','username').populate('receiver','username');
+  res.json(msgs);
+});
+app.put('/api/messages/msg/:msgId', auth, async (req, res) => {
+  const m = await Message.findById(req.params.msgId);
+  if(!m) return res.status(404).json({msg:"Not found"});
+  if(m.sender.toString()!== req.userId) return res.status(403).json({msg:"Not yours"});
+  m.text = req.body.text; m.edited = true; await m.save();
+  const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
+  io.to(m.receiver.toString()).emit('messageEdited', populated);
+  io.to(m.sender.toString()).emit('messageEdited', populated);
+  res.json(populated);
+});
+app.delete('/api/messages/msg/:msgId', auth, async (req, res) => {
+  const m = await Message.findById(req.params.msgId);
+  if(!m) return res.status(404).json({msg:"Not found"});
+  const isSender = m.sender.toString() === req.userId;
+  const isReceiver = m.receiver.toString() === req.userId;
+  if(!isSender &&!isReceiver) return res.status(403).json({msg:"Not allowed"});
+  const data = { _id: m._id, sender: m.sender, receiver: m.receiver };
+  await Message.findByIdAndDelete(req.params.msgId);
+  io.to(data.receiver.toString()).emit('messageDeleted', data);
+  io.to(data.sender.toString()).emit('messageDeleted', data);
+  res.json({ok:true});
+});
+
+io.on('connection', (socket) => {
+  socket.on('join', (id) => socket.join(id));
+  socket.on('sendMessage', async (d) => {
+    const m = await Message.create({ sender: d.sender, receiver: d.receiver, text: d.text, read: false });
+    const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
+    io.to(d.receiver).emit('receiveMessage', populated);
+    io.to(d.sender).emit('receiveMessage', populated);
+  });
+});
+
+
+// full blog end here iuystdyugiooiuytrtyughijooiuytryuiuytuiu
+// hgfdsrytuyujliuys6ssdf;ilkuyjtrxulkljkhjtzdiukyxjvk,jmhlkju
+// uytrxfghdsrtdyfuighoiuydttufigohiuytyuihiuydtuigohiuytuiohi
  
 
   let token = '';
@@ -303,7 +610,9 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
 // new oiufdfgyuiopoiuytrertyuiopoiuytfdfghjk
 
    // ========== CONFIG ==========
-const API_KEY="1f6245b3640a4f8dbdcd4ef044526b30"; // Your football-data.org free key
+   //1f6245b3640a4f8dbdcd4ef044526b30
+   
+   const API_KEY="04dfe64c981e43e88c16b3fd4b0003bc"; // Your football-data.org free key - 10 req/min limit
 const API_URL="https://api.football-data.org/v4";
 
 // ========== ANTI-BAN SYSTEM - MAIN PROTECTION FOR 1000 USERS ==========
@@ -317,24 +626,24 @@ let isSyncing=false;
 // WITHOUT cache: 1000 API calls in 1 minute = you get banned instantly (429 error).
 // WITH this cache: First user triggers 1 real API call, we save result + time. For next 60 seconds,
 // we serve the saved result from server RAM to the other 999 users. So 1000 users = 1 API call/min = SAFE.
-let liveCache={data:[],time:0};
+let liveCache={data:[], time:0};
 
 // visitorCache = ANTI-SPAM for single IP.
 // If 1 person refreshes page 20 times in 10 seconds, without this = 20 API calls.
 // With this: same IP within 10 seconds gets cached data immediately.
 let visitorCache=new Map();
 
-// syncCache = PROTECTION FOR /api/sync - 1hr cooldown so users can't spam sync and ban you.
-// FIXED: Defined only once at top - duplicate at bottom crashed app.
+// syncCache = PROTECTION FOR /api/sync - 2min cooldown so users can't spam sync and ban you.
 let syncCache={time:0,data:null};
-
 
 // ========== DATABASE MODEL ==========
 // We save matches in MongoDB so we NEVER call football-data for normal page loads.
 // Upcoming/Finished tabs read from this DB = 0 API calls = can handle unlimited users.
+// FIXED: Added watDate field - saves Lagos date (YYYY-MM-DD) so 10th night games don't shift to 11th
 const Match=mongoose.models.Match||mongoose.model("Match",new mongoose.Schema({
   _id:String,
-  date:Date,
+  date:Date, // UTC date from API
+  watDate:String, // FIXED: Lagos date string e.g. "2026-10-10" - this fixes today disappearing
   status:String,
   minute:Number,
   minuteText:String,
@@ -346,7 +655,6 @@ const Match=mongoose.models.Match||mongoose.model("Match",new mongoose.Schema({
   updatedAt:Date
 }));
 
-
 // ========== HELPER: GET DATE STRING ==========
 // Returns YYYY-MM-DD for today +/- n days. Used to ask football-data for range.
 function getDate(n=0){
@@ -355,25 +663,26 @@ function getDate(n=0){
   return d.toISOString().split("T")[0];
 }
 
-
 // ========== HELPER: CALL FOOTBALL-DATA API ==========
 async function api(endpoint,params={}){
   const url=new URL(API_URL+endpoint);
   Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-
   const r=await fetch(url,{headers:{"X-Auth-Token":API_KEY}});
   const data=await r.json();
-
   if(!r.ok)throw Error(data.message||"API Error");
   return data;
 }
 
-
 // ========== HELPER: FORMAT API DATA FOR OUR DB ==========
+// FIXED: Now saves watDate = Lagos date so grouping in frontend uses Lagos date
 function format(m){
+  const utc=new Date(m.utcDate);
+  // FIXED: Convert UTC to Lagos date string. Example: 2026-10-10T23:00Z was shifting to 11th. watDate fixes it.
+  const watDate=utc.toLocaleDateString("en-CA",{timeZone:"Africa/Lagos"});
   return{
     _id:String(m.id),
-    date:new Date(m.utcDate),
+    date:utc, // keep UTC for sorting
+    watDate:watDate, // FIXED: keep Lagos YYYY-MM-DD for display grouping - fixes today issue
     status:m.status,
     minute:m.minute||null,
     minuteText:m.status==="IN_PLAY"?`${m.minute||0}'`:
@@ -388,56 +697,33 @@ function format(m){
       name:m.awayTeam?.name,
       logo:`https://crests.football-data.org/${m.awayTeam.id}.png`
     },
-    homeScore:m.score?.fullTime?.home??m.score?.halfTime?.home??0,
-    awayScore:m.score?.fullTime?.away??m.score?.halfTime?.away??0,
+    homeScore:m.score?.fullTime?.home??m.score?.halfTime?.home??null,
+    awayScore:m.score?.fullTime?.away??m.score?.halfTime?.away??null,
     updatedAt:new Date()
   };
 }
 
-
 // ========== CORE: SYNC 9 DAYS BACK + 9 DAYS FRONT TO DB ==========
-// This runs when /api/sync is opened manually or by cron.
-// ANTI-BAN LOGIC HERE:
-// Free plan: 10 req/min max. We make only 2 API calls per sync.
-// We wait 6.5 seconds between the 2 calls to avoid 429 errors.
 async function fullSyncToDB(){
-
-  if(isSyncing)return{synced:0,total:0};
-
+  if(isSyncing)return{synced:0,total:0}; // Lock check
   isSyncing=true;
-
   try{
-    // FIXED: Using ONLY MONGO_URL as per your env file
     if(!process.env.MONGO_URL)throw Error("MONGO_URL missing in env vars");
     if(mongoose.connection.readyState!==1)
       await mongoose.connect(process.env.MONGO_URL);
 
-    // 1st API call: 9 days ago through today
-    // This gets past matches + today's matches.
     const past=await api("/matches",{
       dateFrom:getDate(-9),
       dateTo:getDate()
     });
-
-    // WAIT 6.5 seconds - MANDATORY for free plan to avoid 429
-    await new Promise(r=>setTimeout(r,6500));
-
-    // 2nd API call: tomorrow through 9 days forward
-    // This completes the full 9-days-back + 9-days-front window.
+    await new Promise(r=>setTimeout(r,6500)); // Wait 6.5 sec to avoid 10 req/min ban
     const future=await api("/matches",{
       dateFrom:getDate(1),
       dateTo:getDate(9)
     });
-
-    // Merge both API results and remove duplicate match IDs.
     const map=new Map();
-
-    [...(past.matches||[]),...(future.matches||[])]
-      .forEach(m=>map.set(m.id,m));
-
+    [...(past.matches||[]),...(future.matches||[])].forEach(m=>map.set(m.id,m));
     const formatted=[...map.values()].map(format);
-
-    // Save to DB: update existing matches or insert new matches.
     if(formatted.length){
       await Match.bulkWrite(
         formatted.map(m=>({
@@ -450,233 +736,83 @@ async function fullSyncToDB(){
         {ordered:false}
       );
     }
-
-    return{
-      synced:formatted.length,
-      total:await Match.countDocuments()
-    };
-
+    return{synced:formatted.length,total:await Match.countDocuments()};
   }finally{
-    isSyncing=false; // Release lock
+    isSyncing=false;
   }
 }
 
-
-// ========== CORE: GET MATCHES FROM DB (0 API COST) ==========
-// ANTI-BAN: This function is WHY 1000 users don't ban you.
-// All users reading upcoming/finished read from YOUR MongoDB, not football-data.
-// 1000 users = 0 API calls to football-data here.
+// ========== CORE: GET MATCHES FROM DB - FIXED TODAY ISSUE ==========
 async function getMatches(type){
-
-  const now=new Date();
   let filter={};
+  const now = new Date();
+  const startPast = new Date(); startPast.setDate(now.getDate() - 2); startPast.setHours(0,0,0,0);
+  const endFuture = new Date(); endFuture.setDate(now.getDate() + 9); endFuture.setHours(23,59,59,999);
+  const start9DaysAgo = new Date(); start9DaysAgo.setDate(now.getDate() - 9); start9DaysAgo.setHours(0,0,0,0);
+  const endTomorrow = new Date(); endTomorrow.setDate(now.getDate() + 1); endTomorrow.setHours(23,59,59,999);
 
   if(type==="upcoming"){
-    const start=new Date();
-    start.setDate(start.getDate()-7);
-    start.setHours(0,0,0,0);
-
-    const end=new Date();
-    end.setDate(end.getDate()+7);
-    end.setHours(23,59,59,999);
-
-    filter={
-      date:{$gte:start,$lte:end},
-      status:{$in:["SCHEDULED","TIMED","IN_PLAY","LIVE","PAUSED"]}
-    };
-
-  }else if(type==="finished"){
-
-    const start=new Date();
-    start.setDate(start.getDate()-7);
-
-    filter={
-      date:{$gte:start,$lte:now},
-      status:"FINISHED"
-    };
+    filter={ date:{$gte:startPast,$lte:endFuture}, status:{$in:["SCHEDULED","TIMED","IN_PLAY","LIVE","PAUSED"]} };
+  }else{
+    filter={ date:{$gte:start9DaysAgo,$lte:endTomorrow}, status:{$in:["FINISHED","AWARDED"]} };
   }
-
   const matches=await Match.find(filter).lean();
+  if(type==="finished"){ return matches.sort((a,b)=>new Date(b.date)-new Date(a.date)); }
   return matches.sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
 
-
-// ========== ROUTE 1: /api/matches - FROM DB ONLY (SAFE FOR 1000 USERS) ==========
+// ========== ROUTE 1: /api/matches ==========
 app.get("/api/matches",async(req,res)=>{
   try{
-
-    // FIXED: Using ONLY MONGO_URL
-    if(mongoose.connection.readyState!==1)
-      await mongoose.connect(process.env.MONGO_URL);
-
+    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL);
     res.set("Cache-Control","no-store");
-
-    // This reads from DB = 0 API calls = 1000 users safe.
     const matches=await getMatches(req.query.tab||"upcoming");
-
     res.json({success:true,matches});
-
-  }catch(e){
-    res.json({
-      success:false,
-      matches:[],
-      error:e.message
-    });
-  }
+  }catch(e){ res.json({success:false,matches:[],error:e.message}); }
 });
 
-
-// ========== ROUTE 2: /api/live - DIRECT API BUT WITH 60s CACHE (ANTI-BAN) ==========
-// This gives REAL minute like 67' and real score 2-1.
-// WITHOUT cache: 1000 users = 1000 API calls in 1 min = BAN.
-// WITH cache: 1000 users = 1 API call per minute = SAFE.
+// ========== ROUTE 2: /api/live ==========
 app.get("/api/live",async(req,res)=>{
-
   res.set("Cache-Control","no-store");
-
   try{
     const now=Date.now();
     const ip=req.headers["x-forwarded-for"]||req.ip;
-
-    // ANTI-BAN LAYER 1: IP DEDUPLICATION
-    // Same IP within 10s gets cached data immediately.
     if(visitorCache.has(ip)&&now-visitorCache.get(ip)<10000){
-      return res.json({
-        success:true,
-        matches:liveCache.data,
-        cached:true
-      });
+      return res.json({success:true,matches:liveCache.data,cached:true});
     }
-
     visitorCache.set(ip,now);
-
-    // ANTI-BAN LAYER 2: GLOBAL 60s CACHE
-    // All users share this cache. Only 1 API request per 60 seconds.
-    if(now-liveCache.time<60000&&liveCache.data){
-      return res.json({
-        success:true,
-        matches:liveCache.data,
-        cached:true
-      });
+    if(now-liveCache.time<60000&&liveCache.data.length>0){
+      return res.json({success:true,matches:liveCache.data,cached:true});
     }
-
-    // Only after cache expires do we call football-data API.
-    const today=await api("/matches",{
-      dateFrom:getDate(),
-      dateTo:getDate()
-    });
-
-    const live=(today.matches||[])
-      .filter(m=>["IN_PLAY","PAUSED","LIVE"].includes(m.status));
-
+    const today=await api("/matches",{dateFrom:getDate(),dateTo:getDate()});
+    const live=(today.matches||[]).filter(m=>["IN_PLAY","PAUSED","LIVE"].includes(m.status));
     const formatted=live.map(format);
-
-    liveCache={
-      data:formatted,
-      time:now
-    };
-
-    res.json({
-      success:true,
-      matches:formatted,
-      cached:false
-    });
-
+    liveCache={data:formatted, time:now};
+    res.json({success:true,matches:formatted,cached:false});
   }catch(e){
-
-    // If API fails or gives 429, serve old cache so frontend doesn't break.
-    if(liveCache.data.length>0){
-      return res.json({
-        success:true,
-        matches:liveCache.data,
-        cached:true
-      });
-    }
-
-    res.json({
-      success:false,
-      matches:[],
-      error:e.message
-    });
+    if(liveCache.data.length>0){ return res.json({success:true,matches:liveCache.data,cached:true}); }
+    res.json({success:false,matches:[],error:e.message});
   }
 });
 
-
- // ========== ROUTE 3: /api/sync - MANUAL SYNC / CRON ==========
-// Open https://raymonddomain.dev/api/sync manually after deploy.
-// It fetches 9 days back + 9 days front and saves matches into MongoDB.
-// ANTI-BAN FOR 5000 TRAFFIC:
-// - RAM cache 30min: fastest, no DB call
-// - MongoDB cache 30min: survives Vercel cold start & multi-instance (100% bulletproof)
-// - isSyncing lock: prevents double sync in same instance
+// ========== ROUTE 3: /api/sync ==========
 app.get("/api/sync",async(req,res)=>{
-
   const now=Date.now();
-  const COOLDOWN = 5*60*1000; // 5 minutes in ms
-
+  const COOLDOWN = 2*60*1000;
   try{
-    // FIXED: Using ONLY MONGO_URL
-    if(mongoose.connection.readyState!==1)
-      await mongoose.connect(process.env.MONGO_URL);
-
-    // 1. RAM cache check (0 DB calls, fastest for 5000 users)
-    // If we synced within 30 min in THIS instance, return cached
+    if(mongoose.connection.readyState!==1) await mongoose.connect(process.env.MONGO_URL);
     if(now-syncCache.time<COOLDOWN && syncCache.data){
-      return res.json({
-        success:true,
-        ...syncCache.data,
-        cached:true,
-        message:"Sync cooldown 5min - RAM cached"
-      });
+      return res.json({success:true,...syncCache.data,cached:true,message:"Sync cooldown 2min - RAM cached"});
     }
-
-    // 2. MongoDB check (survives Vercel redeploy & multi-instance)
-    // Even if Vercel creates 10 instances for 5000 users, all instances check same DB
-    // So only 1 instance will do real API calls, other 9 get DB cached
     const last = await Match.findOne().sort({updatedAt:-1});
     if(last && now - new Date(last.updatedAt).getTime() < COOLDOWN){
-      return res.json({
-        success:true,
-        cached:true,
-        total: await Match.countDocuments(),
-        message:"Sync cooldown 5min - DB cached"
-      });
+      return res.json({success:true,cached:true,total: await Match.countDocuments(),message:"Sync cooldown 2min - DB cached"});
     }
-
-    // 3. If another sync is already running in THIS instance
-    if(isSyncing){
-      return res.json({
-        success:false,
-        cached:true,
-        message:"Sync already running"
-      });
-    }
-
-    // 4. WAIT for sync to finish before sending response
-    // Vercel can kill unfinished background work after response
+    if(isSyncing){ return res.json({success:false,cached:true,message:"Sync already running"}); }
     const r=await fullSyncToDB();
-
-    syncCache={
-      time:Date.now(),
-      data:r
-    };
-
-    return res.json({
-      success:true,
-      ...r,
-      cached:false,
-      timeWAT:new Date().toLocaleString("en-NG",{
-        timeZone:"Africa/Lagos"
-      }),
-      message:`Synced ${r.synced} matches to DB`
-    });
-
-  }catch(e){
-    return res.json({
-      success:false,
-      error:e.message
-    });
-  }
+    syncCache={time:Date.now(),data:r};
+    return res.json({success:true,...r,cached:false,timeWAT:new Date().toLocaleString("en-NG",{timeZone:"Africa/Lagos"}),message:`Synced ${r.synced} matches to DB`});
+  }catch(e){ return res.json({success:false,error:e.message}); }
 });
 
 // matach end here kjhgfdghjkjhgfcghjkjhgf
@@ -901,12 +1037,219 @@ app.get('/api/get-media', async (req, res) => {
   res.json(result);
 });
 
-
 // 5. DELETE
 app.delete('/api/delete-media/:id', async (req, res) => {
   await Media.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });  
+
+
+//online banking iugfghdjhgcghsuhgcgdhsuhg
+ 
+ 
+ const NEWJWT_SECRET = "ihfghjkdjhvhjdhvbnfkerufyhijihekjdfenechvbejy";
+ const ADMIN_PASSWORD = "123456";
+ 
+ // --- MODELS ---
+ const UserSchema = new mongoose.Schema({
+   email: String,
+   password: String,
+   referenceCode: String,
+   ngnBalance: { type: Number, default: 0 },
+   usdBalance: { type: Number, default: 0 },
+ });
+ const NewUser = mongoose.model('NewUser', UserSchema);
+ 
+ const PendingSchema = new mongoose.Schema({
+   referenceCode: String,
+   email: String,
+   amount: Number,
+   type: String,
+   status: { type: String, default: 'pending' },
+   createdAt: { type: Date, default: Date.now }
+ });
+ const Pending = mongoose.model('Pending', PendingSchema);
+ 
+ const WithdrawSchema = new mongoose.Schema({
+   referenceCode: String,
+   email: String,
+   amount: Number,
+   bankName: String,
+   accountNumber: String,
+   accountName: String,
+   type: String,
+   status: { type: String, default: 'pending' },
+   createdAt: { type: Date, default: Date.now }
+ });
+ const Withdraw = mongoose.model('Withdraw', WithdrawSchema);
+ 
+ // NEW: Transaction history
+ const TransactionSchema = new mongoose.Schema({
+   referenceCode: String,
+   type: String,
+   amount: Number,
+   status: String,
+   details: String,
+   createdAt: { type: Date, default: Date.now }
+ });
+ const Transaction = mongoose.model('Transaction', TransactionSchema);
+ 
+ // --- AUTH ---
+ app.post('/api/signup', async (req,res)=>{
+   const { email, password } = req.body;
+   const exists = await NewUser.findOne({email});
+   if(exists) return res.json({error: "Email exists"});
+   
+   const count = await NewUser.countDocuments();
+   const ref = `USER${String(count + 1).padStart(4,'0')}`;
+   
+   const hashed = await bcrypt.hash(password, 10);
+   const user = await NewUser.create({ email, password: hashed, referenceCode: ref });
+   
+   const token = jwt.sign({ id: user._id }, NEWJWT_SECRET);
+   res.json({ token, referenceCode: ref, email });
+ });
+ 
+ app.post('/api/login', async (req,res)=>{
+   const { email, password } = req.body;
+   const user = await NewUser.findOne({email});
+   if(!user) return res.json({error: "No user"});
+   const ok = await bcrypt.compare(password, user.password);
+   if(!ok) return res.json({error: "Wrong password"});
+   const token = jwt.sign({ id: user._id }, NEWJWT_SECRET);
+   res.json({ token, referenceCode: user.referenceCode, email });
+ });
+ 
+ function authMiddleware(req,res,next){
+   const token = req.headers.authorization?.split(' ')[1];
+   if(!token) return res.json({error: "No token"});
+   try{
+     const decoded = jwt.verify(token, NEWJWT_SECRET);
+     req.userId = decoded.id;
+     next();
+   }catch{ 
+     return res.json({error: "Invalid token"}) 
+   }
+ }
+ 
+ app.get('/api/me', authMiddleware, async (req,res)=>{
+   const user = await NewUser.findById(req.userId);
+   if(!user) return res.json({error: "User not found"});
+   res.json({ email: user.email, referenceCode: user.referenceCode, ngnBalance: user.ngnBalance, usdBalance: user.usdBalance });
+ });
+ 
+ // --- DEPOSITS ---
+ app.post('/api/deposit/claim-ngn', authMiddleware, async (req,res)=>{
+   const { amount } = req.body;
+   const user = await NewUser.findById(req.userId);
+   await Pending.create({ referenceCode: user.referenceCode, email: user.email, amount: Number(amount), type: 'ngn' });
+   await Transaction.create({ referenceCode: user.referenceCode, type: 'deposit-ngn', amount: Number(amount), status: 'pending', details: 'PalmPay deposit' });
+   res.json({ success: true });
+ });
+ 
+ app.post('/api/deposit/claim-usd', authMiddleware, async (req,res)=>{
+   const { amount } = req.body;
+   const user = await NewUser.findById(req.userId);
+   await Pending.create({ referenceCode: user.referenceCode, email: user.email, amount: Number(amount), type: 'usd' });
+   await Transaction.create({ referenceCode: user.referenceCode, type: 'deposit-usd', amount: Number(amount), status: 'pending', details: 'GeegPay deposit' });
+   res.json({ success: true });
+ });
+ 
+ // --- WITHDRAWAL - FIXED ---
+ app.post('/api/withdraw/request', authMiddleware, async (req,res)=>{
+   try{
+     const { amount, bankName, accountNumber, accountName, type } = req.body;
+     const user = await NewUser.findById(req.userId);
+     if(!user) return res.json({error: "User not found"});
+     
+     if(type==='ngn' && user.ngnBalance < Number(amount)) return res.json({error: `Insufficient NGN. You have ₦${user.ngnBalance}`});
+     if(type==='usd' && user.usdBalance < Number(amount)) return res.json({error: `Insufficient USD. You have $${user.usdBalance}`});
+ 
+     if(type==='ngn') user.ngnBalance -= Number(amount);
+     if(type==='usd') user.usdBalance -= Number(amount);
+     await user.save();
+ 
+     const w = await Withdraw.create({ 
+       referenceCode: user.referenceCode,
+       email: user.email,
+       amount: Number(amount), 
+       bankName, accountNumber, accountName, type 
+     });
+     await Transaction.create({ 
+       referenceCode: user.referenceCode, 
+       type: `withdraw-${type}`, 
+       amount: Number(amount), 
+       status: 'pending', 
+       details: `${bankName} ${accountNumber}` 
+     });
+     console.log(`NEW WITHDRAWAL: ${w.referenceCode} ${type} ${amount}`);
+     res.json({success: true});
+   }catch(e){ console.log(e); res.json({error: "Server error"}) }
+ });
+ 
+ app.get('/api/transactions', authMiddleware, async (req,res)=>{
+   const user = await NewUser.findById(req.userId);
+   const tx = await Transaction.find({ referenceCode: user.referenceCode }).sort({ createdAt: -1 }).limit(50);
+   res.json(tx);
+ });
+ 
+ // --- ADMIN ---
+ app.post('/api/admin/login', (req,res)=>{
+   if(req.body.password === ADMIN_PASSWORD) res.json({ success: true });
+   else res.json({ error: "Wrong admin password" });
+ });
+ 
+ app.get('/api/admin/pending-deposits', async (req,res)=>{
+   const pendings = await Pending.find({ status: 'pending' }).sort({ createdAt: -1 });
+   res.json(pendings);
+ });
+ 
+ app.post('/api/admin/credit-ngn', async (req,res)=>{
+   const { referenceCode, amount } = req.body;
+   await NewUser.findOneAndUpdate({ referenceCode }, { $inc: { ngnBalance: Number(amount) } });
+   await Pending.findOneAndDelete({ referenceCode, amount: Number(amount), type: 'ngn' });
+   await Transaction.findOneAndUpdate({ referenceCode, amount: Number(amount), type: 'deposit-ngn', status: 'pending' }, { status: 'approved' });
+   res.json({ success: true });
+ });
+ 
+ app.post('/api/admin/credit-usd', async (req,res)=>{
+   const { referenceCode, amount } = req.body;
+   await NewUser.findOneAndUpdate({ referenceCode }, { $inc: { usdBalance: Number(amount) } });
+   await Pending.findOneAndDelete({ referenceCode, amount: Number(amount), type: 'usd' });
+   await Transaction.findOneAndUpdate({ referenceCode, amount: Number(amount), type: 'deposit-usd', status: 'pending' }, { status: 'approved' });
+   res.json({ success: true });
+ });
+ 
+ app.get('/api/admin/withdrawals', async (req,res)=>{
+   const list = await Withdraw.find({ status: 'pending' }).sort({ createdAt: -1 });
+   res.json(list);
+ });
+ 
+ app.post('/api/admin/approve-withdraw', async (req,res)=>{
+   const { id } = req.body;
+   await Withdraw.findByIdAndUpdate(id, { status: 'approved' });
+   const w = await Withdraw.findById(id);
+   if(w) await Transaction.findOneAndUpdate({ referenceCode: w.referenceCode, amount: w.amount, type: `withdraw-${w.type}`, status: 'pending' }, { status: 'approved' });
+   res.json({success: true});
+ });
+ 
+ app.post('/api/admin/reject-withdraw', async (req,res)=>{
+   const { id } = req.body;
+   const w = await Withdraw.findById(id);
+   if(w){
+     const user = await NewUser.findOne({ referenceCode: w.referenceCode });
+     if(user){
+       if(w.type==='ngn') user.ngnBalance += w.amount;
+       else user.usdBalance += w.amount;
+       await user.save();
+     }
+     await Withdraw.findByIdAndDelete(id);
+     await Transaction.findOneAndDelete({ referenceCode: w.referenceCode, amount: w.amount, type: `withdraw-${w.type}`, status: 'pending' });
+   }
+   res.json({success: true});
+ });
+ 
+ // online banking end here tdsdtyuiuytrdfuiuyt
 
 
  app.listen(port, console.log('server is running on port 8000'))

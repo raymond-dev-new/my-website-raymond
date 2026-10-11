@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reels</title>
+<style>
+body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden; }
+.reel-container { height:100vh; overflow-y:scroll; scroll-snap-type:y mandatory; }
+.reel { height:100vh; scroll-snap-align:start; position:relative; display:flex; align-items:center; justify-content:center; background:#111; }
+.reel video { height:100%; width:100%; object-fit:cover; }
+.info { position:absolute; bottom:80px; left:10px; right:80px; }
+.actions { position:absolute; right:10px; bottom:80px; display:flex; flex-direction:column; gap:20px; font-size:24px; text-align:center; }
+.bottom-nav { position:fixed; bottom:0; width:100%; background:#000; border-top:1px solid #222; display:flex; justify-content:space-around; padding:12px 0; z-index:10; }
+.bottom-nav a { color:#fff; text-decoration:none; font-size:20px; }
+/* COMMENT MODAL LIKE INSTAGRAM */
+.comment-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:50;justify-content:flex-end;align-items:flex-end}
+.comment-box{background:#121212;width:100%;max-width:500px;height:65vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;margin:0 auto}
+.cmt-head{padding:12px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;font-weight:bold}
+.cmt-list{flex:1;overflow-y:auto;padding:10px}
+.cmt-row{display:flex;gap:10px;margin-bottom:12px}
+.cmt-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;flex-shrink:0;cursor:pointer}
+.cmt-text{font-size:14px;line-height:1.3}
+.cmt-text b{cursor:pointer}
+.cmt-input-area{padding:10px;border-top:1px solid #262626;display:flex;gap:8px}
+.cmt-input-area input{flex:1;background:#262626;border:none;color:#fff;padding:10px;border-radius:20px;outline:none}
+.cmt-input-area button{background:none;border:none;color:#0095f6;font-weight:bold;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="reel-container" id="reels"></div>
+
+<div class="bottom-nav">
+<a href="feed.html">🏠</a>
+<a href="explore.html">🔍</a>
+<a href="create.html">➕</a>
+<a href="messages.html" style="font-size:22px">💬<span id="msgCount" class="msg-badge hide">0</span></a>
+<a href="reels.html">🎬</a>
+<a href="profile.html">👤</a>
+</div>
+
+<!-- COMMENTS MODAL - SEE WHO COMMENTED + ADD COMMENT LIKE INSTAGRAM -->
+<div class="comment-modal" id="cmtModal" onclick="if(event.target===this) closeComments()">
+<div class="comment-box">
+<div class="cmt-head"><span id="cmtCount">Comments</span><span style="cursor:pointer" onclick="closeComments()">✕</span></div>
+<div class="cmt-list" id="cmtList"></div>
+<div class="cmt-input-area">
+<input id="cmtInput" placeholder="Add a comment..." onkeydown="if(event.key==='Enter') sendComment()">
+<button onclick="sendComment()">Post</button>
+</div>
+</div>
+</div>
+
+<script>
+const BASE = "https://raymonddomain.dev"; // base
+const token = localStorage.getItem('token'); // token
+let reelsData = []; // reels from DB
+let activeReelId = ""; // current reel id for comments
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('/uploads')) return BASE+u; return u; }
+function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
+
+async function loadReels() { // load reels - ONLY VIDEO FROM DATABASE
+  const res = await fetch(BASE + '/api/posts/reels'); // reels from DB
+  const reels = await res.json(); // reels
+  reelsData = reels.filter(r => { const url=(r.mediaUrl||"").toLowerCase(); return url.endsWith('.mp4')||url.endsWith('.mov')||url.endsWith('.webm')||url.endsWith('.mkv'); });
+  const container = document.getElementById('reels');
+  if(!reelsData.length){
+    container.innerHTML = `<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column"><p>No reels yet</p><a href="create.html" style="color:#0095f6;margin-top:10px">Create Reel</a></div>`;
+    return;
+  }
+  container.innerHTML = reelsData.map(r => {
+    const url = fixUrl(r.mediaUrl);
+    return `
+    <div class="reel" data-id="${r._id}">
+      <video src="${url}" autoplay loop muted playsinline onclick="this.muted=false" onplay="addView('${r._id}')"></video>
+      <div class="info">
+        <b onclick="location.href='profile.html?id=${r.user?._id}'" style="cursor:pointer">@${r.user?.username||'user'}</b><br>
+        ${r.caption||''}<br>👁️ <span id="view-${r._id}">${r.views||0}</span> views
+      </div>
+      <div class="actions">
+        <div onclick="like('${r._id}')" style="cursor:pointer;">${r.likes.includes(getMyId())? '❤️' : '🤍'}<br><small>${r.likes.length}</small></div>
+        <div onclick="openComments('${r._id}')" style="cursor:pointer">💬<br><small>${r.comments.length}</small></div>
+        <div onclick="share('${r._id}')" style="cursor:pointer">↗️<br><small>${r.shares||0}</small></div>
+      </div>
+    </div>
+  `;
+  }).join('');
+  observeViews(); // start counting views like TikTok when scrolled into view
+}
+
+async function like(id){ await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}}); loadReels(); }
+async function share(id){ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); loadReels(); }
+
+// VIEWS CALCULATED WHEN SOMEONE VIEWS REEL LIKE INSTAGRAM - SAVED IN DB
+async function addView(id){ // called when video plays
+  await fetch(BASE+`/api/posts/${id}/view`,{method:'POST'});
+  const el = document.getElementById('view-'+id);
+  if(el){ el.innerText = parseInt(el.innerText||0)+1; }
+}
+function observeViews(){ // count view when reel enters screen like TikTok
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.getAttribute('data-id');
+        addView(id);
+      }
+    });
+  },{threshold:0.7});
+  document.querySelectorAll('.reel').forEach(r=>observer.observe(r));
+}
+
+// COMMENTS - SEE PEOPLE THAT COMMENTED + ADD COMMENT LIKE INSTAGRAM
+async function openComments(id){ // open comments modal - FROM DATABASE
+  activeReelId = id;
+  const res = await fetch(BASE + '/api/posts/' + id, { headers:{ authorization: token } });
+  const post = await res.json(); // post with comments populated from DB
+  document.getElementById('cmtCount').innerText = post.comments.length + ' comments';
+  const list = document.getElementById('cmtList');
+  if(!post.comments.length){
+    list.innerHTML = `<p style="color:#777;text-align:center;padding:20px">No comments yet. Be first!</p>`;
+  } else {
+    list.innerHTML = post.comments.map(c => {
+      const name = c.user?.username || 'user';
+      const letter = name[0].toUpperCase();
+      const uid = c.user?._id || '';
+      return `<div class="cmt-row">
+        <div class="cmt-avatar" onclick="location.href='profile.html?id=${uid}'">${letter}</div>
+        <div class="cmt-text"><b onclick="location.href='profile.html?id=${uid}'">${name}</b> ${c.text}</div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('cmtModal').style.display='flex';
+}
+function closeComments(){ document.getElementById('cmtModal').style.display='none'; activeReelId=""; }
+async function sendComment(){ // add comment - SAVED IN DB
+  const text = document.getElementById('cmtInput').value.trim();
+  if(!text ||!activeReelId) return;
+  await fetch(BASE + `/api/posts/${activeReelId}/comment`, { method:'POST', headers:{'Content-Type':'application/json', authorization: token}, body:JSON.stringify({text}) });
+  document.getElementById('cmtInput').value='';
+  openComments(activeReelId); // reload list from DB
+  loadReels(); // update count
+}
+
+loadReels();
+</script>
+</body>
+</html>

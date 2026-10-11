@@ -3,242 +3,177 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-    <meta name="referrer" content="no-referrer-when-downgrade" />
-
   <title>Private Space</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
-                  url("photo_2026-07-27_08-21-15.jpg") center/cover no-repeat fixed;
-      font-family: 'Poppins', sans-serif;
-      color: white;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      padding: 0;
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:'Poppins',sans-serif;
+      min-height:100vh;
+      color:#fff;
+      background:#0a0a0f;
+      position:relative;
+      overflow-x:hidden;
+    }
+    /* background glow */
+    body::before{
+      content:'';
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(600px at 20% 10%, rgba(99,102,241,0.25), transparent 60%),
+        radial-gradient(800px at 80% 90%, rgba(139,92,246,0.20), transparent 60%),
+        radial-gradient(500px at 50% 50%, rgba(59,130,246,0.15), transparent 70%);
+      pointer-events:none;
+      z-index:-1;
+    }
+    header{
+      position:sticky;top:0;z-index:10;
+      display:flex;justify-content:space-between;align-items:center;
+      padding:14px 20px;
+      background:rgba(18,18,24,0.7);
+      backdrop-filter:blur(20px) saturate(180%);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+    header h1{
+      font-size:18px;font-weight:700;letter-spacing:-0.3px;
+      background:linear-gradient(90deg,#60a5fa,#a78bfa,#f472b6);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .btn-logout{
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      color:#fff;
+      padding:8px 16px;border-radius:100px;
+      font-size:13px;font-weight:600;cursor:pointer;
+      transition:.2s;display:flex;align-items:center;gap:6px;
+    }
+    .btn-logout:hover{background:rgba(255,255,255,0.15);transform:translateY(-1px)}
+
+    .container{
+      max-width:700px;margin:0 auto;
+      padding:32px 20px 40px;
+      display:flex;flex-direction:column;gap:28px;
+    }
+    .welcome{text-align:center}
+    .welcome h2{
+      font-size:clamp(22px,5vw,32px);
+      font-weight:700;letter-spacing:-0.5px;
+      margin-bottom:6px;
+    }
+    .welcome p{font-size:14px;color:rgba(255,255,255,0.6)}
+
+    .dashboard{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:14px;
+    }
+    .card{
+      position:relative;
+      border-radius:20px;
+      padding:22px 16px;
+      text-align:left;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.1);
+      overflow:hidden;
+      transition:all .35s cubic-bezier(.2,.8,.2,1);
+      isolation:isolate;
+      min-height:130px;
+      display:flex;flex-direction:column;justify-content:space-between;
+    }
+    .card::before{
+      content:'';
+      position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,0.12),transparent);
+      opacity:0;transition:.35s;z-index:-1;
+    }
+    .card:hover{transform:translateY(-4px) scale(1.01);border-color:rgba(255,255,255,0.2);box-shadow:0 20px 40px rgba(0,0,0,0.4)}
+    .card:hover::before{opacity:1}
+    .card .icon{font-size:28px;margin-bottom:12px}
+    .card .label{font-size:16px;font-weight:600;letter-spacing:-0.2px}
+    .card .sub{font-size:12px;opacity:.7;margin-top:4px;font-weight:400}
+    .card .arrow{position:absolute;top:16px;right:16px;font-size:14px;opacity:.5;transition:.2s}
+    .card:hover .arrow{opacity:1;transform:translateX(3px)}
+
+    /* specific gradients */
+    .whot{background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);grid-column:span 2;min-height:150px}
+    .game{background:linear-gradient(135deg,#0ea5e9 0%,#06b6d4 100%)}
+    .chess{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
+
+    /* ad placeholder - responsive and centered */
+    .ad-wrapper{
+      width:100%;max-width:600px;height:130px;
+      margin:0 auto;
+      background:rgba(255,255,255,0.04);
+      border:1px dashed rgba(255,255,255,0.1);
+      border-radius:16px;
+      display:grid;place-items:center;
+      font-size:12px;color:rgba(255,255,255,0.4);
     }
 
-    
+    footer{text-align:center;padding:20px;font-size:11px;color:rgba(255,255,255,0.35)}
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      backdrop-filter: blur(10px);
-      background: rgba(255,255,255,0.05);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+    @media(max-width:480px){
+      header{padding:12px 16px}
+      header h1{font-size:16px}
+      .container{padding:20px 16px}
+      .dashboard{gap:12px}
+      .card{border-radius:18px;min-height:120px;padding:18px 14px}
+      .card .label{font-size:15px}
+      .whot{min-height:135px}
     }
-
-    header h1 {
-      font-size: 16px;
-      font-weight: 700;
-      background: linear-gradient(90deg, #4b75ff, #8b5cf6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .btn-logout {
-      background: #ff4757;
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-logout:hover {
-      background: #e84118;
-      transform: translateY(-2px);
-    }
-
-    .ad-wrapper { 
-      width: 40%; /* EXACT WIDTH YOU WANT */
-      height: 210px; /* EXACT HEIGHT YOU WANT */
-      background: rgba(255,255,255,0.05); /* subtle bg so you see the box */
-      border-radius: 10px;
-       margin-left: 440px; 
-      margin-top: 10px;
-       text-align:center; 
-       margin-bottom: 15px;
-    }
-
-   
-
-    .container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 15px 12px;
-      margin-top: 50px;
-    }
-
-    .welcome {
-      text-align: center;
-      margin-bottom: 15px;
-      margin-top: 8px;
-    }
-    .welcome h2 {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .welcome p {
-      font-size: 12px;
-      opacity: 0.8;
-    }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      width: 100%;
-      max-width: 50%;
-    }
-
-    .card {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 12px 8px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: 600;
-      font-size: 12px;
-    }
-    .card:hover {
-      transform: translateY(-3px);
-      background: rgba(255,255,255,0.15);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .card.diary { background: linear-gradient(135deg, #667eea, #764ba2);}
-     .card.chess { background: linear-gradient(135deg, #28f3b6, #b9a5ce); grid-column: span 2;}
-    .card.expense { background: linear-gradient(135deg, #93fbaa, #f5576c); }
-    .card.quiz { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-    .card.todo { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-    .card.calc { background: linear-gradient(135deg, #fa709a, #fee140); }
-    .card.design { background: linear-gradient(135deg, #30cfd0, #330867); }
-    .card.game { background: linear-gradient(135deg, #ffa502, #ff6347); grid-column: span 2; }
-    .whot { background: linear-gradient(135deg, #1b02ff, #52a35f); grid-column: span 2; }
-
-    footer {
-      text-align: center;
-      padding: 10px;
-      font-size: 10px;
-      opacity: 0.6;
-    }
-
-  .div{
-  margin-top: 10px;
-  margin-left: 22px;
-  height: 70px;
-}
-
-@media screen and (max-width: 900px) { 
-  .ad-wrapper{
-   width: 50%;
-   justify-self: center;
-   height: 150px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    margin-left: 210px;
-  }
-}
-@media screen and (max-width: 600px) {
-  header h1 { font-size: 15px; }
-      .welcome h2 { font-size: 18px; }
-      .dashboard { gap: 8px; max-width: 90%; }
-      .card { padding: 10px 8px; font-size: 11px; border-radius: 10px; }
-      .card.game, .whot, .chess { grid-column: span 2; }
-      .container { padding: 12px 10px; margin-top: 50px;}
-  .ad-wrapper{
-   width: 85%;
-   height: 120px;
-    background: rgba(255,255,255,0.05); 
-    border-radius: 10px;
-    margin-left: 8px;
-  }
-}
-
   </style>
 </head>
 <body>
-
-
-      <script>
-(function(lfin){
-var d = document,
-    s = d.createElement('script'),
-    l = d.currentScript || d.scripts[d.scripts.length - 1];
-s.settings = lfin || {};
-s.src = "\/\/quarrelsomebitter.com\/b.X\/VRsLdKGFlp0RYYWMcf\/ue\/mD9puCZCUtlbktP\/TAc\/0rMkzagv1_OpDsE\/t_NtzWQVzvOODrUt4ENuQo";
-s.async = true;
-s.referrerPolicy = 'no-referrer-when-downgrade';
-l.parentNode.insertBefore(s, l);
-})({})
-</script>
-
-
-<!--video slider-->
-<script>
-(function(pngej){
-var d = document,
-    s = d.createElement('script'),
-    l = d.currentScript || d.scripts[d.scripts.length - 1];
-s.settings = pngej || {};
-s.src = "\/\/quarrelsomebitter.com\/bbXpVQs\/d.Gxlj0JY_Wacj\/AeTm\/9\/uJZXUxlOkvPoTTcN0\/MLzvgP2\/NKDOUWtqN\/zcQGzcOlDqYs0rOGQh";
-s.async = true;
-s.referrerPolicy = 'no-referrer-when-downgrade';
-l.parentNode.insertBefore(s, l);
-})({})
-</script>
-
 
   <header>
     <h1>Private Space</h1>
     <button class="btn-logout logout">← Back</button>
   </header>
-   
-    
+
   <div class="container">
     <div class="welcome">
-      <h2 style="margin-top: 20px;">Welcome Back 👋</h2>
-      <p>Choose what you want to do today</p>
+      <h2>Welcome Back 👋</h2>
+      <p>Choose what you want to play today</p>
     </div>
 
+    <!-- If you want ads, keep this clean wrapper -->
+    <!-- <div class="ad-wrapper">Ad Space</div> -->
+
     <div class="dashboard">
-      <div class="card diary">📓 Diary</div>
-      <div class="card expense">💰 Expense</div>
-      <div class="card quiz">🧠 Quiz</div>
-      <div class="card todo">✅ Todo</div>
-      <div class="card calc">🧮 Calculator</div>
-      <div class="card design">🎨 Designers</div>
-      <div class="card whot"> Whot </div>
-      <div class="card game">♟ Draughts</div>
-      <div class="card chess">♟ Chess </div>
+      <div class="card whot">
+        <div class="arrow">↗</div>
+        <div class="icon">🃏</div>
+        <div>
+          <div class="label">Whot Card Game</div>
+          <div class="sub">Classic Nigerian whot • 2-4 players</div>
+        </div>
+      </div>
+
+      <div class="card game">
+        <div class="arrow">↗</div>
+        <div class="icon">⚫</div>
+        <div>
+          <div class="label">Draughts</div>
+          <div class="sub">Checkers battle</div>
+        </div>
+      </div>
+
+      <div class="card chess">
+        <div class="arrow">↗</div>
+        <div class="icon">♞</div>
+        <div>
+          <div class="label">Chess</div>
+          <div class="sub">Master the board</div>
+        </div>
+      </div>
     </div>
   </div>
 
+  <footer>Private Space • v1.0</footer>
+
   <script>
     document.querySelector('.whot').onclick = () => window.location.href = "whot.html";
-    document.querySelector('.diary').onclick = () => window.location.href = "mycorner.html";
-    document.querySelector('.expense').onclick = () => window.location.href = "expense.html";
-    document.querySelector('.quiz').onclick = () => window.location.href = "quiz.html";
-    document.querySelector('.todo').onclick = () => window.location.href = "todo.html";
-    document.querySelector('.calc').onclick = () => window.location.href = "calculate.html";
-    document.querySelector('.design').onclick = () => window.location.href = "design.html";
     document.querySelector('.game').onclick = () => window.location.href = "drat.html";
     document.querySelector('.chess').onclick = () => window.location.href = "chess.html";
     document.querySelector('.logout').onclick = () => window.location.href = "mainpage.html";

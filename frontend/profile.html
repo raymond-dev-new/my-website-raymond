@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile</title>
+<style>
+body{margin:0;background:#000;color:#fff;font-family:Arial}
+.header{max-width:935px;margin:0 auto;padding:12px 15px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center}
+.profile-info{max-width:935px;margin:0 auto;padding:20px 15px;display:flex;gap:20px;align-items:center}
+.avatar-wrap{position:relative;width:90px;height:90px;cursor:pointer}
+.circle{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;overflow:hidden;border:2px solid #262626}
+.circle img{width:100%;height:100%;object-fit:cover;display:block}
+.cam{position:absolute;bottom:2px;right:2px;background:#0095f6;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #000}
+.stats{display:flex;gap:15px;margin-top:8px;font-size:14px}
+.stats span{cursor:pointer}
+.follow-btn{margin-top:10px;padding:7px 18px;border:none;border-radius:8px;font-weight:bold;cursor:pointer}
+.follow{background:#0095f6;color:#fff}
+.following{background:#262626;color:#fff;border:1px solid #555}
+.posts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;max-width:935px;margin:10px auto;padding-bottom:70px}
+.post-box{aspect-ratio:1/1;background:#111;overflow:hidden;cursor:pointer;position:relative}
+.post-box img,.post-box video{width:100%;height:100%;object-fit:cover;display:block}
+.vid-badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);padding:2px 5px;border-radius:4px;font-size:12px}
+.nav{position:fixed;bottom:0;width:100%;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
+.nav a{color:#fff;text-decoration:none;font-size:22px;position:relative}
+.msg-badge{position:absolute;top:-6px;right:-8px;background:#ff3040;color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.hide{display:none}
+.wide-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:100;justify-content:center;align-items:center}
+.modal-box{background:#121212;width:90%;max-width:850px;max-height:90vh;display:flex;flex-direction:row;border-radius:10px;overflow:hidden}
+.modal-media{flex:1.5;background:#000;display:flex;align-items:center;justify-content:center;min-height:300px}
+.modal-media img,.modal-media video{max-width:100%;max-height:85vh;object-fit:contain;display:block}
+.modal-info{flex:1;background:#000;display:flex;flex-direction:column;border-left:1px solid #262626}
+.modal-head{padding:12px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center}
+.comment-list{flex:1;overflow-y:auto;padding:10px}
+.cmt{margin-bottom:8px;font-size:14px}
+.modal-actions{padding:10px;border-top:1px solid #262626}
+.act{font-size:22px;display:flex;gap:12px;margin-bottom:6px}
+.act span{cursor:pointer}
+.likes-count{font-weight:bold;font-size:14px;margin-bottom:8px}
+.add-cmt{display:flex;gap:6px}
+.add-cmt input{flex:1;background:transparent;border:none;color:#fff;outline:none}
+.add-cmt button{color:#0095f6;background:none;border:none;font-weight:600;cursor:pointer}
+.wide-actions{margin-top:10px;display:flex;gap:10px}
+.wide-actions button{padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:13px}
+.del-btn{background:#ed4956;color:#fff}
+.close-btn{background:#363636;color:#fff}
+.list-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:200;justify-content:center;align-items:center}
+.list-box{background:#121212;width:90%;max-width:400px;max-height:70vh;border-radius:12px;overflow:hidden}
+.list-head{padding:12px;border-bottom:1px solid #262626;display:flex;justify-content:space-between}
+.list-body{overflow-y:auto;max-height:60vh}
+.user-row{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid #222;cursor:pointer}
+.user-row:hover{background:#222}
+.avatar-sm{width:38px;height:38px;border-radius:50%;overflow:hidden;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;flex-shrink:0}
+.avatar-sm img{width:100%;height:100%;object-fit:cover}
+
+/* FACEBOOK STYLE AVATAR MODAL */
+.avatar-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;justify-content:center;align-items:center;padding:20px}
+.avatar-modal.open{display:flex}
+.avatar-card{background:#1e1e1e;width:100%;max-width:360px;border-radius:16px;padding:20px;text-align:center;border:1px solid #333}
+.avatar-card h3{margin-bottom:12px}
+.avatar-card img{width:180px;height:180px;border-radius:50%;object-fit:cover;margin:0 auto 16px;display:block;background:#111}
+.avatar-card button{width:100%;padding:12px;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-top:8px;font-size:14px}
+.btn-blue{background:#0095f6;color:#fff}
+.btn-gray{background:#262626;color:#fff}
+.btn-red{background:#111;color:#ff3040;border:1px solid #333}
+@media(max-width:700px){.modal-box{flex-direction:column;max-height:95vh}.modal-media img,.modal-media video{max-height:50vh}}
+</style>
+</head>
+<body>
+<div class="header"><b id="topname">raymond</b><span>☰</span></div>
+
+<div class="profile-info">
+<div class="avatar-wrap" id="avatarWrap" onclick="openAvatarModal()">
+<div class="circle" id="letter">R</div>
+<div class="cam" id="camIcon" style="display:none">📷</div>
+</div>
+<div>
+<h3 id="name">raymond</h3>
+<div class="stats">
+<span><b id="pc">0</b> posts</span>
+<span onclick="showFollowers()"><b id="followersCount">0</b> followers</span>
+<span onclick="showFollowing()"><b id="followingCount">0</b> following</span>
+</div>
+<button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button>
+<div id="ownActions" style="text-align:left;padding:0;margin-top:10px;display:flex;gap:8px">
+<a href="create.html" style="background:#0095f6;color:#fff;padding:7px 16px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">+ Post</a>
+<button onclick="openAvatarModal()" style="background:#262626;color:#fff;padding:7px 16px;border-radius:8px;border:1px solid #333;font-size:14px;font-weight:600;cursor:pointer">Edit Avatar</button>
+</div>
+</div>
+</div>
+
+<div class="posts" id="grid"></div>
+
+<!-- Avatar Modal like Facebook -->
+<div class="avatar-modal" id="avatarModal" onclick="if(event.target===this) closeAvatarModal()">
+<div class="avatar-card">
+<h3>Profile Picture</h3>
+<img id="avatarPreview" src="" style="display:none">
+<div id="avatarLetter" class="circle" style="width:180px;height:180px;margin:0 auto 16px;font-size:64px">R</div>
+<input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarSelect(this)">
+<button class="btn-blue" onclick="document.getElementById('avatarInput').click()">📁 Choose New Photo</button>
+<button class="btn-blue" id="saveAvatarBtn" onclick="uploadAvatar()" style="display:none">💾 Save as Profile Picture</button>
+<button class="btn-gray" onclick="closeAvatarModal()">Cancel</button>
+<button class="btn-red" id="removeAvatarBtn" onclick="removeAvatar()" style="display:none">🗑️ Remove current photo</button>
+<p style="color:#888;font-size:11px;margin-top:12px">Like Facebook - you can change anytime, stored in MongoDB</p>
+</div>
+</div>
+
+<!-- Post Modal -->
+<div class="wide-modal" id="wide">
+<div class="modal-box">
+<div class="modal-media" id="wideMedia"></div>
+<div class="modal-info">
+<div class="modal-head"><b id="wideUser">raymond</b><span style="cursor:pointer" onclick="closeWide()">✕</span></div>
+<div class="comment-list" id="commentList"></div>
+<div class="modal-actions">
+<div class="act"><span id="likeBtn" onclick="likePost()">🤍</span><span>💬</span></div>
+<div class="likes-count" id="likesCount">0 likes</div>
+<div class="add-cmt"><input id="cmtInput" placeholder="Add a comment..."><button onclick="addComment()">Post</button></div>
+<div class="wide-actions"><button class="del-btn" id="delBtn" onclick="deletePost()">Delete</button><button class="close-btn" onclick="closeWide()">Close</button></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="list-modal" id="followModal" onclick="if(event.target===this) closeList()">
+<div class="list-box">
+<div class="list-head"><b id="listTitle">Followers</b><span style="cursor:pointer" onclick="closeList()">✕</span></div>
+<div class="list-body" id="listBody"></div>
+</div>
+</div>
+
+<div class="nav">
+<a href="feed.html">🏠</a>
+<a href="explore.html">🔍</a>
+<a href="create.html">➕</a>
+<a href="messages.html">💬<span id="msgCount" class="msg-badge hide">0</span></a>
+<a href="notification.html"> 🔔 </a>
+<a href="reels.html">🎬</a>
+<a href="profile.html">👤</a>
+</div>
+
+<script>
+const BASE = "https://raymonddomain.dev";
+const token = localStorage.getItem('token');
+let currentId = "";
+let profileData = null;
+let selectedAvatarFile = null;
+let isOwnProfile = false;
+if(!token) location.href = "login.html";
+function getMyId(){ try{ return JSON.parse(atob(token.split('.')[1])).id }catch{ return "" } }
+function getParamId(){ return new URLSearchParams(window.location.search).get('id'); }
+function isVideoFile(url){ if(!url) return false; return url.endsWith('.mp4') || url.endsWith('.mov') || url.endsWith('.webm'); }
+
+function renderAvatar(user){
+  const letterEl = document.getElementById('letter');
+  const topLetter = user.username[0].toUpperCase();
+  if(user.avatar){
+    letterEl.innerHTML = `<img src="${BASE+user.avatar}">`;
+  } else {
+    letterEl.innerText = topLetter;
+  }
+  // modal preview
+  const prev = document.getElementById('avatarPreview');
+  const letterModal = document.getElementById('avatarLetter');
+  if(user.avatar){
+    prev.src = BASE+user.avatar; prev.style.display='block'; letterModal.style.display='none';
+    document.getElementById('removeAvatarBtn').style.display = isOwnProfile? 'block' : 'none';
+  } else {
+    prev.style.display='none'; letterModal.style.display='flex'; letterModal.innerText=topLetter;
+    document.getElementById('removeAvatarBtn').style.display='none';
+  }
+}
+
+async function loadProfile(){
+const viewingId = getParamId() || getMyId();
+isOwnProfile = viewingId === getMyId();
+const res = await fetch(BASE + "/api/users/" + viewingId);
+const data = await res.json();
+profileData = data;
+document.getElementById("name").innerText = data.user.username;
+document.getElementById("topname").innerText = data.user.username;
+document.getElementById("pc").innerText = data.posts.length;
+document.getElementById("followersCount").innerText = data.followersCount;
+document.getElementById("followingCount").innerText = data.followingCount;
+
+renderAvatar(data.user);
+
+const followBtn = document.getElementById('followBtn');
+const ownActions = document.getElementById('ownActions');
+const camIcon = document.getElementById('camIcon');
+if(isOwnProfile){
+  followBtn.style.display='none';
+  ownActions.style.display='flex';
+  camIcon.style.display='flex';
+  document.getElementById('delBtn').style.display='block';
+} else {
+  ownActions.style.display='none';
+  camIcon.style.display='none';
+  followBtn.style.display='block';
+  document.getElementById('delBtn').style.display='none';
+  const followers = data.user.followers || [];
+  const isFollowing = followers.some(f => (f._id||f) == getMyId());
+  followBtn.innerText = isFollowing? 'Following' : 'Follow';
+  followBtn.className = isFollowing? 'follow-btn following' : 'follow-btn follow';
+}
+
+const grid = document.getElementById("grid");
+let html = "";
+for(let p of data.posts){
+  const url = BASE + p.mediaUrl;
+  const isVid = p.type === 'video' || p.type === 'reel' || isVideoFile(p.mediaUrl);
+  if(isVid) html += `<div class="post-box" onclick="openWide('${p._id}')"><video src="${url}" muted></video><span class="vid-badge">🎬</span></div>`;
+  else html += `<div class="post-box" onclick="openWide('${p._id}')"><img src="${url}"></div>`;
+}
+grid.innerHTML = html || `<p style="grid-column:1/4;text-align:center;color:#777;padding:20px">No posts yet</p>`;
+}
+
+// AVATAR LIKE FACEBOOK
+function openAvatarModal(){
+ if(!isOwnProfile) return;
+ document.getElementById('avatarModal').classList.add('open');
+}
+function closeAvatarModal(){
+ document.getElementById('avatarModal').classList.remove('open');
+ selectedAvatarFile=null;
+ document.getElementById('saveAvatarBtn').style.display='none';
+ document.getElementById('avatarInput').value='';
+}
+function handleAvatarSelect(input){
+ if(input.files && input.files[0]){
+  selectedAvatarFile = input.files[0];
+  const url = URL.createObjectURL(selectedAvatarFile);
+  const prev = document.getElementById('avatarPreview');
+  prev.src = url; prev.style.display='block';
+  document.getElementById('avatarLetter').style.display='none';
+  document.getElementById('saveAvatarBtn').style.display='block';
+ }
+}
+async function uploadAvatar(){
+ if(!selectedAvatarFile) return alert('Choose photo first');
+ const btn = document.getElementById('saveAvatarBtn');
+ btn.innerText='Uploading...'; btn.disabled=true;
+ const fd = new FormData();
+ fd.append('file', selectedAvatarFile);
+ try{
+  const res = await fetch(BASE+'/api/users/avatar', { method:'PUT', headers:{ authorization: token }, body: fd });
+  const updated = await res.json();
+  if(updated.avatar || updated._id){
+    closeAvatarModal();
+    loadProfile();
+    alert('Profile picture updated like Facebook ✅');
+  } else alert('Failed: '+JSON.stringify(updated));
+ }catch(e){ alert('Error: '+e.message); }
+ btn.innerText='💾 Save as Profile Picture'; btn.disabled=false;
+}
+async function removeAvatar(){
+ if(!confirm('Remove profile picture?')) return;
+ // set empty avatar
+ const fd = new FormData();
+ // we create empty file request - server will set to ""
+ await fetch(BASE+'/api/users/avatar/remove', { method:'PUT', headers:{ authorization: token } }).catch(()=>{});
+ // quick hack: set avatar to empty via direct model - add route below if needed, for now set ""
+ // We'll call same endpoint with no file and backend will clear? Let's just call delete
+ try{
+  await fetch(BASE+'/api/users/avatar', { method:'DELETE', headers:{ authorization: token } });
+ }catch{}
+ closeAvatarModal();
+ // manually clear in UI and reload
+ setTimeout(loadProfile,500);
+}
+
+async function toggleFollow(){
+  const viewingId = getParamId() || getMyId();
+  await fetch(BASE + "/api/users/" + viewingId + "/follow", { method:'POST', headers:{ authorization: token } });
+  loadProfile();
+}
+function showFollowers(){
+  if(!profileData) return;
+  document.getElementById('listTitle').innerText = 'Followers';
+  const list = profileData.user.followers || [];
+  document.getElementById('listBody').innerHTML = list.map(u => {
+    const id = u._id || u; const name = u.username || id; const letter = (name[0]||'U').toUpperCase();
+    const avatar = u.avatar? `<img src="${BASE+u.avatar}" style="width:100%;height:100%;object-fit:cover">` : letter;
+    return `<div class="user-row" onclick="goToUser('${id}')"><div class="avatar-sm">${avatar}</div><div><b>${name}</b></div></div>`;
+  }).join('') || '<p style="padding:15px;color:#777">No followers yet</p>';
+  document.getElementById('followModal').style.display='flex';
+}
+function showFollowing(){
+  if(!profileData) return;
+  document.getElementById('listTitle').innerText = 'Following';
+  const list = profileData.user.following || [];
+  document.getElementById('listBody').innerHTML = list.map(u => {
+    const id = u._id || u; const name = u.username || id; const letter = (name[0]||'U').toUpperCase();
+    const avatar = u.avatar? `<img src="${BASE+u.avatar}" style="width:100%;height:100%;object-fit:cover">` : letter;
+    return `<div class="user-row" onclick="goToUser('${id}')"><div class="avatar-sm">${avatar}</div><div><b>${name}</b></div></div>`;
+  }).join('') || '<p style="padding:15px;color:#777">Not following anyone</p>';
+  document.getElementById('followModal').style.display='flex';
+}
+function goToUser(id){ closeList(); location.href = 'profile.html?id=' + id; }
+function closeList(){ document.getElementById('followModal').style.display='none'; }
+async function openWide(id){
+currentId = id;
+const res = await fetch(BASE + "/api/posts/" + id, { headers:{ authorization: token } });
+const p = await res.json();
+const url = BASE + p.mediaUrl;
+const isVid = p.type === 'video' || p.type === 'reel' || isVideoFile(p.mediaUrl);
+const mediaDiv = document.getElementById("wideMedia");
+if(isVid) mediaDiv.innerHTML = `<video src="${url}" controls autoplay playsinline style="width:100%"></video>`;
+else mediaDiv.innerHTML = `<img src="${url}">`;
+document.getElementById("wideUser").innerHTML = `<span style="cursor:pointer" onclick="goToUser('${p.user._id}')">@${p.user.username}</span>`;
+document.getElementById("likesCount").innerText = p.likes.length + " likes";
+document.getElementById("likeBtn").innerText = p.likes.includes(getMyId())? "❤️" : "🤍";
+let cmtHtml = "";
+for(let c of p.comments) cmtHtml += `<div class="cmt"><a href="profile.html?id=${c.user._id}" style="color:#fff;text-decoration:none"><b>${c.user.username}</b></a> ${c.text}</div>`;
+if(!cmtHtml) cmtHtml = "<p style='color:#777;font-size:13px'>No comments yet</p>";
+document.getElementById("commentList").innerHTML = cmtHtml;
+document.getElementById("wide").style.display = "flex";
+}
+function closeWide(){ document.getElementById("wide").style.display = "none"; }
+async function likePost(){ await fetch(BASE + "/api/posts/" + currentId + "/like", { method:"POST", headers:{ authorization: token } }); openWide(currentId); }
+async function addComment(){ const text = document.getElementById("cmtInput").value; if(!text) return; await fetch(BASE + "/api/posts/" + currentId + "/comment", { method:"POST", headers:{ "Content-Type":"application/json", authorization: token }, body: JSON.stringify({ text }) }); document.getElementById("cmtInput").value = ""; openWide(currentId); }
+async function deletePost(){ if(!confirm("Delete this post?")) return; await fetch(BASE + "/api/posts/" + currentId, { method:"DELETE", headers:{ authorization: token } }); closeWide(); loadProfile(); }
+loadProfile();
+</script>
+</body>
+</html>
