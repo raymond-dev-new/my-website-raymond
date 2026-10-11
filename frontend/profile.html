@@ -14,25 +14,25 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .circle img{width:100%;height:100%;object-fit:cover}
 .cam{position:absolute;bottom:0;right:0;background:#0095f6;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #000}
 .profile-main{flex:1;min-width:0}
-#name{margin:0;font-size:17px;font-weight:700;line-height:1.1}
-.stats{display:flex;gap:14px;margin-top:6px;font-size:14px;color:#fff;flex-wrap:wrap}
+#name{margin:0;font-size:17px;font-weight:700}
+.stats{display:flex;gap:14px;margin-top:6px;font-size:14px}
 .stats b{color:#fff}
 .bio-wrap{margin-top:6px;max-width:340px}
 .bio-name{font-weight:700;color:#fff;font-size:14px;display:block}
 .bio-text{color:#fff!important;font-size:14px;line-height:1.35;white-space:pre-wrap;word-break:break-word;display:block;margin-top:2px}
-.bio-link{margin-top:3px}
-.bio-link a{color:#e0f1ff;font-weight:600;text-decoration:none;word-break:break-all;font-size:14px}
+.bio-link a{color:#e0f1ff;font-weight:600;text-decoration:none;font-size:14px;word-break:break-all}
 .edit-bio-btn{margin-top:8px;background:#262626;border:1px solid #363636;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
-.follow-btn{margin-top:8px;padding:7px 18px;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+.follow-btn{margin-top:8px;padding:7px 18px;border:none;border-radius:8px;font-weight:700;cursor:pointer;transition:.15s}
 .follow{background:#0095f6;color:#fff}
 .following{background:#262626;color:#fff;border:1px solid #555}
 .action-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.btn-post{background:#0095f6;color:#fff;padding:7px 16px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block}
+.btn-post{background:#0095f6;color:#fff;padding:7px 16px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600}
 .btn-gray{background:#262626;color:#fff;padding:7px 16px;border-radius:8px;border:1px solid #333;font-size:14px;font-weight:600;cursor:pointer}
-.posts{display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:935px;margin:10px auto 0;padding:0 2px 80px;width:100%}
-.post-box{aspect-ratio:1/1.15;background:#111;overflow:hidden;cursor:pointer;position:relative;border-radius:3px}
+/* SMALLER GRID NOW */
+.posts{display:grid;grid-template-columns:1fr 1fr;gap:2px;max-width:600px;margin:10px auto 0;padding:0 0 80px;width:100%}
+.post-box{aspect-ratio:1/1;background:#111;overflow:hidden;cursor:pointer;position:relative;border-radius:2px}
 .post-box img,.post-box video{width:100%;height:100%;object-fit:cover;display:block}
-.vid-badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);padding:3px 6px;border-radius:4px;font-size:11px}
+.vid-badge{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);padding:2px 5px;border-radius:4px;font-size:10px}
 .nav{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
 .nav a{color:#fff;text-decoration:none;font-size:22px}
 .wide-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;justify-content:center;align-items:center}
@@ -74,8 +74,8 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .avatar-wrap,.circle{width:66px;height:66px;font-size:22px}
 #name{font-size:16px}
 .stats{font-size:13px;gap:10px}
-.posts{grid-template-columns:1fr 1fr;gap:3px;padding:0 1px 80px}
-.post-box{aspect-ratio:1/1.15}
+.posts{max-width:100%;gap:2px}
+.post-box{aspect-ratio:1/1}
 .modal-box{flex-direction:column;max-height:95vh;width:96%}
 }
 </style>
@@ -96,7 +96,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 
 <div class="avatar-modal" id="avatarModal" onclick="if(event.target===this) closeAvatarModal()"><div class="avatar-card"><h3>Profile Photo</h3><img id="avatarPreview" style="display:none"><div id="avatarLetter" class="circle" style="width:160px;height:160px;margin:0 auto 12px;font-size:50px">R</div><input type="file" id="avatarInput" accept="image/*" hidden onchange="handleAvatarSelect(this)"><button class="btn-blue" onclick="document.getElementById('avatarInput').click()">Choose Photo</button><button class="btn-blue" id="saveAvatarBtn" style="display:none" onclick="uploadAvatar()">Save</button><button class="btn-gray2" onclick="closeAvatarModal()">Cancel</button><button class="btn-blue" style="background:#111;color:#ff3040;border:1px solid #333;display:none" id="removeAvatarBtn" onclick="removeAvatar()">Remove Photo</button></div></div>
 <div class="bio-modal" id="bioModal" onclick="if(event.target===this) closeBioModal()"><div class="bio-card"><h3 style="text-align:center;margin:0">Edit Bio</h3><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Display Name</label><input id="bioNameInput" placeholder="Raymond"><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Bio - visible to everyone</label><textarea id="bioInput" maxlength="150" placeholder="Author of RAyMoNd domain"></textarea><div style="text-align:right;color:#777;font-size:11px"><span id="bioCount">0</span>/150</div><label style="font-size:11px;color:#aaa;margin-top:8px;display:block">Link</label><input id="linkInput" placeholder="https://..."><button class="btn-blue" id="saveBioBtn" onclick="saveBio()">Save Bio</button><button class="btn-gray2" onclick="closeBioModal()">Cancel</button></div></div>
-<div class="wide-modal" id="wide"><div class="modal-box"><div class="modal-media" id="wideMedia"></div><div class="modal-info"><div class="modal-head"><b id="wideUser"></b><span onclick="closeWide()" style="cursor:pointer">✕</span></div><div class="comment-list" id="commentList"></div><div class="modal-actions"><span id="likeBtn" onclick="likePost()" style="cursor:pointer;font-size:22px">🤍</span><div class="likes-count" id="likesCount"></div><div class="add-cmt"><input id="cmtInput" placeholder="Add comment..."><button onclick="addComment()">Post</button></div><div class="wide-actions"><button class="del-btn" id="delBtn" onclick="deletePost()">Delete</button><button class="close-btn" onclick="closeWide()">Close</button></div></div></div></div></div>
+<div class="wide-modal" id="wide" onclick="if(event.target===this) closeWide()"><div class="modal-box"><div class="modal-media" id="wideMedia"></div><div class="modal-info"><div class="modal-head"><b id="wideUser"></b><span onclick="closeWide()" style="cursor:pointer">✕</span></div><div class="comment-list" id="commentList"></div><div class="modal-actions"><span id="likeBtn" onclick="likePost()" style="cursor:pointer;font-size:22px">🤍</span><div class="likes-count" id="likesCount"></div><div class="add-cmt"><input id="cmtInput" placeholder="Add comment..."><button onclick="addComment()">Post</button></div><div class="wide-actions"><button class="del-btn" id="delBtn" onclick="deletePost()">Delete</button><button class="close-btn" onclick="closeWide()">Close</button></div></div></div></div></div>
 <div class="list-modal" id="followModal" onclick="if(event.target===this) closeList()"><div class="list-box"><div class="list-head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div><div class="list-body" id="listBody"></div></div></div>
 <div class="nav"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬</a><a href="reels.html">🎬</a><a href="profile.html">👤</a></div>
 
@@ -104,6 +104,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 let currentId="",profileData=null,selectedAvatarFile=null,isOwnProfile=false;
+let allPosts=[];
 if(!token) location.href="login.html";
 function getMyId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getParamId(){return new URLSearchParams(location.search).get('id')}
@@ -123,10 +124,11 @@ function renderAvatar(user){
 }
 
 function renderProfileUI(data){
- profileData=data; const u=data.user;
+ profileData=data; allPosts=data.posts||[];
+ const u=data.user;
  document.getElementById("name").innerText=u.username;
  document.getElementById("topname").innerText=u.username;
- document.getElementById("pc").innerText=data.posts.length;
+ document.getElementById("pc").innerText=allPosts.length;
  document.getElementById("followersCount").innerText=data.followersCount||(u.followers?u.followers.length:0);
  document.getElementById("followingCount").innerText=data.followingCount||(u.following?u.following.length:0);
  document.getElementById('bioDisplayName').innerText=u.displayName||'';
@@ -143,11 +145,11 @@ function renderProfileUI(data){
  else{own.style.display='none';cam.style.display='none';fb.style.display='block';document.getElementById('delBtn').style.display='none';const isFollowing=(u.followers||[]).some(function(f){return (f._id||f)==getMyId();});fb.innerText=isFollowing?'Following':'Follow';fb.className=isFollowing?'follow-btn following':'follow-btn follow';}
  const grid=document.getElementById("grid");
  let h="";
- for(let p of data.posts){
+ for(let p of allPosts){
    const url=fixUrl(p.mediaUrl||"");
    const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");
-   if(isVid){h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><video src="'+url+'" muted></video><span class="vid-badge">🎬</span></div>';}
-   else{h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><img src="'+url+'"></div>';}
+   if(isVid){h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><video src="'+url+'" muted preload="metadata"></video><span class="vid-badge">🎬</span></div>';}
+   else{h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><img src="'+url+'" loading="lazy"></div>';}
  }
  grid.innerHTML=h||'<p style="grid-column:1/3;text-align:center;color:#777;padding:20px">No posts yet</p>';
 }
@@ -171,6 +173,7 @@ async function loadProfile(){
  }catch(e){console.log(e);}
 }
 
+// BIO
 function openBioModal(){
  if(!isOwnProfile) return;
  const u=profileData&&profileData.user?profileData.user:{};
@@ -182,40 +185,108 @@ function openBioModal(){
 }
 function closeBioModal(){document.getElementById('bioModal').classList.remove('open');}
 document.getElementById('bioInput').addEventListener('input',function(e){document.getElementById('bioCount').innerText=e.target.value.length;});
-
 async function saveBio(){
  const btn=document.getElementById('saveBioBtn');
  btn.innerText='Saving...';btn.disabled=true;
- const payload={
-  displayName:document.getElementById('bioNameInput').value.trim(),
-  bio:document.getElementById('bioInput').value.trim(),
-  link:document.getElementById('linkInput').value.trim()
- };
- try{
-  let r=await fetch(BASE+'/api/users/me',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});
-  if(!r.ok){r=await fetch(BASE+'/api/users/update',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});}
-  localStorage.removeItem('profile_'+getMyId());
-  closeBioModal();
-  loadProfile();
- }catch(e){alert(e.message);}
- btn.innerText='Save Bio';btn.disabled=false;
+ const payload={displayName:document.getElementById('bioNameInput').value.trim(),bio:document.getElementById('bioInput').value.trim(),link:document.getElementById('linkInput').value.trim()};
+ try{let r=await fetch(BASE+'/api/users/me',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});if(!r.ok){r=await fetch(BASE+'/api/users/update',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});}localStorage.removeItem('profile_'+getMyId());closeBioModal();loadProfile();}catch(e){alert(e.message);}btn.innerText='Save Bio';btn.disabled=false;
 }
 
+// AVATAR
 function openAvatarModal(){if(!isOwnProfile) return;document.getElementById('avatarModal').classList.add('open');}
 function closeAvatarModal(){document.getElementById('avatarModal').classList.remove('open');selectedAvatarFile=null;document.getElementById('saveAvatarBtn').style.display='none';document.getElementById('avatarInput').value='';}
 function handleAvatarSelect(i){if(i.files&&i.files[0]){selectedAvatarFile=i.files[0];const u=URL.createObjectURL(selectedAvatarFile);const p=document.getElementById('avatarPreview');p.src=u;p.style.display='block';document.getElementById('avatarLetter').style.display='none';document.getElementById('saveAvatarBtn').style.display='block';}}
 async function uploadAvatar(){if(!selectedAvatarFile) return;const b=document.getElementById('saveAvatarBtn');b.innerText='Uploading...';b.disabled=true;const fd=new FormData();fd.append('file',selectedAvatarFile);try{await fetch(BASE+'/api/users/avatar',{method:'PUT',headers:{authorization:token},body:fd});localStorage.removeItem('profile_'+getMyId());closeAvatarModal();loadProfile();}catch(e){alert(e.message);}b.innerText='Save';b.disabled=false;}
 async function removeAvatar(){if(!confirm('Remove?')) return;try{await fetch(BASE+'/api/users/avatar',{method:'DELETE',headers:{authorization:token}});}catch{}localStorage.removeItem('profile_'+getMyId());closeAvatarModal();setTimeout(loadProfile,400);}
-async function toggleFollow(){const id=getParamId()||getMyId();await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});localStorage.removeItem('profile_'+id);loadProfile();}
+
+// FOLLOW INSTANT
+async function toggleFollow(){
+ const id=getParamId()||getMyId();
+ const btn=document.getElementById('followBtn');
+ const countEl=document.getElementById('followersCount');
+ const wasFollowing=btn.innerText==='Following';
+ // INSTANT UI
+ btn.innerText=wasFollowing?'Follow':'Following';
+ btn.className=wasFollowing?'follow-btn follow':'follow-btn following';
+ let currentCount=parseInt(countEl.innerText||"0");
+ countEl.innerText=wasFollowing?Math.max(0,currentCount-1):currentCount+1;
+ try{
+  await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});
+  localStorage.removeItem('profile_'+id);
+ }catch(e){
+  // revert if failed
+  btn.innerText=wasFollowing?'Following':'Follow';
+  btn.className=wasFollowing?'follow-btn following':'follow-btn follow';
+  countEl.innerText=currentCount;
+ }
+}
+
+// OPEN INSTANT
+async function openWide(id){
+ currentId=id;
+ const cachedPost=allPosts.find(p=>p._id===id);
+ const mediaDiv=document.getElementById("wideMedia");
+ const userDiv=document.getElementById("wideUser");
+ const listDiv=document.getElementById("commentList");
+ const likesDiv=document.getElementById("likesCount");
+ const likeBtn=document.getElementById("likeBtn");
+
+ // INSTANT OPEN FROM CACHE
+ if(cachedPost){
+  const url=fixUrl(cachedPost.mediaUrl||"");
+  const isVid=cachedPost.type==='video'||isVideoFile(cachedPost.mediaUrl||"");
+  if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%"></video>';}
+  else{mediaDiv.innerHTML='<img src="'+url+'" style="width:100%">';}
+  userDiv.innerText='@'+(profileData.user.username||"");
+  likesDiv.innerText=(cachedPost.likes?cachedPost.likes.length:0)+" likes";
+  likeBtn.innerText=cachedPost.likes&&cachedPost.likes.includes(getMyId())?"❤️":"🤍";
+  listDiv.innerHTML='<p style="color:#666">Loading...</p>';
+  document.getElementById("wide").style.display="flex";
+ }
+
+ // THEN FETCH FULL DATA
+ try{
+  const r=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}});
+  const p=await r.json();
+  const url=fixUrl(p.mediaUrl||"");
+  const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");
+  if(!cachedPost){
+   if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%"></video>';}
+   else{mediaDiv.innerHTML='<img src="'+url+'">';}
+   document.getElementById("wide").style.display="flex";
+  }
+  userDiv.innerText='@'+p.user.username;
+  likesDiv.innerText=p.likes.length+" likes";
+  likeBtn.innerText=p.likes.includes(getMyId())?"❤️":"🤍";
+  let c="";for(let x of p.comments){c+='<div class="cmt"><b>'+x.user.username+'</b> '+x.text+'</div>';}
+  listDiv.innerHTML=c||"<p style='color:#777'>No comments</p>";
+ }catch(e){console.log(e);}
+}
+
+function closeWide(){
+ // STOP VIDEO SOUND IMMEDIATELY
+ const v=document.getElementById("activeVideo");
+ if(v){v.pause();v.currentTime=0;v.src="";v.load();}
+ const mediaDiv=document.getElementById("wideMedia");
+ mediaDiv.innerHTML="";
+ document.getElementById("wide").style.display="none";
+}
+
+async function likePost(){
+ const likeBtn=document.getElementById("likeBtn");
+ const likesDiv=document.getElementById("likesCount");
+ const wasLiked=likeBtn.innerText==="❤️";
+ likeBtn.innerText=wasLiked?"🤍":"❤️";
+ let num=parseInt((likesDiv.innerText||"0").split(" ")[0]||"0");
+ likesDiv.innerText=(wasLiked?Math.max(0,num-1):num+1)+" likes";
+ try{await fetch(BASE+"/api/posts/"+currentId+"/like",{method:"POST",headers:{authorization:token}});}catch{}
+}
+async function addComment(){const t=document.getElementById("cmtInput").value;if(!t) return;document.getElementById("cmtInput").value="";const listDiv=document.getElementById("commentList");listDiv.innerHTML+='<div class="cmt"><b>You</b> '+t+'</div>';await fetch(BASE+"/api/posts/"+currentId+"/comment",{method:"POST",headers:{"Content-Type":"application/json",authorization:token},body:JSON.stringify({text:t})});openWide(currentId);}
+async function deletePost(){if(!confirm("Delete?")) return;closeWide();document.getElementById("grid").innerHTML='<p style="grid-column:1/3;text-align:center;color:#777">Deleting...</p>';await fetch(BASE+"/api/posts/"+currentId,{method:"DELETE",headers:{authorization:token}});localStorage.removeItem('profile_'+(getParamId()||getMyId()));loadProfile();}
 function showFollowers(){if(!profileData) return;document.getElementById('listTitle').innerText='Followers';const list=profileData.user.followers||[];let html="";for(let u of list){const id=u._id||u;const name=u.username||id;const av=u.avatar?'<img src="'+fixUrl(u.avatar)+'">':(name[0]||'U').toUpperCase();html+='<div class="user-row" onclick="goToUser(\''+id+'\')"><div class="avatar-sm">'+av+'</div><b>'+name+'</b></div>';}document.getElementById('listBody').innerHTML=html||'<p style="padding:15px;color:#777">No followers</p>';document.getElementById('followModal').style.display='flex';}
 function showFollowing(){if(!profileData) return;document.getElementById('listTitle').innerText='Following';const list=profileData.user.following||[];let html="";for(let u of list){const id=u._id||u;const name=u.username||id;const av=u.avatar?'<img src="'+fixUrl(u.avatar)+'">':(name[0]||'U').toUpperCase();html+='<div class="user-row" onclick="goToUser(\''+id+'\')"><div class="avatar-sm">'+av+'</div><b>'+name+'</b></div>';}document.getElementById('listBody').innerHTML=html||'<p style="padding:15px;color:#777">None</p>';document.getElementById('followModal').style.display='flex';}
 function goToUser(id){closeList();location.href='profile.html?id='+id;}
 function closeList(){document.getElementById('followModal').style.display='none';}
-async function openWide(id){currentId=id;const r=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}});const p=await r.json();const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");if(isVid){document.getElementById("wideMedia").innerHTML='<video src="'+url+'" controls autoplay playsinline style="width:100%"></video>';}else{document.getElementById("wideMedia").innerHTML='<img src="'+url+'">';}document.getElementById("wideUser").innerText='@'+p.user.username;document.getElementById("likesCount").innerText=p.likes.length+" likes";document.getElementById("likeBtn").innerText=p.likes.includes(getMyId())?"❤️":"🤍";let c="";for(let x of p.comments){c+='<div class="cmt"><b>'+x.user.username+'</b> '+x.text+'</div>';}document.getElementById("commentList").innerHTML=c||"<p style='color:#777'>No comments</p>";document.getElementById("wide").style.display="flex";}
-function closeWide(){document.getElementById("wide").style.display="none";}
-async function likePost(){await fetch(BASE+"/api/posts/"+currentId+"/like",{method:"POST",headers:{authorization:token}});openWide(currentId);}
-async function addComment(){const t=document.getElementById("cmtInput").value;if(!t) return;await fetch(BASE+"/api/posts/"+currentId+"/comment",{method:"POST",headers:{"Content-Type":"application/json",authorization:token},body:JSON.stringify({text:t})});document.getElementById("cmtInput").value="";openWide(currentId);}
-async function deletePost(){if(!confirm("Delete?")) return;await fetch(BASE+"/api/posts/"+currentId,{method:"DELETE",headers:{authorization:token}});closeWide();localStorage.removeItem('profile_'+(getParamId()||getMyId()));loadProfile();}
 loadProfile();
 </script>
 </body>
