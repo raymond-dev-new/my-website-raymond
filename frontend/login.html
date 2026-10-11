@@ -5,41 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login - Insta Clone</title>
 <style>
-body { margin:0; background:#000; color:#fff; font-family: Arial; display:flex; justify-content:center; align-items:center; height:100vh; } /* black like Instagram */
-.box { border:1px solid #333; padding:40px; width:300px; text-align:center; background:#111; } /* login box */
-input { width:90%; padding:10px; margin:8px 0; background:#222; border:1px solid #333; color:#fff; } /* inputs */
-button { width:95%; padding:10px; background:#0095f6; border:none; color:#fff; font-weight:bold; cursor:pointer; margin-top:10px; } /* blue button */
-a { color:#0095f6; text-decoration:none; font-size:13px; } /* link */
+body { margin:0; background:#000; color:#fff; font-family: Arial; display:flex; justify-content:center; align-items:center; height:100vh; }
+.box { border:1px solid #333; padding:40px; width:300px; text-align:center; background:#111; border-radius:12px; }
+input { width:90%; padding:10px; margin:8px 0; background:#222; border:1px solid #333; color:#fff; border-radius:6px; outline:none; }
+input:focus{border-color:#0095f6}
+button { width:95%; padding:10px; background:#0095f6; border:none; color:#fff; font-weight:bold; cursor:pointer; margin-top:10px; border-radius:8px; position:relative; transition:0.2s; display:flex; justify-content:center; align-items:center; gap:8px; }
+button:disabled{opacity:0.6; cursor:not-allowed;}
+a { color:#0095f6; text-decoration:none; font-size:13px; }
+
+/* SWEET LOADING */
+.btn-loading{pointer-events:none;opacity:0.8}
+.spinner{width:18px;height:18px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+.btn-loading .spinner{display:block}
+.btn-loading .btn-text{opacity:0.7}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#msg{font-size:13px;color:#ff3040;margin-top:10px;min-height:18px}
+.success{color:#00ff88!important}
 </style>
 </head>
 <body>
 <div class="box">
-<h2>RAyMoNd</h2> <!-- logo -->
-<input id="email" placeholder="Email"> <!-- email -->
-<input id="password" type="password" placeholder="Password"> <!-- password -->
-<button onclick="login()">Log in</button> <!-- login btn -->
-<p><a href="register.html">Don't have account? Sign up</a></p> <!-- go to register -->
-<p id="msg"></p> <!-- error message -->
+<h2 style="font-family:cursive; font-size:28px; margin-bottom:20px;">RAyMoNd</h2>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button id="loginBtn" onclick="login()"><div class="spinner"></div><span class="btn-text">Log in</span></button>
+<p><a href="register.html">Don't have account? Sign up</a></p>
+<p id="msg"></p>
 </div>
 
 <script>
-async function login() { // login function
-  const email = document.getElementById('email').value; // get email
-  const password = document.getElementById('password').value; // get password
-  const res = await fetch('https://raymonddomain.dev/api/auth/login', { // call backend login api
-    method: 'POST', // post
-    headers: { 'Content-Type': 'application/json' }, // json
-    body: JSON.stringify({ email, password }) // send data
-  });
-  const data = await res.json(); // get response
-  if (data.token) { // if token exists = success
-    localStorage.setItem('token', data.token); // save token
-    localStorage.setItem('user', JSON.stringify(data.user)); // save user
-    window.location = 'feed.html'; // go to feed
-  } else {
-    document.getElementById('msg').innerText = data.msg; // show error
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const btn = document.getElementById('loginBtn');
+  const msg = document.getElementById('msg');
+  const btnText = btn.querySelector('.btn-text');
+
+  if(!email || !password){
+    msg.innerText = "Fill email and password";
+    return;
+  }
+
+  // START LOADING
+  btn.classList.add('btn-loading');
+  btn.disabled = true;
+  btnText.innerText = "Logging in...";
+  msg.innerText = "";
+  msg.classList.remove('success');
+
+  try{
+    const res = await fetch('https://raymonddomain.dev/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      // save for profile instant load
+      localStorage.setItem('cached_email', email);
+      
+      btnText.innerText = "✅ Success";
+      msg.innerText = "Welcome back!";
+      msg.classList.add('success');
+      
+      setTimeout(()=> window.location = 'feed.html', 600);
+    } else {
+      // ERROR
+      msg.innerText = data.msg || data.error || "Login failed";
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      btnText.innerText = "Log in";
+    }
+  }catch(e){
+    msg.innerText = "Network error, check connection";
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+    btnText.innerText = "Log in";
   }
 }
+
+// Enter key login
+document.getElementById('password').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') login();
+});
 </script>
 </body>
 </html>

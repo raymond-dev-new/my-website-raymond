@@ -6,42 +6,100 @@
 <title>Register - Insta Clone</title>
 <style>
 body { margin:0; background:#000; color:#fff; font-family:Arial; display:flex; justify-content:center; align-items:center; height:100vh; }
-.box { border:1px solid #333; padding:40px; width:300px; text-align:center; background:#111; }
-input { width:90%; padding:10px; margin:8px 0; background:#222; border:1px solid #333; color:#fff; }
-button { width:95%; padding:10px; background:#0095f6; border:none; color:#fff; font-weight:bold; cursor:pointer; margin-top:10px; }
+.box { border:1px solid #333; padding:40px; width:300px; text-align:center; background:#111; border-radius:12px; }
+input { width:90%; padding:10px; margin:8px 0; background:#222; border:1px solid #333; color:#fff; border-radius:6px; outline:none; }
+input:focus{border-color:#0095f6}
+button { width:95%; padding:10px; background:#0095f6; border:none; color:#fff; font-weight:bold; cursor:pointer; margin-top:10px; border-radius:8px; position:relative; transition:0.2s; display:flex; justify-content:center; align-items:center; gap:8px; }
+button:disabled{opacity:0.6; cursor:not-allowed;}
 a { color:#0095f6; text-decoration:none; font-size:13px; }
+
+/* SWEET LOADING */
+.btn-loading{pointer-events:none;opacity:0.8}
+.spinner{width:18px;height:18px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+.btn-loading .spinner{display:block}
+.btn-loading .btn-text{opacity:0.7}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#msg{font-size:13px;color:#ff3040;margin-top:10px;min-height:18px}
+.success{color:#00ff88!important}
 </style>
 </head>
 <body>
 <div class="box">
-<h2>RAyMoNd</h2> <!-- logo -->
-<input id="username" placeholder="Username"> <!-- username -->
-<input id="email" placeholder="Email"> <!-- email -->
-<input id="password" type="password" placeholder="Password"> <!-- password -->
-<button onclick="register()">Sign up</button> <!-- signup -->
-<p><a href="login.html">Have account? Log in</a></p> <!-- link to login -->
-<p id="msg"></p> <!-- msg -->
+<h2 style="font-family:cursive; font-size:28px; margin-bottom:20px;">RAyMoNd</h2>
+<input id="username" placeholder="Username">
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button id="signupBtn" onclick="register()"><div class="spinner"></div><span class="btn-text">Sign up</span></button>
+<p><a href="login.html">Have account? Log in</a></p>
+<p id="msg"></p>
 </div>
 
 <script>
-async function register() { // register
-  const username = document.getElementById('username').value; // username
-  const email = document.getElementById('email').value; // email
-  const password = document.getElementById('password').value; // password
-  const res = await fetch('https://raymonddomain.dev/api/auth/register', { // call backend
-    method: 'POST', // post
-    headers: { 'Content-Type': 'application/json' }, // json
-    body: JSON.stringify({ username, email, password }) // data
-  });
-  const data = await res.json(); // response
-  if (data.token) { // success
-    localStorage.setItem('token', data.token); // save token
-    localStorage.setItem('user', JSON.stringify(data.user)); // save user
-    window.location = 'feed.html'; // go to feed - linked
-  } else {
-    document.getElementById('msg').innerText = data.msg; // error
+const BASE = "https://raymonddomain.dev";
+
+async function register() {
+  const username = document.getElementById('username').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const btn = document.getElementById('signupBtn');
+  const msg = document.getElementById('msg');
+  const btnText = btn.querySelector('.btn-text');
+
+  if(!username || !email || !password){
+    msg.innerText = "Fill all fields";
+    return;
+  }
+
+  // START LOADING
+  btn.classList.add('btn-loading');
+  btn.disabled = true;
+  btnText.innerText = "Creating account...";
+  msg.innerText = "";
+  msg.classList.remove('success');
+
+  try{
+    const res = await fetch(BASE+'/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+    
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      // for instant profile load
+      localStorage.setItem('profile_'+data.user._id, JSON.stringify({user:data.user, posts:[], followersCount:0, followingCount:0}));
+
+      btnText.innerText = "✅ Account Created";
+      msg.innerText = "Success! Redirecting...";
+      msg.classList.add('success');
+
+      setTimeout(()=> window.location = 'feed.html', 700);
+    } else {
+      // Handle duplicate email error you saw before
+      let errorMsg = data.msg || data.error || "Signup failed";
+      if(errorMsg.includes('E11000') || errorMsg.includes('duplicate')){
+        errorMsg = "Email already exists, please login";
+      }
+      msg.innerText = errorMsg;
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      btnText.innerText = "Sign up";
+    }
+  }catch(e){
+    msg.innerText = "Network error: "+e.message;
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+    btnText.innerText = "Sign up";
   }
 }
+
+// Enter key signup
+document.getElementById('password').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') register();
+});
 </script>
 </body>
 </html>
