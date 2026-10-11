@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Messages</title>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
+body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
 .top{height:60px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:0 16px;justify-content:space-between;background:#000;position:sticky;top:0;z-index:5}
 .top-user{flex:1;display:flex;align-items:center;gap:10px;cursor:pointer}
-.top-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden}
-.top-avatar img{width:100%;height:100%;object-fit:cover}
+.top-avatar,.av{border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden;flex-shrink:0}
+.top-avatar{width:36px;height:36px}.av{width:52px;height:52px;font-size:20px}
+.top-avatar img,.av img{width:100%;height:100%;object-fit:cover}
 .list{flex:1;overflow-y:auto;padding:12px;background:#000}
 .row{padding:14px 12px;display:flex;gap:12px;align-items:center;background:#111;border-radius:16px;margin-bottom:10px;cursor:pointer;position:relative}
 .row.new-msg{border:1px solid #0095f6}
-.av{width:52px;height:52px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex-shrink:0;overflow:hidden}
-.av img{width:100%;height:100%;object-fit:cover}
 .badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ff3040;color:#fff;min-width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;padding:0 7px}
 .badge.hide{display:none}
 .total-badge{background:#ff3040;color:#fff;padding:3px 8px;border-radius:12px;font-size:12px;margin-left:8px;font-weight:700}
@@ -28,260 +28,329 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .b{padding:11px 16px;border-radius:22px;font-size:15px;line-height:19px;word-break:break-word;position:relative;cursor:pointer;max-width:100%}
 .b.me{background:linear-gradient(135deg,#0095f6,#0064e0);color:#fff;border-bottom-right-radius:6px}
 .b.other{background:#262626;color:#fff;border-bottom-left-radius:6px}
-.b audio{width:220px;height:40px;display:block}
+.b audio{width:min(220px,60vw);height:40px;display:block}
 .time-row{display:flex;align-items:center;gap:6px;margin:4px 8px 12px;font-size:11px;color:#8a8a8a}
 .time-row.me{justify-content:flex-end}
-.tick{font-size:12px}
-.tick.read{color:#0095f6}
+.tick{font-size:12px}.tick.read{color:#0095f6}
 .bar{padding:12px;border-top:1px solid #1e1e1e;display:flex;gap:10px;align-items:center;background:#000}
-.bar input{flex:1;background:#1e1e1e;border:none;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px}
-.send-btn{width:44px;height:44px;border-radius:50%;background:#0095f6;border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.mic-btn{width:44px;height:44px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.bar input{flex:1;min-width:0;background:#1e1e1e;border:none;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px}
+.send-btn,.mic-btn{width:44px;height:44px;border-radius:50%;border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.send-btn{background:#0095f6;font-size:18px}.mic-btn{background:#262626;font-size:20px}
 .mic-btn.rec{background:#ff3040;animation:pulse 1s infinite}
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-.menu{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#262626;border-radius:16px;padding:8px;min-width:240px;z-index:100;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6);border:1px solid #333}
-.menu.open{display:block}
-.menu div{padding:14px 16px;border-radius:10px;cursor:pointer;font-size:15px;display:flex;gap:10px;align-items:center}
-.menu div:hover{background:#333}
-.menu.del{color:#ff3040}
-.edit-box{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:20px}
+@keyframes pulse{50%{transform:scale(1.1)}}
+.menu{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#262626;border-radius:16px;padding:8px;min-width:240px;z-index:100;display:none;box-shadow:0 10px 30px #0009;border:1px solid #333}
+.menu.open{display:block}.menu div{padding:14px 16px;border-radius:10px;cursor:pointer;font-size:15px}
+.menu div:hover{background:#333}.menu .del{color:#ff3040}
+.edit-box{display:none;position:fixed;inset:0;background:#000c;z-index:200;align-items:center;justify-content:center;padding:20px}
 .edit-box.open{display:flex}
 .edit-card{background:#1a1a1a;width:100%;max-width:360px;border-radius:20px;padding:20px;border:1px solid #333}
 .edit-card input{width:100%;background:#262626;border:none;padding:14px 16px;border-radius:12px;color:#fff;font-size:15px;outline:none;margin:12px 0}
 .edit-card button{width:100%;padding:12px;border-radius:12px;border:none;font-weight:700;cursor:pointer;margin-top:8px}
-.btn-save{background:#0095f6;color:#fff}
-.btn-cancel{background:#262626;color:#fff}
+.btn-save{background:#0095f6;color:#fff}.btn-cancel{background:#262626;color:#fff}
 .recording-info{font-size:12px;color:#ff3040;margin-left:6px;display:none}
 .recording-info.on{display:inline}
 .live-dot{width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;margin-left:6px;animation:pulse 1s infinite}
+@media(max-width:400px){.bar{gap:6px;padding:8px}.b audio{width:190px}}
 </style>
 </head>
 <body>
 <div class="top"><b>Messages <span id="totalUnread" class="total-badge" style="display:none">0</span> <span class="live-dot"></span></b><span onclick="location.href='feed.html'" style="cursor:pointer;font-size:22px">←</span></div>
 <div class="list" id="list"></div>
+
 <div class="chat" id="chat">
-<div class="top">
+ <div class="top">
   <div class="top-user" onclick="goToProfile()">
-    <div class="top-avatar" id="topAvatar">U</div>
-    <div><b id="cName"></b><div style="font-size:11px;color:#888">Tap to view profile • Live</div></div>
+   <div class="top-avatar" id="topAvatar">U</div>
+   <div><b id="cName"></b><div style="font-size:11px;color:#888">Tap to view profile • Live</div></div>
   </div>
   <span onclick="closeChat()" style="cursor:pointer;font-size:22px">✕</span>
+ </div>
+ <div class="msgs" id="msgs"></div>
+ <div class="bar">
+  <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button>
+  <span id="recInfo" class="recording-info">● Recording...</span>
+  <input id="inp" placeholder="Message..." onkeydown="if(event.key==='Enter')send()">
+  <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
+ </div>
 </div>
-<div class="msgs" id="msgs"></div>
-<div class="bar">
-  <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button><span id="recInfo" class="recording-info">● Recording...</span>
-  <input id="inp" placeholder="Message..." onkeydown="if(event.key==='Enter')send()"><button class="send-btn" onclick="send()">➤</button>
+
+<div class="menu" id="menu">
+ <div id="editOpt" onclick="startEdit()">✏️ Edit</div>
+ <div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div>
+ <div onclick="closeMenu()">Cancel</div>
 </div>
+<div class="edit-box" id="editBox">
+ <div class="edit-card"><b>Edit message</b><input id="editInput">
+  <button class="btn-save" onclick="saveEdit()">Save</button>
+  <button class="btn-cancel" onclick="closeBox()">Cancel</button>
+ </div>
 </div>
-<div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
-<div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
+
 <script>
 const BASE="https://raymonddomain.dev";
-const token=localStorage.getItem('token');
-if(!token) location.href='login.html';
-function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
-function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
-function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
-function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
-function goToProfile(){ if(active) location.href='profile.html?id='+active; }
-function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
+const token=localStorage.getItem("token");
+if(!token)location.href="login.html";
 
-let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[];
+function myId(){try{return JSON.parse(atob(token.split(".")[1])).id||JSON.parse(atob(token.split(".")[1]))._id||""}catch{return""}}
+function getCache(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch{return null}}
+function setCache(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+function fixUrl(u){if(!u)return"";if(/^(https?:|data:|blob:)/i.test(u))return u;if(u.startsWith("/"))return BASE+u;return u}
+function formatTime(s){const d=new Date(s);return isNaN(d)? "":d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
+function idOf(v){return String(v?._id||v?.id||v||"")}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function goToProfile(){if(active)location.href="profile.html?id="+encodeURIComponent(active)}
+function closeBox(){document.getElementById("editBox").classList.remove("open")}
+function closeMenu(){document.getElementById("menu").classList.remove("open")}
 
-const socket=io(BASE,{transports:['websocket','polling'], reconnection:true, reconnectionAttempts:100, reconnectionDelay:1000});
-socket.on('connect',()=>{ socket.emit('join',myId()); });
+let active="",unreadMap={},selectedMsg=null,selectedIsMe=false,msgsCache=[],usersCache=[];
+let mediaRecorder=null,audioChunks=[],isRecording=false,sendingVoice=false,recordingReceiver="";
+
+const socket=io(BASE,{transports:["websocket","polling"],reconnection:true,reconnectionAttempts:100,reconnectionDelay:1000});
+socket.on("connect",()=>socket.emit("join",myId()));
 
 async function loadUnread(){
- try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{}
+ try{const r=await fetch(BASE+"/api/messages/unread/counts",{headers:{authorization:token}});if(r.ok){unreadMap=await r.json();updateBadges()}}catch{}
 }
 function updateBadges(){
- let total=Object.values(unreadMap).reduce((a,b)=>a+b,0);
- const tot=document.getElementById('totalUnread');
- if(total>0){tot.style.display='inline'; tot.innerText=total;} else tot.style.display='none';
- Object.keys(unreadMap).forEach(uid=>{
-  const b=document.getElementById('badge-'+uid);
-  if(b){ const c=unreadMap[uid]; if(c>0){b.innerText=c; b.classList.remove('hide');} else b.classList.add('hide'); }
- });
+ const total=Object.values(unreadMap).reduce((a,b)=>a+(Number(b)||0),0);
+ const t=document.getElementById("totalUnread");
+ t.style.display=total?"inline":"none";t.innerText=total;
+ Object.keys(unreadMap).forEach(id=>{const b=document.getElementById("badge-"+id);if(b){b.innerText=unreadMap[id];b.classList.toggle("hide",!(unreadMap[id]>0))}});
 }
 function renderUsers(users){
- const el=document.getElementById('list');
- usersCache=users;
- if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>'; return; }
- el.innerHTML=users.map(u=>{
-  const id=u._id; const name=u.username||'user'; const letter=name[0].toUpperCase();
-  const count=unreadMap[id]||0;
-  const avatar=u.avatar?`<img src="${fixUrl(u.avatar)}">`:letter;
-  const hasUnread=count>0?' new-msg':'';
-  return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count? count+' new':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
- }).join('');
+ const el=document.getElementById("list");usersCache=Array.isArray(users)?users:[];
+ if(!usersCache.length){el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>';return}
+ el.innerHTML=usersCache.map(u=>{
+  const id=idOf(u),name=u.username||u.name||"user",count=Number(unreadMap[id]||0);
+  const avatar=u.avatar?`<img src="${esc(fixUrl(u.avatar))}">`:esc(name[0].toUpperCase());
+  return `<div class="row ${count?"new-msg":""}" onclick="openC('${esc(id)}','${esc(name)}')">
+   <div class="av">${avatar}</div><div style="min-width:0;flex:1"><b>${esc(name)}</b><br><small style="color:#999">${count?count+" new message(s)":"Tap to chat"}</small></div>
+   <div id="badge-${esc(id)}" class="badge ${count?"":"hide"}">${count}</div></div>`;
+ }).join("");
 }
 async function load(){
- const el=document.getElementById('list');
- const cachedUsers=getCache('chat_users');
- if(cachedUsers) renderUsers(cachedUsers);
+ const el=document.getElementById("list"),cached=getCache("chat_users");
+ if(cached)renderUsers(cached);else el.innerHTML='<p style="text-align:center;color:#777;padding:20px">Loading chats...</p>';
  try{
-  let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
+  const r=await fetch(BASE+"/api/messages/users",{headers:{authorization:token}});
+  if(!r.ok)throw Error("Could not load chats");
   let users=await r.json();
+  if(!Array.isArray(users))users=[];
   if(!users.length){
-   let r2=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
-   let d2=await r2.json();
-   users=[...(d2.user.followers||[]),...(d2.user.following||[])];
-   users=[...new Map(users.map(u=>[u._id,u])).values()];
+   const pr=await fetch(BASE+"/api/users/me/profile",{headers:{authorization:token}});
+   if(pr.ok){
+    const d=await pr.json(),me=d.user||d;
+    const people=[...(me.followers||[]),...(me.following||[])];
+    users=[...new Map(people.map(u=>[idOf(u),u])).values()].filter(u=>idOf(u));
+   }
   }
-  setCache('chat_users', users);
-  renderUsers(users);
-  await loadUnread();
- }catch(e){}
+  setCache("chat_users",users);renderUsers(users);await loadUnread();
+ }catch(e){if(!cached)el.innerHTML='<p style="text-align:center;color:#888;padding:20px">Could not load chats.</p>';console.log(e)}
 }
 function renderMsg(m){
- const isMe=(m.sender._id||m.sender)==myId();
- const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
- const time=formatTime(m.createdAt);
- let tick=''; if(isMe) tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`;
- let content=m.text||"";
- let inner="";
- if(content.startsWith('VOICE:') || content.startsWith('data:audio')){
-  let src=content.replace('VOICE:','');
-  inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
- }else{ inner=content+edited; }
- return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
+ const isMe=idOf(m.sender)===myId();
+ const raw=String(m.text||"");
+ const isVoice=raw.startsWith("VOICE:")||raw.startsWith("data:audio")||!!m.mediaUrl;
+ let inner="",editable=raw;
+ if(isVoice){
+  let src=m.mediaUrl?fixUrl(m.mediaUrl):raw.replace(/^VOICE:/,"");
+  if(src.startsWith("blob:"))inner='<span>🎤 Voice message (sending...)</span>';
+  else if(src)inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls preload="none" src="${esc(src)}"></audio></div>`;
+  else inner="🎤 Voice message";
+ }else inner=esc(raw).replace(/\n/g,"<br>");
+ if(m.edited&&!isVoice)inner+='<span style="font-size:10px;opacity:.7"> (edited)</span>';
+ const tick=isMe?`<span class="tick ${m.read?"read":""}">${m.read?"✓✓":"✓"}</span>`:"";
+ const id=idOf(m);
+ return `<div class="bubble-wrap ${isMe?"me":"other"}">
+ <div class="b ${isMe?"me":"other"}" data-id="${esc(id)}" data-text="${esc(isVoice?"":raw)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div>
+ <div class="time-row ${isMe?"me":""}"><span>${formatTime(m.createdAt)}</span>${tick}</div></div>`;
 }
 function renderAll(){
- const container=document.getElementById('msgs');
- if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; return; }
- msgsCache = [...new Map(msgsCache.map(m=>[m._id,m])).values()];
- container.innerHTML=msgsCache.map(m=>renderMsg(m)).join('');
- container.scrollTop=container.scrollHeight;
+ const c=document.getElementById("msgs");
+ c.innerHTML=msgsCache.length?msgsCache.map(renderMsg).join(""):'<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>';
+ c.scrollTop=c.scrollHeight;
+ const small=msgsCache.filter(m=>!String(m.text||"").startsWith("VOICE:")&&!String(m.text||"").startsWith("data:")&&!String(m.mediaUrl||"").startsWith("blob:"));
+ setCache("chat"+active,small.slice(-50));
 }
 async function openC(id,name){
- active=id;
- document.getElementById('cName').innerText=name;
- document.getElementById('topAvatar').innerText=name[0].toUpperCase();
- document.getElementById('chat').classList.add('open');
- const cachedMsgs=getCache('chat_'+id);
- if(cachedMsgs){ msgsCache=cachedMsgs; renderAll(); }
+ active=id;document.getElementById("cName").innerText=name;
+ document.getElementById("topAvatar").innerText=(name||"U")[0].toUpperCase();
+ document.getElementById("chat").classList.add("open");
+ const cached=getCache("chat"+id);
+ if(cached){msgsCache=cached;renderAll()}else{msgsCache=[];document.getElementById("msgs").innerHTML='<p style="text-align:center;color:#777;padding:20px">Loading...</p>'}
  try{
-  await fetch(BASE+'/api/messages/'+id+'/read',{method:'POST',headers:{authorization:token}});
-  unreadMap[id]=0; updateBadges();
-  let r=await fetch(BASE+'/api/messages/'+id,{headers:{authorization:token}});
-  msgsCache=await r.json();
+  await fetch(BASE+"/api/messages/"+encodeURIComponent(id)+"/read",{method:"POST",headers:{authorization:token}});
+  unreadMap[id]=0;updateBadges();
+  const r=await fetch(BASE+"/api/messages/"+encodeURIComponent(id),{headers:{authorization:token}});
+  if(!r.ok)throw Error("Could not load messages");
+  const data=await r.json();
+  if(active!==id)return;
+  msgsCache=Array.isArray(data)?data:[];
   renderAll();
- }catch(e){}
+ }catch(e){console.log(e)}
 }
-function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
+function closeChat(){document.getElementById("chat").classList.remove("open");active=""}
 async function send(){
- let t=document.getElementById('inp').value.trim(); if(!t||!active) return;
- document.getElementById('inp').value='';
- const tempId='temp_'+Date.now();
- const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
- msgsCache.push(tempMsg); renderAll();
+ const input=document.getElementById("inp"),text=input.value.trim(),receiver=active;
+ if(!text||!receiver)return;
+ input.value="";
+ const tempId="temp_"+Date.now();
+ msgsCache.push({_id:tempId,sender:{_id:myId()},receiver:{_id:receiver},text,createdAt:new Date().toISOString(),read:false});
+ renderAll();
  try{
-  let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
-  let saved=await r.json();
-  msgsCache=msgsCache.filter(x=>x._id!==tempId);
-  if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
-  renderAll();
- }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
-}
-let mediaRecorder=null, audioChunks=[], isRecording=false;
-async function toggleRecord(){
- const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
- if(!isRecording){
-  try{
-   const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus', bitsPerSecond:16000});
-   audioChunks=[];
-   mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
-   mediaRecorder.onstop=async ()=>{
-    const blob=new Blob(audioChunks,{type:'audio/webm'});
-    stream.getTracks().forEach(s=>s.stop());
-    audioChunks=[];
-    if(!blob || blob.size===0) return;
-    const reader=new FileReader();
-    reader.onload=async ()=>{
-     const base64=reader.result;
-     const t='VOICE:'+base64;
-     const tempId='temp_voice_'+Date.now();
-     const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
-     msgsCache.push(tempMsg);
-     renderAll();
-     try{
-      let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
-      let saved=await r.json();
-      // FIX: replace temp with saved - only 1
-      msgsCache = msgsCache.filter(x=>x._id!==tempId);
-      if(saved && saved._id){
-       if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
-      }
-      renderAll();
-     }catch(e){
-      console.log('keep voice even if error',e);
-      // keep it - don't delete first voice
-     }
-    };
-    reader.readAsDataURL(blob);
-   };
-   mediaRecorder.start();
-   isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
-  }catch{ alert('Mic denied'); }
- }else{
-  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
-  isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on');
+  const r=await fetch(BASE+"/api/messages",{method:"POST",headers:{"Content-Type":"application/json",authorization:token},body:JSON.stringify({receiver,text})});
+  if(!r.ok)throw Error("Message failed");
+  const saved=await r.json();
+  if(active===receiver){
+   msgsCache=msgsCache.filter(m=>idOf(m)!==tempId);
+   if(!msgsCache.some(m=>idOf(m)===idOf(saved)))msgsCache.push(saved);
+   renderAll();
+  }
+ }catch(e){
+  msgsCache=msgsCache.filter(m=>idOf(m)!==tempId);renderAll();
+  alert("Message could not be sent. Please try again.");
  }
+}
+
+/* Voice fix: exactly one POST per recording.
+   No fallback uploads and no extra socket.emit that could duplicate delivery. */
+async function toggleRecord(){
+ const btn=document.getElementById("micBtn"),info=document.getElementById("recInfo");
+ if(sendingVoice)return;
+ if(isRecording){
+  isRecording=false;btn.classList.remove("rec");btn.innerText="🎤";info.classList.remove("on");
+  if(mediaRecorder&&mediaRecorder.state!=="inactive")mediaRecorder.stop();
+  return;
+ }
+ if(!active)return alert("Open a chat first");
+ if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)return alert("Voice recording is not supported by this browser.");
+ try{
+  const receiver=active;
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  const mime=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus":"audio/webm";
+  mediaRecorder=new MediaRecorder(stream,{mimeType:mime});
+  audioChunks=[];recordingReceiver=receiver;
+  mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)audioChunks.push(e.data)};
+  mediaRecorder.onerror=()=>{stream.getTracks().forEach(t=>t.stop());isRecording=false;btn.classList.remove("rec");btn.innerText="🎤";info.classList.remove("on")};
+  mediaRecorder.onstop=async()=>{
+   stream.getTracks().forEach(t=>t.stop());
+   const blob=new Blob(audioChunks,{type:mediaRecorder.mimeType||"audio/webm"});
+   audioChunks=[];
+   if(!blob.size)return;
+   const tempId="temp_voice_"+Date.now(),localUrl=URL.createObjectURL(blob);
+   const temp={_id:tempId,sender:{_id:myId()},receiver:{_id:receiver},text:"VOICE:"+localUrl,mediaUrl:localUrl,createdAt:new Date().toISOString(),read:false};
+   if(active===receiver){msgsCache.push(temp);renderAll()}
+   sendingVoice=true;btn.disabled=true;btn.innerText="⏳";
+   try{
+    const fd=new FormData();
+    fd.append("receiver",receiver);
+    fd.append("file",blob,"voice_"+Date.now()+".webm");
+    const r=await fetch(BASE+"/api/messages",{method:"POST",headers:{authorization:token},body:fd});
+    if(!r.ok)throw Error("Voice upload failed: "+r.status);
+    const saved=await r.json();
+    if(active===receiver){
+     msgsCache=msgsCache.filter(m=>idOf(m)!==tempId);
+     if(!msgsCache.some(m=>idOf(m)===idOf(saved)))msgsCache.push(saved);
+     renderAll();
+    }
+    URL.revokeObjectURL(localUrl);
+   }catch(e){
+    console.error(e);
+    alert("Voice upload was not confirmed. It was not resent automatically to avoid duplicates.");
+   }finally{
+    sendingVoice=false;btn.disabled=false;btn.innerText="🎤";btn.classList.remove("rec");info.classList.remove("on");
+   }
+  };
+  mediaRecorder.start();isRecording=true;btn.classList.add("rec");btn.innerText="⏹️";info.classList.add("on");
+ }catch(e){console.error(e);alert("Could not access microphone. Check microphone permission.")}
 }
 function openMenu(el){
- selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
- selectedIsMe=el.dataset.me==='true';
- document.getElementById('menu').classList.add('open');
+ selectedMsg=el.dataset.id;if(String(selectedMsg).startsWith("temp_"))return;
+ selectedIsMe=el.dataset.me==="true";
+ const txt=el.dataset.text||"";
+ document.getElementById("editInput").value=txt;
+ document.getElementById("editOpt").style.display=selectedIsMe&&txt?"flex":"none";
+ document.getElementById("menu").classList.add("open");
 }
-function closeMenu(){ document.getElementById('menu').classList.remove('open'); }
-function startEdit(){}
-async function saveEdit(){}
+function startEdit(){if(!selectedIsMe)return;closeMenu();document.getElementById("editBox").classList.add("open")}
+async function saveEdit(){
+ const text=document.getElementById("editInput").value.trim();
+ if(!text||!selectedMsg)return;
+ try{
+  const r=await fetch(BASE+"/api/messages/msg/"+encodeURIComponent(selectedMsg),{method:"PUT",headers:{"Content-Type":"application/json",authorization:token},body:JSON.stringify({text})});
+  if(!r.ok)throw Error("Edit failed");
+  const saved=await r.json();
+  const i=msgsCache.findIndex(m=>idOf(m)===String(selectedMsg));
+  if(i>=0){if(saved&&saved._id)msgsCache[i]=saved;else msgsCache[i].text=text;msgsCache[i].edited=true;renderAll()}
+  closeBox();
+ }catch(e){alert("Could not edit message.");console.log(e)}
+}
 async function deleteMsg(){
- if(!confirm('Unsend?')) return; closeMenu();
- msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll();
- try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{}
+ if(!selectedMsg||!confirm("Unsend this message?"))return;
+ const id=selectedMsg;closeMenu();
+ try{
+  const r=await fetch(BASE+"/api/messages/msg/"+encodeURIComponent(id),{method:"DELETE",headers:{authorization:token}});
+  if(!r.ok)throw Error("Delete failed");
+  msgsCache=msgsCache.filter(m=>idOf(m)!==String(id));renderAll();
+ }catch(e){alert("Could not unsend message.");console.log(e)}
 }
-socket.on('receiveMessage',m=>{
- let senderId=m.sender._id||m.sender;
- if(String(senderId)==String(myId())) return;
- let receiverId=m.receiver._id||m.receiver;
- if(senderId==active || receiverId==active){
-  if(!msgsCache.find(x=>x._id===m._id)){ msgsCache.push(m); renderAll(); }
-  fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
- }else if(receiverId==myId()){
-  unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges();
+
+socket.on("receiveMessage",m=>{
+ const sender=idOf(m.sender),receiver=idOf(m.receiver),mid=idOf(m);
+ if(sender===active||receiver===active){
+  if(!msgsCache.some(x=>idOf(x)===mid)){
+   msgsCache.push(m);renderAll();
+  }
+  if(sender!==myId()&&active){
+   fetch(BASE+"/api/messages/"+encodeURIComponent(active)+"/read",{method:"POST",headers:{authorization:token}}).catch(()=>{});
+  }
+ }else if(receiver===myId()){
+  unreadMap[sender]=(Number(unreadMap[sender])||0)+1;updateBadges();
  }
 });
-socket.on('messageDeleted',data=>{ msgsCache=msgsCache.filter(x=>x._id!=data._id); renderAll(); });
-socket.on('messagesSeen',()=>{ msgsCache.forEach(m=>{ if((m.sender._id||m.sender)==myId()) m.read=true; }); renderAll(); });
+socket.on("messageEdited",m=>{
+ const i=msgsCache.findIndex(x=>idOf(x)===idOf(m));
+ if(i>=0){msgsCache[i]=m;renderAll()}
+});
+socket.on("messageDeleted",data=>{
+ const id=idOf(data?.id||data?._id);
+ msgsCache=msgsCache.filter(m=>idOf(m)!==id);renderAll();
+});
+socket.on("messagesSeen",()=>{
+ msgsCache.forEach(m=>{if(idOf(m.sender)===myId())m.read=true});renderAll();
+});
 
 async function autoPoll(){
  try{
   await loadUnread();
   if(active){
-   let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
-   let fresh=await r.json();
-   // only add new ones, don't duplicate voice
-   let existingIds = new Set(msgsCache.map(x=>x._id));
-   let newOnes = fresh.filter(x=>!existingIds.has(x._id) &&!String(x._id).startsWith('temp_'));
-   if(newOnes.length){
-    // if fresh has our voice, remove temp voice
-    let hasMyVoiceInFresh = fresh.some(f=> f.sender._id==myId() || f.sender==myId());
-    if(hasMyVoiceInFresh){
-     msgsCache = msgsCache.filter(x=>!String(x._id).startsWith('temp_voice_'));
-    }
-    newOnes.forEach(m=> msgsCache.push(m));
-    renderAll();
+   const chatId=active;
+   const r=await fetch(BASE+"/api/messages/"+encodeURIComponent(chatId),{headers:{authorization:token}});
+   if(!r.ok)return;
+   const fresh=await r.json();
+   if(active!==chatId||!Array.isArray(fresh))return;
+   const pending=msgsCache.filter(m=>String(idOf(m)).startsWith("temp_voice_"));
+   const merged=[...fresh];
+   pending.forEach(p=>{
+    if(!merged.some(m=>idOf(m)===idOf(p)))merged.push(p);
+   });
+   const oldIds=msgsCache.map(idOf).join(",");
+   const newIds=merged.map(idOf).join(",");
+   if(oldIds!==newIds||JSON.stringify(msgsCache)!==JSON.stringify(merged)){
+    msgsCache=merged;renderAll();
+   }
+  }else{
+   const r=await fetch(BASE+"/api/messages/users",{headers:{authorization:token}});
+   if(r.ok){
+    const users=await r.json();
+    if(Array.isArray(users)){usersCache=users;setCache("chat_users",users);renderUsers(users)}
    }
   }
- }catch{}
+ }catch(e){console.log("Refresh error:",e)}
 }
-setInterval(autoPoll, 2000);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) autoPoll(); });
-load();
-setInterval(loadUnread,4000);
+setInterval(autoPoll,5000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){load();autoPoll()}});
+load();loadUnread();
 </script>
 </body>
 </html>
