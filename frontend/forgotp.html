@@ -15,20 +15,29 @@ button:disabled{opacity:.5}
 .msg.ok{display:block;background:#0a2a12;color:#8f8;border:1px solid #1a5a1a}
 .msg.err{display:block;background:#2a0a0a;color:#f88;border:1px solid #5a1a1a}
 .step{display:none}.step.active{display:block}
+.code-box{margin-top:12px;background:#0a2a12;border:1px dashed #2ecc71;padding:12px;border-radius:10px;text-align:center;display:none}
+.code-box b{font-size:22px;letter-spacing:4px;color:#2ecc71}
 </style>
 </head>
 <body>
 <div class="card">
-  <!-- STEP 1: Send code -->
+  <!-- STEP 1 -->
   <div id="step1" class="step active">
     <h2>Recover password</h2><small>Enter your email to get reset code</small>
     <input id="email" placeholder="Email address" type="email">
     <button id="btn1" onclick="sendCode()">Send code</button>
   </div>
-  <!-- STEP 2: Verify + New password -->
+  <!-- STEP 2 -->
   <div id="step2" class="step">
-    <h2>Reset password</h2><small>Code sent to <b id="showEmail"></b></small>
-    <input id="code" placeholder="6-digit code">
+    <h2>Reset password</h2><small> Enter the code below <b id="showEmail"></b></small>
+    
+    <!-- CODE WILL SHOW HERE -->
+    <div id="codeBox" class="code-box">
+      <div style="font-size:11px;color:#888;margin-bottom:4px">YOUR CODE (for testing):</div>
+      <b id="codeDisplay">------</b>
+    </div>
+
+    <input id="codeInput" placeholder="6-digit code">
     <input id="newPass" placeholder="New password" type="password">
     <input id="confirmPass" placeholder="Confirm password" type="password">
     <button id="btn2" onclick="resetPass()">Change password</button>
@@ -38,8 +47,8 @@ button:disabled{opacity:.5}
   <a href="login.html" class="back">Back to login</a>
 </div>
 <script>
-const BASE="https://raymonddomain.dev";
-function showMsg(t,ok){const el=document.getElementById('msg');el.innerText=t;el.className='msg '+(ok?'ok':'err');}
+const BASE="https://raymonddomain.dev"; // LOCAL = "" , LIVE = "https://raymonddomain.dev"
+function showMsg(t,ok){const el=document.getElementById('msg');el.innerText=t;el.className='msg '+(ok?'ok':'err'); el.style.display='block';}
 
 async function sendCode(){
   const email=document.getElementById('email').value.trim();
@@ -49,20 +58,32 @@ async function sendCode(){
     let r=await fetch(BASE+'/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
     let d=await r.json();
     if(!r.ok) throw new Error(d.message||'Failed');
-    showMsg('Code sent to '+email,true);
+
+    showMsg(d.message || 'Code sent to '+email,true);
+    
     document.getElementById('showEmail').innerText=email;
     document.getElementById('step1').classList.remove('active');
     document.getElementById('step2').classList.add('active');
+
+    // DISPLAY CODE
+    if(d.code){
+      document.getElementById('codeBox').style.display='block';
+      document.getElementById('codeDisplay').innerText=d.code;
+      //document.getElementById('codeInput').value=d.code; // auto fill for testing
+    }
+
   }catch(e){ showMsg(e.message,false); }
   b.disabled=false; b.innerText='Send code';
 }
+
 function back1(){
   document.getElementById('step2').classList.remove('active');
   document.getElementById('step1').classList.add('active');
 }
+
 async function resetPass(){
   const email=document.getElementById('email').value.trim();
-  const code=document.getElementById('code').value.trim();
+  const code=document.getElementById('codeInput').value.trim();
   const np=document.getElementById('newPass').value.trim();
   const cp=document.getElementById('confirmPass').value.trim();
   if(!code||!np) return showMsg('Fill all fields',false);
@@ -70,7 +91,7 @@ async function resetPass(){
   if(np.length<6) return showMsg('Password too short (min 6)',false);
   const b=document.getElementById('btn2'); b.disabled=true; b.innerText='Resetting...';
   try{
-    let r=await fetch(BASE+'/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,code,code:code,newPassword:np,password:np})});
+    let r=await fetch(BASE+'/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,code,newPassword:np,password:np})});
     let d=await r.json();
     if(!r.ok) throw new Error(d.message||'Invalid code');
     showMsg('Password changed! Redirecting to login...',true);
