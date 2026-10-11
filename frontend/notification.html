@@ -9,17 +9,17 @@
 body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
 .top{height:60px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:0 16px;justify-content:space-between;position:sticky;top:0;background:#000;z-index:10}
 .list{padding:10px}
-.notif{display:flex;gap:12px;padding:14px 12px;background:#111;border-radius:14px;margin-bottom:8px;align-items:center;cursor:pointer}
-.notif.unread{background:#1a1a1a;border:1px solid #222}
+.notif{display:flex;gap:12px;padding:14px 12px;background:#111;border-radius:14px;margin-bottom:8px;align-items:center}
+.notif.unread{background:#1a1a1a;border:1px solid #333}
 .av{width:44px;height:44px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;overflow:hidden}
 .av img{width:100%;height:100%;object-fit:cover}
-.info{flex:1;font-size:14px;line-height:18px}
+.info{flex:1;font-size:14px}
 .time{font-size:11px;color:#888;margin-top:2px}
 .thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:#222}
-.tabs{display:flex;gap:8px;padding:10px 12px;overflow-x:auto}
-.tab{padding:8px 16px;border-radius:20px;background:#1a1a1a;border:1px solid #222;font-size:13px;cursor:pointer;white-space:nowrap}
+.tabs{display:flex;gap:8px;padding:10px 12px}
+.tab{padding:8px 16px;border-radius:20px;background:#1a1a1a;border:1px solid #222;font-size:13px;cursor:pointer}
 .tab.active{background:#fff;color:#000;font-weight:600}
-.dot{width:8px;height:8px;background:#0095f6;border-radius:50%;flex-shrink:0}
+.dot{width:8px;height:8px;background:#0095f6;border-radius:50%}
 </style>
 </head>
 <body>
@@ -31,7 +31,6 @@ body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-s
 <div class="tab" data-type="follow" onclick="filterNotif('follow',this)">Follows 👤</div>
 </div>
 <div class="list" id="list">Loading...</div>
-
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
@@ -39,86 +38,34 @@ if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 const socket=io(BASE,{transports:['websocket','polling']});
 socket.on('connect',()=>socket.emit('join',myId()));
-
-let allNotifs=[];
-let currentFilter='all';
-
-function fixUrl(u){
-  if(!u) return "";
-  if(u.startsWith('data:')) return u;
-  if(u.startsWith('http')) return u;
-  if(u.startsWith('/api/')) return BASE+u;
-  if(u.startsWith('/uploads')) return BASE+u;
-  return u;
-}
-
-function formatTime(d){
- const date=new Date(d);
- const now=new Date();
- const diff=(now-date)/1000;
- if(diff<60) return `${Math.floor(diff)}s`;
- if(diff<3600) return `${Math.floor(diff/60)}m`;
- if(diff<86400) return `${Math.floor(diff/3600)}h`;
- if(diff<604800) return `${Math.floor(diff/86400)}d`;
- return date.toLocaleDateString();
-}
-
+let allNotifs=[], currentFilter='all';
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
+function formatTime(d){ const date=new Date(d); const diff=(Date.now()-date)/1000; if(diff<60) return Math.floor(diff)+'s'; if(diff<3600) return Math.floor(diff/60)+'m'; if(diff<86400) return Math.floor(diff/3600)+'h'; return Math.floor(diff/86400)+'d'; }
 function render(filter='all'){
  currentFilter=filter;
  const list=document.getElementById('list');
- let data=allNotifs;
- if(filter!=='all') data=data.filter(n=>n.type===filter);
- if(!data.length){ list.innerHTML=`<p style="text-align:center;color:#777;margin-top:60px">No ${filter} notifications yet</p>`; return; }
+ let data=filter==='all'?allNotifs:allNotifs.filter(n=>n.type===filter);
+ if(!data.length){ list.innerHTML=`<p style="text-align:center;color:#777;margin-top:60px">No ${filter} notifications</p>`; return; }
  list.innerHTML=data.map(n=>{
   const name=n.sender?.username||'user';
-  const letter=name[0].toUpperCase();
-  const avatarUrl=fixUrl(n.sender?.avatar);
-  const avatar=avatarUrl?`<div class="av"><img src="${avatarUrl}"></div>`:`<div class="av">${letter}</div>`;
-  let icon='', text='';
-  if(n.type==='like'){ icon='❤️'; text=`<b>${name}</b> liked your post`; }
-  if(n.type==='comment'){ icon='💬'; text=`<b>${name}</b> commented: "${(n.text||'').slice(0,40)}"`; }
-  if(n.type==='follow'){ icon='👤'; text=`<b>${name}</b> started following you`; }
-  if(n.type==='message'){ icon='💬'; text=`<b>${name}</b> sent you a message`; }
-  const media=fixUrl(n.post?.mediaUrl);
-  const thumb=media?`<img class="thumb" src="${media}">`:'';
-  return `<div class="notif ${n.read?'':'unread'}" onclick="location.href='${n.post?'feed.html':`profile.html?id=${n.sender?._id}`}'>
-   ${avatar}
-   <div class="info">${text}<div class="time">${formatTime(n.createdAt)} ago</div></div>
-   <div style="display:flex;align-items:center;gap:8px">${thumb}<div style="font-size:16px">${icon}</div>${!n.read?'<div class="dot"></div>':''}</div>
-  </div>`;
+  const avatar=fixUrl(n.sender?.avatar);
+  const av=avatar?`<div class="av"><img src="${avatar}"></div>`:`<div class="av">${name[0].toUpperCase()}</div>`;
+  let txt=''; if(n.type==='like') txt=`<b>${name}</b> liked your post`; if(n.type==='comment') txt=`<b>${name}</b> commented: "${n.text||''}"`; if(n.type==='follow') txt=`<b>${name}</b> started following you`; if(n.type==='message') txt=`<b>${name}</b> sent you a message`;
+  const thumb=fixUrl(n.post?.mediaUrl);
+  return `<div class="notif ${n.read?'':'unread'}">${av}<div class="info">${txt}<div class="time">${formatTime(n.createdAt)} ago</div></div><div style="display:flex;gap:8px;align-items:center">${thumb?`<img class="thumb" src="${thumb}">`:''}${!n.read?'<div class="dot"></div>':''}</div></div>`;
  }).join('');
 }
-
 async function load(){
  const cached=localStorage.getItem('notifs_cache');
  if(cached){ try{ allNotifs=JSON.parse(cached); render('all'); }catch{} }
- try{
-  let r=await fetch(BASE+'/api/notifications',{headers:{authorization:token}});
-  allNotifs=await r.json();
-  localStorage.setItem('notifs_cache', JSON.stringify(allNotifs));
-  render('all');
-  // mark all read after 2 sec like Instagram
-  setTimeout(async ()=>{
-    await fetch(BASE+'/api/notifications/read',{method:'POST',headers:{authorization:token}});
-  },2000);
- }catch(e){
-  if(!cached) document.getElementById('list').innerHTML='Error: '+e.message;
- }
-}
-
-function filterNotif(type, el){
- document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
- el.classList.add('active');
- render(type);
-}
-
-socket.on('newNotification', n=>{
- console.log("new notif",n);
- allNotifs.unshift(n);
+ let r=await fetch(BASE+'/api/notifications',{headers:{authorization:token}});
+ allNotifs=await r.json();
  localStorage.setItem('notifs_cache', JSON.stringify(allNotifs));
- render(currentFilter);
-});
-
+ render('all');
+ setTimeout(()=>fetch(BASE+'/api/notifications/read',{method:'POST',headers:{authorization:token}}),1500);
+}
+function filterNotif(type,el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); render(type); }
+socket.on('newNotification',n=>{ allNotifs.unshift(n); localStorage.setItem('notifs_cache',JSON.stringify(allNotifs)); render(currentFilter); });
 load();
 </script>
 </body>
