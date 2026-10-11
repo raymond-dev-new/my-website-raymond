@@ -12,8 +12,9 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 .info { position:absolute; bottom:80px; left:10px; right:80px; }
 .actions { position:absolute; right:10px; bottom:80px; display:flex; flex-direction:column; gap:20px; font-size:24px; text-align:center; }
 .bottom-nav { position:fixed; bottom:0; width:100%; background:#000; border-top:1px solid #222; display:flex; justify-content:space-around; padding:12px 0; z-index:10; }
-.bottom-nav a { color:#fff; text-decoration:none; font-size:20px; }
-/* COMMENT MODAL LIKE INSTAGRAM */
+.bottom-nav a { color:#fff; text-decoration:none; font-size:20px; position:relative }
+.msg-badge{position:absolute;top:-6px;right:-8px;background:#ff3040;color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.hide{display:none}
 .comment-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:50;justify-content:flex-end;align-items:flex-end}
 .comment-box{background:#121212;width:100%;max-width:500px;height:65vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;margin:0 auto}
 .cmt-head{padding:12px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;font-weight:bold}
@@ -34,12 +35,11 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 <a href="feed.html">🏠</a>
 <a href="explore.html">🔍</a>
 <a href="create.html">➕</a>
-<a href="messages.html" style="font-size:22px">💬<span id="msgCount" class="msg-badge hide">0</span></a>
+<a href="message.html" style="font-size:22px">💬<span id="msgCount" class="msg-badge hide">0</span></a>
 <a href="reels.html">🎬</a>
 <a href="profile.html">👤</a>
 </div>
 
-<!-- COMMENTS MODAL - SEE WHO COMMENTED + ADD COMMENT LIKE INSTAGRAM -->
 <div class="comment-modal" id="cmtModal" onclick="if(event.target===this) closeComments()">
 <div class="comment-box">
 <div class="cmt-head"><span id="cmtCount">Comments</span><span style="cursor:pointer" onclick="closeComments()">✕</span></div>
@@ -52,52 +52,70 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 </div>
 
 <script>
-const BASE = "https://raymonddomain.dev"; // base
-const token = localStorage.getItem('token'); // token
-let reelsData = []; // reels from DB
-let activeReelId = ""; // current reel id for comments
-function fixUrl(u){ if(!u) return ""; if(u.startsWith('/uploads')) return BASE+u; return u; }
+const BASE = "https://raymonddomain.dev";
+const token = localStorage.getItem('token');
+let reelsData = [];
+let activeReelId = "";
+if(!token) location.href="login.html";
+
+// FIXED - handles your video + shirt picture data
+function fixUrl(u){
+  if(!u) return "";
+  if(u.startsWith('data:')) return u;
+  if(u.startsWith('/api/')) return BASE+u;
+  if(u.startsWith('/uploads')) return BASE+u;
+  if(u.startsWith('http')) return u;
+  return BASE+u;
+}
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
 
-async function loadReels() { // load reels - ONLY VIDEO FROM DATABASE
-  const res = await fetch(BASE + '/api/posts/reels'); // reels from DB
-  const reels = await res.json(); // reels
-  reelsData = reels.filter(r => { const url=(r.mediaUrl||"").toLowerCase(); return url.endsWith('.mp4')||url.endsWith('.mov')||url.endsWith('.webm')||url.endsWith('.mkv'); });
-  const container = document.getElementById('reels');
-  if(!reelsData.length){
-    container.innerHTML = `<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column"><p>No reels yet</p><a href="create.html" style="color:#0095f6;margin-top:10px">Create Reel</a></div>`;
-    return;
+async function loadReels() {
+  try{
+    const res = await fetch(BASE + '/api/posts/reels', { headers:{ authorization: token }});
+    const reels = await res.json();
+    // REAL: filter only video from DB - includes /api/media-file
+    reelsData = reels.filter(r => {
+      const url = (r.mediaUrl||"").toLowerCase();
+      const isVid = r.type==='video' || r.type==='reel' || url.includes('/api/media-file') || url.endsWith('.mp4')||url.endsWith('.mov')||url.endsWith('.webm')||url.endsWith('.mkv');
+      return isVid;
+    });
+    const container = document.getElementById('reels');
+    if(!reelsData.length){
+      container.innerHTML = `<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column"><p>No reels yet</p><a href="create.html" style="color:#0095f6;margin-top:10px">Create Reel</a></div>`;
+      return;
+    }
+    container.innerHTML = reelsData.map(r => {
+      const url = fixUrl(r.mediaUrl);
+      return `
+      <div class="reel" data-id="${r._id}">
+        <video src="${url}" autoplay loop muted playsinline onclick="this.muted=false" onplay="addView('${r._id}')"></video>
+        <div class="info">
+          <b onclick="location.href='profile.html?id=${r.user?._id}'" style="cursor:pointer">@${r.user?.username||'user'}</b><br>
+          ${r.caption||''}<br>👁️ <span id="view-${r._id}">${r.views||0}</span> views
+        </div>
+        <div class="actions">
+          <div onclick="like('${r._id}')" style="cursor:pointer;">${r.likes.includes(getMyId())? '❤️' : '🤍'}<br><small>${r.likes.length}</small></div>
+          <div onclick="openComments('${r._id}')" style="cursor:pointer">💬<br><small>${r.comments.length}</small></div>
+          <div onclick="share('${r._id}')" style="cursor:pointer">↗️<br><small>${r.shares||0}</small></div>
+        </div>
+      </div>
+    `;
+    }).join('');
+    observeViews();
+  }catch(e){
+    document.getElementById('reels').innerHTML = `<div style="padding:40px;text-align:center">Error loading reels: ${e.message}</div>`;
   }
-  container.innerHTML = reelsData.map(r => {
-    const url = fixUrl(r.mediaUrl);
-    return `
-    <div class="reel" data-id="${r._id}">
-      <video src="${url}" autoplay loop muted playsinline onclick="this.muted=false" onplay="addView('${r._id}')"></video>
-      <div class="info">
-        <b onclick="location.href='profile.html?id=${r.user?._id}'" style="cursor:pointer">@${r.user?.username||'user'}</b><br>
-        ${r.caption||''}<br>👁️ <span id="view-${r._id}">${r.views||0}</span> views
-      </div>
-      <div class="actions">
-        <div onclick="like('${r._id}')" style="cursor:pointer;">${r.likes.includes(getMyId())? '❤️' : '🤍'}<br><small>${r.likes.length}</small></div>
-        <div onclick="openComments('${r._id}')" style="cursor:pointer">💬<br><small>${r.comments.length}</small></div>
-        <div onclick="share('${r._id}')" style="cursor:pointer">↗️<br><small>${r.shares||0}</small></div>
-      </div>
-    </div>
-  `;
-  }).join('');
-  observeViews(); // start counting views like TikTok when scrolled into view
 }
 
 async function like(id){ await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}}); loadReels(); }
 async function share(id){ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); loadReels(); }
 
-// VIEWS CALCULATED WHEN SOMEONE VIEWS REEL LIKE INSTAGRAM - SAVED IN DB
-async function addView(id){ // called when video plays
-  await fetch(BASE+`/api/posts/${id}/view`,{method:'POST'});
+async function addView(id){
+  try{ await fetch(BASE+`/api/posts/${id}/view`,{method:'POST'}); }catch{}
   const el = document.getElementById('view-'+id);
   if(el){ el.innerText = parseInt(el.innerText||0)+1; }
 }
-function observeViews(){ // count view when reel enters screen like TikTok
+function observeViews(){
   const observer = new IntersectionObserver((entries)=>{
     entries.forEach(e=>{
       if(e.isIntersecting){
@@ -109,11 +127,10 @@ function observeViews(){ // count view when reel enters screen like TikTok
   document.querySelectorAll('.reel').forEach(r=>observer.observe(r));
 }
 
-// COMMENTS - SEE PEOPLE THAT COMMENTED + ADD COMMENT LIKE INSTAGRAM
-async function openComments(id){ // open comments modal - FROM DATABASE
+async function openComments(id){
   activeReelId = id;
   const res = await fetch(BASE + '/api/posts/' + id, { headers:{ authorization: token } });
-  const post = await res.json(); // post with comments populated from DB
+  const post = await res.json();
   document.getElementById('cmtCount').innerText = post.comments.length + ' comments';
   const list = document.getElementById('cmtList');
   if(!post.comments.length){
@@ -132,13 +149,13 @@ async function openComments(id){ // open comments modal - FROM DATABASE
   document.getElementById('cmtModal').style.display='flex';
 }
 function closeComments(){ document.getElementById('cmtModal').style.display='none'; activeReelId=""; }
-async function sendComment(){ // add comment - SAVED IN DB
+async function sendComment(){
   const text = document.getElementById('cmtInput').value.trim();
   if(!text ||!activeReelId) return;
   await fetch(BASE + `/api/posts/${activeReelId}/comment`, { method:'POST', headers:{'Content-Type':'application/json', authorization: token}, body:JSON.stringify({text}) });
   document.getElementById('cmtInput').value='';
-  openComments(activeReelId); // reload list from DB
-  loadReels(); // update count
+  openComments(activeReelId);
+  loadReels();
 }
 
 loadReels();
