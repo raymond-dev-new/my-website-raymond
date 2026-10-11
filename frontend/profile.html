@@ -147,12 +147,7 @@ if(!token) location.href = "login.html";
 function getMyId(){ try{ return JSON.parse(atob(token.split('.')[1])).id }catch{ return "" } }
 function getParamId(){ return new URLSearchParams(window.location.search).get('id'); }
 
-// CACHE HELPERS - NEW
-function getCache(key){
-  try{ const d = localStorage.getItem(key); return d? JSON.parse(d) : null }catch{ return null }
-}
-function setCache(key, data){ localStorage.setItem(key, JSON.stringify(data)); }
-
+// FIXED - now handles your shirt picture + video + data:
 function fixUrl(u){
   if(!u) return "";
   if(u.startsWith('data:')) return u;
@@ -185,65 +180,49 @@ function renderAvatar(user){
   }
 }
 
-function renderProfileUI(data){
-  profileData = data;
-  document.getElementById("name").innerText = data.user.username;
-  document.getElementById("topname").innerText = data.user.username;
-  document.getElementById("pc").innerText = data.posts.length;
-  document.getElementById("followersCount").innerText = data.followersCount;
-  document.getElementById("followingCount").innerText = data.followingCount;
-  renderAvatar(data.user);
-  const followBtn = document.getElementById('followBtn');
-  const ownActions = document.getElementById('ownActions');
-  const camIcon = document.getElementById('camIcon');
-  if(isOwnProfile){
-    followBtn.style.display='none';
-    ownActions.style.display='flex';
-    camIcon.style.display='flex';
-    document.getElementById('delBtn').style.display='block';
-  } else {
-    ownActions.style.display='none';
-    camIcon.style.display='none';
-    followBtn.style.display='block';
-    document.getElementById('delBtn').style.display='none';
-    const followers = data.user.followers || [];
-    const isFollowing = followers.some(f => (f._id||f) == getMyId());
-    followBtn.innerText = isFollowing? 'Following' : 'Follow';
-    followBtn.className = isFollowing? 'follow-btn following' : 'follow-btn follow';
-  }
-  const grid = document.getElementById("grid");
-  let html = "";
-  for(let p of data.posts){
-    const raw = p.mediaUrl||"";
-    const url = fixUrl(raw);
-    const isVid = p.type === 'video' || p.type === 'reel' || isVideoFile(raw);
-    if(isVid) html += `<div class="post-box" onclick="openWide('${p._id}')"><video src="${url}" muted></video><span class="vid-badge">🎬</span></div>`;
-    else html += `<div class="post-box" onclick="openWide('${p._id}')"><img src="${url}"></div>`;
-  }
-  grid.innerHTML = html || `<p style="grid-column:1/4;text-align:center;color:#777;padding:20px">No posts yet</p>`;
+async function loadProfile(){
+const viewingId = getParamId() || getMyId();
+isOwnProfile = viewingId === getMyId();
+const res = await fetch(BASE + "/api/users/" + viewingId);
+const data = await res.json();
+profileData = data;
+document.getElementById("name").innerText = data.user.username;
+document.getElementById("topname").innerText = data.user.username;
+document.getElementById("pc").innerText = data.posts.length;
+document.getElementById("followersCount").innerText = data.followersCount;
+document.getElementById("followingCount").innerText = data.followingCount;
+
+renderAvatar(data.user);
+
+const followBtn = document.getElementById('followBtn');
+const ownActions = document.getElementById('ownActions');
+const camIcon = document.getElementById('camIcon');
+if(isOwnProfile){
+  followBtn.style.display='none';
+  ownActions.style.display='flex';
+  camIcon.style.display='flex';
+  document.getElementById('delBtn').style.display='block';
+} else {
+  ownActions.style.display='none';
+  camIcon.style.display='none';
+  followBtn.style.display='block';
+  document.getElementById('delBtn').style.display='none';
+  const followers = data.user.followers || [];
+  const isFollowing = followers.some(f => (f._id||f) == getMyId());
+  followBtn.innerText = isFollowing? 'Following' : 'Follow';
+  followBtn.className = isFollowing? 'follow-btn following' : 'follow-btn follow';
 }
 
-async function loadProfile(){
-  const viewingId = getParamId() || getMyId();
-  isOwnProfile = viewingId === getMyId();
-  const cacheKey = `profile_${viewingId}`;
-
-  // 1. SHOW CACHED INSTANTLY - NO EMPTY SCREEN
-  const cached = getCache(cacheKey);
-  if(cached){
-    renderProfileUI(cached);
-  }
-
-  // 2. FETCH FRESH AND UPDATE
-  try{
-    const res = await fetch(BASE + "/api/users/" + viewingId);
-    const data = await res.json();
-    renderProfileUI(data);
-    setCache(cacheKey, data);
-  }catch(e){
-    console.log("Offline, using cache", e);
-    if(!cached) document.getElementById("grid").innerHTML = `<p style="grid-column:1/4;text-align:center;color:#777">Offline</p>`;
-  }
+const grid = document.getElementById("grid");
+let html = "";
+for(let p of data.posts){
+  const raw = p.mediaUrl||"";
+  const url = fixUrl(raw);
+  const isVid = p.type === 'video' || p.type === 'reel' || isVideoFile(raw);
+  if(isVid) html += `<div class="post-box" onclick="openWide('${p._id}')"><video src="${url}" muted></video><span class="vid-badge">🎬</span></div>`;
+  else html += `<div class="post-box" onclick="openWide('${p._id}')"><img src="${url}"></div>`;
+}
+grid.innerHTML = html || `<p style="grid-column:1/4;text-align:center;color:#777;padding:20px">No posts yet</p>`;
 }
 
 function openAvatarModal(){
@@ -276,7 +255,6 @@ async function uploadAvatar(){
   const res = await fetch(BASE+'/api/users/avatar', { method:'PUT', headers:{ authorization: token }, body: fd });
   const updated = await res.json();
   if(updated.avatar || updated._id){
-    localStorage.removeItem(`profile_${getMyId()}`);
     closeAvatarModal();
     loadProfile();
     alert('Profile picture updated ✅');
@@ -287,14 +265,13 @@ async function uploadAvatar(){
 async function removeAvatar(){
  if(!confirm('Remove profile picture?')) return;
  try{ await fetch(BASE+'/api/users/avatar', { method:'DELETE', headers:{ authorization: token } }); }catch{}
- localStorage.removeItem(`profile_${getMyId()}`);
  closeAvatarModal();
  setTimeout(loadProfile,500);
 }
+
 async function toggleFollow(){
   const viewingId = getParamId() || getMyId();
   await fetch(BASE + "/api/users/" + viewingId + "/follow", { method:'POST', headers:{ authorization: token } });
-  localStorage.removeItem(`profile_${viewingId}`);
   loadProfile();
 }
 function showFollowers(){
@@ -343,7 +320,7 @@ document.getElementById("wide").style.display = "flex";
 function closeWide(){ document.getElementById("wide").style.display = "none"; }
 async function likePost(){ await fetch(BASE + "/api/posts/" + currentId + "/like", { method:"POST", headers:{ authorization: token } }); openWide(currentId); loadProfile(); }
 async function addComment(){ const text = document.getElementById("cmtInput").value; if(!text) return; await fetch(BASE + "/api/posts/" + currentId + "/comment", { method:"POST", headers:{ "Content-Type":"application/json", authorization: token }, body: JSON.stringify({ text }) }); document.getElementById("cmtInput").value = ""; openWide(currentId); }
-async function deletePost(){ if(!confirm("Delete this post?")) return; await fetch(BASE + "/api/posts/" + currentId, { method:"DELETE", headers:{ authorization: token } }); closeWide(); const vid = getParamId() || getMyId(); localStorage.removeItem(`profile_${vid}`); loadProfile(); }
+async function deletePost(){ if(!confirm("Delete this post?")) return; await fetch(BASE + "/api/posts/" + currentId, { method:"DELETE", headers:{ authorization: token } }); closeWide(); loadProfile(); }
 loadProfile();
 </script>
 </body>
