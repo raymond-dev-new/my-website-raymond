@@ -153,7 +153,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
     // For now we return code in response so you can test
     // REMOVE `code` in production
-    res.json({ message: "Reset code sent to email", code: code });
+    res.json({ message: "Use the code above", code: code });
 
     // TODO PRODUCTION EMAIL EXAMPLE:
     // await sendEmail(email, `Your reset code is ${code}`)
