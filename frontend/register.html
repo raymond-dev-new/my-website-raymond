@@ -28,7 +28,7 @@ async function register() { // register
   const username = document.getElementById('username').value; // username
   const email = document.getElementById('email').value; // email
   const password = document.getElementById('password').value; // password
-  const res = await fetch('https://raymonddomain.dev/api/auth/register', { // call backend
+  const res = await fetch('http://localhost:8000/api/auth/register', { // call backend
     method: 'POST', // post
     headers: { 'Content-Type': 'application/json' }, // json
     body: JSON.stringify({ username, email, password }) // data
