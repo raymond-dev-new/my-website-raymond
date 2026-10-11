@@ -71,7 +71,7 @@ function renderReels(reels){
   const views=r.views||0;
   return `<div class="reel" data-id="${r._id}">
    <div class="view-badge">👁️ <span id="view-${r._id}">${views}</span> views</div>
-   <video src="${url}" loop muted playsinline onclick="this.muted=!this.muted; addView('${r._id}')" ></video>
+   <video src="${url}" loop muted playsinline preload="metadata" onclick="this.muted=!this.muted; addView('${r._id}')" ></video>
    <div class="info">
     <b onclick="location.href='profile.html?id=${r.user?._id}'">@${r.user?.username||'user'}</b><br>
     ${r.caption||''}
@@ -116,9 +116,27 @@ async function addView(id){
  try{ await fetch(BASE+`/api/posts/${id}/view`,{method:'POST',headers:{authorization:token}}); }catch{}
 }
 
+// FIXED - STOP FIRST VIDEO WHEN SLIDE TO NEXT
 function observeViews(){
  const obs=new IntersectionObserver((entries)=>{
-  entries.forEach(e=>{ if(e.isIntersecting){ const id=e.target.dataset.id; addView(id); const vid=e.target.querySelector('video'); if(vid) vid.play().catch(()=>{}); } });
+  entries.forEach(e=>{
+   const vid=e.target.querySelector('video');
+   if(!vid) return;
+   if(e.isIntersecting){
+    // Pause all other videos first
+    document.querySelectorAll('.reel video').forEach(v=>{
+     if(v!==vid){
+      v.pause();
+      v.currentTime=0;
+     }
+    });
+    addView(e.target.dataset.id);
+    vid.play().catch(()=>{});
+   } else {
+    // When out of view, stop it
+    vid.pause();
+   }
+  });
  },{threshold:0.7});
  document.querySelectorAll('.reel').forEach(el=>obs.observe(el));
 }
@@ -139,6 +157,9 @@ async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{me
 
 async function openComments(id){
  activeReelId=id;
+ // pause current video when opening comments
+ const currentVid=document.querySelector(`.reel[data-id="${id}"] video`);
+ if(currentVid) currentVid.pause();
  try{
   const res=await fetch(BASE+'/api/posts/'+id,{headers:{authorization:token}});
   const post=await res.json();
@@ -152,7 +173,15 @@ async function openComments(id){
   document.getElementById('cmtModal').style.display='flex';
  }catch(e){ console.log(e); }
 }
-function closeComments(){ document.getElementById('cmtModal').style.display='none'; activeReelId=""; }
+function closeComments(){
+ document.getElementById('cmtModal').style.display='none';
+ // resume video when closing comments
+ if(activeReelId){
+  const v=document.querySelector(`.reel[data-id="${activeReelId}"] video`);
+  if(v) v.play().catch(()=>{});
+ }
+ activeReelId="";
+}
 async function sendComment(){
  const text=document.getElementById('cmtInput').value.trim(); if(!text||!activeReelId) return;
  await fetch(BASE+`/api/posts/${activeReelId}/comment`,{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text})});
