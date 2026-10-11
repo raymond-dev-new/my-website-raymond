@@ -32,7 +32,6 @@ const JWT_SECRET = process.env.JWT_SECRET
 const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
 const url = process.env.MONGO_URL
 
-
 app.use(cors({ origin: "*" }));
 app.use(bordyparser.json()); // for metadata
 app.use(express.json({ limit: '50mb' })); // important for base64
@@ -50,12 +49,10 @@ mongoose.connect(url)
 .then(() => console.log("MongoDB Connected"))
 .catch(err => console.log(err));
 
-
  
   app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'register.html'));
  }) 
-
 
 // full blog website jdhghjksajhgfdsfghjkjhgfdsfghjhgfdghjgfd
 // uytresdtyguhijiuytdrsertfyghjikoijugytdhjhgfdgytdrsdfgh
@@ -65,14 +62,10 @@ mongoose.connect(url)
 //const io = new Server(server, { cors: { origin: "*" } });
 // for local
 
-let io
-
-if (process.env.NODE_ENV !== 'production') {
-  const server = http.createServer(app);
-   io = new Server(server, { cors: { origin: "*" } });
-  // your io.on connection here
-  //server.listen(5000, () => console.log("Local running"));
-}
+// --- VERCEL FIX START ---
+let io;
+const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
+// --- VERCEL FIX END ---
 
 /*const urll = 'mongodb+srv://raymond77252_db_user:TZbdSfSq6NDT4V0F@cluster0.uip3fi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0' */
 const SECRET = "secret123";
@@ -84,18 +77,18 @@ function authh(req, res, next) {
   catch { return res.status(401).json({ msg: "Invalid" }); }
 }
 
-
-if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
+// --- VERCEL FIX FOR UPLOADS ---
+const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : 'uploads';
+try { if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true }); } catch(e){}
 const sstorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
-const uploadd = multer({ sstorage });
+const uploadd = multer({ storage: sstorage });
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.post('/api/upload', authh, uploadd.single('file'), (req, res) => {
   res.json({ url: '/uploads/' + req.file.filename });
 });
-
 
 /*mongoose.connect(urll).then(() => console.log("MongoDB Connected Successfully")).catch(err => console.log(err)); */
 
@@ -146,7 +139,7 @@ async function createNotif(receiverId, senderId, type, postId=null, text=""){
   }
   const n = await Notification.create({ receiver:receiverId, sender:senderId, type, post:postId, text });
   const populated = await Notification.findById(n._id).populate('sender','username avatar').populate('post','mediaUrl caption');
-  io.to(receiverId.toString()).emit('newNotification', populated);
+  safeEmit(receiverId.toString(), 'newNotification', populated);
   return populated;
 }
 
@@ -320,7 +313,7 @@ app.get('/api/messages/unread/counts', authh, async (req, res) => {
 });
 app.post('/api/messages/:id/read', authh, async (req, res) => {
   await Message.updateMany({ sender: req.params.id, receiver: req.userId, read: false }, { read: true });
-  io.to(req.params.id).emit('messagesSeen', { by: req.userId });
+  safeEmit(req.params.id, 'messagesSeen', { by: req.userId });
   res.json({ ok: true });
 });
 app.get('/api/messages/:id', authh, async (req, res) => {
@@ -333,8 +326,8 @@ app.put('/api/messages/msg/:msgId', authh, async (req, res) => {
   if(m.sender.toString()!== req.userId) return res.status(403).json({msg:"Not yours"});
   m.text = req.body.text; m.edited = true; await m.save();
   const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
-  io.to(m.receiver.toString()).emit('messageEdited', populated);
-  io.to(m.sender.toString()).emit('messageEdited', populated);
+  safeEmit(m.receiver.toString(), 'messageEdited', populated);
+  safeEmit(m.sender.toString(), 'messageEdited', populated);
   res.json(populated);
 });
 app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
@@ -345,23 +338,12 @@ app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
   if(!isSender &&!isReceiver) return res.status(403).json({msg:"Not allowed"});
   const data = { _id: m._id, sender: m.sender, receiver: m.receiver };
   await Message.findByIdAndDelete(req.params.msgId);
-  io.to(data.receiver.toString()).emit('messageDeleted', data);
-  io.to(data.sender.toString()).emit('messageDeleted', data);
+  safeEmit(data.receiver.toString(), 'messageDeleted', data);
+  safeEmit(data.sender.toString(), 'messageDeleted', data);
   res.json({ok:true});
 });
 
-io.on('connection', (socket) => {
-  socket.on('join', (id) => socket.join(id));
-  socket.on('sendMessage', async (d) => {
-    const m = await Message.create({ sender: d.sender, receiver: d.receiver, text: d.text, read: false });
-    const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
-    io.to(d.receiver).emit('receiveMessage', populated);
-    io.to(d.sender).emit('receiveMessage', populated);
-  });
-});
-
-
-// full blog end here iuystdyugiooiuytrtyughijooiuytryuiuytuiu
+// full blog end here iuystdyugiooiuytrtyughijooiuytryuiouytrtyuiouytryuiuytfgiu
 // hgfdsrytuyujliuys6ssdf;ilkuyjtrxulkljkhjtzdiukyxjvk,jmhlkju
 // uytrxfghdsrtdyfuighoiuydttufigohiuytyuihiuydtuigohiuytuiohi
  
@@ -449,7 +431,6 @@ app.post('/register', async (req, res) => {
        return res.send('password should be at least 6 character')
     }
 
-
    const password = await bcrypt.hash(passwords, 10)
 
    try {
@@ -486,7 +467,6 @@ app.post('/create', (req, res) => {
   res.json({status: 'ok', data: select, input: 'input'})
 })
 
-
     
 
 app.post('/payment', async (req, res) => {
@@ -517,7 +497,6 @@ app.post('/payment', async (req, res) => {
     console.log(err)
   }   
 })
-
 
  app.post('webhook', express.json(), (req, res) => {
    const event = req.body;
@@ -555,7 +534,6 @@ const password = await bcrypt.hash(passwords, 10)
   })
 
   // start here kjhgfdsdfghioiuytdsdfghjklkjhgfdsdfgh
-
 
 // 2. SCHEMA - note belongs to userId
 const NoteSchema = new mongoose.Schema({
@@ -607,10 +585,7 @@ app.delete('/api/notes/:id', auth, async (req,res) => {
   res.json({ok: true});
 });
 
-
   // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
-
-
 
 // new oiufdfgyuiopoiuytrertyuiopoiuytfdfghjk
 
@@ -822,7 +797,6 @@ app.get("/api/sync",async(req,res)=>{
 
 // matach end here kjhgfdghjkjhgfcghjkjhgf
 
-
 // CONFIG
 const API = process.env.API_FOOTBALL_KEY || '19ff9a571eb3c1a7bf5dc828fe578ffb';
 const BASE = 'https://v3.football.api-sports.io';
@@ -998,7 +972,6 @@ app.get('/api/fetch-now', async(req,res)=>{
 
 //new ytresrtyuioiuytrertyuioiuytrertyu
 
-
 // 1. SCHEMA: SAVE IMAGE AS BUFFER
 const MediaSchema = new mongoose.Schema({
   userId: String,
@@ -1047,7 +1020,6 @@ app.delete('/api/delete-media/:id', async (req, res) => {
   await Media.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });  
-
 
 //online banking iugfghdjhgcghsuhgcgdhsuhg
  
@@ -1254,7 +1226,22 @@ app.delete('/api/delete-media/:id', async (req, res) => {
    res.json({success: true});
  });
  
- // online banking end here tdsdtyuiuytrdfuiuyt
+ // online banking end here tdsdtyuiuyt
 
+// --- FINAL SERVER START - FOLDED FIX ---
+if (process.env.NODE_ENV !== 'production') {
+  const server = http.createServer(app);
+  io = new Server(server, { cors: { origin: "*" } });
+  io.on('connection', (socket) => {
+    socket.on('join', (id) => socket.join(id));
+    socket.on('sendMessage', async (d) => {
+      const m = await Message.create({ sender: d.sender, receiver: d.receiver, text: d.text, read: false });
+      const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
+      safeEmit(d.receiver, 'receiveMessage', populated);
+      safeEmit(d.sender, 'receiveMessage', populated);
+    });
+  });
+  server.listen(port, () => console.log('server is running on port ' + port));
+}
 
- app.listen(port, console.log('server is running on port 8000'))
+export default app;

@@ -24,12 +24,6 @@ import fetch from "node-fetch"; // npm i node-fetch
 import http from 'http'
 import { Server } from 'socket.io'
 
-
-
-
-
-
-
 const app = express()
 
 //Raymond123
@@ -57,17 +51,33 @@ mongoose.connect(url)
 .catch(err => console.log(err));
 
 
+ 
+  app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'register.html'));
+ }) 
+
 
 // full blog website jdhghjksajhgfdsfghjkjhgfdsfghjhgfdghjgfd
 // uytresdtyguhijiuytdrsertfyghjikoijugytdhjhgfdgytdrsdfgh
 // jhgfdxcvbnkpdsrezrxcvhbjknuyxtcvjbknlkjhgfdtyuihiuyvuyctxt
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+//const server = http.createServer(app);
+//const io = new Server(server, { cors: { origin: "*" } });
+// for local
+
+let io
+
+if (process.env.NODE_ENV !== 'production') {
+  const server = http.createServer(app);
+   io = new Server(server, { cors: { origin: "*" } });
+  // your io.on connection here
+  //server.listen(5000, () => console.log("Local running"));
+}
+
 /*const urll = 'mongodb+srv://raymond77252_db_user:TZbdSfSq6NDT4V0F@cluster0.uip3fi3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0' */
 const SECRET = "secret123";
 
-function auth(req, res, next) {
+function authh(req, res, next) {
   const tokenN = req.headers.authorization;
   if (!tokenN) return res.status(401).json({ msg: "No token" });
   try { req.userId = jwt.verify(tokenN, SECRET).id; next(); }
@@ -82,7 +92,7 @@ const sstorage = multer.diskStorage({
 });
 const uploadd = multer({ sstorage });
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.post('/api/upload', auth, uploadd.single('file'), (req, res) => {
+app.post('/api/upload', authh, uploadd.single('file'), (req, res) => {
   res.json({ url: '/uploads/' + req.file.filename });
 });
 
@@ -158,7 +168,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ========== FACEBOOK STYLE AVATAR ADD / UPDATE ANYTIME ==========
-app.put('/api/users/avatar', auth, uploadd.single('file'), async (req, res) => {
+app.put('/api/users/avatar', authh, uploadd.single('file'), async (req, res) => {
   const user = await Userd.findById(req.userId);
   if(!user) return res.status(404).json({msg:"User not found"});
   if(!req.file) return res.status(400).json({msg:"No file"});
@@ -167,7 +177,7 @@ app.put('/api/users/avatar', auth, uploadd.single('file'), async (req, res) => {
   res.json(user);
 });
 
-app.delete('/api/users/avatar', auth, async (req,res)=>{
+app.delete('/api/users/avatar', authh, async (req,res)=>{
   const user = await Userd.findById(req.userId);
   if(!user) return res.status(404).json({msg:"Not found"});
   user.avatar = "";
@@ -175,29 +185,29 @@ app.delete('/api/users/avatar', auth, async (req,res)=>{
   res.json(user);
 });
 
-app.get('/api/users/me/profile', auth, async (req, res) => {
+app.get('/api/users/me/profile', authh, async (req, res) => {
   const user = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
   const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
   res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
 });
 // ========== END AVATAR ==========
 
-app.post('/api/posts', auth, async (req, res) => {
+app.post('/api/posts', authh, async (req, res) => {
   const post = await Post.create({ user: req.userId,...req.body });
   res.json(post);
 });
-app.delete('/api/posts/:id', auth, async (req, res) => {
+app.delete('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   if (!post) return res.status(404).json({ msg: "Post not found" });
   if (post.user.toString()!== req.userId) return res.status(403).json({ msg: "Not yours" });
   await Post.findByIdAndDelete(req.params.id);
   res.json({ msg: "Deleted" });
 });
-app.put('/api/posts/:id', auth, async (req, res) => {
+app.put('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findByIdAndUpdate(req.params.id, { caption: req.body.caption }, { new: true });
   res.json(post);
 });
-app.get('/api/posts/feed', auth, async (req, res) => {
+app.get('/api/posts/feed', authh, async (req, res) => {
   const posts = await Post.find().populate('user').populate('comments.user').sort({ createdAt: -1 });
   res.json(posts);
 });
@@ -205,13 +215,13 @@ app.get('/api/posts/reels', async (req, res) => {
   const reels = await Post.find({ mediaUrl: { $regex: '\\.(mp4|mov|webm|mkv)$', $options: 'i' } }).populate('user').populate('comments.user').sort({ createdAt: -1 });
   res.json(reels);
 });
-app.get('/api/posts/:id', auth, async (req, res) => {
+app.get('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id).populate('user').populate('comments.user');
   if (!post) return res.status(404).json({ msg: "Post not found" });
   res.json(post);
 });
 
-app.post('/api/posts/:id/like', auth, async (req, res) => {
+app.post('/api/posts/:id/like', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   const isLiked = post.likes.includes(req.userId);
   if(isLiked) post.likes.pull(req.userId); else post.likes.push(req.userId);
@@ -222,7 +232,7 @@ app.post('/api/posts/:id/like', auth, async (req, res) => {
   res.json(updated);
 });
 
-app.post('/api/posts/:id/comment', auth, async (req, res) => {
+app.post('/api/posts/:id/comment', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   post.comments.push({ user: req.userId, text: req.body.text });
   await post.save();
@@ -231,13 +241,13 @@ app.post('/api/posts/:id/comment', auth, async (req, res) => {
   res.json(updated);
 });
 
-app.post('/api/posts/:id/share', auth, async (req, res) => {
+app.post('/api/posts/:id/share', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   post.shares += 1;
   await post.save();
   res.json(post);
 });
-app.post('/api/posts/:id/save', auth, async (req, res) => {
+app.post('/api/posts/:id/save', authh, async (req, res) => {
   const me = await Userd.findById(req.userId);
   me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
   await me.save();
@@ -256,7 +266,7 @@ app.get('/api/users/:id', async (req, res) => {
   res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
 });
 
-app.post('/api/users/:id/follow', auth, async (req, res) => {
+app.post('/api/users/:id/follow', authh, async (req, res) => {
   if(req.params.id === req.userId) return res.status(400).json({ msg: "Can't follow yourself" });
   const target = await Userd.findById(req.params.id);
   const me = await Userd.findById(req.userId);
@@ -281,43 +291,43 @@ app.get('/api/explore', async (req, res) => {
   res.json(posts);
 });
 
-app.get('/api/notifications', auth, async (req, res) => {
+app.get('/api/notifications', authh, async (req, res) => {
   const notifs = await Notification.find({ receiver: req.userId }).populate('sender','username avatar').populate('post','mediaUrl').sort({ createdAt: -1 }).limit(50);
   res.json(notifs);
 });
-app.get('/api/notifications/count', auth, async (req, res) => {
+app.get('/api/notifications/count', authh, async (req, res) => {
   const count = await Notification.countDocuments({ receiver: req.userId, read: false });
   res.json({ count });
 });
-app.post('/api/notifications/read', auth, async (req, res) => {
+app.post('/api/notifications/read', authh, async (req, res) => {
   await Notification.updateMany({ receiver: req.userId, read: false }, { read: true });
   res.json({ ok:true });
 });
 
-app.get('/api/messages/users', auth, async (req, res) => {
+app.get('/api/messages/users', authh, async (req, res) => {
   const me = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
   if(!me) return res.json([]);
   const combined = [...me.followers,...me.following];
   const unique = [...new Map(combined.map(u => [u._id.toString(), u])).values()];
   res.json(unique);
 });
-app.get('/api/messages/unread/counts', auth, async (req, res) => {
+app.get('/api/messages/unread/counts', authh, async (req, res) => {
   const unread = await Message.aggregate([
     { $match: { receiver: new mongoose.Types.ObjectId(req.userId), read: false } },
     { $group: { _id: "$sender", count: { $sum: 1 } } }
   ]);
   const map = {}; unread.forEach(u => map[u._id.toString()] = u.count); res.json(map);
 });
-app.post('/api/messages/:id/read', auth, async (req, res) => {
+app.post('/api/messages/:id/read', authh, async (req, res) => {
   await Message.updateMany({ sender: req.params.id, receiver: req.userId, read: false }, { read: true });
   io.to(req.params.id).emit('messagesSeen', { by: req.userId });
   res.json({ ok: true });
 });
-app.get('/api/messages/:id', auth, async (req, res) => {
+app.get('/api/messages/:id', authh, async (req, res) => {
   const msgs = await Message.find({ $or: [{ sender: req.userId, receiver: req.params.id }, { sender: req.params.id, receiver: req.userId }] }).sort({ createdAt: 1 }).populate('sender','username').populate('receiver','username');
   res.json(msgs);
 });
-app.put('/api/messages/msg/:msgId', auth, async (req, res) => {
+app.put('/api/messages/msg/:msgId', authh, async (req, res) => {
   const m = await Message.findById(req.params.msgId);
   if(!m) return res.status(404).json({msg:"Not found"});
   if(m.sender.toString()!== req.userId) return res.status(403).json({msg:"Not yours"});
@@ -327,7 +337,7 @@ app.put('/api/messages/msg/:msgId', auth, async (req, res) => {
   io.to(m.sender.toString()).emit('messageEdited', populated);
   res.json(populated);
 });
-app.delete('/api/messages/msg/:msgId', auth, async (req, res) => {
+app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
   const m = await Message.findById(req.params.msgId);
   if(!m) return res.status(404).json({msg:"Not found"});
   const isSender = m.sender.toString() === req.userId;
@@ -359,11 +369,6 @@ io.on('connection', (socket) => {
   let token = '';
 
  let User = '';
-
-
-  app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'mainpage.html'));
- }) 
 
  app.post('/change', async (req, res) => {
    
