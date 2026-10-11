@@ -1,5 +1,4 @@
- 
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +13,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .top-avatar img{width:100%;height:100%;object-fit:cover}
 .list{flex:1;overflow-y:auto;padding:12px;background:#000}
 .row{padding:14px 12px;display:flex;gap:12px;align-items:center;background:#111;border-radius:16px;margin-bottom:10px;cursor:pointer;position:relative}
-.row:hover{background:#1a1a1a}
+.row.new-msg{border:1px solid #0095f6}
 .av{width:52px;height:52px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex-shrink:0;overflow:hidden}
 .av img{width:100%;height:100%;object-fit:cover}
 .badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ff3040;color:#fff;min-width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;padding:0 7px}
@@ -34,7 +33,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .time-row.me{justify-content:flex-end}
 .tick{font-size:12px}
 .tick.read{color:#0095f6}
-.seen-text{font-size:11px;color:#8a8a8a;margin:0 8px 12px;text-align:right}
 .bar{padding:12px;border-top:1px solid #1e1e1e;display:flex;gap:10px;align-items:center;background:#000}
 .bar input{flex:1;background:#1e1e1e;border:none;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px}
 .send-btn{width:44px;height:44px;border-radius:50%;background:#0095f6;border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -55,48 +53,48 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .btn-cancel{background:#262626;color:#fff}
 .recording-info{font-size:12px;color:#ff3040;margin-left:6px;display:none}
 .recording-info.on{display:inline}
+.live-dot{width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;margin-left:6px;animation:pulse 1s infinite}
 </style>
 </head>
 <body>
-<div class="top"><b>Messages <span id="totalUnread" class="total-badge" style="display:none">0</span></b><span onclick="location.href='feed.html'" style="cursor:pointer;font-size:22px">←</span></div>
+<div class="top"><b>Messages <span id="totalUnread" class="total-badge" style="display:none">0</span> <span class="live-dot" title="Live auto-refresh ON"></span></b><span onclick="location.href='feed.html'" style="cursor:pointer;font-size:22px">←</span></div>
 <div class="list" id="list"></div>
 <div class="chat" id="chat">
 <div class="top">
   <div class="top-user" onclick="goToProfile()">
     <div class="top-avatar" id="topAvatar">U</div>
-    <div><b id="cName"></b><div style="font-size:11px;color:#888">Tap to view profile</div></div>
+    <div><b id="cName"></b><div style="font-size:11px;color:#888">Tap to view profile • Live</div></div>
   </div>
   <span onclick="closeChat()" style="cursor:pointer;font-size:22px">✕</span>
 </div>
 <div class="msgs" id="msgs"></div>
-<div id="seenIndicator" class="seen-text" style="display:none"></div>
 <div class="bar">
   <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button><span id="recInfo" class="recording-info">● Recording...</span>
   <input id="inp" placeholder="Message..." onkeydown="if(event.key==='Enter')send()"><button class="send-btn" onclick="send()">➤</button>
 </div>
 </div>
-<div class="menu" id="menu">
-<div id="editOpt" onclick="startEdit()">✏️ Edit</div>
-<div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div>
-<div onclick="closeMenu()">Cancel</div>
-</div>
-<div class="edit-box" id="editBox">
-<div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="document.getElementById('editBox').classList.remove('open')">Cancel</button></div>
-</div>
+<div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
+<div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
-const socket=io(BASE,{transports:['websocket','polling']});
-socket.on('connect',()=>socket.emit('join',myId()));
-let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[];
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
 function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
-async function loadUnread(){
+function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
+
+let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[];
+
+// SOCKET WITH AUTO RECONNECT
+const socket=io(BASE,{transports:['websocket','polling'], reconnection:true, reconnectionAttempts:100, reconnectionDelay:1000});
+socket.on('connect',()=>{ socket.emit('join',myId()); console.log('socket connected'); });
+socket.on('disconnect',()=>{ console.log('socket disconnected - polling will keep alive'); });
+
+async function loadUnread(silent=false){
  try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{}
 }
 function updateBadges(){
@@ -110,12 +108,14 @@ function updateBadges(){
 }
 function renderUsers(users){
  const el=document.getElementById('list');
+ usersCache=users;
  if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>'; return; }
  el.innerHTML=users.map(u=>{
   const id=u._id; const name=u.username||'user'; const letter=name[0].toUpperCase();
   const count=unreadMap[id]||0;
   const avatar=u.avatar?`<img src="${fixUrl(u.avatar)}">`:letter;
-  return `<div class="row" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">Tap to chat</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
+  const hasUnread=count>0?' new-msg':'';
+  return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count? count+' new message(s) • Tap to chat':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
  }).join('');
 }
 async function load(){
@@ -141,8 +141,7 @@ function renderMsg(m){
  const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
  const time=formatTime(m.createdAt);
  let tick=''; if(isMe) tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`;
- let content=m.text||"";
- let inner="";
+ let content=m.text||""; let inner="";
  if(content.startsWith('VOICE:') || content.startsWith('data:audio')){
   let src=content.replace('VOICE:','');
   inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
@@ -186,57 +185,44 @@ async function send(){
   msgsCache=msgsCache.filter(x=>x._id!==tempId);
   if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
   renderAll();
- }catch(e){ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); alert("Failed to send"); }
+ }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
 }
-// VOICE AS MESSAGE - SAME AS TEXT
 let mediaRecorder=null, audioChunks=[], isRecording=false;
 async function toggleRecord(){
- const btn=document.getElementById('micBtn');
- const info=document.getElementById('recInfo');
+ const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
  if(!isRecording){
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'});
-   audioChunks=[];
+   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'}); audioChunks=[];
    mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
    mediaRecorder.onstop=async ()=>{
     const blob=new Blob(audioChunks,{type:'audio/webm'});
     const reader=new FileReader();
     reader.onload=async ()=>{
-     const base64=reader.result; // data:audio/webm;base64,...
-     const t='VOICE:'+base64;
-     // Show instantly like text message
+     const base64=reader.result; const t='VOICE:'+base64;
      const tempId='temp_'+Date.now();
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
      msgsCache.push(tempMsg); renderAll();
-     // Save to DB exactly like text message
      try{
       let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
       let saved=await r.json();
       msgsCache=msgsCache.filter(x=>x._id!==tempId);
       if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
       renderAll();
-     }catch(e){ console.error(e); alert("Failed to send voice"); msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
+     }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
     };
-    reader.readAsDataURL(blob);
-    stream.getTracks().forEach(s=>s.stop());
+    reader.readAsDataURL(blob); stream.getTracks().forEach(s=>s.stop());
    };
-   mediaRecorder.start();
-   isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
-  }catch{ alert('Mic permission denied'); }
- }else{
-  mediaRecorder.stop();
-  isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on');
- }
+   mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
+  }catch{ alert('Mic denied'); }
+ }else{ mediaRecorder.stop(); isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on'); }
 }
 function openMenu(el){
  selectedMsg=el.dataset.id; if(selectedMsg.startsWith('temp_')) return;
  selectedIsMe=el.dataset.me==='true';
  let txt=el.dataset.text;
- if(txt.startsWith('VOICE:')||txt.startsWith('data:audio')) document.getElementById('editInput').value='';
- else document.getElementById('editInput').value=txt;
+ document.getElementById('editInput').value=txt.startsWith('VOICE:')?'':txt;
  document.getElementById('editOpt').style.display=selectedIsMe &&!txt.startsWith('VOICE:')? 'flex':'none';
- document.getElementById('delOpt').innerText=selectedIsMe?'🗑️ Unsend':'🗑️ Delete';
  document.getElementById('menu').classList.add('open');
 }
 function closeMenu(){ document.getElementById('menu').classList.remove('open'); }
@@ -244,30 +230,67 @@ function startEdit(){ if(!selectedIsMe) return; closeMenu(); document.getElement
 async function saveEdit(){
  let newText=document.getElementById('editInput').value.trim(); if(!newText) return;
  await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})});
- document.getElementById('editBox').classList.remove('open');
+ closeBox();
 }
 async function deleteMsg(){
- if(!confirm('Unsend this? Voice will be removed too.')) return;
- closeMenu();
- msgsCache=msgsCache.filter(x=>x._id!==selectedMsg);
- renderAll();
+ if(!confirm('Unsend?')) return; closeMenu();
+ msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll();
  try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{}
  if(active) setCache('chat_'+active, msgsCache);
 }
+
+// LIVE SOCKET EVENTS
 socket.on('receiveMessage',m=>{
  let senderId=m.sender._id||m.sender; let receiverId=m.receiver._id||m.receiver;
  if(senderId==active || receiverId==active){
   if(!msgsCache.find(x=>x._id===m._id)){ msgsCache.push(m); renderAll(); }
   if(senderId!=myId()) fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  }else if(receiverId==myId()){
-  unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges();
-  let cached=getCache('chat_'+senderId)||[];
-  if(!cached.find(x=>x._id===m._id)){ cached.push(m); setCache('chat_'+senderId, cached); }
+  unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges(); renderUsers(usersCache.length?usersCache:getCache('chat_users')||[]);
+  let cached=getCache('chat_'+senderId)||[]; if(!cached.find(x=>x._id===m._id)){ cached.push(m); setCache('chat_'+senderId, cached); }
  }
 });
 socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll();}});
 socket.on('messageDeleted',data=>{ msgsCache=msgsCache.filter(x=>x._id!=data._id); renderAll(); if(active) setCache('chat_'+active, msgsCache); });
 socket.on('messagesSeen',()=>{ msgsCache.forEach(m=>{ if((m.sender._id||m.sender)==myId()) m.read=true; }); renderAll(); });
+
+// ---- AUTO REFRESH IN BACKGROUND - NO HARD REFRESH NEEDED ----
+async function autoPoll(){
+ try{
+  // 1. Update unread counts in background
+  await loadUnread(true);
+  // 2. If chat is open, auto fetch new messages silently
+  if(active){
+   let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
+   let fresh=await r.json();
+   if(fresh.length!==msgsCache.length){
+    // only update if new messages exist
+    const existingIds=new Set(msgsCache.map(x=>x._id));
+    const newOnes=fresh.filter(x=>!existingIds.has(x._id));
+    if(newOnes.length){
+     fresh.forEach(m=>{ if(!msgsCache.find(x=>x._id===m._id)) msgsCache.push(m); });
+     renderAll();
+     // mark read
+     fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
+    }
+   }
+  }else{
+   // If not in chat, refresh user list silently to get new chatters
+   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
+   let users=await r.json();
+   if(users.length && JSON.stringify(users)!==JSON.stringify(usersCache)){
+    setCache('chat_users', users);
+    renderUsers(users);
+   }
+  }
+ }catch{}
+}
+
+// Run poll every 3 seconds
+setInterval(autoPoll, 3000);
+// Also refresh when user comes back to app
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoPoll(); load(); } });
+
 load();
 setInterval(loadUnread,4000);
 </script>
