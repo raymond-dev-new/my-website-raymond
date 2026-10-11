@@ -324,10 +324,35 @@ app.get('/api/users/:id', async (req,res)=>{
   }catch(e){ res.status(500).json({msg:e.message}) }
 });
 
+
+// Keep only this one:
+const BANNED_KEYWORDS = ['porn','xxx','nude','naked','sex','onlyfans','xvideo','pornhub','nsfw','18+','pussy','boobs','ass'];
+
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   try{
+    // ===== SIMPLE PORN BLOCK - NO AI =====
+    if(req.file){
+      const fileName = req.file.originalname.toLowerCase();
+      const caption = (req.body.caption || "").toLowerCase();
+      
+      // HERE IS WHERE BANNED IS USED
+      for(let w of BANNED_KEYWORDS){
+        if(fileName.includes(w) || caption.includes(w)){
+          return res.status(400).json({ msg: `Blocked: porn/nude content not allowed (${w})` });
+        }
+      }
+
+      // Only allow clean types
+      const allowed = ['image/jpeg','image/png','image/jpg','image/webp','video/mp4','video/webm'];
+      if(!allowed.includes(req.file.mimetype)){
+        return res.status(400).json({ msg: "File type not allowed" });
+      }
+    }
+    // ===== END BLOCK =====
+
     let mediaUrl = req.body.mediaUrl || "";
     let type = req.body.type || 'image';
+    
     if(req.file){
       if(req.file.mimetype.startsWith('video')){
         if(req.file.size > 30*1024*1024) return res.status(400).json({msg: "Video too big max 30MB"});
@@ -344,8 +369,10 @@ app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
         type = 'image';
       }
     }
+    
     const post = await Post.create({ user: req.userId, caption: req.body.caption || "", mediaUrl, type });
     res.json(post);
+    
   }catch(e){
     console.error(e);
     res.status(500).json({msg: e.message});

@@ -65,7 +65,7 @@ a{color:inherit;text-decoration:none}
     <div class="side-link" onclick="logout()"><span>🚪</span> Logout</div>
   </div>
 </div>
-<div class="top"><div class="wrap" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center"><span class="hamburger" onclick="openSidebar()">☰</span><span class="logo">RAyMoNd</span></div><div style="display:flex;gap:14px;align-items:center"><a href="notifications.html" style="font-size:22px">🤍</a><span class="logout" onclick="logout()">Logout</span></div></div>
+<div class="top"><div class="wrap" style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center"><span class="hamburger" onclick="openSidebar()">☰</span><span class="logo">RAyMoNd</span></div><div style="display:flex;gap:14px;align-items:center"><a href="notification.html" style="font-size:22px">🤍</a><span class="logout" onclick="logout()">Logout</span></div></div>
 </div>
 
 <div class="wrap" id="feed">Loading...</div>
@@ -99,7 +99,6 @@ function renderFeed(posts){
   <div class="post-head">
     <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
     <b onclick="goToProfile('${userId}')">${username}</b>
-    <span style="margin-left:auto;cursor:pointer" onclick="delPost('${p._id}')">⋯</span>
   </div>
   <div class="media" ondblclick="like('${p._id}')">${mediaHtml}</div>
   <div class="actions"><span onclick="like('${p._id}')">${p.likes.includes(getMyId())?'❤️':'🤍'}</span><span onclick="goToProfile('${userId}')">💬</span><span onclick="saveP('${p._id}')">🔖</span></div>
@@ -133,7 +132,6 @@ async function comment(id){
   localStorage.removeItem('feed_posts'); load();
 }
 async function saveP(id){ await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); alert('Saved!'); }
-async function delPost(id){ if(!confirm('Delete?'))return; await fetch(BASE+'/api/posts/'+id,{method:'DELETE',headers:{authorization:token}}); localStorage.removeItem('feed_posts'); load(); }
 function logout(){ localStorage.removeItem('token'); location.href='login.html'; }
 load(); loadMsgBadge();
 setInterval(loadMsgBadge,5000);
