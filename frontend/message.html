@@ -81,8 +81,9 @@ const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
-function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ console.log('cache skip - too big'); } }
-function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
+// FIX 1: prevent crash when voice is too big
+function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
 function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
@@ -135,17 +136,22 @@ async function load(){
   await loadUnread();
  }catch(e){ if(!cachedUsers) el.innerHTML='Error: '+e.message; }
 }
+// FIX 2: render both VOICE: base64 and file URLs
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
  const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
  const time=formatTime(m.createdAt);
  let tick=''; if(isMe) tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`;
- let content=m.text||""; let inner="";
- if(content.startsWith('VOICE:') || content.startsWith('data:audio')){
+ let content=m.text||m.mediaUrl||"";
+ let inner="";
+ if(content.startsWith('VOICE:') || content.startsWith('data:audio') || (m.mediaUrl && m.mediaUrl.length>0)){
   let src=content.replace('VOICE:','');
-  inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
+  if(m.mediaUrl) src=fixUrl(m.mediaUrl);
+  else src=fixUrl(src);
+  if(src) inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
+  else inner=`<div>🎤 Voice note${edited}</div>`;
  }else{ inner=content+edited; }
- return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
+ return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').startsWith('VOICE:')||(m.text||'').startsWith('data:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
 function renderAll(){
  const container=document.getElementById('msgs');
@@ -153,11 +159,10 @@ function renderAll(){
  container.innerHTML=msgsCache.map(m=>renderMsg(m)).join('');
  container.scrollTop=container.scrollHeight;
  if(active){
-  // FIX: don't try to cache huge voice base64, only cache small messages to prevent crash
+  // FIX: don't cache huge base64
   try{
-   let smallCache = msgsCache.filter(m=>!(m.text||'').startsWith('VOICE:'));
-   if(smallCache.length>0) setCache('chat_'+active, smallCache);
-   else setCache('chat_'+active, msgsCache.slice(-10).map(m=>({...m, text: (m.text||'').substring(0,500)})));
+   let small = msgsCache.filter(m=>!(m.text||'').startsWith('VOICE:') &&!(m.text||'').startsWith('data:'));
+   if(small.length) setCache('chat_'+active, small.slice(-50));
   }catch{}
  }
 }
@@ -193,50 +198,88 @@ async function send(){
   renderAll();
  }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
 }
+
+// FIX 3: FIRST VOICE STAYS + RECEIVER GETS IT
 let mediaRecorder=null, audioChunks=[], isRecording=false;
 async function toggleRecord(){
  const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
  if(!isRecording){
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm'}); audioChunks=[];
+   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus', bitsPerSecond:32000});
+   audioChunks=[];
    mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
    mediaRecorder.onstop=async ()=>{
     const blob=new Blob(audioChunks,{type:'audio/webm'});
-    const reader=new FileReader();
-    reader.onload=async ()=>{
-     const base64=reader.result; const t='VOICE:'+base64;
-     const tempId='temp_voice_'+Date.now();
-     // FIX: first voice stays - push and keep
-     const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
-     msgsCache.push(tempMsg);
-     renderAll();
-     audioChunks=[];
-     try{
-      let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
-      let saved=await r.json();
-      // FIX: replace temp with saved, but keep it visible
+    audioChunks=[];
+    stream.getTracks().forEach(s=>s.stop());
+    if(!blob || blob.size===0) return;
+
+    // Show first voice instantly - it will stay
+    const tempId='temp_voice_'+Date.now();
+    const localUrl = URL.createObjectURL(blob);
+    const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:'VOICE:'+localUrl, mediaUrl: localUrl, createdAt:new Date().toISOString(), read:false};
+    msgsCache.push(tempMsg);
+    renderAll();
+
+    // Send as FILE so receiver gets it (not huge base64)
+    try{
+     const fd = new FormData();
+     fd.append('receiver', active);
+     fd.append('file', blob, 'voice_'+Date.now()+'.webm');
+     let r = await fetch(BASE+'/api/messages',{method:'POST', headers:{authorization:token}, body:fd});
+     if(!r.ok){
+      // fallback if file endpoint needs different field name
+      const fd2 = new FormData();
+      fd2.append('receiver', active);
+      fd2.append('voice', blob, 'voice.webm');
+      fd2.append('audio', blob, 'voice.webm');
+      r = await fetch(BASE+'/api/messages',{method:'POST', headers:{authorization:token}, body:fd2});
+     }
+     if(r.ok){
+      let saved = await r.json();
       msgsCache = msgsCache.map(x=> x._id===tempId? saved : x);
       if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
       renderAll();
-     }catch(e){
-      console.log('voice send error, keeping first voice',e);
-      // FIX: don't delete on error - keep first voice
-      renderAll();
+      socket.emit('sendMessage', saved);
+     }else{
+      throw new Error('server rejected file');
      }
-    };
-    reader.readAsDataURL(blob); stream.getTracks().forEach(s=>s.stop());
+    }catch(e){
+     console.log('file send failed, keeping voice for retry', e);
+     // Keep first voice visible, don't delete
+     // Try base64 as last resort for short voices
+     try{
+      const reader = new FileReader();
+      reader.onload = async ()=>{
+       const b64 = reader.result;
+       if(b64.length < 800000){
+        let r2 = await fetch(BASE+'/api/messages',{method:'POST', headers:{'Content-Type':'application/json', authorization:token}, body:JSON.stringify({receiver:active, text:'VOICE:'+b64})});
+        if(r2.ok){
+         let saved2 = await r2.json();
+         msgsCache = msgsCache.map(x=> x._id===tempId? saved2 : x);
+         renderAll();
+        }
+       }
+      };
+      reader.readAsDataURL(blob);
+     }catch{}
+    }
    };
    mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
   }catch{ alert('Mic denied'); }
- }else{ mediaRecorder.stop(); isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on'); }
+ }else{
+  if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on');
+ }
 }
+
 function openMenu(el){
  selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
  selectedIsMe=el.dataset.me==='true';
- let txt=el.dataset.text;
+ let txt=el.dataset.text||"";
  document.getElementById('editInput').value=txt.startsWith('VOICE:')?'':txt;
- document.getElementById('editOpt').style.display=selectedIsMe &&!txt.startsWith('VOICE:')? 'flex':'none';
+ document.getElementById('editOpt').style.display=selectedIsMe && txt &&!txt.startsWith('VOICE:') &&!txt.startsWith('data:')? 'flex':'none';
  document.getElementById('menu').classList.add('open');
 }
 function closeMenu(){ document.getElementById('menu').classList.remove('open'); }
@@ -273,13 +316,19 @@ async function autoPoll(){
   if(active){
    let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
    let fresh=await r.json();
-   // FIX: keep temp voices when polling
    let tempVoices = msgsCache.filter(x=> String(x._id).startsWith('temp_'));
-   if(fresh.length!==msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length){
+   let nonTempCount = msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length;
+   if(fresh.length!==nonTempCount){
     const existingIds=new Set(msgsCache.map(x=>x._id));
     fresh.forEach(m=>{ if(!existingIds.has(m._id)) msgsCache.push(m); });
-    // keep temp voices
-    tempVoices.forEach(tv=>{ if(!fresh.some(f=>f.text===tv.text)) { /* keep */ } else { msgsCache = msgsCache.filter(x=>x._id!==tv._id); } });
+    // keep temp voices that are not yet saved
+    tempVoices.forEach(tv=>{
+     if(!fresh.some(f=> f.mediaUrl && tv.mediaUrl && f.mediaUrl===tv.mediaUrl) &&!fresh.some(f=> f.text===tv.text)){
+      // keep it
+     }else{
+      msgsCache = msgsCache.filter(x=>x._id!==tv._id);
+     }
+    });
     renderAll();
     fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
    }
