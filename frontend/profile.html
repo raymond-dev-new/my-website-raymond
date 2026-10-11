@@ -29,10 +29,14 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .action-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .btn-post{background:#0095f6;color:#fff;padding:7px 16px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block}
 .btn-gray{background:#262626;color:#fff;padding:7px 16px;border-radius:8px;border:1px solid #333;font-size:14px;font-weight:600;cursor:pointer}
-.posts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;max-width:935px;margin:4px auto 0;padding-bottom:75px}
-.post-box{aspect-ratio:1/1;background:#111;overflow:hidden;cursor:pointer;position:relative}
-.post-box img,.post-box video{width:100%;height:100%;object-fit:cover;display:block}
-.vid-badge{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.6);padding:2px 5px;border-radius:4px;font-size:11px}
+
+/* BIGGER GRID - FIXED */
+.posts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;max-width:975px;margin:14px auto 0;padding:0 2px 80px;width:100%}
+.post-box{aspect-ratio:1/1.18;background:#111;overflow:hidden;cursor:pointer;position:relative;border-radius:2px}
+.post-box img,.post-box video{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.03);transition:.2s}
+.post-box:active img{transform:scale(1)}
+.vid-badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.65);padding:3px 6px;border-radius:4px;font-size:11px}
+
 .nav{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
 .nav a{color:#fff;text-decoration:none;font-size:22px}
 .wide-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;justify-content:center;align-items:center}
@@ -74,14 +78,14 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .avatar-wrap,.circle{width:66px;height:66px;font-size:22px}
 #name{font-size:16px}
 .stats{font-size:13px;gap:10px}
-.posts{gap:1px}
+.posts{gap:3px;margin-top:12px;padding:0 1px 80px}
+.post-box{aspect-ratio:1/1.12;border-radius:1px}
 .modal-box{flex-direction:column;max-height:95vh;width:96%}
 }
 </style>
 </head>
 <body>
 <div class="header"><b id="topname">raymond</b><span onclick="location.href='feed.html'" style="cursor:pointer">☰</span></div>
-
 <div class="profile-info">
   <div class="avatar-wrap" onclick="openAvatarModal()">
     <div class="circle" id="letter">R</div>
@@ -107,9 +111,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
     </div>
   </div>
 </div>
-
 <div class="posts" id="grid"></div>
-
 <div class="avatar-modal" id="avatarModal" onclick="if(event.target===this) closeAvatarModal()">
   <div class="avatar-card">
     <h3>Profile Photo</h3>
@@ -122,7 +124,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
     <button class="btn-blue" style="background:#111;color:#ff3040;border:1px solid #333;display:none" id="removeAvatarBtn" onclick="removeAvatar()">Remove Photo</button>
   </div>
 </div>
-
 <div class="bio-modal" id="bioModal" onclick="if(event.target===this) closeBioModal()">
   <div class="bio-card">
     <h3 style="text-align:center;margin:0">Edit Bio</h3>
@@ -133,13 +134,9 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
     <button class="btn-gray2" onclick="closeBioModal()">Cancel</button>
   </div>
 </div>
-
 <div class="wide-modal" id="wide"><div class="modal-box"><div class="modal-media" id="wideMedia"></div><div class="modal-info"><div class="modal-head"><b id="wideUser"></b><span onclick="closeWide()" style="cursor:pointer">✕</span></div><div class="comment-list" id="commentList"></div><div class="modal-actions"><span id="likeBtn" onclick="likePost()" style="cursor:pointer;font-size:22px">🤍</span><div class="likes-count" id="likesCount"></div><div class="add-cmt"><input id="cmtInput" placeholder="Add comment..."><button onclick="addComment()">Post</button></div><div class="wide-actions"><button class="del-btn" id="delBtn" onclick="deletePost()">Delete</button><button class="close-btn" onclick="closeWide()">Close</button></div></div></div></div></div>
-
 <div class="list-modal" id="followModal" onclick="if(event.target===this) closeList()"><div class="list-box"><div class="list-head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div><div class="list-body" id="listBody"></div></div></div>
-
 <div class="nav"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬</a><a href="reels.html">🎬</a><a href="profile.html">👤</a></div>
-
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
@@ -151,7 +148,6 @@ function getCache(k){try{return JSON.parse(localStorage.getItem(k)||null)}catch{
 function setCache(k,v){localStorage.setItem(k,JSON.stringify(v))}
 function fixUrl(u){if(!u) return "";if(u.startsWith('data:')) return u;if(u.startsWith('/api/')) return BASE+u;if(u.startsWith('/uploads')) return BASE+u;if(u.startsWith('http')) return u;return u}
 function isVideoFile(u){if(!u) return false;return u.includes('/api/media-file')||u.endsWith('.mp4')}
-
 function renderAvatar(user){
  const el=document.getElementById('letter');
  if(user.avatar) el.innerHTML=`<img src="${fixUrl(user.avatar)}">`;
@@ -161,7 +157,6 @@ function renderAvatar(user){
  if(user.avatar){prev.src=fixUrl(user.avatar);prev.style.display='block';lm.style.display='none';document.getElementById('removeAvatarBtn').style.display=isOwnProfile?'block':'none'}
  else{prev.style.display='none';lm.style.display='flex';lm.innerText=(user.username||'U')[0].toUpperCase();document.getElementById('removeAvatarBtn').style.display='none'}
 }
-
 function renderProfileUI(data){
  profileData=data; const u=data.user;
  document.getElementById("name").innerText=u.username;
@@ -169,7 +164,6 @@ function renderProfileUI(data){
  document.getElementById("pc").innerText=data.posts.length;
  document.getElementById("followersCount").innerText=data.followersCount||u.followers?.length||0;
  document.getElementById("followingCount").innerText=data.followingCount||u.following?.length||0;
- // BIO WHITE AND VISIBLE TO ALL
  document.getElementById('bioDisplayName').innerText=u.displayName||'';
  const bioEl=document.getElementById('bioText');
  if(u.bio && u.bio.trim()!=""){bioEl.innerText=u.bio;bioEl.style.display='block';bioEl.style.color='#fff';bioEl.style.opacity='1';bioEl.onclick=null}
@@ -183,7 +177,6 @@ function renderProfileUI(data){
  const grid=document.getElementById("grid");let h="";for(let p of data.posts){const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");h+= isVid? `<div class="post-box" onclick="openWide('${p._id}')"><video src="${url}" muted></video><span class="vid-badge">🎬</span></div>`:`<div class="post-box" onclick="openWide('${p._id}')"><img src="${url}"></div>`}
  grid.innerHTML=h||`<p style="grid-column:1/4;text-align:center;color:#777;padding:20px">No posts yet</p>`;
 }
-
 async function loadProfile(){
  const vid=getParamId()||getMyId();isOwnProfile=vid===getMyId();
  const key=`profile_${vid}`;const cached=getCache(key);if(cached) renderProfileUI(cached);
@@ -192,11 +185,10 @@ async function loadProfile(){
   let res=await fetch(url,{headers:{authorization:token}});
   if(!res.ok) res=await fetch(`${BASE}/api/users/${vid}`,{headers:{authorization:token}});
   const data=await res.json();
-  const norm=data.user?data:{user:data,posts:data.posts||[],followersCount:data.followersCount||data.user?.followers?.length||0,followingCount:data.followingCount||data.user?.following?.length||0};
+  const norm=data.user?data:{user:data,followersCount:data.followersCount||0,followingCount:data.followingCount||0,posts:data.posts||[]};
   renderProfileUI(norm);setCache(key,norm);
  }catch(e){console.log(e)}
 }
-
 function openBioModal(){if(!isOwnProfile) return;const u=profileData?.user||{};document.getElementById('bioNameInput').value=u.displayName||'';document.getElementById('bioInput').value=u.bio||'';document.getElementById('linkInput').value=u.link||'';document.getElementById('bioCount').innerText=(u.bio||'').length;document.getElementById('bioModal').classList.add('open')}
 function closeBioModal(){document.getElementById('bioModal').classList.remove('open')}
 document.getElementById('bioInput').addEventListener('input',e=>document.getElementById('bioCount').innerText=e.target.value.length);
