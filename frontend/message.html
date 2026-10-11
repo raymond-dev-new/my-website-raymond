@@ -78,7 +78,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 
 <div class="menu" id="menu">
 <div id="editOpt" onclick="startEdit()">✏️ Edit message</div>
-<div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div>
+<div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend for everyone</div>
 <div onclick="closeMenu()">Cancel</div>
 </div>
 
@@ -96,21 +96,19 @@ const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
-const socket=io(BASE, { transports:['websocket','polling'] });
-socket.on('connect',()=>{ console.log("socket connected"); socket.emit('join',myId()); });
+const socket=io(BASE,{transports:['websocket','polling']});
+socket.on('connect',()=>{ socket.emit('join',myId()); console.log("socket connected") });
+socket.on('connect_error',(e)=>{ console.log("socket error",e.message) });
 
 let active="", activeName="", unreadMap={}, selectedMsg=null, selectedIsMe=false;
-
 function goToProfile(){ if(!active) return; location.href = 'profile.html?id=' + active; }
-
-function fixAvatar(url){
-  if(!url) return "";
-  if(url.startsWith('data:')) return url;
-  if(url.startsWith('http')) return url;
-  if(url.startsWith('/api/') || url.startsWith('/uploads')) return BASE+url;
-  return url;
+function fixUrl(u){
+  if(!u) return "";
+  if(u.startsWith('data:')) return u;
+  if(u.startsWith('http')) return u;
+  if(u.startsWith('/api/')) return BASE+u;
+  return u;
 }
-
 function formatTime(dateStr){
  const d=new Date(dateStr); const now=new Date();
  const isToday=d.toDateString()===now.toDateString();
@@ -118,7 +116,6 @@ function formatTime(dateStr){
  if(isToday) return `Today ${time}`;
  return `${d.toLocaleDateString()} ${time}`;
 }
-
 async function loadUnread(){
  try{
   let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}});
@@ -134,15 +131,12 @@ function updateBadges(){
    if(b){ const c=unreadMap[uid]; if(c>0){b.innerText=c; b.classList.remove('hide');} else b.classList.add('hide'); }
  });
 }
-
 async function load(){
  const el=document.getElementById('list');
  try{
-  // FIX: always use /api/messages/users for followers + following
   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
   let users=await r.json();
   if(!users ||!users.length){
-    // fallback try profile
     let r2=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
     let d2=await r2.json();
     users=[...(d2.user.followers||[]),...(d2.user.following||[])];
@@ -152,41 +146,32 @@ async function load(){
   await loadUnread();
   el.innerHTML=users.map(u=>{
     const id=u._id; const name=u.username||'user'; const letter=name[0].toUpperCase(); const count=unreadMap[id]||0;
-    const avatar = u.avatar? `<img src="${fixAvatar(u.avatar)}">` : letter;
-    return `<div class="row" onclick="openC('${id}','${name}','${(u.avatar||'').replace(/'/g,'')}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">Tap to chat</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
+    const avatar = u.avatar? `<img src="${fixUrl(u.avatar)}">` : letter;
+    return `<div class="row" onclick="openC('${id}','${name}','')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">Tap to chat</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
   }).join('');
- }catch(e){ el.innerHTML='Error loading users: '+e.message; }
+ }catch(e){ el.innerHTML='Error: '+e.message; }
 }
-
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
  const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
  const time=formatTime(m.createdAt);
- let tick='';
- if(isMe){ tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`; }
- let content=m.text;
- // voice note
+ let tick=''; if(isMe){ tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`; }
+ let content=m.text||"";
+ let inner="";
  if(content.startsWith('data:audio') || content.startsWith('VOICE:')){
    let src=content.replace('VOICE:','');
-   content=`<audio controls src="${src}" style="width:200px"></audio>`;
- } else {
-   content=content+edited;
- }
+   inner=`<audio controls src="${src}" style="width:200px"></audio>${edited}`;
+ }else{ inner=content+edited; }
  return `<div class="bubble-wrap ${isMe?'me':'other'}" id="wrap-${m._id}">
-  <div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').replace(/"/g,'&quot;')}" data-me="${isMe}" onclick="openMenu(this)">${content}</div>
+  <div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div>
   <div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div>
  </div>`;
 }
-
 let msgsCache=[];
-async function openC(id,name,avatar){
+async function openC(id,name){
  active=id; activeName=name;
  document.getElementById('cName').innerText=name;
- const topAv = document.getElementById('topAvatar');
- if(avatar && avatar.startsWith('data:')) topAv.innerHTML = `<img src="${avatar}">`;
- else if(avatar) topAv.innerHTML = `<img src="${fixAvatar(avatar)}">`;
- else topAv.innerText = name[0].toUpperCase();
-
+ document.getElementById('topAvatar').innerText=name[0].toUpperCase();
  document.getElementById('chat').classList.add('open');
  await fetch(BASE+'/api/messages/'+id+'/read',{method:'POST',headers:{authorization:token}});
  unreadMap[id]=0; updateBadges();
@@ -194,7 +179,6 @@ async function openC(id,name,avatar){
  msgsCache=await r.json();
  renderAll();
 }
-
 function renderAll(){
  const container=document.getElementById('msgs');
  if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; document.getElementById('seenIndicator').style.display='none'; return; }
@@ -204,16 +188,52 @@ function renderAll(){
  const seenEl=document.getElementById('seenIndicator');
  if(lastMe && lastMe.read){ seenEl.innerText='Seen '+formatTime(lastMe.updatedAt||lastMe.createdAt); seenEl.style.display='block'; } else seenEl.style.display='none';
 }
-
 function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
 
-function send(){
- let t=document.getElementById('inp').value.trim(); if(!t||!active) return;
- socket.emit('sendMessage',{sender:myId(),receiver:active,text:t});
- document.getElementById('inp').value='';
+// FIXED SEND - NEVER DISAPPEARS
+async function send(){
+ let t=document.getElementById('inp').value.trim();
+ if(!t||!active) return;
+ const inputEl=document.getElementById('inp');
+ inputEl.value='';
+
+ // 1. Show instantly
+ const tempId='temp_'+Date.now();
+ const tempMsg={
+   _id: tempId,
+   sender: {_id: myId()},
+   receiver: {_id: active},
+   text: t,
+   createdAt: new Date().toISOString(),
+   read: false
+ };
+ msgsCache.push(tempMsg);
+ renderAll();
+
+ try{
+   // 2. Save to DB via REST (guaranteed)
+   let r=await fetch(BASE+'/api/messages',{
+     method:'POST',
+     headers:{'Content-Type':'application/json', authorization:token},
+     body: JSON.stringify({receiver:active, text:t})
+   });
+   if(!r.ok) throw new Error(await r.text());
+   let saved=await r.json();
+   // replace temp with real from server
+   msgsCache = msgsCache.filter(x=>x._id!==tempId);
+   // avoid duplicate if socket already added it
+   if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+   renderAll();
+ }catch(e){
+   console.error("send failed",e);
+   // keep temp but show error
+   alert("Failed to send: "+e.message);
+   msgsCache = msgsCache.filter(x=>x._id!==tempId);
+   renderAll();
+ }
 }
 
-// VOICE RECORDING
+// VOICE
 let mediaRecorder=null, audioChunks=[], isRecording=false;
 async function toggleRecord(){
   const btn=document.getElementById('micBtn');
@@ -226,9 +246,19 @@ async function toggleRecord(){
       mediaRecorder.onstop=async ()=>{
         const blob=new Blob(audioChunks,{type:'audio/webm'});
         const reader=new FileReader();
-        reader.onload=()=>{
+        reader.onload=async ()=>{
           const base64=reader.result;
-          socket.emit('sendMessage',{sender:myId(),receiver:active,text:'VOICE:'+base64});
+          const t='VOICE:'+base64;
+          const tempId='temp_'+Date.now();
+          const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
+          msgsCache.push(tempMsg); renderAll();
+          try{
+            let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
+            let saved=await r.json();
+            msgsCache=msgsCache.filter(x=>x._id!==tempId);
+            if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+            renderAll();
+          }catch(e){ console.error(e); }
         };
         reader.readAsDataURL(blob);
         stream.getTracks().forEach(t=>t.stop());
@@ -244,6 +274,7 @@ async function toggleRecord(){
 
 function openMenu(el){
  selectedMsg=el.dataset.id;
+ if(selectedMsg.startsWith('temp_')) return;
  selectedIsMe=el.dataset.me==='true';
  document.getElementById('editInput').value=el.dataset.text.replace('VOICE:','');
  document.getElementById('editOpt').style.display=selectedIsMe?'flex':'none';
@@ -265,7 +296,9 @@ async function deleteMsg(){
 socket.on('receiveMessage',m=>{
  let senderId=m.sender._id||m.sender; let receiverId=m.receiver._id||m.receiver;
  if(senderId==active || receiverId==active){
-  msgsCache.push(m); renderAll();
+  if(!msgsCache.find(x=>x._id===m._id)){
+    msgsCache.push(m); renderAll();
+  }
   if(senderId!=myId()) fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  } else if(receiverId==myId()){
   unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges();

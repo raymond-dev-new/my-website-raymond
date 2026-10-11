@@ -127,6 +127,20 @@ app.post('/api/auth/login', async (req, res) => {
   res.json({ token, user });
 });
 
+app.post('/api/messages', authh, async (req, res) => {
+  try{
+    const { receiver, text } = req.body;
+    if(!receiver || !text) return res.status(400).json({msg:"Missing fields"});
+    const m = await Message.create({ sender: req.userId, receiver, text, read: false });
+    const populated = await Message.findById(m._id).populate('sender','username avatar').populate('receiver','username avatar');
+    safeEmit(receiver, 'receiveMessage', populated);
+    safeEmit(req.userId, 'receiveMessage', populated);
+    // create notif
+    await createNotif(receiver, req.userId, 'message', null, text.slice(0,30));
+    res.json(populated);
+  }catch(e){ res.status(500).json({msg:e.message}); }
+});
+
 app.post('/api/upload', authh, uploadd.single('file'), (req, res) => {
   if(!req.file) return res.status(400).json({msg:"No file"});
   const b64 = req.file.buffer.toString('base64');
