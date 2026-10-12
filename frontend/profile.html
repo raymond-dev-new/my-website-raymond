@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Profile</title>
 <style>
+html{scroll-behavior:smooth!important;}
+body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;scroll-behavior:smooth;}
 *{box-sizing:border-box}
 body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .header{max-width:935px;margin:0 auto;padding:12px 15px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#000;z-index:10}
@@ -34,8 +36,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .vid-badge{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);padding:2px 5px;border-radius:4px;font-size:10px}
 .nav{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
 .nav a{color:#fff;text-decoration:none;font-size:22px}
-
-/* --- FIXED MODAL --- */
 .wide-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;justify-content:center;align-items:center;padding:10px}
 .modal-box{background:#121212;width:92%;max-width:850px;max-height:90vh;display:flex;border-radius:12px;overflow:hidden}
 .modal-media{flex:1.5;background:#000;display:flex;align-items:center;justify-content:center;min-height:200px;max-height:85vh;overflow:hidden}
@@ -53,7 +53,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .wide-actions button{padding:8px 14px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:13px;flex:1}
 .del-btn{background:#ed4956;color:#fff}
 .close-btn{background:#363636;color:#fff}
-
 .list-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;justify-content:center;align-items:center}
 .list-box{background:#121212;width:90%;max-width:380px;max-height:70vh;border-radius:12px;overflow:hidden}
 .list-head{padding:12px;border-bottom:1px solid #262626;display:flex;justify-content:space-between}
@@ -71,7 +70,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .bio-card{text-align:left}
 .bio-card textarea,.bio-card input{width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#fff;padding:11px;margin-top:6px;outline:none;font-size:14px}
 .bio-card textarea{height:90px;resize:none}
-
 @media(max-width:600px){
 .profile-info{padding:10px 10px;gap:10px}
 .avatar-wrap,.circle{width:66px;height:66px;font-size:22px}
@@ -79,8 +77,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
 .stats{font-size:13px;gap:10px}
 .posts{max-width:100%;gap:2px}
 .post-box{aspect-ratio:1/1}
-
-/* MOBILE FIX - THIS IS THE KEY */
 .wide-modal{align-items:flex-start;overflow-y:auto;padding:0}
 .modal-box{flex-direction:column;max-height:none;width:100%;height:auto;min-height:100dvh;border-radius:0;margin:0}
 .modal-media{flex:none;width:100%;max-height:55vh;min-height:0}
@@ -104,29 +100,22 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial}
   </div>
 </div>
 <div class="posts" id="grid"></div>
-
 <div class="avatar-modal" id="avatarModal" onclick="if(event.target===this) closeAvatarModal()"><div class="avatar-card"><h3>Profile Photo</h3><img id="avatarPreview" style="display:none"><div id="avatarLetter" class="circle" style="width:160px;height:160px;margin:0 auto 12px;font-size:50px">R</div><input type="file" id="avatarInput" accept="image/*" hidden onchange="handleAvatarSelect(this)"><button class="btn-blue" onclick="document.getElementById('avatarInput').click()">Choose Photo</button><button class="btn-blue" id="saveAvatarBtn" style="display:none" onclick="uploadAvatar()">Save</button><button class="btn-gray2" onclick="closeAvatarModal()">Cancel</button><button class="btn-blue" style="background:#111;color:#ff3040;border:1px solid #333;display:none" id="removeAvatarBtn" onclick="removeAvatar()">Remove Photo</button></div></div>
 <div class="bio-modal" id="bioModal" onclick="if(event.target===this) closeBioModal()"><div class="bio-card"><h3 style="text-align:center;margin:0">Edit Bio</h3><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Display Name</label><input id="bioNameInput" placeholder="Raymond"><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Bio - visible to everyone</label><textarea id="bioInput" maxlength="150" placeholder="Author of RAyMoNd domain"></textarea><div style="text-align:right;color:#777;font-size:11px"><span id="bioCount">0</span>/150</div><label style="font-size:11px;color:#aaa;margin-top:8px;display:block">Link</label><input id="linkInput" placeholder="https://..."><button class="btn-blue" id="saveBioBtn" onclick="saveBio()">Save Bio</button><button class="btn-gray2" onclick="closeBioModal()">Cancel</button></div></div>
-
-<!-- FIXED MODAL STRUCTURE -->
 <div class="wide-modal" id="wide" onclick="if(event.target===this) closeWide()"><div class="modal-box"><div class="modal-media" id="wideMedia"></div><div class="modal-info"><div class="modal-head"><b id="wideUser"></b><span onclick="closeWide()" style="cursor:pointer;font-size:20px;padding:4px 8px;background:#222;border-radius:50%">✕</span></div><div class="comment-list" id="commentList"></div><div class="modal-actions"><span id="likeBtn" onclick="likePost()" style="cursor:pointer;font-size:22px">🤍</span><div class="likes-count" id="likesCount"></div><div class="add-cmt"><input id="cmtInput" placeholder="Add comment..."><button onclick="addComment()">Post</button></div><div class="wide-actions"><button class="del-btn" id="delBtn" onclick="deletePost()">Delete</button><button class="close-btn" onclick="closeWide()">Close</button></div></div></div></div></div>
-
 <div class="list-modal" id="followModal" onclick="if(event.target===this) closeList()"><div class="list-box"><div class="list-head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div><div class="list-body" id="listBody"></div></div></div>
 <div class="nav"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬</a><a href="reels.html">🎬</a> <a href="notification.html"> 🔔 </a> <a href="profile.html">👤</a></div>
-
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 let currentId="",profileData=null,selectedAvatarFile=null,isOwnProfile=false;
 let allPosts=[];
-//if(!token) location.href="login.html";
 function getMyId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getParamId(){return new URLSearchParams(location.search).get('id')}
 function getCache(k){try{return JSON.parse(localStorage.getItem(k)||null)}catch{return null}}
 function setCache(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 function fixUrl(u){if(!u) return "";if(u.startsWith('data:')) return u;if(u.startsWith('/api/')) return BASE+u;if(u.startsWith('/uploads')) return BASE+u;if(u.startsWith('http')) return u;return u}
 function isVideoFile(u){if(!u) return false;return u.includes('/api/media-file')||u.endsWith('.mp4')}
-
 function renderAvatar(user){
  const el=document.getElementById('letter');
  if(user.avatar){el.innerHTML='<img src="'+fixUrl(user.avatar)+'">';}
@@ -136,7 +125,6 @@ function renderAvatar(user){
  if(user.avatar){prev.src=fixUrl(user.avatar);prev.style.display='block';lm.style.display='none';document.getElementById('removeAvatarBtn').style.display=isOwnProfile?'block':'none';}
  else{prev.style.display='none';lm.style.display='flex';lm.innerText=(user.username||'U')[0].toUpperCase();document.getElementById('removeAvatarBtn').style.display='none';}
 }
-
 function renderProfileUI(data){
  profileData=data; allPosts=data.posts||[];
  const u=data.user;
@@ -167,7 +155,6 @@ function renderProfileUI(data){
  }
  grid.innerHTML=h||'<p style="grid-column:1/3;text-align:center;color:#777;padding:20px">No posts yet</p>';
 }
-
 async function loadProfile(){
  const vid=getParamId()||getMyId();
  isOwnProfile=vid===getMyId();
@@ -186,7 +173,6 @@ async function loadProfile(){
   setCache(key,norm);
  }catch(e){console.log(e);}
 }
-
 function openBioModal(){
  if(!isOwnProfile) return;
  const u=profileData&&profileData.user?profileData.user:{};
@@ -204,13 +190,11 @@ async function saveBio(){
  const payload={displayName:document.getElementById('bioNameInput').value.trim(),bio:document.getElementById('bioInput').value.trim(),link:document.getElementById('linkInput').value.trim()};
  try{let r=await fetch(BASE+'/api/users/me',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});if(!r.ok){r=await fetch(BASE+'/api/users/update',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});}localStorage.removeItem('profile_'+getMyId());closeBioModal();loadProfile();}catch(e){alert(e.message);}btn.innerText='Save Bio';btn.disabled=false;
 }
-
 function openAvatarModal(){if(!isOwnProfile) return;document.getElementById('avatarModal').classList.add('open');}
 function closeAvatarModal(){document.getElementById('avatarModal').classList.remove('open');selectedAvatarFile=null;document.getElementById('saveAvatarBtn').style.display='none';document.getElementById('avatarInput').value='';}
 function handleAvatarSelect(i){if(i.files&&i.files[0]){selectedAvatarFile=i.files[0];const u=URL.createObjectURL(selectedAvatarFile);const p=document.getElementById('avatarPreview');p.src=u;p.style.display='block';document.getElementById('avatarLetter').style.display='none';document.getElementById('saveAvatarBtn').style.display='block';}}
 async function uploadAvatar(){if(!selectedAvatarFile) return;const b=document.getElementById('saveAvatarBtn');b.innerText='Uploading...';b.disabled=true;const fd=new FormData();fd.append('file',selectedAvatarFile);try{await fetch(BASE+'/api/users/avatar',{method:'PUT',headers:{authorization:token},body:fd});localStorage.removeItem('profile_'+getMyId());closeAvatarModal();loadProfile();}catch(e){alert(e.message);}b.innerText='Save';b.disabled=false;}
 async function removeAvatar(){if(!confirm('Remove?')) return;try{await fetch(BASE+'/api/users/avatar',{method:'DELETE',headers:{authorization:token}});}catch{}localStorage.removeItem('profile_'+getMyId());closeAvatarModal();setTimeout(loadProfile,400);}
-
 async function toggleFollow(){
  const id=getParamId()||getMyId();
  const btn=document.getElementById('followBtn');
@@ -229,7 +213,6 @@ async function toggleFollow(){
   countEl.innerText=currentCount;
  }
 }
-
 async function openWide(id){
  currentId=id;
  const cachedPost=allPosts.find(p=>p._id===id);
@@ -238,7 +221,6 @@ async function openWide(id){
  const listDiv=document.getElementById("commentList");
  const likesDiv=document.getElementById("likesCount");
  const likeBtn=document.getElementById("likeBtn");
-
  if(cachedPost){
   const url=fixUrl(cachedPost.mediaUrl||"");
   const isVid=cachedPost.type==='video'||isVideoFile(cachedPost.mediaUrl||"");
@@ -250,7 +232,6 @@ async function openWide(id){
   listDiv.innerHTML='<p style="color:#666">Loading...</p>';
   document.getElementById("wide").style.display="flex";
  }
-
  try{
   const r=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}});
   const p=await r.json();
@@ -268,14 +249,12 @@ async function openWide(id){
   listDiv.innerHTML=c||"<p style='color:#777'>No comments</p>";
  }catch(e){console.log(e);}
 }
-
 function closeWide(){
  const v=document.getElementById("activeVideo");
  if(v){v.pause();v.currentTime=0;v.src="";v.load();}
  document.getElementById("wideMedia").innerHTML="";
  document.getElementById("wide").style.display="none";
 }
-
 async function likePost(){
  const likeBtn=document.getElementById("likeBtn");
  const likesDiv=document.getElementById("likesCount");

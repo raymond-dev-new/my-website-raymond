@@ -1,0 +1,88 @@
+
+
+ <!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create</title>
+<style>
+body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
+.box{width:100%;max-width:470px;padding:16px}
+input, textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:10px 0}
+button.postBtn{width:100%;background:#0095f6;color:#fff;border:none;padding:12px;border-radius:8px;font-weight:700;cursor:pointer}
+.preview{width:100%;background:#111;min-height:300px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;margin:10px 0}
+.preview img,.preview video{width:100%;max-height:500px;object-fit:contain}
+</style>
+</head>
+<body>
+<div class="box">
+<h3>Create Post</h3>
+<input type="file" id="file" accept="image/*,video/*">
+<div class="preview" id="preview">No file selected</div>
+<textarea id="caption" placeholder="Write a caption..."></textarea>
+<button class="postBtn" onclick="upload()">Share</button>
+<p id="status"></p>
+</div>
+<script>
+const BASE = "https://raymonddomain.dev";
+const token = localStorage.getItem('token');
+const fileInput = document.getElementById('file');
+const preview = document.getElementById('preview');
+let videoDuration = 0;
+
+fileInput.onchange = () => {
+  const file = fileInput.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  if(file.type.startsWith('video')){
+    preview.innerHTML = `<video id="vPrev" src="${url}" controls></video><p id="durInfo" style="color:#888;font-size:13px">Checking duration...</p>`;
+    const v = document.getElementById('vPrev');
+    v.onloadedmetadata = () => {
+      videoDuration = v.duration;
+      const mins = Math.floor(videoDuration/60);
+      const secs = Math.floor(videoDuration%60);
+      document.getElementById('durInfo').innerText = `Duration: ${mins}:${String(secs).padStart(2,'0')} / 3:00 max`;
+      if(videoDuration > 180){
+        document.getElementById('durInfo').innerHTML = `<span style="color:#ff3040">❌ Too long: ${mins}:${String(secs).padStart(2,'0')} - Max 3 minutes allowed</span>`;
+        alert('Video too long! Max 3 minutes. This video is ' + mins + ':' + String(secs).padStart(2,'0'));
+        fileInput.value = '';
+        preview.innerHTML = 'No file selected - choose video under 3 minutes';
+      }
+    };
+  }else{
+    videoDuration = 0;
+    preview.innerHTML = `<img src="${url}">`;
+  }
+};
+
+async function upload(){
+  const file = fileInput.files[0];
+  if(!file) return alert('Select image or video');
+
+  // Final 3 min check before upload
+  if(file.type.startsWith('video') && videoDuration > 180){
+    return alert('Video must be 3 minutes or less. Your video: ' + (videoDuration/60).toFixed(2) + ' mins');
+  }
+
+  document.getElementById('status').innerText = 'Uploading video... please wait';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('caption', document.getElementById('caption').value);
+  try{
+    const res = await fetch(BASE+'/api/posts',{
+      method:'POST',
+      headers:{ authorization: token },
+      body: fd
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.msg||'Failed');
+    document.getElementById('status').innerText = 'Posted!';
+    setTimeout(()=> location.href='feed.html', 800);
+  }catch(e){
+    document.getElementById('status').innerText = 'Error: '+e.message;
+  }
+}
+</script>
+</body>
+</html>
