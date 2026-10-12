@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login </title>
-<link rel="manifest" href="/manifest.json">
+
+ <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#000000">
+
 <style>
-body { margin:0; background:#000; color:#fff; font-family: Arial; display:flex; justify-content:center; align-items:center; height:100vh; }
+body { margin:0; background:#000; color:#fff; font-family: Arial; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; }
 .box { border:1px solid #333; padding:40px; width:260px; text-align:center; background:#111; border-radius:12px; }
 input { width:90%; padding:10px; margin:8px 0; background:#222; border:1px solid #333; color:#fff; border-radius:6px; outline:none; }
 input:focus{border-color:#0095f6}
@@ -24,10 +26,35 @@ a { color:#0095f6; text-decoration:none; font-size:13px; }
 
 #msg{font-size:13px;color:#ff3040;margin-top:10px;min-height:18px}
 .success{color:#00ff88!important}
+
+/* PWA INSTALL BANNER */
+#pwaBanner { position:fixed; top:0; left:0; right:0; background:#111; border-bottom:1px solid #333; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; z-index:9999; font-size:13px; }
+#pwaBanner .left { display:flex; align-items:center; gap:10px; }
+#pwaBanner .icon { width:36px; height:36px; background:#0095f6; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; }
+#pwaBanner b{color:#fff}
+#pwaBanner span{color:#aaa; font-size:12px; display:block; margin-top:2px}
+#pwaBanner button#installBtn { background:#fff; color:#000; width:auto; padding:6px 14px; border-radius:20px; font-size:12px; margin:0; }
+#pwaBanner #closeBanner { background:none; width:auto; padding:4px; margin:0; color:#666; font-size:18px; }
 </style>
 </head>
 <body>
-<div class="box">
+
+<!-- INSTALL GUIDE BANNER -->
+<div id="pwaBanner">
+  <div class="left">
+    <div class="icon">R</div>
+    <div>
+      <b>Install RAyMoNd App</b>
+      <span>Click ⋮ 3 dots top-right > Install App / Add to Home Screen</span>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <button id="installBtn">Install</button>
+    <button id="closeBanner" onclick="document.getElementById('pwaBanner').style.display='none'">✕</button>
+  </div>
+</div>
+
+<div class="box" style="margin-top:60px;">
 <h2 style="font-family:cursive; font-size:28px; margin-bottom:20px;">RAyMoNd WEB </h2>
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -38,6 +65,32 @@ a { color:#0095f6; text-decoration:none; font-size:13px; }
 </div>
 
 <script>
+let deferredPrompt;
+const banner = document.getElementById('pwaBanner');
+const installBtn = document.getElementById('installBtn');
+
+// Hide banner if already installed as app
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  banner.style.display = 'none';
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  banner.style.display = 'flex';
+});
+
+installBtn.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') banner.style.display = 'none';
+    deferredPrompt = null;
+  } else {
+    alert('To install:\n1. Click ⋮ 3 dots at top-right of Chrome\n2. Click "Install App" or "Add to Home Screen"\n3. Click Install');
+  }
+});
+
 async function login() {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
@@ -50,7 +103,6 @@ async function login() {
     return;
   }
 
-  // START LOADING
   btn.classList.add('btn-loading');
   btn.disabled = true;
   btnText.innerText = "Logging in...";
@@ -68,7 +120,6 @@ async function login() {
     if (data.token) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      // save for profile instant load
       localStorage.setItem('cached_email', email);
       
       btnText.innerText = "✅ Success";
@@ -77,7 +128,6 @@ async function login() {
       
       setTimeout(()=> window.location = 'feed.html', 600);
     } else {
-      // ERROR
       msg.innerText = data.msg || data.error || "Login failed";
       btn.classList.remove('btn-loading');
       btn.disabled = false;
@@ -91,16 +141,15 @@ async function login() {
   }
 }
 
-// Enter key login
 document.getElementById('password').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') login();
 });
 </script>
 
-   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
-    }
+ <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
 </script>
 
 </body>
