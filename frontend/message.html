@@ -57,9 +57,12 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .recording-info{font-size:12px;color:#ff3040;margin-left:6px;display:none}
 .recording-info.on{display:inline}
 .live-dot{width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;margin-left:6px;animation:pulse 1s infinite}
-.preview{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.preview{position:fixed;inset:0;background:#000;z-index:300;display:none;flex-direction:column}
 .preview.open{display:flex}
-.preview img{max-width:100%;max-height:90vh;border-radius:12px}
+.preview-top{height:60px;background:#000;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:0 16px;justify-content:space-between}
+.preview-body{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;position:relative}
+.preview-body img{max-width:100%;max-height:85vh;border-radius:12px;object-fit:contain}
+.close-preview{width:40px;height:40px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 </style>
 </head>
 <body>
@@ -83,7 +86,16 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
   <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
 </div>
 </div>
-<div class="preview" id="preview" onclick="this.classList.remove('open')"><img id="previewImg" src=""></div>
+<div class="preview" id="preview">
+  <div class="preview-top">
+    <button class="close-preview" onclick="closePreview()">←</button>
+    <b>Photo</b>
+    <button class="close-preview" onclick="closePreview()">✕</button>
+  </div>
+  <div class="preview-body" onclick="closePreview()">
+    <img id="previewImg" src="" onclick="event.stopPropagation()">
+  </div>
+</div>
 <div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
 <div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
 <script>
@@ -169,11 +181,22 @@ function renderMsg(m){
  }else if(content.startsWith('IMAGE:')||content.startsWith('data:image')){
   let src=content.replace('IMAGE:','');
   hasImg=true;
-  inner=`<img class="chat-img" src="${src}" onclick="openPreview('${src.replace(/'/g,"")}')">${edited}`;
+  inner=`<img class="chat-img" src="${src}" onclick="openPreview('${src.replace(/'/g,"")}')">`;
  }else{ inner=content+edited; }
  return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'} ${hasImg?'has-img':''}" data-id="${m._id}" data-text="${(m.text||'').startsWith('IMAGE:')||(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
-function openPreview(src){ document.getElementById('previewImg').src=src; document.getElementById('preview').classList.add('open'); }
+function openPreview(src){
+  document.getElementById('previewImg').src=src;
+  document.getElementById('preview').classList.add('open');
+  history.pushState({preview:true},'');
+}
+function closePreview(){
+  document.getElementById('preview').classList.remove('open');
+  if(history.state && history.state.preview) history.back();
+}
+window.addEventListener('popstate',()=>{
+  document.getElementById('preview').classList.remove('open');
+});
 function dedupMessages(arr){
   const map=new Map();
   const seenContent=new Map();
@@ -244,8 +267,6 @@ async function send(){
  }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
  finally{ setTimeout(()=>{ isSending=false; document.getElementById('sendBtn').disabled=false; }, 800); }
 }
-
-// NEW IMAGE SEND
 function sendImage(input){
   if(!input.files ||!input.files[0] ||!active) return;
   let file=input.files[0];
@@ -268,7 +289,7 @@ function sendImage(input){
       const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
       msgsCache.push(tempMsg); lastMsgMap[active]=Date.now(); renderAll(); renderUsers(usersCache);
       fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})})
-     .then(r=>r.json()).then(saved=>{
+    .then(r=>r.json()).then(saved=>{
         if(saved && saved._id){
           msgsCache=msgsCache.filter(x=>x._id!==tempId);
           msgsCache=dedupMessages([...msgsCache,saved]);
@@ -282,7 +303,6 @@ function sendImage(input){
   reader.readAsDataURL(file);
   input.value='';
 }
-
 let mediaRecorder=null, audioChunks=[], isRecording=false;
 async function toggleRecord(){
  const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
