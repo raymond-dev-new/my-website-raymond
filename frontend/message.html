@@ -28,6 +28,8 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .b{padding:11px 16px;border-radius:22px;font-size:15px;line-height:19px;word-break:break-word;white-space:pre-wrap;position:relative;cursor:pointer;max-width:100%}
 .b.me{background:linear-gradient(135deg,#0095f6,#0064e0);color:#fff;border-bottom-right-radius:6px}
 .b.other{background:#262626;color:#fff;border-bottom-left-radius:6px}
+.b.has-img{padding:4px;background:transparent!important}
+.b img.chat-img{max-width:260px;max-height:320px;border-radius:18px;display:block;cursor:pointer;object-fit:cover}
 .b audio{width:220px;height:40px;display:block}
 .time-row{display:flex;align-items:center;gap:6px;margin:4px 8px 12px;font-size:11px;color:#8a8a8a}
 .time-row.me{justify-content:flex-end}
@@ -37,7 +39,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .bar textarea{flex:1;background:#1e1e1e;border:none;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px;resize:none;max-height:120px;min-height:44px;font-family:inherit;line-height:20px}
 .send-btn{width:44px;height:44px;border-radius:50%;background:#0095f6;border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .send-btn:disabled{opacity:.5}
-.mic-btn{width:44px;height:44px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.mic-btn,.img-btn{width:44px;height:44px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .mic-btn.rec{background:#ff3040;animation:pulse 1s infinite}
 @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
 .menu{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#262626;border-radius:16px;padding:8px;min-width:240px;z-index:100;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6);border:1px solid #333}
@@ -55,6 +57,9 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .recording-info{font-size:12px;color:#ff3040;margin-left:6px;display:none}
 .recording-info.on{display:inline}
 .live-dot{width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;margin-left:6px;animation:pulse 1s infinite}
+.preview{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.preview.open{display:flex}
+.preview img{max-width:100%;max-height:90vh;border-radius:12px}
 </style>
 </head>
 <body>
@@ -70,11 +75,15 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 </div>
 <div class="msgs" id="msgs"></div>
 <div class="bar">
-  <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button><span id="recInfo" class="recording-info">● Recording...</span>
+  <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button>
+  <button class="img-btn" onclick="document.getElementById('imgInput').click()">📷</button>
+  <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="sendImage(this)">
+  <span id="recInfo" class="recording-info">● Recording...</span>
   <textarea id="inp" placeholder="Message..." rows="1"></textarea>
   <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
 </div>
 </div>
+<div class="preview" id="preview" onclick="this.classList.remove('open')"><img id="previewImg" src=""></div>
 <div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
 <div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
 <script>
@@ -153,13 +162,18 @@ function renderMsg(m){
  const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
  const time=formatTime(m.createdAt);
  let tick=''; if(isMe) tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`;
- let content=m.text||""; let inner="";
+ let content=m.text||""; let inner=""; let hasImg=false;
  if(content.startsWith('VOICE:')||content.startsWith('data:audio')){
   let src=content.replace('VOICE:','');
   inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
+ }else if(content.startsWith('IMAGE:')||content.startsWith('data:image')){
+  let src=content.replace('IMAGE:','');
+  hasImg=true;
+  inner=`<img class="chat-img" src="${src}" onclick="openPreview('${src.replace(/'/g,"")}')">${edited}`;
  }else{ inner=content+edited; }
- return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
+ return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'} ${hasImg?'has-img':''}" data-id="${m._id}" data-text="${(m.text||'').startsWith('IMAGE:')||(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
+function openPreview(src){ document.getElementById('previewImg').src=src; document.getElementById('preview').classList.add('open'); }
 function dedupMessages(arr){
   const map=new Map();
   const seenContent=new Map();
@@ -231,6 +245,44 @@ async function send(){
  finally{ setTimeout(()=>{ isSending=false; document.getElementById('sendBtn').disabled=false; }, 800); }
 }
 
+// NEW IMAGE SEND
+function sendImage(input){
+  if(!input.files ||!input.files[0] ||!active) return;
+  let file=input.files[0];
+  if(file.size> 8*1024*1024){ alert('Image too big, max 8MB'); input.value=''; return; }
+  let reader=new FileReader();
+  reader.onload=function(e){
+    let img=new Image();
+    img.onload=function(){
+      let canvas=document.createElement('canvas');
+      let maxW=800;
+      let scale=Math.min(1, maxW/img.width);
+      canvas.width=img.width*scale;
+      canvas.height=img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      let compressed=canvas.toDataURL('image/jpeg',0.7);
+      let t='IMAGE:'+compressed;
+      if(t===lastSentText && Date.now()-lastSentTime < 2000) return;
+      lastSentText=t; lastSentTime=Date.now();
+      const tempId='temp_'+Date.now();
+      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
+      msgsCache.push(tempMsg); lastMsgMap[active]=Date.now(); renderAll(); renderUsers(usersCache);
+      fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})})
+     .then(r=>r.json()).then(saved=>{
+        if(saved && saved._id){
+          msgsCache=msgsCache.filter(x=>x._id!==tempId);
+          msgsCache=dedupMessages([...msgsCache,saved]);
+          lastMsgMap[active]=new Date(saved.createdAt).getTime();
+          renderAll(); renderUsers(usersCache);
+        }
+      });
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
 let mediaRecorder=null, audioChunks=[], isRecording=false;
 async function toggleRecord(){
  const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
@@ -267,8 +319,8 @@ function openMenu(el){
  selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
  selectedIsMe=el.dataset.me==='true';
  let txt=el.dataset.text||"";
- document.getElementById('editInput').value=txt.startsWith('VOICE:')?'':txt;
- document.getElementById('editOpt').style.display=selectedIsMe && txt &&!txt.startsWith('VOICE:')? 'flex':'none';
+ document.getElementById('editInput').value=txt.startsWith('VOICE:')||txt.startsWith('IMAGE:')||txt.startsWith('data:image')?'':txt;
+ document.getElementById('editOpt').style.display=selectedIsMe && txt &&!txt.startsWith('VOICE:') &&!txt.startsWith('IMAGE:') &&!txt.startsWith('data:image')? 'flex':'none';
  document.getElementById('menu').classList.add('open');
 }
 function closeMenu(){ document.getElementById('menu').classList.remove('open'); }
@@ -307,7 +359,6 @@ async function autoPoll(){
   }
  }catch{}
 }
-
 setInterval(autoPoll, 3000);
 load();
 setInterval(loadUnread,4000);
