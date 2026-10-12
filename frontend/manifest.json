@@ -2,7 +2,7 @@
   "name": "RAyMoNd",
   "short_name": "RAyMoNd",
   "description": "RAyMoNd Social Media",
-  "start_url": "login.html",
+  "start_url": "feed.html",
   "scope": ".",
   "display": "standalone",
   "background_color": "#000000",
