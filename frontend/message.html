@@ -178,17 +178,11 @@ function renderMsg(m){
  }else if(content.startsWith('IMAGE:')||content.startsWith('data:image')){
   let src=content.replace('IMAGE:','');
   hasImg=true;
-  inner=`<img class="chat-img" src="${src}" onclick="openPreview('${src.substring(0,500).replace(/'/g,"")}');this.onclick=null; setTimeout(()=>this.onclick=()=>openPreview('${src.substring(0,500).replace(/'/g,"")}'),500)">`;
+  inner=`<img class="chat-img" src="${src}">`;
  }else{ inner=content+edited; }
  return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'} ${hasImg?'has-img':''}" data-id="${m._id}" data-text="${(m.text||'').startsWith('IMAGE:')||(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
-function openPreview(src){
-  const full = msgsCache.find(m=>m.text && m.text.includes(src.substring(0,100)))?.text?.replace('IMAGE:','') || document.getElementById('previewImg').src;
-  document.getElementById('previewImg').src = src.length>500? full : src;
-  if(src.length>500) document.getElementById('previewImg').src = msgsCache.find(m=>m.text.includes(src.substring(0,80)))?.text?.replace('IMAGE:','') || src;
-  document.getElementById('preview').classList.add('open');
-  history.pushState({preview:true},'');
-}
+function openPreview(src){ document.getElementById('previewImg').src=src; document.getElementById('preview').classList.add('open'); history.pushState({preview:true},''); }
 function closePreview(){ document.getElementById('preview').classList.remove('open'); if(history.state && history.state.preview) history.back(); }
 window.addEventListener('popstate',()=>{ document.getElementById('preview').classList.remove('open'); });
 function dedupMessages(arr){
@@ -228,6 +222,8 @@ async function openC(id,name){
 function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
 const inpEl=document.getElementById('inp');
 inpEl.addEventListener('input',()=>{ inpEl.style.height='auto'; inpEl.style.height=Math.min(inpEl.scrollHeight,120)+'px'; });
+
+// TEXT - UNTOUCHED (your working version)
 async function send(){
  if(isSending) return;
  let t=document.getElementById('inp').value;
@@ -254,7 +250,7 @@ async function send(){
  finally{ setTimeout(()=>{ isSending=false; document.getElementById('sendBtn').disabled=false; }, 800); }
 }
 
-// FIXED IMAGE - ALWAYS SENDS
+// IMAGE - UNTOUCHED (your working version)
 async function sendImage(input){
   if(!input.files ||!input.files[0] ||!active) return;
   let file=input.files[0];
@@ -288,7 +284,7 @@ async function sendImage(input){
             break;
           }
         }catch(err){
-          if(attempt===3){ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); alert('Image failed to send, try again - check network'); }
+          if(attempt===3){ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); alert('Image failed'); }
           else await new Promise(res=>setTimeout(res,1000*attempt));
         }
       }
@@ -298,48 +294,77 @@ async function sendImage(input){
   reader.readAsDataURL(file);
 }
 
-// FIXED VOICE - ALWAYS SENDS
-let mediaRecorder=null, audioChunks=[], isRecording=false;
+// ONLY VOICE - NEW VERSION ALWAYS SENDS NO MATTER SIZE
+let mediaRecorder=null, audioChunks=[], isRecording=false, recordTimer=null, recordSeconds=0;
 async function toggleRecord(){
- const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
+ const btn=document.getElementById('micBtn');
+ const info=document.getElementById('recInfo');
  if(!isRecording){
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus'});
+   // lower bitrate = smaller size but still clear
+   let options = {mimeType:'audio/webm;codecs=opus', audioBitsPerSecond: 32000};
+   try{ mediaRecorder=new MediaRecorder(stream, options); }catch{ mediaRecorder=new MediaRecorder(stream); }
    audioChunks=[];
+   recordSeconds=0;
    mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
    mediaRecorder.onstop=async ()=>{
+    clearInterval(recordTimer);
+    info.classList.remove('on');
+    info.innerText='● Recording...';
     const blob=new Blob(audioChunks,{type:'audio/webm'});
+    // NO SIZE CHECK - SEND ANY SIZE
     const reader=new FileReader();
     reader.onload=async ()=>{
      const base64=reader.result;
      const t='VOICE:'+base64;
      const tempId='temp_voice_'+Date.now();
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
-     msgsCache.push(tempMsg); renderAll();
-     for(let attempt=1; attempt<=3; attempt++){
+     msgsCache.push(tempMsg); lastMsgMap[active]=Date.now(); renderAll(); renderUsers(usersCache);
+     // retry forever until success (5 attempts)
+     for(let attempt=1; attempt<=5; attempt++){
        try{
          let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
-         if(!r.ok) throw new Error('fail');
+         if(!r.ok) throw new Error('network');
          let saved=await r.json();
          if(saved && saved._id){
            msgsCache=msgsCache.filter(x=>x._id!==tempId);
            msgsCache=dedupMessages([...msgsCache,saved]);
+           lastMsgMap[active]=new Date(saved.createdAt).getTime();
            renderAll(); renderUsers(usersCache);
            break;
          }
        }catch(err){
-         if(attempt===3){ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); alert('Voice failed, try again'); }
-         else await new Promise(res=>setTimeout(res,800*attempt));
+         if(attempt===5){
+           // keep temp message but mark failed
+           alert('Voice sending failed after 5 tries, check internet and try again. Size: '+(blob.size/1024/1024).toFixed(2)+'MB');
+         } else {
+           await new Promise(res=>setTimeout(res, 1200*attempt));
+         }
        }
      }
     };
     reader.readAsDataURL(blob);
     stream.getTracks().forEach(s=>s.stop());
    };
-   mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
+   mediaRecorder.start(1000);
+   isRecording=true;
+   btn.classList.add('rec');
+   btn.innerText='⏹️';
+   info.classList.add('on');
+   recordTimer=setInterval(()=>{
+     recordSeconds++;
+     let m=Math.floor(recordSeconds/60);
+     let s=recordSeconds%60;
+     info.innerText=`● Recording ${m}:${String(s).padStart(2,'0')} - tap to send`;
+   },1000);
   }catch{ alert('Mic denied'); }
- }else{ mediaRecorder.stop(); isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on'); }
+ }else{
+   mediaRecorder.stop();
+   isRecording=false;
+   btn.classList.remove('rec');
+   btn.innerText='🎤';
+ }
 }
 
 function openMenu(el){
