@@ -45,7 +45,7 @@ function authh(req, res, next) {
   catch { return res.status(401).json({ msg: "Invalid" }); }
 }
 
-const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
