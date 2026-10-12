@@ -337,7 +337,7 @@ async function toggleRecord(){
        }catch(err){
          if(attempt===5){
            // keep temp message but mark failed
-           alert('Voice sending failed after 5 tries, check internet and try again. Size: '+(blob.size/1024/1024).toFixed(2)+'MB');
+           alert('Voice sending failed! Max seconds recording is 25 seconds Size: '+(blob.size/1024/1024).toFixed(2)+'MB');
          } else {
            await new Promise(res=>setTimeout(res, 1200*attempt));
          }
