@@ -85,7 +85,7 @@ async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread
 
 function renderFeed(posts){
  const f=document.getElementById('feed');
- if(!posts.length){ f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet <br> Click logout register or login your account to see posts </p>"; return; }
+ if(!posts.length){ f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet <br> Click logout! register or login your account to see posts </p>"; return; }
  f.innerHTML=posts.map(p=>{
   const raw=p.mediaUrl||"";
   const mediaUrl=fixUrl(raw);
