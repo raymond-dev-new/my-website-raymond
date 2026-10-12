@@ -102,6 +102,38 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
+let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[], isSending=false, lastMsgMap={}, lastSentText="", lastSentTime=0;
+
+// --- NOTIFICATION TOP POP - WHATSAPP STYLE - ONLY ADDED PART ---
+if ('Notification' in window && Notification.permission!== 'granted' && Notification.permission!== 'denied'){
+  Notification.requestPermission();
+}
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+function showPopNotification(name, text){
+  try{
+    if (document.hasFocus() && active) return; // don't pop if you are inside chat looking
+    if ('Notification' in window && Notification.permission!== 'granted') return;
+    let body = text||'New message';
+    if(body.startsWith('IMAGE:')||body.startsWith('data:image')) body='📷 Photo';
+    else if(body.startsWith('VOICE:')||body.startsWith('data:audio')) body='🎤 Voice note';
+    if(body.length>60) body=body.substring(0,60)+'...';
+    if(navigator.serviceWorker && navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification(name||'RAyMoNd', {
+          body: body,
+          icon: 'icon-192.png',
+          badge: 'icon-192.png',
+          vibrate: [200,100,200],
+          tag: 'chat-pop'
+        });
+      });
+    }
+    if(navigator.vibrate) navigator.vibrate([200,100,200]);
+  }catch(e){}
+}
+
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
 function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ try{ localStorage.setItem(k, JSON.stringify(v.slice(-30))); }catch{} } }
@@ -109,7 +141,6 @@ function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.s
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
 function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
-let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[], isSending=false, lastMsgMap={}, lastSentText="", lastSentTime=0;
 const socket=io(BASE,{transports:['websocket','polling'], reconnection:true});
 socket.on('connect',()=>{ socket.emit('join',myId()); });
 async function loadUnread(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{} }
@@ -223,7 +254,6 @@ function closeChat(){ document.getElementById('chat').classList.remove('open'); 
 const inpEl=document.getElementById('inp');
 inpEl.addEventListener('input',()=>{ inpEl.style.height='auto'; inpEl.style.height=Math.min(inpEl.scrollHeight,120)+'px'; });
 
-// TEXT - UNTOUCHED (your working version)
 async function send(){
  if(isSending) return;
  let t=document.getElementById('inp').value;
@@ -250,7 +280,6 @@ async function send(){
  finally{ setTimeout(()=>{ isSending=false; document.getElementById('sendBtn').disabled=false; }, 800); }
 }
 
-// IMAGE - UNTOUCHED (your working version)
 async function sendImage(input){
   if(!input.files ||!input.files[0] ||!active) return;
   let file=input.files[0];
@@ -294,7 +323,6 @@ async function sendImage(input){
   reader.readAsDataURL(file);
 }
 
-// ONLY VOICE - NEW VERSION ALWAYS SENDS NO MATTER SIZE
 let mediaRecorder=null, audioChunks=[], isRecording=false, recordTimer=null, recordSeconds=0;
 async function toggleRecord(){
  const btn=document.getElementById('micBtn');
@@ -302,7 +330,6 @@ async function toggleRecord(){
  if(!isRecording){
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   // lower bitrate = smaller size but still clear
    let options = {mimeType:'audio/webm;codecs=opus', audioBitsPerSecond: 32000};
    try{ mediaRecorder=new MediaRecorder(stream, options); }catch{ mediaRecorder=new MediaRecorder(stream); }
    audioChunks=[];
@@ -313,7 +340,6 @@ async function toggleRecord(){
     info.classList.remove('on');
     info.innerText='● Recording...';
     const blob=new Blob(audioChunks,{type:'audio/webm'});
-    // NO SIZE CHECK - SEND ANY SIZE
     const reader=new FileReader();
     reader.onload=async ()=>{
      const base64=reader.result;
@@ -321,7 +347,6 @@ async function toggleRecord(){
      const tempId='temp_voice_'+Date.now();
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
      msgsCache.push(tempMsg); lastMsgMap[active]=Date.now(); renderAll(); renderUsers(usersCache);
-     // retry forever until success (5 attempts)
      for(let attempt=1; attempt<=5; attempt++){
        try{
          let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
@@ -335,12 +360,8 @@ async function toggleRecord(){
            break;
          }
        }catch(err){
-         if(attempt===5){
-           // keep temp message but mark failed
-           alert('Voice sending failed after 5 tries, check internet and try again. Size: '+(blob.size/1024/1024).toFixed(2)+'MB');
-         } else {
-           await new Promise(res=>setTimeout(res, 1200*attempt));
-         }
+         if(attempt===5){ alert('Voice failed after 5 tries: '+(blob.size/1024/1024).toFixed(2)+'MB'); }
+         else await new Promise(res=>setTimeout(res, 1200*attempt));
        }
      }
     };
@@ -379,15 +400,19 @@ function closeMenu(){ document.getElementById('menu').classList.remove('open'); 
 function startEdit(){ if(!selectedIsMe) return; closeMenu(); document.getElementById('editBox').classList.add('open'); }
 async function saveEdit(){ let newText=document.getElementById('editInput').value.trim(); if(!newText) return; await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})}); closeBox(); }
 async function deleteMsg(){ if(!confirm('Unsend?')) return; closeMenu(); msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll(); try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{} if(active) setCache('chat_'+active, msgsCache); }
+
+// RECEIVE WITH POP NOTIFICATION
 socket.on('receiveMessage',m=>{
  let senderId=m.sender._id||m.sender;
  if(String(senderId)===String(myId())) return;
  let receiverId=m.receiver._id||m.receiver;
+ let senderName = (m.sender && m.sender.username) || 'RAyMoNd';
  if(senderId==active || receiverId==active){
   if(!msgsCache.find(x=>x._id===m._id)){
     msgsCache.push(m);
     lastMsgMap[active]=new Date(m.createdAt).getTime();
     renderAll();
+    showPopNotification(senderName, m.text);
   }
   if(senderId!=myId()) fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  }else if(receiverId==myId()){
@@ -395,6 +420,7 @@ socket.on('receiveMessage',m=>{
   lastMsgMap[senderId]=new Date(m.createdAt).getTime();
   updateBadges();
   renderUsers(usersCache);
+  showPopNotification(senderName, m.text);
  }
 });
 socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll(); if(active) setCache('chat_'+active, msgsCache);}});
@@ -408,12 +434,18 @@ async function autoPoll(){
    let fresh=await r.json();
    let existingIds=new Set(msgsCache.map(x=>x._id));
    let newOnes=fresh.filter(m=>!existingIds.has(m._id));
-   if(newOnes.length){ msgsCache=dedupMessages([...msgsCache,...newOnes]); renderAll(); }
+   if(newOnes.length){
+     msgsCache=dedupMessages([...msgsCache,...newOnes]);
+     renderAll();
+     // also pop for new ones from poll
+     let last = newOnes[newOnes.length-1];
+     if(last && (last.sender._id||last.sender)!=myId()){
+       showPopNotification(last.sender.username||'RAyMoNd', last.text);
+     }
+   }
   }
  }catch{}
 }
-
-
 setInterval(autoPoll, 3000);
 load();
 setInterval(loadUnread,4000);
