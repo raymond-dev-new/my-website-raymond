@@ -1,0 +1,20 @@
+{
+  "name": "RAyMoNd",
+  "short_name": "RAyMoNd",
+  "start_url": "/feed.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/photo_2026-07-27_07-52-03 (2).jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/photo_2026-07-27_08-21-15.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

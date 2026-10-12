@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Feed</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
@@ -136,5 +138,12 @@ function logout(){ localStorage.removeItem('token'); location.href='login.html';
 load(); loadMsgBadge();
 setInterval(loadMsgBadge,5000);
 </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+</script>
+
 </body>
 </html>
