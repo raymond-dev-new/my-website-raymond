@@ -34,7 +34,7 @@ body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-s
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
-if(!token) location.href='login.html';
+//if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 const socket=io(BASE,{transports:['websocket','polling']});
 socket.on('connect',()=>socket.emit('join',myId()));
