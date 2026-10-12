@@ -57,6 +57,7 @@ function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; if(u.startsWith('http')) return u; return BASE+u; }
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
 
+
 let reelsData=[];
 let activeReelId="";
 let viewedSet=new Set(JSON.parse(localStorage.getItem('viewed_reels')||'[]'));
