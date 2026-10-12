@@ -35,6 +35,7 @@ app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); 
 mongoose.connect(url).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'register.html')); })
 
+g
 let io;
 const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
 const SECRET = "secret123";
