@@ -1,7 +1,7 @@
 {
   "name": "RAyMoNd",
   "short_name": "RAyMoNd",
-  "start_url": "/register.html",
+  "start_url": "/login.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
