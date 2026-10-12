@@ -330,7 +330,8 @@ app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
     let type = req.body.type || 'image';
     if(req.file){
       if(req.file.mimetype.startsWith('video')){
-        if(req.file.size > 30*1024*1024) return res.status(400).json({msg: "Video too big max 30MB"});
+        // 3 MINUTES VIDEO = ~150MB max (720p)
+        if(req.file.size > 150*1024*1024) return res.status(400).json({msg: "Video too big - max 3 minutes / 150MB"});
         const media = await Media.create({
           userId: req.userId,
           img: { data: req.file.buffer, contentType: req.file.mimetype }
@@ -375,6 +376,7 @@ app.get('/api/posts/:id', authh, async (req, res) => {
   if (!post) return res.status(404).json({ msg: "Post not found" });
   res.json(post);
 });
+
 app.post('/api/posts/:id/like', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   const isLiked = post.likes.includes(req.userId);
@@ -497,7 +499,7 @@ app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
 });
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+const upload = multer({ storage: storage, limits: { fileSize: 160 * 1024 * 1024 } });
 
 app.post('/api/save-media', upload.single('file'), async (req, res) => {
   try {

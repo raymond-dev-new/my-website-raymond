@@ -27,20 +27,43 @@ const BASE = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
 const fileInput = document.getElementById('file');
 const preview = document.getElementById('preview');
+let videoDuration = 0;
+
 fileInput.onchange = () => {
   const file = fileInput.files[0];
   if(!file) return;
   const url = URL.createObjectURL(file);
   if(file.type.startsWith('video')){
-    preview.innerHTML = `<video src="${url}" controls></video>`;
+    preview.innerHTML = `<video id="vPrev" src="${url}" controls></video><p id="durInfo" style="color:#888;font-size:13px">Checking duration...</p>`;
+    const v = document.getElementById('vPrev');
+    v.onloadedmetadata = () => {
+      videoDuration = v.duration;
+      const mins = Math.floor(videoDuration/60);
+      const secs = Math.floor(videoDuration%60);
+      document.getElementById('durInfo').innerText = `Duration: ${mins}:${String(secs).padStart(2,'0')} / 3:00 max`;
+      if(videoDuration > 180){
+        document.getElementById('durInfo').innerHTML = `<span style="color:#ff3040">❌ Too long: ${mins}:${String(secs).padStart(2,'0')} - Max 3 minutes allowed</span>`;
+        alert('Video too long! Max 3 minutes. This video is ' + mins + ':' + String(secs).padStart(2,'0'));
+        fileInput.value = '';
+        preview.innerHTML = 'No file selected - choose video under 3 minutes';
+      }
+    };
   }else{
+    videoDuration = 0;
     preview.innerHTML = `<img src="${url}">`;
   }
 };
+
 async function upload(){
   const file = fileInput.files[0];
   if(!file) return alert('Select image or video');
-  document.getElementById('status').innerText = 'Uploading...';
+
+  // Final 3 min check before upload
+  if(file.type.startsWith('video') && videoDuration > 180){
+    return alert('Video must be 3 minutes or less. Your video: ' + (videoDuration/60).toFixed(2) + ' mins');
+  }
+
+  document.getElementById('status').innerText = 'Uploading 3min video... please wait';
   const fd = new FormData();
   fd.append('file', file);
   fd.append('caption', document.getElementById('caption').value);
