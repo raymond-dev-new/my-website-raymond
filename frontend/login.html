@@ -4,63 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login </title>
-
- <link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
-
 <style>
 body { margin:0; background:#000; color:#fff; font-family: Arial; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; }
 .box { border:1px solid #333; padding:40px; width:260px; text-align:center; background:#111; border-radius:12px; }
-input { width:90%; padding:10px; margin:8px 0; background:#222; border:1px solid #333; color:#fff; border-radius:6px; outline:none; }
-input:focus{border-color:#0095f6}
-button { width:95%; padding:10px; background:#0095f6; border:none; color:#fff; font-weight:bold; cursor:pointer; margin-top:10px; border-radius:8px; position:relative; transition:0.2s; display:flex; justify-content:center; align-items:center; gap:8px; }
-button:disabled{opacity:0.6; cursor:not-allowed;}
+input { width:90%; padding:10px; margin:8px 0; background:#222; border:1px solid #333; color:#fff; border-radius:6px; }
+button { width:95%; padding:10px; background:#0095f6; border:none; color:#fff; font-weight:bold; cursor:pointer; margin-top:10px; border-radius:8px; display:flex; justify-content:center; align-items:center; gap:8px; }
 a { color:#0095f6; text-decoration:none; font-size:13px; }
-
-/* SWEET LOADING */
-.btn-loading{pointer-events:none;opacity:0.8}
-.spinner{width:18px;height:18px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
-.btn-loading .spinner{display:block}
-.btn-loading .btn-text{opacity:0.7}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-#msg{font-size:13px;color:#ff3040;margin-top:10px;min-height:18px}
-.success{color:#00ff88!important}
-
-/* PWA INSTALL BANNER */
-#pwaBanner { position:fixed; top:0; left:0; right:0; background:#111; border-bottom:1px solid #333; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; z-index:9999; font-size:13px; }
-#pwaBanner .left { display:flex; align-items:center; gap:10px; }
-#pwaBanner .icon { width:36px; height:36px; background:#0095f6; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; }
-#pwaBanner b{color:#fff}
-#pwaBanner span{color:#aaa; font-size:12px; display:block; margin-top:2px}
-#pwaBanner button#installBtn { background:#fff; color:#000; width:auto; padding:6px 14px; border-radius:20px; font-size:12px; margin:0; }
-#pwaBanner #closeBanner { background:none; width:auto; padding:4px; margin:0; color:#666; font-size:18px; }
+#msg{font-size:13px;color:#ff3040;margin-top:10px}
+#pwaBanner { position:fixed; top:0; left:0; right:0; background:#111; border-bottom:1px solid #333; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; z-index:9999; font-size:13px; }
 </style>
 </head>
 <body>
 
-<!-- INSTALL GUIDE BANNER -->
 <div id="pwaBanner">
-  <div class="left">
-    <div class="icon">R</div>
-    <div>
-      <b>Install RAyMoNd App</b>
-      <span>Click ⋮ 3 dots top-right > Install App / Add to Home Screen</span>
-    </div>
-  </div>
-  <div style="display:flex; align-items:center; gap:8px;">
-    <button id="installBtn">Install</button>
-    <button id="closeBanner" onclick="document.getElementById('pwaBanner').style.display='none'">✕</button>
-  </div>
+  <div><b>Install RAyMoNd App</b><br><span style="color:#aaa; font-size:11px;">Click ⋮ 3 dots > Install App</span></div>
+  <button id="installBtn" style="width:auto; padding:6px 14px; background:#fff; color:#000; border-radius:20px;">Install</button>
 </div>
 
-<div class="box" style="margin-top:60px;">
-<h2 style="font-family:cursive; font-size:28px; margin-bottom:20px;">RAyMoNd WEB </h2>
+<div class="box" style="margin-top:70px;">
+<h2 style="font-family:cursive;">RAyMoNd WEB</h2>
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
-<button id="loginBtn" onclick="login()"><div class="spinner"></div><span class="btn-text">Log in</span></button>
+<button id="loginBtn" onclick="login()">Log in</button>
 <p><a href="register.html">Don't have account? Sign up</a></p>
-<div style="padding-left: 8px; margin-left: 3px; font-size: 18px; font-size: 700; border-radius: 5px;"> <a href="forgotp.html"> Recover Password </a></div>
 <p id="msg"></p>
 </div>
 
@@ -69,17 +37,14 @@ let deferredPrompt;
 const banner = document.getElementById('pwaBanner');
 const installBtn = document.getElementById('installBtn');
 
-// Hide banner if already installed as app
 if (window.matchMedia('(display-mode: standalone)').matches) {
   banner.style.display = 'none';
 }
-
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
   banner.style.display = 'flex';
 });
-
 installBtn.addEventListener('click', async () => {
   if (deferredPrompt) {
     deferredPrompt.prompt();
@@ -90,68 +55,18 @@ installBtn.addEventListener('click', async () => {
     alert('To install:\n1. Click ⋮ 3 dots at top-right of Chrome\n2. Scroll down a little bit \n3. Click "Install App" or "Add to Home Screen"\n4. Click Install');
   }
 });
-
-
 async function login() {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
-  const btn = document.getElementById('loginBtn');
-  const msg = document.getElementById('msg');
-  const btnText = btn.querySelector('.btn-text');
-
-  if(!email || !password){
-    msg.innerText = "Fill email and password";
-    return;
-  }
-
-  btn.classList.add('btn-loading');
-  btn.disabled = true;
-  btnText.innerText = "Logging in...";
-  msg.innerText = "";
-  msg.classList.remove('success');
-
-  try{
-    const res = await fetch('https://raymonddomain.dev/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('cached_email', email);
-      
-      btnText.innerText = "✅ Success";
-      msg.innerText = "Welcome back!";
-      msg.classList.add('success');
-      
-      setTimeout(()=> window.location = 'feed.html', 600);
-    } else {
-      msg.innerText = data.msg || data.error || "Login failed";
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      btnText.innerText = "Log in";
-    }
-  }catch(e){
-    msg.innerText = "Network error, check connection";
-    btn.classList.remove('btn-loading');
-    btn.disabled = false;
-    btnText.innerText = "Log in";
-  }
+  const res = await fetch('https://raymonddomain.dev/api/auth/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (data.token) { localStorage.setItem('token', data.token); window.location = 'feed.html'; }
+  else document.getElementById('msg').innerText = data.msg || "Login failed";
 }
-
-document.getElementById('password').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') login();
-});
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 </script>
-
- <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
-  }
-</script>
-
 </body>
 </html>
