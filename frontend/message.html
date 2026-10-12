@@ -25,7 +25,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .bubble-wrap{max-width:85%;display:flex;flex-direction:column;margin-bottom:2px}
 .bubble-wrap.me{align-self:flex-end;align-items:flex-end}
 .bubble-wrap.other{align-self:flex-start}
-.b{padding:11px 16px;border-radius:22px;font-size:15px;line-height:19px;word-break:break-word;position:relative;cursor:pointer;max-width:100%}
+.b{padding:11px 16px;border-radius:22px;font-size:15px;line-height:19px;word-break:break-word;white-space:pre-wrap;position:relative;cursor:pointer;max-width:100%}
 .b.me{background:linear-gradient(135deg,#0095f6,#0064e0);color:#fff;border-bottom-right-radius:6px}
 .b.other{background:#262626;color:#fff;border-bottom-left-radius:6px}
 .b audio{width:220px;height:40px;display:block}
@@ -33,10 +33,11 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .time-row.me{justify-content:flex-end}
 .tick{font-size:12px}
 .tick.read{color:#0095f6}
-.bar{padding:12px;border-top:1px solid #1e1e1e;display:flex;gap:10px;align-items:center;background:#000}
-.bar input{flex:1;background:#1e1e1e;border:none;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px}
-.send-btn{width:44px;height:44px;border-radius:50%;background:#0095f6;border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.mic-btn{width:44px;height:44px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.bar{padding:12px;border-top:1px solid #1e1e1e;display:flex;gap:10px;align-items:flex-end;background:#000}
+.bar textarea{flex:1;background:#1e1e1e;border:none;color:#fff;padding:13px 18px;border-radius:24px;outline:none;font-size:15px;resize:none;max-height:120px;min-height:44px;font-family:inherit;line-height:20px}
+.send-btn{width:44px;height:44px;border-radius:50%;background:#0095f6;border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.send-btn:disabled{opacity:.5}
+.mic-btn{width:44px;height:44px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .mic-btn.rec{background:#ff3040;animation:pulse 1s infinite}
 @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
 .menu{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#262626;border-radius:16px;padding:8px;min-width:240px;z-index:100;display:none;box-shadow:0 10px 30px rgba(0,0,0,.6);border:1px solid #333}
@@ -70,7 +71,8 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 <div class="msgs" id="msgs"></div>
 <div class="bar">
   <button id="micBtn" class="mic-btn" onclick="toggleRecord()">🎤</button><span id="recInfo" class="recording-info">● Recording...</span>
-  <input id="inp" placeholder="Message..." onkeydown="if(event.key==='Enter')send()"><button class="send-btn" onclick="send()">➤</button>
+  <textarea id="inp" placeholder="Message..." rows="1"></textarea>
+  <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
 </div>
 </div>
 <div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
@@ -82,9 +84,8 @@ if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
 function setCache(k,v){
-  try{
-    localStorage.setItem(k, JSON.stringify(v));
-  }catch(e){
+  try{ localStorage.setItem(k, JSON.stringify(v)); }
+  catch(e){
     try{
       let trimmed = v.slice(-30);
       localStorage.setItem(k, JSON.stringify(trimmed));
@@ -104,13 +105,12 @@ function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hou
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
 function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
 
-let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[];
+let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[], isSending=false, lastMsgMap={};
 
 const socket=io(BASE,{transports:['websocket','polling'], reconnection:true, reconnectionAttempts:100, reconnectionDelay:1000});
 socket.on('connect',()=>{ socket.emit('join',myId()); });
-socket.on('disconnect',()=>{});
 
-async function loadUnread(silent=false){
+async function loadUnread(){
  try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{}
 }
 function updateBadges(){
@@ -126,7 +126,16 @@ function renderUsers(users){
  const el=document.getElementById('list');
  usersCache=users;
  if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>'; return; }
- el.innerHTML=users.map(u=>{
+ // RECENT PERSON AT TOP - sort by last message time desc
+ let sorted=[...users].sort((a,b)=>{
+   let aTime = lastMsgMap[a._id] || 0;
+   let bTime = lastMsgMap[b._id] || 0;
+   // also check cache time if no lastMsgMap yet
+   if(!aTime){ let ca=getCache('chat_'+a._id); if(ca && ca.length) aTime=new Date(ca[ca.length-1].createdAt).getTime(); }
+   if(!bTime){ let cb=getCache('chat_'+b._id); if(cb && cb.length) bTime=new Date(cb[cb.length-1].createdAt).getTime(); }
+   return bTime - aTime;
+ });
+ el.innerHTML=sorted.map(u=>{
   const id=u._id; const name=u.username||'user'; const letter=name[0].toUpperCase();
   const count=unreadMap[id]||0;
   const avatar=u.avatar?`<img src="${fixUrl(u.avatar)}">`:letter;
@@ -148,8 +157,25 @@ async function load(){
    users=[...new Map(users.map(u=>[u._id,u])).values()];
   }
   setCache('chat_users', users);
+  // preload last msg times for sorting
+  for(let u of users){
+    let cm=getCache('chat_'+u._id);
+    if(cm && cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime();
+  }
   renderUsers(users);
   await loadUnread();
+  // fetch last message time for each user for better sorting
+  users.forEach(async (u)=>{
+    try{
+      let rr=await fetch(BASE+'/api/messages/'+u._id,{headers:{authorization:token}});
+      let mm=await rr.json();
+      if(mm && mm.length){
+        let last=mm[mm.length-1];
+        lastMsgMap[u._id]=new Date(last.createdAt).getTime();
+        renderUsers(usersCache);
+      }
+    }catch{}
+  });
  }catch(e){ if(!cachedUsers) el.innerHTML='Error: '+e.message; }
 }
 function renderMsg(m){
@@ -167,7 +193,9 @@ function renderMsg(m){
 function renderAll(){
  const container=document.getElementById('msgs');
  if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; return; }
- container.innerHTML=msgsCache.map(m=>renderMsg(m)).join('');
+ // CHAT NORMAL LIKE WHATSAPP: oldest at top, newest at bottom
+ let sorted=[...msgsCache].sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
+ container.innerHTML=sorted.map(m=>renderMsg(m)).join('');
  container.scrollTop=container.scrollHeight;
  if(active) setCache('chat_'+active, msgsCache);
 }
@@ -184,31 +212,55 @@ async function openC(id,name){
   unreadMap[id]=0; updateBadges();
   let r=await fetch(BASE+'/api/messages/'+id,{headers:{authorization:token}});
   let fresh=await r.json();
-  // merge fresh + keep any temp voice that is still pending
-  let tempVoices = msgsCache.filter(x=> String(x._id).startsWith('temp_'));
-  msgsCache=fresh;
-  tempVoices.forEach(tv=>{
-    if(!fresh.some(f=> f._id===tv._id)) msgsCache.push(tv);
-  });
+  let map=new Map();
+  [...fresh,...msgsCache.filter(x=> String(x._id).startsWith('temp_'))].forEach(m=> map.set(m._id,m));
+  msgsCache=[...map.values()];
+  if(fresh.length){ lastMsgMap[id]=new Date(fresh[fresh.length-1].createdAt).getTime(); }
   renderAll();
   setCache('chat_'+id, msgsCache);
+  renderUsers(usersCache);
  }catch(e){ console.log(e); }
 }
 function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
+
+// auto grow
+const inpEl=document.getElementById('inp');
+inpEl.addEventListener('input',()=>{ inpEl.style.height='auto'; inpEl.style.height=Math.min(inpEl.scrollHeight,120)+'px'; });
+
 async function send(){
- let t=document.getElementById('inp').value.trim(); if(!t||!active) return;
+ if(isSending) return;
+ let t=document.getElementById('inp').value;
+ if(!t.trim()||!active) return;
+ isSending=true;
+ document.getElementById('sendBtn').disabled=true;
+ let originalText=t;
  document.getElementById('inp').value='';
+ inpEl.style.height='44px';
  const tempId='temp_'+Date.now();
- const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
- msgsCache.push(tempMsg); renderAll();
+ const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:originalText,createdAt:new Date().toISOString(),read:false};
+ msgsCache.push(tempMsg);
+ lastMsgMap[active]=new Date().getTime();
+ renderAll();
+ renderUsers(usersCache);
  try{
-  let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
+  let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:originalText})});
   let saved=await r.json();
-  msgsCache=msgsCache.filter(x=>x._id!==tempId);
-  if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+  if(saved && saved._id){
+    msgsCache=msgsCache.filter(x=>x._id!==tempId);
+    if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+    lastMsgMap[active]=new Date(saved.createdAt).getTime();
+  }
   renderAll();
- }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
+  renderUsers(usersCache);
+ }catch{
+  msgsCache=msgsCache.filter(x=>x._id!==tempId);
+  renderAll();
+ } finally {
+  isSending=false;
+  document.getElementById('sendBtn').disabled=false;
+ }
 }
+
 let mediaRecorder=null, audioChunks=[], isRecording=false;
 async function toggleRecord(){
  const btn=document.getElementById('micBtn'); const info=document.getElementById('recInfo');
@@ -226,14 +278,15 @@ async function toggleRecord(){
      const t='VOICE:'+base64;
      const tempId='temp_'+Date.now();
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
-     msgsCache.push(tempMsg); renderAll();
+     msgsCache.push(tempMsg); lastMsgMap[active]=new Date().getTime(); renderAll(); renderUsers(usersCache);
      try{
       let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
       let saved=await r.json();
       if(saved && saved._id){
        msgsCache=msgsCache.filter(x=>x._id!==tempId);
        if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
-       renderAll();
+       lastMsgMap[active]=new Date(saved.createdAt).getTime();
+       renderAll(); renderUsers(usersCache);
       }
      }catch(e){ console.log(e); }
     };
@@ -272,10 +325,17 @@ socket.on('receiveMessage',m=>{
  if(String(senderId)===String(myId())) return;
  let receiverId=m.receiver._id||m.receiver;
  if(senderId==active || receiverId==active){
-  if(!msgsCache.find(x=>x._id===m._id)){ msgsCache.push(m); renderAll(); }
+  if(!msgsCache.find(x=>x._id===m._id)){
+    msgsCache.push(m);
+    lastMsgMap[active]=new Date(m.createdAt).getTime();
+    renderAll();
+  }
   if(senderId!=myId()) fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  }else if(receiverId==myId()){
-  unreadMap[senderId]=(unreadMap[senderId]||0)+1; updateBadges();
+  unreadMap[senderId]=(unreadMap[senderId]||0)+1;
+  lastMsgMap[senderId]=new Date(m.createdAt).getTime();
+  updateBadges();
+  renderUsers(usersCache);
  }
 });
 socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll(); if(active) setCache('chat_'+active, msgsCache);}});
@@ -284,36 +344,19 @@ socket.on('messagesSeen',()=>{ msgsCache.forEach(m=>{ if((m.sender._id||m.sender
 
 async function autoPoll(){
  try{
-  await loadUnread(true);
+  await loadUnread();
   if(active){
    let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
    let fresh=await r.json();
-   const existingIds=new Set(msgsCache.map(x=>x._id));
+   let existingIds=new Set(msgsCache.map(x=>x._id));
    let added=false;
    fresh.forEach(m=>{
-    if(!existingIds.has(m._id) &&!String(m._id).startsWith('temp_')){
-     let tempMatch = msgsCache.find(x=> String(x._id).startsWith('temp_'));
-     if(tempMatch && fresh.length>=msgsCache.filter(x=>!String(x._id).startsWith('temp_')).length){
-       msgsCache = msgsCache.filter(x=>!String(x._id).startsWith('temp_') || x._id===tempMatch._id);
+     if(!existingIds.has(m._id)){
+       msgsCache.push(m);
+       added=true;
      }
-     msgsCache.push(m);
-     added=true;
-    }
    });
-   if(added){
-    // remove temp if saved arrived
-    let nonTempCount = fresh.length;
-    let tempCount = msgsCache.filter(x=>String(x._id).startsWith('temp_')).length;
-    if(fresh.length>0 && tempCount>0){
-      // if we have fresh, remove temp that matches time
-      msgsCache = [...new Map(msgsCache.map(m=>[m._id,m])).values()];
-      // if fresh includes similar voice, drop temp
-      if(fresh.some(f=> f.text && f.text.startsWith('VOICE:'))){
-        msgsCache = fresh.concat(msgsCache.filter(x=>String(x._id).startsWith('temp_') &&!fresh.some(f=> Math.abs(new Date(f.createdAt)-new Date(x.createdAt))<5000)));
-      }
-    }
-    renderAll();
-   }
+   if(added) renderAll();
   }
  }catch{}
 }
