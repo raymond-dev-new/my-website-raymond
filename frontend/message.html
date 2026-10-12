@@ -104,6 +104,7 @@ const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[], isSending=false, lastMsgMap={}, lastSentText="", lastSentTime=0;
 
+
 // --- NOTIFICATION TOP POP - WHATSAPP STYLE - ONLY ADDED PART ---
 if ('Notification' in window && Notification.permission!== 'granted' && Notification.permission!== 'denied'){
   Notification.requestPermission();
