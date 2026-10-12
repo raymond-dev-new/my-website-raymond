@@ -83,36 +83,18 @@ const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
-function setCache(k,v){
-  try{ localStorage.setItem(k, JSON.stringify(v)); }
-  catch(e){
-    try{
-      let trimmed = v.slice(-30);
-      localStorage.setItem(k, JSON.stringify(trimmed));
-    }catch(e2){
-      try{
-        let trimmed2 = v.slice(-15).map(m=>{
-          if((m.text||'').length>200000) return {...m, text: m.text.substring(0,200000)};
-          return m;
-        });
-        localStorage.setItem(k, JSON.stringify(trimmed2));
-      }catch{}
-    }
-  }
-}
+function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ try{ localStorage.setItem(k, JSON.stringify(v.slice(-30))); }catch{} } }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
 function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
 
-let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[], isSending=false, lastMsgMap={};
+let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[], isSending=false, lastMsgMap={}, lastSentText="", lastSentTime=0;
 
-const socket=io(BASE,{transports:['websocket','polling'], reconnection:true, reconnectionAttempts:100, reconnectionDelay:1000});
+const socket=io(BASE,{transports:['websocket','polling'], reconnection:true});
 socket.on('connect',()=>{ socket.emit('join',myId()); });
 
-async function loadUnread(){
- try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{}
-}
+async function loadUnread(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{} }
 function updateBadges(){
  let total=Object.values(unreadMap).reduce((a,b)=>a+b,0);
  const tot=document.getElementById('totalUnread');
@@ -126,27 +108,24 @@ function renderUsers(users){
  const el=document.getElementById('list');
  usersCache=users;
  if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>'; return; }
- // RECENT PERSON AT TOP - sort by last message time desc
  let sorted=[...users].sort((a,b)=>{
-   let aTime = lastMsgMap[a._id] || 0;
-   let bTime = lastMsgMap[b._id] || 0;
-   // also check cache time if no lastMsgMap yet
-   if(!aTime){ let ca=getCache('chat_'+a._id); if(ca && ca.length) aTime=new Date(ca[ca.length-1].createdAt).getTime(); }
-   if(!bTime){ let cb=getCache('chat_'+b._id); if(cb && cb.length) bTime=new Date(cb[cb.length-1].createdAt).getTime(); }
-   return bTime - aTime;
+   let aTime=lastMsgMap[a._id]||0; let bTime=lastMsgMap[b._id]||0;
+   if(!aTime){ let ca=getCache('chat_'+a._id); if(ca&&ca.length) aTime=new Date(ca[ca.length-1].createdAt).getTime(); }
+   if(!bTime){ let cb=getCache('chat_'+b._id); if(cb&&cb.length) bTime=new Date(cb[cb.length-1].createdAt).getTime(); }
+   return bTime-aTime;
  });
  el.innerHTML=sorted.map(u=>{
   const id=u._id; const name=u.username||'user'; const letter=name[0].toUpperCase();
   const count=unreadMap[id]||0;
   const avatar=u.avatar?`<img src="${fixUrl(u.avatar)}">`:letter;
   const hasUnread=count>0?' new-msg':'';
-  return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count? count+' new':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
+  return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count?count+' new':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
  }).join('');
 }
 async function load(){
  const el=document.getElementById('list');
  const cachedUsers=getCache('chat_users');
- if(cachedUsers){ renderUsers(cachedUsers); } else { el.innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading chats...</div>'; }
+ if(cachedUsers) renderUsers(cachedUsers);
  try{
   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
   let users=await r.json();
@@ -157,26 +136,17 @@ async function load(){
    users=[...new Map(users.map(u=>[u._id,u])).values()];
   }
   setCache('chat_users', users);
-  // preload last msg times for sorting
-  for(let u of users){
-    let cm=getCache('chat_'+u._id);
-    if(cm && cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime();
-  }
+  for(let u of users){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
   renderUsers(users);
   await loadUnread();
-  // fetch last message time for each user for better sorting
   users.forEach(async (u)=>{
     try{
       let rr=await fetch(BASE+'/api/messages/'+u._id,{headers:{authorization:token}});
       let mm=await rr.json();
-      if(mm && mm.length){
-        let last=mm[mm.length-1];
-        lastMsgMap[u._id]=new Date(last.createdAt).getTime();
-        renderUsers(usersCache);
-      }
+      if(mm&&mm.length){ lastMsgMap[u._id]=new Date(mm[mm.length-1].createdAt).getTime(); renderUsers(usersCache); }
     }catch{}
   });
- }catch(e){ if(!cachedUsers) el.innerHTML='Error: '+e.message; }
+ }catch(e){}
 }
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
@@ -184,16 +154,30 @@ function renderMsg(m){
  const time=formatTime(m.createdAt);
  let tick=''; if(isMe) tick=m.read?`<span class="tick read">✓✓</span>`:`<span class="tick">✓</span>`;
  let content=m.text||""; let inner="";
- if(content.startsWith('VOICE:') || content.startsWith('data:audio')){
+ if(content.startsWith('VOICE:')||content.startsWith('data:audio')){
   let src=content.replace('VOICE:','');
   inner=`<div style="display:flex;align-items:center;gap:8px"><span>🎤</span><audio controls src="${src}"></audio></div>${edited}`;
  }else{ inner=content+edited; }
  return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'}" data-id="${m._id}" data-text="${(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
+function dedupMessages(arr){
+  const map=new Map();
+  const seenContent=new Map();
+  let sorted=[...arr].sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
+  for(let m of sorted){
+    if(map.has(m._id)) continue;
+    let key=(m.sender._id||m.sender)+'_'+(m.text||'').substring(0,120);
+    let last=seenContent.get(key);
+    if(last && Math.abs(new Date(m.createdAt)-last)<2500){ continue; }
+    seenContent.set(key,new Date(m.createdAt));
+    map.set(m._id,m);
+  }
+  return [...map.values()];
+}
 function renderAll(){
  const container=document.getElementById('msgs');
  if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; return; }
- // CHAT NORMAL LIKE WHATSAPP: oldest at top, newest at bottom
+ msgsCache=dedupMessages(msgsCache);
  let sorted=[...msgsCache].sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt));
  container.innerHTML=sorted.map(m=>renderMsg(m)).join('');
  container.scrollTop=container.scrollHeight;
@@ -205,25 +189,19 @@ async function openC(id,name){
  document.getElementById('topAvatar').innerText=name[0].toUpperCase();
  document.getElementById('chat').classList.add('open');
  const cachedMsgs=getCache('chat_'+id);
- if(cachedMsgs){ msgsCache=cachedMsgs; renderAll(); }
+ if(cachedMsgs){ msgsCache=dedupMessages(cachedMsgs); renderAll(); }
  else { document.getElementById('msgs').innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading...</div>'; }
  try{
   await fetch(BASE+'/api/messages/'+id+'/read',{method:'POST',headers:{authorization:token}});
   unreadMap[id]=0; updateBadges();
   let r=await fetch(BASE+'/api/messages/'+id,{headers:{authorization:token}});
   let fresh=await r.json();
-  let map=new Map();
-  [...fresh,...msgsCache.filter(x=> String(x._id).startsWith('temp_'))].forEach(m=> map.set(m._id,m));
-  msgsCache=[...map.values()];
-  if(fresh.length){ lastMsgMap[id]=new Date(fresh[fresh.length-1].createdAt).getTime(); }
-  renderAll();
-  setCache('chat_'+id, msgsCache);
-  renderUsers(usersCache);
- }catch(e){ console.log(e); }
+  msgsCache=dedupMessages([...fresh,...msgsCache.filter(x=> String(x._id).startsWith('temp_'))]);
+  if(fresh.length) lastMsgMap[id]=new Date(fresh[fresh.length-1].createdAt).getTime();
+  renderAll(); setCache('chat_'+id, msgsCache); renderUsers(usersCache);
+ }catch(e){}
 }
 function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
-
-// auto grow
 const inpEl=document.getElementById('inp');
 inpEl.addEventListener('input',()=>{ inpEl.style.height='auto'; inpEl.style.height=Math.min(inpEl.scrollHeight,120)+'px'; });
 
@@ -231,34 +209,26 @@ async function send(){
  if(isSending) return;
  let t=document.getElementById('inp').value;
  if(!t.trim()||!active) return;
+ if(t.trim()===lastSentText && Date.now()-lastSentTime < 2000) return;
  isSending=true;
  document.getElementById('sendBtn').disabled=true;
+ lastSentText=t.trim(); lastSentTime=Date.now();
  let originalText=t;
- document.getElementById('inp').value='';
- inpEl.style.height='44px';
+ document.getElementById('inp').value=''; inpEl.style.height='44px';
  const tempId='temp_'+Date.now();
  const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:originalText,createdAt:new Date().toISOString(),read:false};
- msgsCache.push(tempMsg);
- lastMsgMap[active]=new Date().getTime();
- renderAll();
- renderUsers(usersCache);
+ msgsCache.push(tempMsg); lastMsgMap[active]=Date.now(); renderAll(); renderUsers(usersCache);
  try{
   let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:originalText})});
   let saved=await r.json();
   if(saved && saved._id){
     msgsCache=msgsCache.filter(x=>x._id!==tempId);
-    if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
+    msgsCache=dedupMessages([...msgsCache,saved]);
     lastMsgMap[active]=new Date(saved.createdAt).getTime();
   }
-  renderAll();
-  renderUsers(usersCache);
- }catch{
-  msgsCache=msgsCache.filter(x=>x._id!==tempId);
-  renderAll();
- } finally {
-  isSending=false;
-  document.getElementById('sendBtn').disabled=false;
- }
+  renderAll(); renderUsers(usersCache);
+ }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
+ finally{ setTimeout(()=>{ isSending=false; document.getElementById('sendBtn').disabled=false; }, 800); }
 }
 
 let mediaRecorder=null, audioChunks=[], isRecording=false;
@@ -267,34 +237,29 @@ async function toggleRecord(){
  if(!isRecording){
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus', audioBitsPerSecond:16000});
+   mediaRecorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus'});
    audioChunks=[];
    mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
    mediaRecorder.onstop=async ()=>{
     const blob=new Blob(audioChunks,{type:'audio/webm'});
     const reader=new FileReader();
     reader.onload=async ()=>{
-     const base64=reader.result;
-     const t='VOICE:'+base64;
+     const base64=reader.result; const t='VOICE:'+base64;
+     if(t===lastSentText && Date.now()-lastSentTime < 2000) return;
+     lastSentText=t; lastSentTime=Date.now();
      const tempId='temp_'+Date.now();
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
-     msgsCache.push(tempMsg); lastMsgMap[active]=new Date().getTime(); renderAll(); renderUsers(usersCache);
+     msgsCache.push(tempMsg); lastMsgMap[active]=Date.now(); renderAll(); renderUsers(usersCache);
      try{
       let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
       let saved=await r.json();
-      if(saved && saved._id){
-       msgsCache=msgsCache.filter(x=>x._id!==tempId);
-       if(!msgsCache.find(x=>x._id===saved._id)) msgsCache.push(saved);
-       lastMsgMap[active]=new Date(saved.createdAt).getTime();
-       renderAll(); renderUsers(usersCache);
-      }
-     }catch(e){ console.log(e); }
+      if(saved && saved._id){ msgsCache=msgsCache.filter(x=>x._id!==tempId); msgsCache=dedupMessages([...msgsCache,saved]); renderAll(); renderUsers(usersCache); }
+     }catch{}
     };
     reader.readAsDataURL(blob);
     stream.getTracks().forEach(s=>s.stop());
    };
    mediaRecorder.start(); isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
-   setTimeout(()=>{ if(isRecording) toggleRecord(); }, 30000);
   }catch{ alert('Mic denied'); }
  }else{ mediaRecorder.stop(); isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; info.classList.remove('on'); }
 }
@@ -308,17 +273,8 @@ function openMenu(el){
 }
 function closeMenu(){ document.getElementById('menu').classList.remove('open'); }
 function startEdit(){ if(!selectedIsMe) return; closeMenu(); document.getElementById('editBox').classList.add('open'); }
-async function saveEdit(){
- let newText=document.getElementById('editInput').value.trim(); if(!newText) return;
- await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})});
- closeBox();
-}
-async function deleteMsg(){
- if(!confirm('Unsend?')) return; closeMenu();
- msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll();
- try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{}
- if(active) setCache('chat_'+active, msgsCache);
-}
+async function saveEdit(){ let newText=document.getElementById('editInput').value.trim(); if(!newText) return; await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})}); closeBox(); }
+async function deleteMsg(){ if(!confirm('Unsend?')) return; closeMenu(); msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll(); try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{} if(active) setCache('chat_'+active, msgsCache); }
 
 socket.on('receiveMessage',m=>{
  let senderId=m.sender._id||m.sender;
@@ -326,16 +282,13 @@ socket.on('receiveMessage',m=>{
  let receiverId=m.receiver._id||m.receiver;
  if(senderId==active || receiverId==active){
   if(!msgsCache.find(x=>x._id===m._id)){
-    msgsCache.push(m);
-    lastMsgMap[active]=new Date(m.createdAt).getTime();
-    renderAll();
+    let last=msgsCache[msgsCache.length-1];
+    if(last && last.text===m.text && Math.abs(new Date(m.createdAt)-new Date(last.createdAt))<2500) return;
+    msgsCache.push(m); lastMsgMap[active]=new Date(m.createdAt).getTime(); renderAll();
   }
   if(senderId!=myId()) fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  }else if(receiverId==myId()){
-  unreadMap[senderId]=(unreadMap[senderId]||0)+1;
-  lastMsgMap[senderId]=new Date(m.createdAt).getTime();
-  updateBadges();
-  renderUsers(usersCache);
+  unreadMap[senderId]=(unreadMap[senderId]||0)+1; lastMsgMap[senderId]=new Date(m.createdAt).getTime(); updateBadges(); renderUsers(usersCache);
  }
 });
 socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll(); if(active) setCache('chat_'+active, msgsCache);}});
@@ -349,20 +302,12 @@ async function autoPoll(){
    let r=await fetch(BASE+'/api/messages/'+active,{headers:{authorization:token}});
    let fresh=await r.json();
    let existingIds=new Set(msgsCache.map(x=>x._id));
-   let added=false;
-   fresh.forEach(m=>{
-     if(!existingIds.has(m._id)){
-       msgsCache.push(m);
-       added=true;
-     }
-   });
-   if(added) renderAll();
+   let newOnes=fresh.filter(m=>!existingIds.has(m._id));
+   if(newOnes.length){ msgsCache=dedupMessages([...msgsCache,...newOnes]); renderAll(); }
   }
  }catch{}
 }
 setInterval(autoPoll, 3000);
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoPoll(); } });
-
 load();
 setInterval(loadUnread,4000);
 </script>
