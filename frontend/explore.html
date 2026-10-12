@@ -42,7 +42,7 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 <script>
 const BASE = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
-//if(!token) location.href = "login.html";
+if(!token) location.href = "login.html";
 
 async function doSearch(){
   const query = document.getElementById('q').value.trim();

@@ -28,6 +28,7 @@ button.postBtn{width:100%;background:#0095f6;color:#fff;border:none;padding:12px
 
 const BASE = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
+if(!token) location.href = "login.html";
 const fileInput = document.getElementById('file');
 const preview = document.getElementById('preview');
 let videoDuration = 0;
