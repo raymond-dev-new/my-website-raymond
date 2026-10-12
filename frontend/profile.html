@@ -119,7 +119,7 @@ const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 let currentId="",profileData=null,selectedAvatarFile=null,isOwnProfile=false;
 let allPosts=[];
-if(!token) location.href="login.html";
+//if(!token) location.href="login.html";
 function getMyId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getParamId(){return new URLSearchParams(location.search).get('id')}
 function getCache(k){try{return JSON.parse(localStorage.getItem(k)||null)}catch{return null}}

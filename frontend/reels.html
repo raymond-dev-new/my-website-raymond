@@ -51,7 +51,7 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
-if(!token) location.href="login.html";
+//if(!token) location.href="login.html";
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null')}catch{return null} }
 function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; if(u.startsWith('http')) return u; return BASE+u; }
