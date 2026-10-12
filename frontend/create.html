@@ -63,7 +63,7 @@ async function upload(){
     return alert('Video must be 3 minutes or less. Your video: ' + (videoDuration/60).toFixed(2) + ' mins');
   }
 
-  document.getElementById('status').innerText = 'Uploading video... please wait <br> Max upload 3 Minutes';
+  document.getElementById('status').innerText = 'Uploading video... please wait';
   const fd = new FormData();
   fd.append('file', file);
   fd.append('caption', document.getElementById('caption').value);
