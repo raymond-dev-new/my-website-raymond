@@ -100,32 +100,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 <div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
 <script>
 const BASE="https://raymonddomain.dev";
- 
-// --- NOTIFICATION TOP POP ---
-if ('Notification' in window && Notification.permission!== 'granted' && Notification.permission!== 'denied'){
-  Notification.requestPermission();
-}
-if ('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
-}
-function showPopNotification(name, text){
-  if (document.hasFocus() && active) return;
-  if (Notification.permission!== 'granted') return;
-  let body = text||'New message';
-  if(body.startsWith('IMAGE:')) body='📷 Photo';
-  if(body.startsWith('VOICE:')) body='🎤 Voice note';
-  if(body.length>60) body=body.substring(0,60)+'...';
-  navigator.serviceWorker.ready.then(reg=>{
-    reg.showNotification(name, {
-      body: body,
-      icon: 'icon-192.png',
-      badge: 'icon-192.png',
-      vibrate: [200,100,200]
-    });
-  });
-  if(navigator.vibrate) navigator.vibrate([200,100,200]);
-}
-
 const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
@@ -405,18 +379,15 @@ function closeMenu(){ document.getElementById('menu').classList.remove('open'); 
 function startEdit(){ if(!selectedIsMe) return; closeMenu(); document.getElementById('editBox').classList.add('open'); }
 async function saveEdit(){ let newText=document.getElementById('editInput').value.trim(); if(!newText) return; await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})}); closeBox(); }
 async function deleteMsg(){ if(!confirm('Unsend?')) return; closeMenu(); msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll(); try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{} if(active) setCache('chat_'+active, msgsCache); }
-
 socket.on('receiveMessage',m=>{
  let senderId=m.sender._id||m.sender;
  if(String(senderId)===String(myId())) return;
  let receiverId=m.receiver._id||m.receiver;
- let senderName = (m.sender && m.sender.username) || 'RAyMoNd';
  if(senderId==active || receiverId==active){
   if(!msgsCache.find(x=>x._id===m._id)){
     msgsCache.push(m);
     lastMsgMap[active]=new Date(m.createdAt).getTime();
     renderAll();
-    showPopNotification(senderName, m.text);
   }
   if(senderId!=myId()) fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  }else if(receiverId==myId()){
@@ -424,10 +395,8 @@ socket.on('receiveMessage',m=>{
   lastMsgMap[senderId]=new Date(m.createdAt).getTime();
   updateBadges();
   renderUsers(usersCache);
-  showPopNotification(senderName, m.text);
  }
 });
-
 socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll(); if(active) setCache('chat_'+active, msgsCache);}});
 socket.on('messageDeleted',data=>{ msgsCache=msgsCache.filter(x=>x._id!=data._id); renderAll(); if(active) setCache('chat_'+active, msgsCache); });
 socket.on('messagesSeen',()=>{ msgsCache.forEach(m=>{ if((m.sender._id||m.sender)==myId()) m.read=true; }); renderAll(); if(active) setCache('chat_'+active, msgsCache); });
@@ -443,8 +412,6 @@ async function autoPoll(){
   }
  }catch{}
 }
-
-
 setInterval(autoPoll, 3000);
 load();
 setInterval(loadUnread,4000);
