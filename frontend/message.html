@@ -178,7 +178,7 @@ function renderMsg(m){
  }else if(content.startsWith('IMAGE:')||content.startsWith('data:image')){
   let src=content.replace('IMAGE:','');
   hasImg=true;
-  inner=`<img class="chat-img" src="${src}">`;
+  inner=`<img class="chat-img" src="${src}" onclick="openPreview(this.src);event.stopPropagation()">`;
  }else{ inner=content+edited; }
  return `<div class="bubble-wrap ${isMe?'me':'other'}"><div class="b ${isMe?'me':'other'} ${hasImg?'has-img':''}" data-id="${m._id}" data-text="${(m.text||'').startsWith('IMAGE:')||(m.text||'').startsWith('VOICE:')?'':(m.text||'').replace(/"/g,'&quot;').substring(0,200)}" data-me="${isMe}" onclick="openMenu(this)">${inner}</div><div class="time-row ${isMe?'me':''}"><span>${time}</span> ${tick}</div></div>`;
 }
@@ -222,8 +222,6 @@ async function openC(id,name){
 function closeChat(){ document.getElementById('chat').classList.remove('open'); active=""; }
 const inpEl=document.getElementById('inp');
 inpEl.addEventListener('input',()=>{ inpEl.style.height='auto'; inpEl.style.height=Math.min(inpEl.scrollHeight,120)+'px'; });
-
-// TEXT - UNTOUCHED (your working version)
 async function send(){
  if(isSending) return;
  let t=document.getElementById('inp').value;
@@ -249,8 +247,6 @@ async function send(){
  }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
  finally{ setTimeout(()=>{ isSending=false; document.getElementById('sendBtn').disabled=false; }, 800); }
 }
-
-// IMAGE - UNTOUCHED (your working version)
 async function sendImage(input){
   if(!input.files ||!input.files[0] ||!active) return;
   let file=input.files[0];
@@ -293,8 +289,6 @@ async function sendImage(input){
   };
   reader.readAsDataURL(file);
 }
-
-// ONLY VOICE - NEW VERSION ALWAYS SENDS NO MATTER SIZE
 let mediaRecorder=null, audioChunks=[], isRecording=false, recordTimer=null, recordSeconds=0;
 async function toggleRecord(){
  const btn=document.getElementById('micBtn');
@@ -302,7 +296,6 @@ async function toggleRecord(){
  if(!isRecording){
   try{
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-   // lower bitrate = smaller size but still clear
    let options = {mimeType:'audio/webm;codecs=opus', audioBitsPerSecond: 32000};
    try{ mediaRecorder=new MediaRecorder(stream, options); }catch{ mediaRecorder=new MediaRecorder(stream); }
    audioChunks=[];
@@ -313,7 +306,6 @@ async function toggleRecord(){
     info.classList.remove('on');
     info.innerText='● Recording...';
     const blob=new Blob(audioChunks,{type:'audio/webm'});
-    // NO SIZE CHECK - SEND ANY SIZE
     const reader=new FileReader();
     reader.onload=async ()=>{
      const base64=reader.result;
@@ -321,7 +313,6 @@ async function toggleRecord(){
      const tempId='temp_voice_'+Date.now();
      const tempMsg={_id:tempId,sender:{_id:myId()},receiver:{_id:active},text:t,createdAt:new Date().toISOString(),read:false};
      msgsCache.push(tempMsg); lastMsgMap[active]=Date.now(); renderAll(); renderUsers(usersCache);
-     // retry forever until success (5 attempts)
      for(let attempt=1; attempt<=5; attempt++){
        try{
          let r=await fetch(BASE+'/api/messages',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({receiver:active,text:t})});
@@ -336,7 +327,6 @@ async function toggleRecord(){
          }
        }catch(err){
          if(attempt===5){
-           // keep temp message but mark failed
            alert('Voice sending failed! Max seconds recording is 25 seconds Size: '+(blob.size/1024/1024).toFixed(2)+'MB');
          } else {
            await new Promise(res=>setTimeout(res, 1200*attempt));
@@ -366,7 +356,6 @@ async function toggleRecord(){
    btn.innerText='🎤';
  }
 }
-
 function openMenu(el){
  selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
  selectedIsMe=el.dataset.me==='true';
