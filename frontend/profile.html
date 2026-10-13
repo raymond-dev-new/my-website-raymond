@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Profile</title>
 <style>
-/* === COOL SCROLLING === */
 html{scroll-behavior:smooth}
 body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial;overflow-x:hidden}
 *{box-sizing:border-box}
@@ -31,15 +30,12 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial;
 .action-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .btn-post{background:#0095f6;color:#fff;padding:7px 16px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600}
 .btn-gray{background:#262626;color:#fff;padding:7px 16px;border-radius:8px;border:1px solid #333;font-size:14px;font-weight:600;cursor:pointer}
-
-/* COOL SCROLL GRID */
 .posts{display:grid;grid-template-columns:1fr 1fr;gap:3px;max-width:600px;margin:10px auto 0;padding:0 0 80px;width:100%}
 .post-box{aspect-ratio:1/1;background:#111;overflow:hidden;cursor:pointer;position:relative;border-radius:3px;opacity:0;transform:translateY(18px) scale(.96);transition:all.5s cubic-bezier(.25,.8,.25,1);will-change:transform,opacity}
 .post-box.visible{opacity:1;transform:translateY(0) scale(1)}
 .post-box:active{transform:scale(.97)}
 .post-box img,.post-box video{width:100%;height:100%;object-fit:cover;display:block;background:#111}
 .vid-badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.7);padding:3px 6px;border-radius:5px;font-size:11px;backdrop-filter:blur(4px)}
-
 .nav{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
 .nav a{color:#fff;text-decoration:none;font-size:22px}
 .wide-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:100;justify-content:center;align-items:flex-start;overflow-y:auto}
@@ -117,7 +113,6 @@ function getCache(k){try{return JSON.parse(localStorage.getItem(k)||null)}catch{
 function setCache(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 function fixUrl(u){if(!u) return "";if(u.startsWith('data:')) return u;if(u.startsWith('/api/')) return BASE+u;if(u.startsWith('/uploads')) return BASE+u;if(u.startsWith('http')) return u;return u}
 function isVideoFile(u){if(!u) return false;return u.includes('/api/media-file')||u.endsWith('.mp4')}
-
 function renderAvatar(user){
  const el=document.getElementById('letter');
  if(user.avatar){el.innerHTML='<img src="'+fixUrl(user.avatar)+'">';}
@@ -127,7 +122,6 @@ function renderAvatar(user){
  if(user.avatar){prev.src=fixUrl(user.avatar);prev.style.display='block';lm.style.display='none';document.getElementById('removeAvatarBtn').style.display=isOwnProfile?'block':'none';}
  else{prev.style.display='none';lm.style.display='flex';lm.innerText=(user.username||'U')[0].toUpperCase();document.getElementById('removeAvatarBtn').style.display='none';}
 }
-
 function renderProfileUI(data){
  profileData=data; allPosts=data.posts||[];
  const u=data.user;
@@ -148,13 +142,11 @@ function renderProfileUI(data){
  const cam=document.getElementById('camIcon');
  if(isOwnProfile){fb.style.display='none';own.style.display='flex';cam.style.display='flex';document.getElementById('delBtn').style.display='block';}
  else{own.style.display='none';cam.style.display='none';fb.style.display='block';document.getElementById('delBtn').style.display='none';const isFollowing=(u.followers||[]).some(function(f){return (f._id||f)==getMyId();});fb.innerText=isFollowing?'Following':'Follow';fb.className=isFollowing?'follow-btn following':'follow-btn follow';}
-
  const grid=document.getElementById("grid");
  let h="";
  for(let p of allPosts){
    const url=fixUrl(p.mediaUrl||"");
    const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");
-   // FIXED: video now shows thumbnail, preload metadata so first frame visible
    if(isVid){
      h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><video src="'+url+'#t=0.1" muted preload="metadata" playsinline></video><span class="vid-badge">🎬</span></div>';
    } else {
@@ -162,24 +154,17 @@ function renderProfileUI(data){
    }
  }
  grid.innerHTML=h||'<p style="grid-column:1/3;text-align:center;color:#777;padding:20px">No posts yet</p>';
-
- // COOL SCROLL ANIMATION
  const observer = new IntersectionObserver((entries)=>{
    entries.forEach(entry=>{
      if(entry.isIntersecting){
        entry.target.classList.add('visible');
-       // lazy load video when visible
        const vid = entry.target.querySelector('video');
-       if(vid &&!vid.dataset.loaded){
-         vid.load();
-         vid.dataset.loaded='1';
-       }
+       if(vid &&!vid.dataset.loaded){ vid.load(); vid.dataset.loaded='1'; }
      }
    });
  },{threshold:0.1, rootMargin:'100px'});
  document.querySelectorAll('.post-box').forEach(b=>observer.observe(b));
 }
-
 async function loadProfile(){
  const vid=getParamId()||getMyId();
  isOwnProfile=vid===getMyId();
@@ -198,8 +183,6 @@ async function loadProfile(){
   setCache(key,norm);
  }catch(e){console.log(e);}
 }
-
-// COOL HEADER SHRINK ON SCROLL
 let lastY=0;
 window.addEventListener('scroll',()=>{
   const y=window.scrollY;
@@ -208,7 +191,6 @@ window.addEventListener('scroll',()=>{
   else head.classList.remove('shrink');
   lastY=y;
 },{passive:true});
-
 function openBioModal(){if(!isOwnProfile) return;const u=profileData&&profileData.user?profileData.user:{};document.getElementById('bioNameInput').value=u.displayName||'';document.getElementById('bioInput').value=u.bio||'';document.getElementById('linkInput').value=u.link||'';document.getElementById('bioCount').innerText=(u.bio||'').length;document.getElementById('bioModal').classList.add('open');}
 function closeBioModal(){document.getElementById('bioModal').classList.remove('open');}
 document.getElementById('bioInput').addEventListener('input',function(e){document.getElementById('bioCount').innerText=e.target.value.length;});
@@ -229,6 +211,18 @@ function showFollowing(){if(!profileData) return;document.getElementById('listTi
 function goToUser(id){closeList();location.href='profile.html?id='+id;}
 function closeList(){document.getElementById('followModal').style.display='none';}
 loadProfile();
+</script>
+
+<!-- TIKTOK BACKGROUND UPLOAD BAR -->
+<script src="upload-manager.js"></script>
+<script>
+const upData = localStorage.getItem('uploading');
+if(upData){
+  try{
+    const d = JSON.parse(upData);
+    UploadManager.showBar(d.progress||20, d.status||'Uploading in background...');
+  }catch{}
+}
 </script>
 </body>
 </html>

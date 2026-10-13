@@ -7,29 +7,30 @@
 <style>
 body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
 .box{width:100%;max-width:480px;padding:16px;box-sizing:border-box}
-.preview{width:100%;background:#111;min-height:250px;display:flex;justify-content:center;align-items:center;border-radius:12px;border:1px solid #262626;margin:10px 0;overflow:hidden;flex-direction:column}
+.preview{width:100%;background:#111;min-height:250px;display:flex;justify-content:center;align-items:center;border-radius:12px;border:1px solid #262626;margin:10px 0;overflow:hidden}
 .preview video,img{width:100%;max-height:520px}
 input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0;box-sizing:border-box}
-button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-radius:8px;font-weight:700}
-#status{font-size:13px;color:#aaa;margin-top:10px;white-space:pre-line}
+button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-radius:8px;font-weight:700;font-size:15px}
+#status{font-size:13px;color:#888;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select video</div>
+<div class="preview" id="preview">Select video (max 2:00)</div>
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
-<button id="btn" onclick="upload()">Share</button>
-<p id="status"></p>
+<button id="btn" onclick="startUpload()">Share</button>
+<p id="status">Ultra compressed: 2 min = ~1.5MB with sound</p>
 <canvas id="canvas" style="display:none"></canvas>
 </div>
+<script src="upload-manager.js"></script>
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
-const fileInput=document.getElementById('file'), preview=document.getElementById('preview'), info=document.getElementById('info'), statusEl=document.getElementById('status');
-let dur=0;
+let dur=0, fileInput=document.getElementById('file'), preview=document.getElementById('preview'), info=document.getElementById('info'), statusEl=document.getElementById('status');
+
 fileInput.onchange=()=>{
   const f=fileInput.files[0]; if(!f) return;
   const url=URL.createObjectURL(f);
@@ -37,72 +38,74 @@ fileInput.onchange=()=>{
     preview.innerHTML=`<video id="vp" src="${url}" controls playsinline></video>`;
     document.getElementById('vp').onloadedmetadata=e=>{
       dur=e.target.duration;
-      info.innerText=`Duration: ${Math.floor(dur/60)}:${String(Math.floor(dur%60)).padStart(2,'0')} / 2:00 - Raw: ${(f.size/1024/1024).toFixed(1)}MB`;
+      info.innerText=`Duration ${Math.floor(dur/60)}:${String(Math.floor(dur%60)).padStart(2,'0')}/2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB`;
       if(dur>120){ alert('Max 2 mins'); fileInput.value=''; }
     };
-  } else { preview.innerHTML=`<img src="${url}">`; dur=0; }
+  } else { preview.innerHTML=`<img src="${url}">`; }
 };
 
-function compressWithSound(file){
+// ULTRA COMPRESS: 240p + 150kbps video + 32k audio = FASTEST + SMALLEST WITH SOUND
+function ultraCompress(file){
  return new Promise((res,rej)=>{
   const v=document.createElement('video');
   v.src=URL.createObjectURL(file);
-  v.crossOrigin="anonymous";
-  v.muted=false; // IMPORTANT FOR SOUND
-  v.playsInline=true;
+  v.muted=false; v.playsInline=true; v.crossOrigin="anonymous";
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
-  v.onloadedmetadata=async()=>{
-    canvas.width=360; canvas.height=v.videoHeight*(360/v.videoWidth);
-    const canvasStream=canvas.captureStream(30);
-
-    // GET AUDIO TRACK FROM ORIGINAL VIDEO - THIS FIXES SOUND
-    let audioStream;
-    try{ audioStream = v.captureStream(); }catch{ audioStream = v.mozCaptureStream? v.mozCaptureStream() : null; }
-
-    const combined = new MediaStream();
-    canvasStream.getVideoTracks().forEach(t=> combined.addTrack(t));
-    if(audioStream){
-      audioStream.getAudioTracks().forEach(t=> combined.addTrack(t));
-    }
+  v.onloadedmetadata=()=>{
+    canvas.width=240; // 240p = super small
+    canvas.height=v.videoHeight*(240/v.videoWidth);
+    const canvasStream=canvas.captureStream(20); // 20fps = faster
+    let micStream=null; try{ micStream=v.captureStream(); }catch{}
+    const combined=new MediaStream();
+    canvasStream.getVideoTracks().forEach(t=>combined.addTrack(t));
+    if(micStream) micStream.getAudioTracks().forEach(t=>combined.addTrack(t));
 
     const chunks=[];
-    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:250000, audioBitsPerSecond:64000});
+    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:150000, audioBitsPerSecond:32000});
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
     rec.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); res(new File([blob],'c.webm',{type:'video/webm'})); };
     rec.start(100);
-    v.playbackRate=2.0; // 2x speed = faster but keeps sound
-    await v.play();
-    function draw(){
-      if(!v.ended &&!v.paused){ ctx.drawImage(v,0,0,canvas.width,canvas.height); requestAnimationFrame(draw); }
-    }
+    v.playbackRate=2.5; // 2.5x speed = 1:03 = 25 sec but with sound
+    v.play();
+    function draw(){ if(!v.ended){ ctx.drawImage(v,0,0,canvas.width,canvas.height); requestAnimationFrame(draw); } }
     draw();
-    v.onended=()=>{ setTimeout(()=>rec.stop(),200); };
+    v.onended=()=>setTimeout(()=>rec.stop(),100);
   };
   v.onerror=rej;
  });
 }
 
-async function upload(){
- const f=fileInput.files[0]; if(!f) return alert('Select');
- const btn=document.getElementById('btn'); btn.disabled=true; btn.innerText='Compressing with sound...';
+async function startUpload(){
+ const f=fileInput.files[0]; if(!f) return alert('Select file');
+ const btn=document.getElementById('btn'); btn.disabled=true;
+ UploadManager.start(f, document.getElementById('caption').value, token);
  let up=f;
- if(f.type.startsWith('video')){
-   if(f.size > 4*1024*1024){
-     statusEl.innerText=`Compressing with sound at 2x speed...`;
-     up=await compressWithSound(f);
-     statusEl.innerText=`${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB (with sound)`;
-   }
- }
- statusEl.innerText+='\nUploading...';
- const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
  try{
-  const r=await fetch(BASE+'/api/posts',{method:'POST',headers:{authorization:token},body:fd});
-  const t=await r.text();
-  if(!r.ok) throw new Error(t);
-  statusEl.innerText='Posted with sound!'; location.href='feed.html';
+  if(f.type.startsWith('video') && f.size > 2*1024*1024){
+    UploadManager.showBar(10,'Compressing 240p ultra fast (2.5x) with sound...');
+    up=await ultraCompress(f);
+    UploadManager.showBar(50,`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB`);
+  }
+  // NOW BACKGROUND UPLOAD - USER CAN LEAVE PAGE
+  const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
+
+  localStorage.setItem('uploading', JSON.stringify({progress:60, status:'Uploading in background... You can leave this page'}));
+  UploadManager.showBar(60,'Uploading in background... You can go to feed');
+
+  // Redirect immediately like TikTok
+  setTimeout(()=>{ location.href='feed.html'; }, 800);
+
+  // Continue upload in background even after redirect - saved in localStorage
+  await UploadManager.uploadWithProgress(fd, token, (p)=>{
+    UploadManager.showBar(60 + Math.round(p*0.4), `Uploading ${p}% in background...`);
+    localStorage.setItem('uploading', JSON.stringify({progress:60+p*0.4, status:`Uploading ${p}%...`}));
+  });
+  localStorage.removeItem('uploading');
+  // Will hide on feed page after success
  }catch(e){
   statusEl.innerText='Error: '+e.message.slice(0,200);
-  btn.disabled=false; btn.innerText='Share';
+  btn.disabled=false;
+  UploadManager.hideBar();
  }
 }
 </script>

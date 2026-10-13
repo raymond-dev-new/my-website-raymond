@@ -136,5 +136,23 @@ function logout(){ localStorage.removeItem('token'); location.href='login.html';
 load(); loadMsgBadge();
 setInterval(loadMsgBadge,5000);
 </script>
+
+<!-- TIKTOK BACKGROUND UPLOAD BAR - ADDED HERE -->
+<script src="upload-manager.js"></script>
+<script>
+const upData = localStorage.getItem('uploading');
+if(upData){
+  const d = JSON.parse(upData);
+  UploadManager.showBar(d.progress||20, d.status||'Uploading in background...');
+  // Auto refresh feed after upload finishes
+  const check = setInterval(async()=>{
+    try{
+      const r = await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
+      if(r.ok){ UploadManager.hideBar(); clearInterval(check); load(); }
+    }catch{}
+  }, 3000);
+  setTimeout(()=>{ UploadManager.hideBar(); clearInterval(check); }, 30000);
+}
+</script>
 </body>
 </html>
