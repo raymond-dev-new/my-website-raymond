@@ -79,7 +79,7 @@ function ultraFastCompress(file, onProgress){
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
     rec.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); res(new File([blob],'f.webm',{type:'video/webm'})); };
     rec.start(50);
-    v.playbackRate=1.2; // 1:03 = 18 sec to compress
+    v.playbackRate=1.1; // 1:03 = 18 sec to compress
     v.play().then(()=>{
       let last=0;
       function draw(now){
