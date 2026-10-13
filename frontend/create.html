@@ -53,8 +53,12 @@ function ultraFastCompress(file, onProgress){
   v.preload="auto";
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
   v.onloadedmetadata=()=>{
-    canvas.width=240; canvas.height=Math.round(v.videoHeight*(240/v.videoWidth));
-    const canvasStream=canvas.captureStream(15); // 15fps = half CPU = 2x faster
+
+   // canvas.width=240; canvas.height=Math.round(v.videoHeight*(240/v.videoWidth));
+       
+     canvas.width=480; canvas.height=Math.round(v.videoHeight*(480/v.videoWidth));
+
+    const canvasStream=canvas.captureStream(24); // 15fps = half CPU = 2x faster
     let audioTracks=[];
     try{ const s=v.captureStream(); audioTracks=s.getAudioTracks(); }catch{}
     const combined=new MediaStream();
@@ -63,8 +67,15 @@ function ultraFastCompress(file, onProgress){
 
     const chunks=[];
     // 100k video + 24k audio = ULTRA SMALL
-    /*const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:100000, audioBitsPerSecond:24000}); */
+
+    /*const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:100000, audioBitsPerSecond:24000}); 
+     const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:600000, audioBitsPerSecond:64000}); 
+    */
+
     const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:250000, audioBitsPerSecond:64000});
+
+    
+
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
     rec.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); res(new File([blob],'f.webm',{type:'video/webm'})); };
     rec.start(50);
