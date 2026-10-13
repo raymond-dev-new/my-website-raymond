@@ -46,7 +46,10 @@ function authh(req, res, next) {
   catch { return res.status(401).json({ msg: "Invalid" }); }
 }
 
-const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
+const uploadd = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 16 * 1024 * 1024 }
+});
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
@@ -325,35 +328,48 @@ app.get('/api/users/:id', async (req,res)=>{
   }catch(e){ res.status(500).json({msg:e.message}) }
 });
 
+//const uploadd = multer({ 
+// storage: multer.memoryStorage(), 
+// limits: { fileSize: 160 * 1024 * 1024 } 
+// });
+
+
+// === CREATE - 2 MIN COMPRESSED TO DB (NO MEDIA MODEL) ===
+
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   try{
     let mediaUrl = req.body.mediaUrl || "";
     let type = req.body.type || 'image';
+    
     if(req.file){
       if(req.file.mimetype.startsWith('video')){
-        // 3 MINUTES VIDEO = ~150MB max (720p)
-        if(req.file.size > 150*1024*1024) return res.status(400).json({msg: "Video too big - max 3 minutes / 150MB"});
-        const media = await Media.create({
-          userId: req.userId,
-          img: { data: req.file.buffer, contentType: req.file.mimetype }
-        });
-        mediaUrl = `/api/media-file/${media._id}`;
+        // After frontend compression, 2 mins = ~8MB = fits in Post
+        const b64 = req.file.buffer.toString('base64');
+        mediaUrl = `data:video/mp4;base64,${b64}`;
         type = 'video';
       } else {
-        if(req.file.size > 6*1024*1024) return res.status(400).json({msg: "Image too big max 6MB"});
         const b64 = req.file.buffer.toString('base64');
         mediaUrl = `data:${req.file.mimetype};base64,${b64}`;
         type = 'image';
       }
     }
-    const post = await Post.create({ user: req.userId, caption: req.body.caption || "", mediaUrl, type });
-    res.json(post);
+    
+    const post = await Post.create({ 
+      user: req.userId, 
+      caption: req.body.caption || "", 
+      mediaUrl, 
+      type 
+    });
+    
+    const fullPost = await Post.findById(post._id).populate('user');
+    res.json(fullPost);
   }catch(e){
     console.error(e);
     res.status(500).json({msg: e.message});
   }
 });
 
+// === YOUR EXISTING ROUTES - SAME ===
 app.delete('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   if (!post) return res.status(404).json({ msg: "Post not found" });
@@ -377,7 +393,6 @@ app.get('/api/posts/:id', authh, async (req, res) => {
   if (!post) return res.status(404).json({ msg: "Post not found" });
   res.json(post);
 });
-
 app.post('/api/posts/:id/like', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   const isLiked = post.likes.includes(req.userId);
@@ -404,8 +419,7 @@ app.post('/api/posts/:id/save', authh, async (req, res) => {
   me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
   await me.save(); res.json(me.savedPosts);
 });
-
- app.post('/api/posts/:id/view', async (req,res)=>{
+app.post('/api/posts/:id/view', async (req,res)=>{
  try{
   const p = await Post.findByIdAndUpdate(req.params.id, {$inc:{views:1}}, {new:true});
   res.json({views:p.views});

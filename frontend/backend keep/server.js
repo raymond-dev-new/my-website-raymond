@@ -35,6 +35,7 @@ app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); 
 mongoose.connect(url).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'register.html')); })
 
+
 let io;
 const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
 const SECRET = "secret123";
@@ -45,7 +46,7 @@ function authh(req, res, next) {
   catch { return res.status(401).json({ msg: "Invalid" }); }
 }
 
-const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
@@ -325,59 +326,41 @@ app.get('/api/users/:id', async (req,res)=>{
 });
 
 
-// Keep only this one:
-const BANNED_KEYWORDS = ['porn','xxx','nude','naked','sex','onlyfans','xvideo','pornhub','nsfw','18+','pussy','boobs','ass'];
-
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   try{
-    // ===== SIMPLE PORN BLOCK - NO AI =====
-    if(req.file){
-      const fileName = req.file.originalname.toLowerCase();
-      const caption = (req.body.caption || "").toLowerCase();
-      
-      // HERE IS WHERE BANNED IS USED
-      for(let w of BANNED_KEYWORDS){
-        if(fileName.includes(w) || caption.includes(w)){
-          return res.status(400).json({ msg: `Blocked: porn/nude content not allowed (${w})` });
-        }
-      }
+    let mediaUrl = "";
+    let type = 'image';
 
-      // Only allow clean types
-      const allowed = ['image/jpeg','image/png','image/jpg','image/webp','video/mp4','video/webm'];
-      if(!allowed.includes(req.file.mimetype)){
-        return res.status(400).json({ msg: "File type not allowed" });
-      }
-    }
-    // ===== END BLOCK =====
-
-    let mediaUrl = req.body.mediaUrl || "";
-    let type = req.body.type || 'image';
-    
     if(req.file){
       if(req.file.mimetype.startsWith('video')){
-        if(req.file.size > 30*1024*1024) return res.status(400).json({msg: "Video too big max 30MB"});
+        // After frontend compression, 2 mins = ~8MB
+        if(req.file.size > 16*1024*1024) return res.status(400).json({msg: "Still too big - try shorter video"});
+
+        const media = await Media.create({
+          userId: req.userId,
+          img: { data: req.file.buffer, contentType: 'video/mp4' }
+        });
+        mediaUrl = `/api/media-file/${media._id}`;
+        type = 'video';
+      } else {
+        if(req.file.size > 6*1024*1024) return res.status(400).json({msg: "Image max 6MB"});
         const media = await Media.create({
           userId: req.userId,
           img: { data: req.file.buffer, contentType: req.file.mimetype }
         });
         mediaUrl = `/api/media-file/${media._id}`;
-        type = 'video';
-      } else {
-        if(req.file.size > 6*1024*1024) return res.status(400).json({msg: "Image too big max 6MB"});
-        const b64 = req.file.buffer.toString('base64');
-        mediaUrl = `data:${req.file.mimetype};base64,${b64}`;
         type = 'image';
       }
     }
-    
+
     const post = await Post.create({ user: req.userId, caption: req.body.caption || "", mediaUrl, type });
     res.json(post);
-    
   }catch(e){
     console.error(e);
     res.status(500).json({msg: e.message});
   }
 });
+
 
 app.delete('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
@@ -402,6 +385,7 @@ app.get('/api/posts/:id', authh, async (req, res) => {
   if (!post) return res.status(404).json({ msg: "Post not found" });
   res.json(post);
 });
+
 app.post('/api/posts/:id/like', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   const isLiked = post.likes.includes(req.userId);
@@ -524,7 +508,7 @@ app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
 });
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 100 * 1024 * 1024 } });
+const upload = multer({ storage: storage, limits: { fileSize: 160 * 1024 * 1024 } });
 
 app.post('/api/save-media', upload.single('file'), async (req, res) => {
   try {
