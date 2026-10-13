@@ -18,6 +18,17 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 .bottom-nav a { color:#fff; text-decoration:none; font-size:20px; position:relative }
 .msg-badge{position:absolute;top:-6px;right:-8px;background:#ff3040;color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
 .hide{display:none}
+
+/* SWEET LOADING */
+.loader-wrap{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#000}
+.spinner{width:44px;height:44px;border:3px solid #222;border-top:3px solid #fff;border-radius:50%;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.shimmer-reel{height:100vh;position:relative;background:#0a0a0a;overflow:hidden}
+.shimmer-reel::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.shimmer-line{position:absolute;left:12px;right:85px;bottom:160px;height:12px;background:#1a1a1a;border-radius:6px}
+.shimmer-line.small{bottom:135px;width:50%;height:10px}
+
 .comment-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:50;justify-content:flex-end;align-items:flex-end}
 .comment-box{background:#121212;width:100%;max-width:500px;height:65vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;margin:0 auto}
 .cmt-head{padding:12px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;font-weight:bold}
@@ -32,12 +43,19 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 </style>
 </head>
 <body>
-<div class="reel-container" id="reels"></div>
+<div class="reel-container" id="reels">
+  <div class="loader-wrap" id="initialLoader">
+    <div class="spinner"></div>
+    <div style="font-size:13px;color:#777;letter-spacing:0.5px">Loading reels...</div>
+  </div>
+</div>
+
 <div class="bottom-nav">
 <a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a>
 <a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a>
-<a href="reels.html">🎬</a>  <a href="notification.html"> 🔔 </a> <a href="profile.html">👤</a>
+<a href="reels.html">🎬</a> <a href="notification.html"> 🔔 </a> <a href="profile.html">👤</a>
 </div>
+
 <div class="comment-modal" id="cmtModal" onclick="if(event.target===this) closeComments()">
 <div class="comment-box">
 <div class="cmt-head"><span id="cmtCount">Comments</span><span style="cursor:pointer" onclick="closeComments()">✕</span></div>
@@ -48,23 +66,32 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 </div>
 </div>
 </div>
+
+<script src="upload-manager.js"></script>
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
-function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null')}catch{return null} }
-function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; if(u.startsWith('http')) return u; return BASE+u; }
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
 
-
 let reelsData=[];
 let activeReelId="";
-let viewedSet=new Set(JSON.parse(localStorage.getItem('viewed_reels')||'[]'));
+
+function showShimmer(){
+  const container=document.getElementById('reels');
+  container.innerHTML=`
+    <div class="shimmer-reel"><div class="shimmer-line"></div><div class="shimmer-line small"></div></div>
+    <div class="shimmer-reel"><div class="shimmer-line"></div><div class="shimmer-line small"></div></div>
+  `;
+}
 
 function renderReels(reels){
  const container=document.getElementById('reels');
- if(!reels.length){ container.innerHTML=`<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column"><p>No reels yet</p><a href="create.html" style="color:#0095f6;margin-top:10px">Create Reel</a></div>`; return; }
+ if(!reels.length){
+   container.innerHTML=`<div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px"><p>No reels yet</p><a href="create.html" style="color:#0095f6">Create Reel</a></div>`;
+   return;
+ }
  container.innerHTML=reels.map(r=>{
   const url=fixUrl(r.mediaUrl);
   const likes=r.likes||[];
@@ -72,7 +99,7 @@ function renderReels(reels){
   const views=r.views||0;
   return `<div class="reel" data-id="${r._id}">
    <div class="view-badge">👁️ <span id="view-${r._id}">${views}</span> views</div>
-   <video src="${url}" loop muted playsinline preload="metadata" onclick="this.muted=!this.muted; addView('${r._id}')" ></video>
+   <video src="${url}" loop playsinline preload="metadata" onclick="toggleMute(this, '${r._id}')" ></video>
    <div class="info">
     <b onclick="location.href='profile.html?id=${r.user?._id}'">@${r.user?.username||'user'}</b><br>
     ${r.caption||''}
@@ -87,9 +114,13 @@ function renderReels(reels){
  observeViews();
 }
 
+function toggleMute(vid, id){
+  vid.muted=!vid.muted;
+  addView(id);
+}
+
 async function loadReels(){
- const cached=getCache('reels_cache');
- if(cached){ reelsData=cached; renderReels(cached); }
+ showShimmer();
  try{
   const res=await fetch(BASE+'/api/posts/reels',{headers:{authorization:token}});
   let reels=await res.json();
@@ -98,85 +129,72 @@ async function loadReels(){
    return r.type==='video'||r.type==='reel'||url.includes('/api/media-file')||url.endsWith('.mp4')||url.endsWith('.mov')||url.endsWith('.webm');
   });
   reelsData=reels;
-  setCache('reels_cache', reels);
   renderReels(reels);
  }catch(e){
-  if(!cached) document.getElementById('reels').innerHTML=`<div style="padding:40px;text-align:center">Error: ${e.message}</div>`;
+  document.getElementById('reels').innerHTML=`
+    <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+      <div style="font-size:40px">⚠️</div>
+      <div style="color:#aaa">Failed to load</div>
+      <div style="color:#666;font-size:12px">${e.message}</div>
+      <button onclick="loadReels()" style="margin-top:10px;background:#222;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:20px">Retry</button>
+    </div>`;
  }
 }
 
 async function addView(id){
- if(viewedSet.has(id)) return;
- viewedSet.add(id);
- localStorage.setItem('viewed_reels', JSON.stringify([...viewedSet]));
  const el=document.getElementById('view-'+id);
  if(el) el.innerText=parseInt(el.innerText||0)+1;
- let cache=getCache('reels_cache')||[];
- let r=cache.find(x=>x._id===id);
- if(r){ r.views=(r.views||0)+1; setCache('reels_cache', cache); }
  try{ await fetch(BASE+`/api/posts/${id}/view`,{method:'POST',headers:{authorization:token}}); }catch{}
 }
 
-// FIXED - STOP FIRST VIDEO WHEN SLIDE TO NEXT
 function observeViews(){
  const obs=new IntersectionObserver((entries)=>{
   entries.forEach(e=>{
    const vid=e.target.querySelector('video');
    if(!vid) return;
    if(e.isIntersecting){
-    // Pause all other videos first
-    document.querySelectorAll('.reel video').forEach(v=>{
-     if(v!==vid){
-      v.pause();
-      v.currentTime=0;
-     }
-    });
+    document.querySelectorAll('.reel video').forEach(v=>{ if(v!==vid){ v.pause(); }});
     addView(e.target.dataset.id);
     vid.play().catch(()=>{});
-   } else {
-    // When out of view, stop it
-    vid.pause();
-   }
+   } else { vid.pause(); }
   });
  },{threshold:0.7});
  document.querySelectorAll('.reel').forEach(el=>obs.observe(el));
 }
 
 async function like(id){
- let cache=getCache('reels_cache')||[];
- let r=cache.find(x=>x._id===id);
+ const r=reelsData.find(x=>x._id===id);
  if(r){
   const my=getMyId();
-  if(r.likes.includes(my)) r.likes=r.likes.filter(x=>x!==my); else r.likes.push(my);
-  setCache('reels_cache', cache);
-  renderReels(cache);
+  const has = r.likes.includes(my) || r.likes.some(x=> (x._id||x)==my);
+  if(has) r.likes=r.likes.filter(x=> (x._id||x)!==my && x!==my); else r.likes.push(my);
+  renderReels(reelsData);
  }
- await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}});
+ try{ await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}}); }catch{}
 }
 
-async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); alert('Link copied!'); }catch{} }
+async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); if(navigator.share){ navigator.share({url: location.origin+'/reels.html?id='+id}) }else{ alert('Link copied!'); } }catch{} }
 
 async function openComments(id){
  activeReelId=id;
- // pause current video when opening comments
  const currentVid=document.querySelector(`.reel[data-id="${id}"] video`);
  if(currentVid) currentVid.pause();
+ document.getElementById('cmtModal').style.display='flex';
+ document.getElementById('cmtList').innerHTML=`<div style="display:flex;justify-content:center;padding:20px"><div class="spinner" style="width:24px;height:24px"></div></div>`;
  try{
   const res=await fetch(BASE+'/api/posts/'+id,{headers:{authorization:token}});
   const post=await res.json();
   document.getElementById('cmtCount').innerText=post.comments.length+' comments • '+ (post.views||0) +' views';
   const list=document.getElementById('cmtList');
-  list.innerHTML=!post.comments.length?`<p style="color:#777;text-align:center;padding:20px">No comments</p>`:
+  list.innerHTML=!post.comments.length?`<p style="color:#777;text-align:center;padding:20px">No comments yet</p>`:
   post.comments.map(c=>{
    const name=c.user?.username||'user'; const uid=c.user?._id||'';
    return `<div class="cmt-row"><div class="cmt-avatar" onclick="location.href='profile.html?id=${uid}'">${name[0].toUpperCase()}</div><div class="cmt-text"><b onclick="location.href='profile.html?id=${uid}'">${name}</b> ${c.text}</div></div>`;
   }).join('');
-  document.getElementById('cmtModal').style.display='flex';
- }catch(e){ console.log(e); }
+ }catch(e){ document.getElementById('cmtList').innerHTML=`<p style="color:#777">Failed to load</p>`; }
 }
 function closeComments(){
  document.getElementById('cmtModal').style.display='none';
- // resume video when closing comments
  if(activeReelId){
   const v=document.querySelector(`.reel[data-id="${activeReelId}"] video`);
   if(v) v.play().catch(()=>{});
@@ -185,11 +203,16 @@ function closeComments(){
 }
 async function sendComment(){
  const text=document.getElementById('cmtInput').value.trim(); if(!text||!activeReelId) return;
+ document.getElementById('cmtInput').value='';
  await fetch(BASE+`/api/posts/${activeReelId}/comment`,{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text})});
- document.getElementById('cmtInput').value=''; openComments(activeReelId);
+ openComments(activeReelId);
 }
 
 async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); let map=await r.json(); let total=Object.values(map).reduce((a,b)=>a+b,0); let el=document.getElementById('msgCount'); if(total>0){el.innerText=total; el.classList.remove('hide');} else el.classList.add('hide'); }catch{} }
+
+// top bar
+const upData = localStorage.getItem('uploading');
+if(upData){ try{ const d=JSON.parse(upData); UploadManager.showBar(d.progress||20, d.status||'Uploading...'); }catch{} }
 
 loadReels(); loadMsgBadge();
 </script>

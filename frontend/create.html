@@ -7,21 +7,22 @@
 <style>
 body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
 .box{width:100%;max-width:480px;padding:16px;box-sizing:border-box}
-.preview{width:100%;background:#111;min-height:250px;display:flex;justify-content:center;align-items:center;border-radius:12px;border:1px solid #262626;margin:10px 0;overflow:hidden}
+.preview{width:100%;background:#111;min-height:250px;display:flex;justify-content:center;align-items:center;border-radius:12px;border:1px solid #262626;margin:10px 0;overflow:hidden;text-align:center;color:#777;font-size:13px}
 .preview video,img{width:100%;max-height:520px}
 input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0;box-sizing:border-box}
 button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-radius:8px;font-weight:700}
+button:disabled{background:#0a4a78}
 #status{font-size:12px;color:#888;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select video (max 2:00) <br> Please wait still post finish loading... </div>
+<div class="preview" id="preview">Select video (max 2:00)<br>Max 4MB after compress</div>
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
-<p id="status">Create Post - max 2:00! </p>
+<p id="status">Target: 4MB max - Normal voice ✅</p>
 <canvas id="canvas" style="display:none"></canvas>
 </div>
 <script src="upload-manager.js"></script>
@@ -38,106 +39,112 @@ fileInput.onchange=()=>{
     preview.innerHTML=`<video id="vp" src="${url}" controls playsinline></video>`;
     document.getElementById('vp').onloadedmetadata=e=>{
       const d=e.target.duration;
-      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB`;
-      if(d>120){ alert('Max 2 mins - trim video'); fileInput.value=''; preview.innerHTML='Select video (max 2:00)'; info.innerText=''; }
+      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB → will be ~4MB`;
+      if(d>120){ alert('Max 2 mins'); fileInput.value=''; preview.innerHTML='Select video (max 2:00)'; info.innerText=''; }
     };
   } else { preview.innerHTML=`<img src="${url}">`; }
 };
 
-function normalVoiceCompress(file, onProgress){
+// 4MB MAX = 200k video + 48k audio = 120sec = 3.7MB
+function compressTo4MB(file, onProgress){
  return new Promise((res,rej)=>{
   const v=document.createElement('video');
   v.src=URL.createObjectURL(file);
-  v.muted=false;
-  v.playsInline=true;
-  v.preload="auto";
+  v.muted=false; v.playsInline=true; v.preload="auto";
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
   v.onloadedmetadata=()=>{
-    canvas.width=480;
-    canvas.height=Math.round(v.videoHeight*(480/v.videoWidth));
+    // 360p = small + still clear at 200k
+    canvas.width=360;
+    canvas.height=Math.round(v.videoHeight*(360/v.videoWidth));
+    if(canvas.height%2!==0) canvas.height++;
+
     const canvasStream=canvas.captureStream(24);
     let audioTracks=[];
-    try{
-      const stream=v.captureStream();
-      audioTracks=stream.getAudioTracks();
-    }catch(err){ console.log('audio capture failed', err); }
+    try{ audioTracks=v.captureStream().getAudioTracks(); }catch{}
     const combined=new MediaStream();
     canvasStream.getVideoTracks().forEach(t=>combined.addTrack(t));
     audioTracks.forEach(t=>combined.addTrack(t));
+
     const chunks=[];
-    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:600000, audioBitsPerSecond:96000});
+    const rec=new MediaRecorder(combined,{
+      mimeType:'video/webm;codecs=vp8,opus',
+      videoBitsPerSecond:200000, // 200k = main size
+      audioBitsPerSecond:48000 // 48k = voice still clear & normal
+    });
+
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
     rec.onstop=()=>{
       const blob=new Blob(chunks,{type:'video/webm'});
-      res(new File([blob],'video.webm',{type:'video/webm'}));
+      const finalFile=new File([blob],'video.webm',{type:'video/webm'});
+      console.log(`Compressed to ${(finalFile.size/1024/1024).toFixed(2)}MB`);
+      res(finalFile);
     };
     rec.start(100);
-    v.playbackRate=1; // NORMAL - voice follows video 1:1
-    v.volume=1;
+    v.playbackRate=1; // NORMAL VOICE - must be 1 to stay synced
+
     v.play().then(()=>{
+      let lastProgress=0;
       function draw(){
         if(v.ended || v.paused) return;
         ctx.drawImage(v,0,0,canvas.width,canvas.height);
-        if(onProgress) onProgress(Math.round((v.currentTime/v.duration)*100));
+        const pct=Math.round((v.currentTime/v.duration)*100);
+        if(pct!==lastProgress && pct%2===0){ // update every 2%
+          lastProgress=pct;
+          if(onProgress) onProgress(pct);
+        }
         requestAnimationFrame(draw);
       }
       requestAnimationFrame(draw);
     }).catch(rej);
     v.onended=()=>setTimeout(()=>rec.stop(),200);
   };
-  v.onerror=()=>rej(new Error('Video load failed'));
+  v.onerror=()=>rej(new Error('Load failed'));
  });
 }
 
 async function startUpload(){
  const f=fileInput.files[0]; if(!f) return alert('Select file');
- const btn=document.getElementById('btn');
- btn.disabled=true; btn.innerText='Processing...';
- UploadManager.showBar(5,'Preparing...');
+ const btn=document.getElementById('btn'); btn.disabled=true;
+ UploadManager.showBar(5,'Preparing 4MB compress...');
  statusEl.innerText='Preparing...';
 
  let up=f;
  if(f.type.startsWith('video')){
-   if(f.size > 2.5*1024*1024){
-     statusEl.innerText='Compressing with normal voice... wait 2 mins for 2-min video';
-     try{
-       up=await normalVoiceCompress(f, (p)=>{
-         UploadManager.showBar(5 + Math.round(p*0.4), `Compressing ${p}% - normal voice`);
-         statusEl.innerText=`Compressing ${p}% - voice stays normal...`;
-         btn.innerText=`Compressing ${p}%`;
-       });
-       statusEl.innerText=`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB - voice normal`;
-     }catch(e){
-       console.log(e);
-       up=f;
-       statusEl.innerText='Compress failed, uploading original...';
-     }
+   statusEl.innerText='Compressing to 4MB max... normal voice, please wait';
+   try{
+     up=await compressTo4MB(f, (p)=>{
+       const mbEst=(p*0.037).toFixed(1); // rough est to 3.7MB
+       UploadManager.showBar(5 + Math.round(p*0.6), `Compressing ${p}% (~${mbEst}MB)`);
+       statusEl.innerText=`Compressing ${p}% - target 4MB max - voice normal`;
+       btn.innerText=`Compressing ${p}%`;
+     });
+     statusEl.innerText=`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB ✅`;
+   }catch(e){
+     console.log(e);
+     statusEl.innerText='Compress failed: '+e.message;
+     btn.disabled=false; btn.innerText='Share'; return;
    }
  }
 
  const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
- UploadManager.showBar(75,'Uploading... 0%');
- statusEl.innerText='Uploading... stay on page';
+ UploadManager.showBar(70,'Uploading...');
  btn.innerText='Uploading...';
 
  try{
    await UploadManager.uploadWithProgress(fd, token, (p)=>{
-     UploadManager.showBar(75 + Math.round(p*0.25), `Uploading ${p}%`);
-     statusEl.innerText=`Uploading ${p}%`;
+     UploadManager.showBar(70 + Math.round(p*0.3), `Uploading ${p}%`);
+     statusEl.innerText=`Uploading ${p}% - ${(up.size/1024/1024).toFixed(2)}MB`;
      btn.innerText=`Uploading ${p}%`;
    });
-   UploadManager.showBar(100,'Done!');
-   statusEl.innerText='Done! Voice normal & synced ✅';
-   localStorage.removeItem('uploading');
-   setTimeout(()=> location.href='feed.html', 800);
+   UploadManager.showBar(100,'Done! 4MB max ✅');
+   statusEl.innerText=`Done! ${(up.size/1024/1024).toFixed(2)}MB - normal voice synced ✅`;
+   setTimeout(()=> location.href='feed.html', 700);
  }catch(e){
    btn.disabled=false; btn.innerText='Share';
-   statusEl.innerText='Upload failed: '+e.message;
+   statusEl.innerText='Failed: '+e.message;
    UploadManager.showBar(0,'Failed');
-   setTimeout(()=>UploadManager.hideBar(), 3000);
  }
 }
 </script>
 </body>
 </html>
- 
