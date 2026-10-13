@@ -48,7 +48,7 @@ function authh(req, res, next) {
 
 const uploadd = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 16 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 } // Vercel max is 4.5MB, we set 5MB
 });
 
 // ========== MODELS - FIXED ==========
@@ -336,40 +336,46 @@ app.get('/api/users/:id', async (req,res)=>{
 
 // === CREATE - 2 MIN COMPRESSED TO DB (NO MEDIA MODEL) ===
 
+// CREATE POST - FIXED FOR VERCEL 4.5MB LIMIT
+
+
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   try{
     let mediaUrl = req.body.mediaUrl || "";
     let type = req.body.type || 'image';
-    
+
     if(req.file){
-      if(req.file.mimetype.startsWith('video')){
-        // After frontend compression, 2 mins = ~8MB = fits in Post
-        const b64 = req.file.buffer.toString('base64');
-        mediaUrl = `data:video/mp4;base64,${b64}`;
+      const b64 = req.file.buffer.toString('base64');
+      if(req.file.mimetype.includes('webm') || req.file.mimetype.startsWith('video')){
+        mediaUrl = `data:video/webm;base64,${b64}`;
         type = 'video';
-      } else {
-        const b64 = req.file.buffer.toString('base64');
+      }else{
         mediaUrl = `data:${req.file.mimetype};base64,${b64}`;
         type = 'image';
       }
     }
-    
-    const post = await Post.create({ 
-      user: req.userId, 
-      caption: req.body.caption || "", 
-      mediaUrl, 
-      type 
+
+    if(!mediaUrl) return res.status(400).json({msg:"No file or mediaUrl"});
+
+    const post = await Post.create({
+      user: req.userId,
+      caption: req.body.caption || "",
+      mediaUrl,
+      type
     });
-    
+
     const fullPost = await Post.findById(post._id).populate('user');
     res.json(fullPost);
   }catch(e){
     console.error(e);
+    if(e.code === 'LIMIT_FILE_SIZE'){
+      return res.status(413).json({msg:"File too large (max 4.5MB). Compress more."});
+    }
     res.status(500).json({msg: e.message});
   }
 });
 
-// === YOUR EXISTING ROUTES - SAME ===
+// YOUR EXISTING ROUTES - KEEP SAME
 app.delete('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   if (!post) return res.status(404).json({ msg: "Post not found" });
