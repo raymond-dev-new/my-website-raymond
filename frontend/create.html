@@ -2,33 +2,33 @@
 <html>
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Create - 2min</title>
+<title>Create</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
 .box{width:100%;max-width:480px;padding:16px}
-.preview{width:100%;min-height:260px;background:#111;border:1px solid #333;border-radius:12px;margin:10px 0;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.preview{width:100%;min-height:280px;background:#111;border:1px solid #333;border-radius:12px;margin:10px 0;display:flex;justify-content:center;align-items:center;overflow:hidden}
 .preview video,.preview img{width:100%;max-height:600px;object-fit:contain}
 input,textarea{width:100%;background:#121212;border:1px solid #333;color:#fff;padding:12px;border-radius:8px;margin:8px 0}
 button{width:100%;background:#0095f6;border:0;color:#fff;padding:14px;border-radius:8px;font-weight:700}
-button:disabled{opacity:.5}
-#info,#status,#log{font-size:11px;color:#aaa;white-space:pre-wrap;word-break:break-all}
+#info,#status{font-size:12px;color:#aaa}
 #progressBar{width:100%;height:5px;background:#222;border-radius:3px;margin-top:8px;display:none}
 #progressFill{height:100%;width:0;background:#0095f6}
+small{color:#777;font-size:11px}
 </style>
 </head>
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select - MAX 2:00 - 4.5MB Vercel</div>
+<div class="preview" id="preview">Select video - BEST QUALITY in 4.5MB = 40sec</div>
 <div id="info"></div>
+<small id="hint">2min = blurry. 40sec = TikTok clear. Choose.</small>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
 <p id="status">Ready</p>
-<div id="log"></div>
 <div id="progressBar"><div id="progressFill"></div></div>
 </div>
 <script>
-const BASE_URL="https://raymonddomain.dev";
+const BASE_URL="http://localhost:8000";
 let token=localStorage.getItem('token');
 if(!token) location.replace('login.html');
 if(token.startsWith('Bearer ')) token=token.slice(7);
@@ -37,21 +37,17 @@ const fileInput=document.getElementById('file');
 const preview=document.getElementById('preview');
 const info=document.getElementById('info');
 const statusEl=document.getElementById('status');
-const logEl=document.getElementById('log');
 const btn=document.getElementById('btn');
 const progressBar=document.getElementById('progressBar');
 const progressFill=document.getElementById('progressFill');
 
 let currentDuration=0, previewUrl=null, previewVideo=null, busy=false;
-const MAX_SECONDS=120;
 const MAX_BYTES=4.5*1024*1024;
-const log=m=>{ console.log(m); logEl.textContent+=m+"\n"; };
 
 fileInput.addEventListener('change',()=>{
   if(previewUrl) URL.revokeObjectURL(previewUrl);
   const file=fileInput.files[0]; if(!file) return;
   previewUrl=URL.createObjectURL(file);
-  logEl.textContent='';
   if(file.type.startsWith('video/')){
     preview.innerHTML='';
     previewVideo=document.createElement('video');
@@ -59,120 +55,83 @@ fileInput.addEventListener('change',()=>{
     preview.appendChild(previewVideo);
     previewVideo.onloadedmetadata=()=>{
       currentDuration=previewVideo.duration;
-      info.textContent=`${currentDuration.toFixed(1)}s / 120s • ${(file.size/1048576).toFixed(2)}MB`;
-      if(currentDuration>MAX_SECONDS){ alert('2 MIN ONLY'); fileInput.value=''; preview.textContent='Too long'; }
-      log(`Loaded ${currentDuration.toFixed(1)}s`);
+      info.textContent=`${currentDuration.toFixed(1)}s • ${(file.size/1048576).toFixed(2)}MB`;
+      if(currentDuration>120){ alert('2min max allowed'); }
+      if(currentDuration>45) statusEl.textContent='⚠️ Over 45s = will be blurry to fit 4.5MB. For clear like TikTok use 30-40s';
+      else statusEl.textContent='✅ Under 45s = will be CLEAR & SYNCED like TikTok';
     };
   }else{
     preview.innerHTML=`<img src="${previewUrl}">`;
   }
 });
 
-// NO CANVAS - DIRECT RE-ENCODE - NEVER STUCK
-function compressFast(file, onProgress){
+function compressBestQuality(file,onProgress){
   return new Promise(async (resolve,reject)=>{
-    log('Starting fast compress - no canvas');
     if(previewVideo){ try{previewVideo.pause(); previewVideo.muted=true;}catch{} }
-
     const url=URL.createObjectURL(file);
     const v=document.createElement('video');
-    v.src=url; v.muted=false; v.playsInline=true; v.preload='auto'; v.crossOrigin='anonymous';
+    v.src=url; v.muted=false; v.playsInline=true; v.preload='auto';
     v.style.display='none'; document.body.appendChild(v);
-
     let recorder,chunks=[],stream,finished=false;
     const cleanup=()=>{ try{v.pause(); v.remove();}catch{} URL.revokeObjectURL(url); if(stream) stream.getTracks().forEach(t=>t.stop()); };
-    const fail=msg=>{ if(finished) return; finished=true; cleanup(); reject(new Error(msg)); };
+    const fail=m=>{ if(finished) return; finished=true; cleanup(); reject(new Error(m)); };
 
     v.onloadedmetadata=async()=>{
-      log(`Video meta: ${v.videoWidth}x${v.videoHeight} ${v.duration.toFixed(1)}s`);
-      try{ v.currentTime=0; await v.play(); }catch(e){ return fail('Play blocked - use Chrome'); }
+      try{ v.currentTime=0; await v.play(); }catch{ return fail('Use Chrome'); }
       await new Promise(r=>setTimeout(r,300));
+      try{ stream=v.captureStream? v.captureStream() : v.mozCaptureStream(); }catch{ return fail('Use Chrome Android'); }
 
-      try{ stream = v.captureStream? v.captureStream() : v.mozCaptureStream(); }
-      catch(e){ return fail('captureStream not supported - use Chrome Android'); }
-
-      if(!stream.getVideoTracks().length) return fail('No video track');
-      if(!stream.getAudioTracks().length) log('WARNING: No audio track found');
-
-      // 2min to 4.5MB = 250k total is safe
+      // BEST QUALITY for 4.5MB: VP9 is 2x clearer than VP8 at low bitrate
+      // 40sec * 800kbps = 4MB -> CLEAR HD
+      // 120sec * 250kbps = 3.7MB -> blurry (physics)
+      const isShort = v.duration<=45;
+      const vBps = isShort? 800000 : 240000; // 800k = clear, 240k = blurry but fits 2min
+      const aBps = isShort? 96000 : 48000; // good audio
       const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'video/webm';
-      log('Using mime: '+mime);
 
-      try{
-        recorder=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:200000, audioBitsPerSecond:48000});
-      }catch(e){ return fail('MediaRecorder failed: '+e.message); }
-
+      recorder=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:vBps, audioBitsPerSecond:aBps});
       chunks=[];
-      recorder.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
-      recorder.onstop=()=>{
-        if(finished) return; finished=true;
-        const blob=new Blob(chunks,{type:'video/webm'});
-        log(`Compressed done: ${(blob.size/1048576).toFixed(2)}MB`);
-        cleanup();
-        resolve(new File([blob], 'video.mp4', {type:'video/mp4'}));
-      };
-
+      recorder.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+      recorder.onstop=()=>{ if(finished) return; finished=true; cleanup(); const blob=new Blob(chunks,{type:'video/webm'}); resolve(new File([blob],'video.mp4',{type:'video/mp4'})); };
       recorder.start(200);
-      log('Recorder started');
-
-      // Progress updater - no canvas draw, just time
       const timer=setInterval(()=>{
-        if(finished){ clearInterval(timer); return; }
-        if(v.ended || v.currentTime>=v.duration-0.05){
-          clearInterval(timer);
-          try{ recorder.stop(); }catch{}
-        }else{
-          if(onProgress) onProgress(Math.floor((v.currentTime/v.duration)*100));
-        }
-      },200);
-
-      // safety timeout - full 2min + 10s
-      setTimeout(()=>{ if(!finished){ log('Force stop after timeout'); try{recorder.stop();}catch{} } }, (v.duration+15)*1000);
+        if(v.ended || v.currentTime>=v.duration-0.05){ clearInterval(timer); try{recorder.stop();}catch{} }
+        else if(onProgress) onProgress(Math.floor((v.currentTime/v.duration)*100));
+      },150);
+      setTimeout(()=>{ if(!finished) try{recorder.stop();}catch{} }, (v.duration+10)*1000);
     };
-    v.onerror=()=>fail('Video load error');
+    v.onerror=()=>fail('Load error');
   });
 }
 
 async function startUpload(){
   if(busy) return;
   const file=fileInput.files[0]; if(!file) return alert('Select file');
-  if(file.type.startsWith('video/') && currentDuration>MAX_SECONDS) return alert('2 MIN ONLY');
-
   if(previewVideo){ try{previewVideo.pause(); previewVideo.muted=true;}catch{} }
-
-  busy=true; btn.disabled=true; progressBar.style.display='block'; progressFill.style.width='5%'; logEl.textContent='';
+  busy=true; btn.disabled=true; progressBar.style.display='block';
   let uploadFile=file;
-
   try{
-    if(file.type.startsWith('video/') && file.size>MAX_BYTES){
-      statusEl.textContent='Compressing - this will NOT get stuck';
-      log(`Original ${(file.size/1048576).toFixed(2)}MB > 4.5MB, compressing full ${currentDuration.toFixed(1)}s`);
-      uploadFile=await compressFast(file, p=>{
-        progressFill.style.width=(p*0.6)+'%';
-        btn.textContent=`Compressing ${p}%`;
-        statusEl.textContent=`Compressing ${p}% - full length kept`;
-      });
-      const mb=uploadFile.size/1048576;
-      if(mb>4.5) throw new Error(`Still ${mb.toFixed(2)}MB - trim to 1:30`);
-      statusEl.textContent=`✅ ${mb.toFixed(2)}MB ready - synced, no cut`;
-      statusEl.style.color='#0f0';
+    if(file.type.startsWith('video/')){
+      if(file.size>MAX_BYTES){
+        statusEl.textContent='Compressing with VP9 - best quality possible...';
+        uploadFile=await compressBestQuality(file,p=>{
+          progressFill.style.width=(p*0.7)+'%';
+          btn.textContent=`Compressing ${p}%`;
+        });
+        const mb=uploadFile.size/1048576;
+        if(mb>4.5) throw new Error(`Still ${mb.toFixed(2)}MB - your video is too long. Use 35sec for TikTok clear`);
+        statusEl.textContent=`✅ ${mb.toFixed(2)}MB ${currentDuration>45?' - blurry because 2min':' - CLEAR like TikTok'}`;
+      }else{
+        statusEl.textContent='Under 4.5MB - uploading original - perfect quality';
+      }
     }
-
-    statusEl.textContent='Uploading...';
-    btn.textContent='Uploading...';
-    progressFill.style.width='80%';
-
     const fd=new FormData(); fd.append('file',uploadFile); fd.append('caption',document.getElementById('caption').value);
+    btn.textContent='Uploading...'; progressFill.style.width='85%';
     const res=await fetch(`${BASE_URL}/api/posts`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:fd});
-    const txt=await res.text(); log(`Server: ${res.status} ${txt.slice(0,200)}`);
+    const txt=await res.text();
     if(!res.ok) throw new Error(txt);
     progressFill.style.width='100%'; location.href='feed.html';
-  }catch(e){
-    log('ERROR: '+e.message);
-    statusEl.textContent=e.message; statusEl.style.color='#f44';
-    alert(e.message);
-    btn.disabled=false; busy=false; btn.textContent='Share';
-  }
+  }catch(e){ alert(e.message); btn.disabled=false; busy=false; btn.textContent='Share'; statusEl.textContent=e.message; }
 }
 </script>
 </body>
