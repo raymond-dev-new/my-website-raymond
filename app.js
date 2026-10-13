@@ -19,6 +19,8 @@ import cron from "node-cron"
 import fetch from "node-fetch";
 import http from 'http'
 import { Server } from 'socket.io'
+import { exec } from 'child_process'
+import util from 'util'
 
 const app = express()
 const port = process.env.PORT || 8000
@@ -326,40 +328,98 @@ app.get('/api/users/:id', async (req,res)=>{
 });
 
 
+
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
-  try{
-    let mediaUrl = "";
-    let type = 'image';
+  try {
+    console.log(
+      'Upload hit:',
+      req.file?.originalname,
+      req.file?.size,
+      req.file?.mimetype
+    );
 
-    if(req.file){
-      if(req.file.mimetype.startsWith('video')){
-        // After frontend compression, 2 mins = ~8MB
-        if(req.file.size > 16*1024*1024) return res.status(400).json({msg: "Still too big - try shorter video"});
-
-        const media = await Media.create({
-          userId: req.userId,
-          img: { data: req.file.buffer, contentType: 'video/mp4' }
-        });
-        mediaUrl = `/api/media-file/${media._id}`;
-        type = 'video';
-      } else {
-        if(req.file.size > 6*1024*1024) return res.status(400).json({msg: "Image max 6MB"});
-        const media = await Media.create({
-          userId: req.userId,
-          img: { data: req.file.buffer, contentType: req.file.mimetype }
-        });
-        mediaUrl = `/api/media-file/${media._id}`;
-        type = 'image';
-      }
+    if (!req.file) {
+      return res.status(400).json({
+        msg: 'No file received. Please select a video or image.'
+      });
     }
 
-    const post = await Post.create({ user: req.userId, caption: req.body.caption || "", mediaUrl, type });
-    res.json(post);
-  }catch(e){
-    console.error(e);
-    res.status(500).json({msg: e.message});
+    if (!req.file.mimetype.startsWith('image/') &&
+        !req.file.mimetype.startsWith('video/')) {
+      return res.status(400).json({
+        msg: 'Only image and video files are allowed.'
+      });
+    }
+
+    // Keep below Vercel's 4.5 MB request-body limit
+    const MAX_SIZE = 4 * 1024 * 1024;
+
+    if (req.file.size > MAX_SIZE) {
+      return res.status(413).json({
+        msg: 'File is too large. Maximum upload size is 4 MB.'
+      });
+    }
+
+    // Confirm MongoDB is connected before saving
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        msg: 'Database is not connected. Please try again.'
+      });
+    }
+
+    const isVideo = req.file.mimetype.startsWith('video/');
+
+    // Store the actual MIME type instead of forcing video/mp4.
+    const media = await Media.create({
+      userId: req.userId,
+      img: {
+        data: req.file.buffer,
+        contentType: req.file.mimetype
+      }
+    });
+
+    const mediaUrl = `/api/media-file/${media._id}`;
+
+    const post = await Post.create({
+      user: req.userId,
+      caption: req.body.caption || '',
+      mediaUrl,
+      type: isVideo ? 'video' : 'image'
+    });
+
+    return res.status(201).json(post);
+
+  } catch (err) {
+    console.error('UPLOAD ERROR:', err);
+
+    return res.status(500).json({
+      msg: 'Upload failed. Please try again.',
+      error: process.env.NODE_ENV === 'production'
+        ? undefined
+        : err.message
+    });
   }
 });
+
+// This middleware must come AFTER your routes.
+app.use((err, req, res, next) => {
+  console.error('Request error:', err);
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      msg: 'File too large. Please upload a smaller file.'
+    });
+  }
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return res.status(500).json({
+    msg: 'Server error while processing your request.'
+  });
+});
+
 
 
 app.delete('/api/posts/:id', authh, async (req, res) => {

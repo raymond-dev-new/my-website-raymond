@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif;display:flex;justify-content:center}
+.box{width:100%;max-width:480px;padding:16px}
+.preview{width:100%;min-height:250px;background:#111;border:1px solid #262626;border-radius:12px;margin:10px 0;overflow:hidden;display:flex;justify-content:center;align-items:center;text-align:center;color:#888;font-size:13px}
+.preview video,.preview img{display:block;width:100%;max-height:520px;object-fit:contain}
+input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0}
+button{width:100%;background:#0095f6;border:0;color:#fff;padding:14px;border-radius:8px;font-weight:700}
+button:disabled{opacity:.6}
+#status,#info{font-size:12px;color:#999;overflow-wrap:anywhere}
+#progressBar{width:100%;height:5px;background:#262626;border-radius:3px;margin-top:8px;overflow:hidden;display:none}
+#progressFill{height:100%;width:0;background:#0095f6;transition:width .2s}
+</style>
+</head>
+<body>
+<div class="box">
+<input type="file" id="file" accept="video/*,image/*">
+<div class="preview" id="preview">Select video or image — video maximum 3 minutes</div>
+<div id="info"></div>
+<textarea id="caption" maxlength="2200" placeholder="Caption..."></textarea>
+<button id="btn" type="button">Share</button>
+<p id="status">Maximum video length: 3 minutes. Maximum upload: 4 MB.</p>
+<div id="progressBar"><div id="progressFill"></div></div>
+<canvas id="canvas" hidden></canvas>
+</div>
+
+<script>
+const BASE_URL = "https://raymonddomain.dev";
+const token = localStorage.getItem("token");
+
+const fileInput = document.getElementById("file");
+const preview = document.getElementById("preview");
+const info = document.getElementById("info");
+const statusEl = document.getElementById("status");
+const btn = document.getElementById("btn");
+const progressBar = document.getElementById("progressBar");
+const progressFill = document.getElementById("progressFill");
+const canvas = document.getElementById("canvas");
+
+const MAX_SECONDS = 180;
+const MAX_BYTES = 4 * 1024 * 1024;
+
+let currentDuration = 0;
+let previewUrl = null;
+let busy = false;
+
+if (!token) location.replace("login.html");
+
+function setStatus(message, color = "#999") {
+  statusEl.textContent = message;
+  statusEl.style.color = color;
+}
+
+function clearPreviewUrl() {
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = null;
+}
+
+function formatDuration(seconds) {
+  return Math.floor(seconds / 60) + ":" +
+    String(Math.floor(seconds % 60)).padStart(2, "0");
+}
+
+fileInput.addEventListener("change", () => {
+  clearPreviewUrl();
+  info.textContent = "";
+  currentDuration = 0;
+
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  previewUrl = URL.createObjectURL(file);
+
+  if (file.type.startsWith("video/")) {
+    preview.replaceChildren();
+
+    const video = document.createElement("video");
+    video.src = previewUrl;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    preview.appendChild(video);
+
+    video.addEventListener("loadedmetadata", () => {
+      currentDuration = video.duration;
+
+      if (!Number.isFinite(currentDuration)) {
+        setStatus("Cannot read video duration.", "#ff453a");
+        return;
+      }
+
+      if (currentDuration > MAX_SECONDS) {
+        fileInput.value = "";
+        currentDuration = 0;
+        clearPreviewUrl();
+        preview.textContent = "Video too long — maximum 3 minutes";
+        setStatus("Choose a video no longer than 3 minutes.", "#ff453a");
+        return;
+      }
+
+      info.textContent = formatDuration(currentDuration) +
+        " / 3:00 • Original " +
+        (file.size / 1048576).toFixed(2) + " MB";
+
+      setStatus("Video ready.");
+    });
+
+    video.addEventListener("error", () =>
+      setStatus("Unable to preview this video.", "#ff453a")
+    );
+
+  } else if (file.type.startsWith("image/")) {
+    const img = document.createElement("img");
+    img.src = previewUrl;
+    img.alt = "Image preview";
+    preview.replaceChildren(img);
+
+    info.textContent = "Image • " +
+      (file.size / 1048576).toFixed(2) + " MB";
+
+    setStatus(file.size > MAX_BYTES
+      ? "Image exceeds 4 MB. Choose a smaller image."
+      : "Image ready.", file.size > MAX_BYTES ? "#ff453a" : "#999");
+
+  } else {
+    fileInput.value = "";
+    clearPreviewUrl();
+    preview.textContent = "Unsupported file type";
+    setStatus("Select an image or video.", "#ff453a");
+  }
+});
+
+function compressVideo(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    if (!window.MediaRecorder ||
+        !HTMLCanvasElement.prototype.captureStream) {
+      reject(new Error("Compression unsupported. Try Chrome."));
+      return;
+    }
+
+    const sourceUrl = URL.createObjectURL(file);
+    const video = document.createElement("video");
+
+    let canvasStream = null;
+    let sourceStream = null;
+    let recorder = null;
+    let animationId = 0;
+    let timeoutId = null;
+    let settled = false;
+    let chunks = [];
+
+    function cleanup() {
+      cancelAnimationFrame(animationId);
+      clearTimeout(timeoutId);
+
+      if (canvasStream) canvasStream.getTracks().forEach(t => t.stop());
+      if (sourceStream) sourceStream.getTracks().forEach(t => t.stop());
+
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(sourceUrl);
+    }
+
+    function fail(message) {
+      if (settled) return;
+      settled = true;
+
+      try {
+        if (recorder && recorder.state !== "inactive") recorder.stop();
+      } catch (_) {}
+
+      cleanup();
+      reject(new Error(message));
+    }
+
+    video.preload = "auto";
+    video.playsInline = true;
+    video.src = sourceUrl;
+
+    video.onerror = () => fail("Could not read the video file.");
+
+    video.onloadedmetadata = async () => {
+      try {
+        if (!video.videoWidth || !video.videoHeight) {
+          fail("Invalid video dimensions.");
+          return;
+        }
+
+        if (video.duration > MAX_SECONDS) {
+          fail("Video must not exceed 3 minutes.");
+          return;
+        }
+
+        const width = Math.min(320, video.videoWidth);
+        let height = Math.round(width * video.videoHeight / video.videoWidth);
+        if (height % 2) height++;
+        height = Math.max(2, height);
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          fail("Could not initialize compression.");
+          return;
+        }
+
+        canvasStream = canvas.captureStream(20);
+
+        if (typeof video.captureStream === "function") {
+          sourceStream = video.captureStream();
+        } else if (typeof video.mozCaptureStream === "function") {
+          sourceStream = video.mozCaptureStream();
+        } else {
+          fail("Audio capture unsupported. Try Chrome.");
+          return;
+        }
+
+        const audioTracks = sourceStream.getAudioTracks();
+        if (!audioTracks.length) {
+          fail("No audio track found in the video.");
+          return;
+        }
+
+        const combined = new MediaStream([
+          ...canvasStream.getVideoTracks(),
+          ...audioTracks
+        ]);
+
+        const mimeType = [
+          "video/webm;codecs=vp8,opus",
+          "video/webm"
+        ].find(type => MediaRecorder.isTypeSupported(type));
+
+        if (!mimeType) {
+          fail("WebM recording is unsupported.");
+          return;
+        }
+
+        recorder = new MediaRecorder(combined, {
+          mimeType,
+          videoBitsPerSecond: 95000,
+          audioBitsPerSecond: 24000
+        });
+
+        recorder.ondataavailable = event => {
+          if (event.data && event.data.size) chunks.push(event.data);
+        };
+
+        recorder.onerror = () => fail("Video compression failed.");
+
+        recorder.onstop = () => {
+          if (settled) return;
+          settled = true;
+
+          const blob = new Blob(chunks, { type: mimeType });
+          cleanup();
+
+          if (!blob.size) {
+            reject(new Error("Compression produced an empty video."));
+            return;
+          }
+
+          if (blob.size > MAX_BYTES) {
+            reject(new Error(
+              "Compressed video is " +
+              (blob.size / 1048576).toFixed(2) +
+              " MB. Maximum is 4 MB. Choose a shorter video."
+            ));
+            return;
+          }
+
+          resolve(new File([blob], "video.webm", {
+            type: mimeType,
+            lastModified: Date.now()
+          }));
+        };
+
+        function drawFrame() {
+          if (settled || !recorder ||
+              recorder.state === "inactive") return;
+
+          try {
+            ctx.drawImage(video, 0, 0, width, height);
+          } catch (_) {}
+
+          if (video.duration > 0 && onProgress) {
+            onProgress(Math.min(99,
+              Math.floor(video.currentTime / video.duration * 100)
+            ));
+          }
+
+          if (!video.ended) animationId = requestAnimationFrame(drawFrame);
+        }
+
+        video.onended = () => {
+          if (recorder && recorder.state !== "inactive") recorder.stop();
+        };
+
+        timeoutId = setTimeout(() =>
+          fail("Compression timed out. Try a shorter video."),
+          Math.max(60000, (video.duration + 30) * 1000)
+        );
+
+        recorder.start(250);
+
+        try {
+          await video.play();
+          drawFrame();
+        } catch (_) {
+          fail("Could not process video. Try Chrome.");
+        }
+      } catch (error) {
+        fail(error.message || "Video compression failed.");
+      }
+    };
+  });
+}
+
+btn.addEventListener("click", startUpload);
+
+async function startUpload() {
+  if (busy) return;
+
+  if (!token) {
+    location.replace("login.html");
+    return;
+  }
+
+  if (BASE_URL.includes("YOUR-BACKEND-DOMAIN")) {
+    alert("Replace BASE_URL with your deployed backend URL.");
+    return;
+  }
+
+  if (!/^https?:\/\//i.test(BASE_URL)) {
+    alert("Enter a valid backend URL.");
+    return;
+  }
+
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Please select an image or video.");
+    return;
+  }
+
+  if (!file.type.startsWith("video/") &&
+      !file.type.startsWith("image/")) {
+    alert("Only image and video files are supported.");
+    return;
+  }
+
+  if (file.type.startsWith("video/") &&
+      currentDuration > MAX_SECONDS) {
+    alert("Videos must not exceed 3 minutes.");
+    return;
+  }
+
+  busy = true;
+  btn.disabled = true;
+  btn.textContent = "Preparing...";
+  progressBar.style.display = "block";
+  progressFill.style.width = "0%";
+
+  try {
+    let uploadFile = file;
+
+    if (file.type.startsWith("video/")) {
+      setStatus("Compressing video. Keep this page open...");
+
+      uploadFile = await compressVideo(file, percent => {
+        progressFill.style.width = Math.round(percent * 0.5) + "%";
+        btn.textContent = "Compressing " + percent + "%";
+        setStatus("Compressing video: " + percent + "%");
+      });
+    }
+
+    if (uploadFile.size > MAX_BYTES) {
+      throw new Error("File exceeds the 4 MB upload limit.");
+    }
+
+    const fd = new FormData();
+    fd.append("file", uploadFile, uploadFile.name);
+    fd.append("caption", document.getElementById("caption").value.trim());
+
+    btn.textContent = "Uploading...";
+    setStatus("Uploading " +
+      (uploadFile.size / 1048576).toFixed(2) + " MB...");
+
+    const base = BASE_URL.replace(/\/+$/, "");
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", base + "/api/posts", true);
+      xhr.setRequestHeader("Authorization", "Bearer " + token);
+      xhr.timeout = 180000;
+
+      xhr.upload.onprogress = event => {
+        if (event.lengthComputable) {
+          const percent = Math.round(event.loaded / event.total * 100);
+          progressFill.style.width =
+            (50 + Math.round(percent * 0.5)) + "%";
+          btn.textContent = "Uploading " + percent + "%";
+          setStatus("Uploading: " + percent + "%");
+        }
+      };
+
+      xhr.onload = () => {
+        let data = {};
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch (_) {}
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(
+            data.msg || "Upload failed. HTTP " + xhr.status
+          ));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error(
+        "Network error. Check backend URL, internet and CORS."
+      ));
+
+      xhr.ontimeout = () => reject(new Error("Upload timed out. Try again."));
+      xhr.send(fd);
+    });
+
+    progressFill.style.width = "100%";
+    setStatus("Post shared successfully!", "#00ff00");
+    btn.textContent = "Done";
+
+    setTimeout(() => location.href = "feed.html", 700);
+
+  } catch (error) {
+    console.error("UPLOAD ERROR:", error);
+    setStatus("Failed: " + error.message, "#ff453a");
+    btn.disabled = false;
+    btn.textContent = "Share";
+    busy = false;
+  }
+}
+</script>
+</body>
+</html>

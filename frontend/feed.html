@@ -54,8 +54,8 @@ a{color:inherit;text-decoration:none}
 <div class="sidebar" id="sidebar">
   <div class="sidebar-top"><b>RAyMoNd Menu</b><span class="close" onclick="closeAll()">×</span></div>
   <div class="sidebar-links">
-    <div class="side-link"><span>🏆</span> <a href="football.html"> League Match</a></div>
-    <div class="side-link"><span>🌍</span> <a href="countrymatch.html"> Country Match </a></div>
+    <div class="side-link ball"><span>🏆</span>  League Match </div>
+    <div class="side-link Country"><span>🌍</span>  Country Match </div>
     <div class="side-link"><span>🖼️</span> <a href="media.html"> Saved Pictures </a></div>
     <div class="side-link"><span>📝</span> <a href="note.html"> Saved Note </a></div>
     <div class="side-link"><span>📊</span> <a href="info.html"> Contact us </a></div>
@@ -135,6 +135,20 @@ async function saveP(id){ await fetch(BASE+'/api/posts/'+id+'/save',{method:'POS
 function logout(){ localStorage.removeItem('token'); location.href='login.html'; }
 load(); loadMsgBadge();
 setInterval(loadMsgBadge,5000);
+
+  const ball = document.querySelector('.ball')
+   const Country = document.querySelector('.Country')
+      
+   ball.addEventListener('click', async () => {
+        const response = fetch('https://raymonddomain.dev/api/sync')
+         window.location.href="football.html";
+    });
+
+      Country.addEventListener('click', () => {
+      const response = fetch('https://raymonddomain.dev/api/fetch-now')
+       window.location.href="countrymatch.html"
+   })  
+
 </script>
 
 <!-- TIKTOK BACKGROUND UPLOAD BAR - ADDED HERE -->
