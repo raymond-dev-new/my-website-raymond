@@ -35,6 +35,11 @@ app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); 
 mongoose.connect(url).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'register.html')); })
 
+const uploadd = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 4.5 * 1024 * 1024 },
+  fileFilter: (req,file,cb)=>cb(null, true)
+});
 
 let io;
 const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
@@ -45,11 +50,6 @@ function authh(req, res, next) {
   try { req.userId = jwt.verify(tokenN, SECRET).id; next(); }
   catch { return res.status(401).json({ msg: "Invalid" }); }
 }
-
-const uploadd = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 } // Vercel max is 4.5MB, we set 5MB
-});
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
@@ -338,42 +338,40 @@ app.get('/api/users/:id', async (req,res)=>{
 
 // CREATE POST - FIXED FOR VERCEL 4.5MB LIMIT
 
-app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
+function authhh(req,res,next){
+  try{
+    const h = req.headers.authorization || "";
+    const token = h.replace('Bearer ','');
+    if(!token) return res.status(401).json({msg:"No token - login again"});
+    const d = jwt.verify(token, process.env.JWT_SECRET || "secret123");
+    req.userId = d.id || d.userId || d._id;
+    next();
+  }catch(e){
+    return res.status(401).json({msg:"Auth failed: "+e.message});
+  }
+}
+
+app.post('/api/posts', authhh, uploadd.single('file'), async (req, res) => {
   try{
     let mediaUrl = req.body.mediaUrl || "";
     let type = req.body.type || 'image';
-
     if(req.file){
-      const b64 = req.file.buffer.toString('base64');
-      if(req.file.mimetype.includes('webm') || req.file.mimetype.startsWith('video')){
-        mediaUrl = `data:video/webm;base64,${b64}`;
-        type = 'video';
-      }else{
-        mediaUrl = `data:${req.file.mimetype};base64,${b64}`;
-        type = 'image';
+      if(req.file.size > 4 * 1024 * 1024){
+        return res.status(413).json({msg:`File ${(req.file.size/1048576).toFixed(1)}MB too big`});
       }
+      const b64 = req.file.buffer.toString('base64');
+      mediaUrl = `data:${req.file.mimetype};base64,${b64}`;
+      type = req.file.mimetype.startsWith('video/')? 'video' : 'image';
     }
-
-    if(!mediaUrl) return res.status(400).json({msg:"No file or mediaUrl"});
-
-    const post = await Post.create({
-      user: req.userId,
-      caption: req.body.caption || "",
-      mediaUrl,
-      type
-    });
-
-    const fullPost = await Post.findById(post._id).populate('user');
-    res.json(fullPost);
+    if(!mediaUrl) return res.status(400).json({msg:"No file"});
+    const post = await Post.create({ user: req.userId, caption: req.body.caption||"", mediaUrl, type });
+    res.json(await Post.findById(post._id).populate('user'));
   }catch(e){
     console.error(e);
-    if(e.code === 'LIMIT_FILE_SIZE'){
-      return res.status(413).json({msg:"File too large (max 4.5MB). Compress more."});
-    }
+    if(e.code === 'LIMIT_FILE_SIZE') return res.status(413).json({msg:"Too large - max 4.5MB"});
     res.status(500).json({msg: e.message});
   }
 });
-
 
 // YOUR EXISTING ROUTES - KEEP SAME
 app.delete('/api/posts/:id', authh, async (req, res) => {
