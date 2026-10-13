@@ -18,11 +18,11 @@ button:disabled{background:#0a4a78}
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select video (max 2:00)<br>Max 4MB after compress</div>
+<div class="preview" id="preview">Select video (max 2:00)<br>Target 4MB max</div>
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
-<p id="status">Target: 4MB max - Normal voice ✅</p>
+<p id="status">4MB max - normal voice - anti-stuck</p>
 <canvas id="canvas" style="display:none"></canvas>
 </div>
 <script src="upload-manager.js"></script>
@@ -36,99 +36,118 @@ fileInput.onchange=()=>{
   const f=fileInput.files[0]; if(!f) return;
   const url=URL.createObjectURL(f);
   if(f.type.startsWith('video')){
-    preview.innerHTML=`<video id="vp" src="${url}" controls playsinline></video>`;
+    preview.innerHTML=`<video id="vp" src="${url}" controls playsinline muted></video>`;
     document.getElementById('vp').onloadedmetadata=e=>{
       const d=e.target.duration;
-      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB → will be ~4MB`;
-      if(d>120){ alert('Max 2 mins'); fileInput.value=''; preview.innerHTML='Select video (max 2:00)'; info.innerText=''; }
+      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - ${(f.size/1024/1024).toFixed(1)}MB → ~4MB`;
+      if(d>120){ alert('Max 2 mins'); fileInput.value=''; preview.innerHTML='Select video'; info.innerText=''; }
     };
   } else { preview.innerHTML=`<img src="${url}">`; }
 };
 
-// 4MB MAX = 200k video + 48k audio = 120sec = 3.7MB
 function compressTo4MB(file, onProgress){
  return new Promise((res,rej)=>{
   const v=document.createElement('video');
   v.src=URL.createObjectURL(file);
-  v.muted=false; v.playsInline=true; v.preload="auto";
+  v.crossOrigin="anonymous";
+  v.muted=true; // muted=true to avoid phone audio block - we add audio separately
+  v.playsInline=true;
+  v.preload="auto";
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
+  let audioCtx, source, dest;
+
   v.onloadedmetadata=()=>{
-    // 360p = small + still clear at 200k
     canvas.width=360;
     canvas.height=Math.round(v.videoHeight*(360/v.videoWidth));
-    if(canvas.height%2!==0) canvas.height++;
+    if(canvas.height%2) canvas.height++;
 
-    const canvasStream=canvas.captureStream(24);
-    let audioTracks=[];
-    try{ audioTracks=v.captureStream().getAudioTracks(); }catch{}
+    // WebAudio for normal voice
+    try{
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      dest=audioCtx.createMediaStreamDestination();
+      source=audioCtx.createMediaElementSource(v);
+      source.connect(dest);
+      source.connect(audioCtx.destination);
+    }catch(e){ console.log('audio ctx fail', e); }
+
+    const canvasStream=canvas.captureStream(20);
     const combined=new MediaStream();
     canvasStream.getVideoTracks().forEach(t=>combined.addTrack(t));
-    audioTracks.forEach(t=>combined.addTrack(t));
+    if(dest && dest.stream.getAudioTracks().length){
+      dest.stream.getAudioTracks().forEach(t=>combined.addTrack(t));
+    } else {
+      // fallback try captureStream audio
+      try{ v.captureStream().getAudioTracks().forEach(t=>combined.addTrack(t)); }catch{}
+    }
 
     const chunks=[];
-    const rec=new MediaRecorder(combined,{
-      mimeType:'video/webm;codecs=vp8,opus',
-      videoBitsPerSecond:200000, // 200k = main size
-      audioBitsPerSecond:48000 // 48k = voice still clear & normal
-    });
-
+    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:200000, audioBitsPerSecond:48000});
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
     rec.onstop=()=>{
-      const blob=new Blob(chunks,{type:'video/webm'});
-      const finalFile=new File([blob],'video.webm',{type:'video/webm'});
-      console.log(`Compressed to ${(finalFile.size/1024/1024).toFixed(2)}MB`);
-      res(finalFile);
+      if(audioCtx) audioCtx.close();
+      res(new File([new Blob(chunks,{type:'video/webm'})],'video.webm',{type:'video/webm'}));
     };
+
     rec.start(100);
-    v.playbackRate=1; // NORMAL VOICE - must be 1 to stay synced
+    v.currentTime=0;
+    v.playbackRate=1;
+
+    let lastPct=0, stuckTimer=0;
+    const stuckInterval=setInterval(()=>{
+      const pct=Math.round((v.currentTime/v.duration)*100)||0;
+      if(pct===lastPct){ stuckTimer++; } else { stuckTimer=0; lastPct=pct; }
+      if(stuckTimer>12){ // 12 sec stuck = abort
+        clearInterval(stuckInterval);
+        rec.stop();
+        rej(new Error('Compression stuck at '+pct+'% - phone blocked it, using original'));
+      }
+    },1000);
+
+    v.onended=()=>{
+      clearInterval(stuckInterval);
+      setTimeout(()=>rec.stop(),300);
+    };
 
     v.play().then(()=>{
-      let lastProgress=0;
       function draw(){
         if(v.ended || v.paused) return;
         ctx.drawImage(v,0,0,canvas.width,canvas.height);
         const pct=Math.round((v.currentTime/v.duration)*100);
-        if(pct!==lastProgress && pct%2===0){ // update every 2%
-          lastProgress=pct;
-          if(onProgress) onProgress(pct);
-        }
+        if(onProgress && pct%1===0) onProgress(pct);
         requestAnimationFrame(draw);
       }
       requestAnimationFrame(draw);
-    }).catch(rej);
-    v.onended=()=>setTimeout(()=>rec.stop(),200);
+    }).catch(e=>{ clearInterval(stuckInterval); rej(e); });
   };
-  v.onerror=()=>rej(new Error('Load failed'));
+  v.onerror=()=>rej(new Error('Video load failed'));
+  setTimeout(()=>rej(new Error('Load timeout - file too large')), 15000);
  });
 }
 
 async function startUpload(){
  const f=fileInput.files[0]; if(!f) return alert('Select file');
  const btn=document.getElementById('btn'); btn.disabled=true;
- UploadManager.showBar(5,'Preparing 4MB compress...');
- statusEl.innerText='Preparing...';
+ UploadManager.showBar(5,'Compressing to 4MB...');
+ statusEl.innerText='Compressing... if stuck >15sec will auto upload original';
 
  let up=f;
  if(f.type.startsWith('video')){
-   statusEl.innerText='Compressing to 4MB max... normal voice, please wait';
    try{
      up=await compressTo4MB(f, (p)=>{
-       const mbEst=(p*0.037).toFixed(1); // rough est to 3.7MB
-       UploadManager.showBar(5 + Math.round(p*0.6), `Compressing ${p}% (~${mbEst}MB)`);
-       statusEl.innerText=`Compressing ${p}% - target 4MB max - voice normal`;
-       btn.innerText=`Compressing ${p}%`;
+       UploadManager.showBar(5 + Math.round(p*0.6), `Compressing ${p}%`);
+       statusEl.innerText=`Compressing ${p}% - target 4MB`;
+       btn.innerText=`${p}% compressing...`;
      });
-     statusEl.innerText=`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB ✅`;
+     statusEl.innerText=`${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB ✅`;
    }catch(e){
-     console.log(e);
-     statusEl.innerText='Compress failed: '+e.message;
-     btn.disabled=false; btn.innerText='Share'; return;
+     console.log(e.message);
+     statusEl.innerText=e.message+' - uploading original (still normal voice)';
+     up=f; // fallback to original so it NEVER gets stuck
    }
  }
 
  const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
  UploadManager.showBar(70,'Uploading...');
- btn.innerText='Uploading...';
 
  try{
    await UploadManager.uploadWithProgress(fd, token, (p)=>{
@@ -136,13 +155,11 @@ async function startUpload(){
      statusEl.innerText=`Uploading ${p}% - ${(up.size/1024/1024).toFixed(2)}MB`;
      btn.innerText=`Uploading ${p}%`;
    });
-   UploadManager.showBar(100,'Done! 4MB max ✅');
-   statusEl.innerText=`Done! ${(up.size/1024/1024).toFixed(2)}MB - normal voice synced ✅`;
+   UploadManager.showBar(100,'Done!');
    setTimeout(()=> location.href='feed.html', 700);
  }catch(e){
    btn.disabled=false; btn.innerText='Share';
-   statusEl.innerText='Failed: '+e.message;
-   UploadManager.showBar(0,'Failed');
+   statusEl.innerText='Upload failed: '+e.message;
  }
 }
 </script>
