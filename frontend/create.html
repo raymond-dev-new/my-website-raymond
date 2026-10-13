@@ -7,12 +7,12 @@
 <style>
 *{box-sizing:border-box} body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
 .box{width:100%;max-width:480px;padding:16px}
-.preview{width:100%;min-height:260px;background:#111;border:1px solid #262626;border-radius:12px;margin:10px 0;overflow:hidden;display:flex;justify-content:center;align-items:center;color:#888}
+.preview{width:100%;min-height:260px;background:#111;border:1px solid #262626;border-radius:12px;margin:10px 0;overflow:hidden;display:flex;justify-content:center;align-items:center;color:#888;position:relative}
 .preview video,.preview img{width:100%;max-height:540px;object-fit:contain}
 input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0}
 button{width:100%;background:#0095f6;border:0;color:#fff;padding:14px;border-radius:8px;font-weight:700}
 button:disabled{opacity:.6}
-#info,#status{font-size:12px;color:#999}
+#info,#status{font-size:12px;color:#999;word-break:break-all}
 #progressBar{width:100%;height:5px;background:#262626;border-radius:3px;margin-top:8px;display:none;overflow:hidden}
 #progressFill{height:100%;width:0;background:#0095f6;transition:width.2s}
 </style>
@@ -20,7 +20,7 @@ button:disabled{opacity:.6}
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select - Max 3:00</div>
+<div class="preview" id="preview">Select - Max 3:00 - Max 4MB</div>
 <div id="info"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
@@ -45,11 +45,11 @@ const canvas=document.getElementById('canvas');
 
 let currentDuration=0, previewUrl=null, busy=false, previewVideo=null;
 const MAX_SECONDS=180;
+const MAX_BYTES=4*1024*1024;
 const setStatus=(m,c='#999')=>{statusEl.textContent=m; statusEl.style.color=c;};
 
 fileInput.addEventListener('change',()=>{
   if(previewUrl) URL.revokeObjectURL(previewUrl);
-  if(previewVideo){ previewVideo.pause(); previewVideo=null; }
   const file=fileInput.files[0]; if(!file) return;
   previewUrl=URL.createObjectURL(file);
   if(file.type.startsWith('video/')){
@@ -60,105 +60,135 @@ fileInput.addEventListener('change',()=>{
     previewVideo.onloadedmetadata=()=>{
       currentDuration=previewVideo.duration;
       if(currentDuration>MAX_SECONDS){ alert('3 MINUTES ONLY'); fileInput.value=''; preview.textContent='Too long'; return; }
-      info.textContent=`${Math.floor(currentDuration/60)}:${String(Math.floor(currentDuration%60)).padStart(2,'0')} / 3:00 • ${(file.size/1048576).toFixed(1)}MB`;
+      info.textContent=`${Math.floor(currentDuration/60)}:${String(Math.floor(currentDuration%60)).padStart(2,'0')} / 3:00 • ${(file.size/1048576).toFixed(2)}MB`;
+      if(file.size<=MAX_BYTES) setStatus('✅ Under 4MB - will upload directly without compress');
+      else setStatus('Over 4MB - will compress');
     };
   } else {
     preview.innerHTML=`<img src="${previewUrl}">`;
+    info.textContent=`Image ${(file.size/1048576).toFixed(2)}MB`;
   }
 });
 
 function compressTo3MB(file,onProgress){
-  return new Promise((resolve,reject)=>{
-    // STOP preview video - no autoplay background
-    if(previewVideo){ try{previewVideo.pause(); previewVideo.muted=true; previewVideo.src='';}catch{} previewVideo=null; }
-    preview.innerHTML='<div style="padding:40px">Compressing - no preview playing...</div>';
+  return new Promise(async (resolve,reject)=>{
+    // 1. STOP BACKGROUND SOUND BUT KEEP PREVIEW VISIBLE
+    if(previewVideo){
+      try{ previewVideo.pause(); previewVideo.muted=true; }catch{}
+    }
 
     const url=URL.createObjectURL(file);
     const video=document.createElement('video');
-    video.src=url; video.muted=false; video.playsInline=true; video.preload='auto'; video.crossOrigin='anonymous';
+    video.src=url;
+    video.muted=false; // keep voice
+    video.playsInline=true;
+    video.preload='auto';
+    video.style.display='none';
+    document.body.appendChild(video);
 
-    let recorder,chunks=[],canvasStream,combinedStream,anim,finished=false;
-    const cleanup=()=>{ cancelAnimationFrame(anim); if(canvasStream) canvasStream.getTracks().forEach(t=>t.stop()); if(combinedStream) combinedStream.getTracks().forEach(t=>t.stop()); URL.revokeObjectURL(url); };
-    const fail=m=>{ if(finished) return; finished=true; try{if(recorder&&recorder.state!=='inactive') recorder.stop();}catch{} cleanup(); reject(new Error(m)); };
+    let recorder,chunks=[],canvasStream,combinedStream,anim,finished=false, lastTime=0, stuckTimer=0;
+    const cleanup=()=>{
+      cancelAnimationFrame(anim);
+      if(canvasStream) canvasStream.getTracks().forEach(t=>t.stop());
+      if(combinedStream) combinedStream.getTracks().forEach(t=>t.stop());
+      try{ video.pause(); video.remove(); }catch{}
+      URL.revokeObjectURL(url);
+    };
+    const fail=m=>{ if(finished) return; finished=true; cleanup(); reject(new Error(m)); };
 
     video.onloadedmetadata=async()=>{
-      canvas.width=640; let h=Math.round(640*(video.videoHeight/video.videoWidth)); if(h%2) h++; canvas.height=h||360;
+      canvas.width=480; // 480p = clear but still small
+      let h=Math.round(480*(video.videoHeight/video.videoWidth)); if(h%2) h++; canvas.height=h||360;
       const ctx=canvas.getContext('2d',{alpha:false});
 
-      try{ await video.play(); }catch(e){ return fail('Tap allow - play blocked'); }
-      // wait a bit so audio track appears
-      await new Promise(r=>setTimeout(r,300));
+      try{
+        video.currentTime=0;
+        await video.play();
+      }catch(e){ return fail('Play blocked - use Chrome Android'); }
 
-      let cap;
-      try{ cap=video.captureStream? video.captureStream() : video.mozCaptureStream(); }catch{ return fail('Use Chrome'); }
-      let audioTracks=cap.getAudioTracks();
-      if(!audioTracks.length){
-        // retry after 500ms - some browsers need time
-        await new Promise(r=>setTimeout(r,500));
-        cap=video.captureStream? video.captureStream() : video.mozCaptureStream();
-        audioTracks=cap.getAudioTracks();
+      // CRITICAL FIX: get audio AFTER play started
+      let cap=null;
+      for(let i=0;i<10;i++){
+        try{ cap=video.captureStream? video.captureStream() : video.mozCaptureStream(); }catch{}
+        if(cap && cap.getAudioTracks().length) break;
+        await new Promise(r=>setTimeout(r,200));
       }
-      if(!audioTracks.length){ return fail('No audio in this video - record with sound on'); }
-
-      // reset to start after getting tracks
-      video.currentTime=0; await new Promise(r=>setTimeout(r,200));
+      if(!cap ||!cap.getAudioTracks().length) return fail('No audio track - your video is muted. Record with sound.');
 
       canvasStream=canvas.captureStream(30);
-      combinedStream=new MediaStream([canvasStream.getVideoTracks()[0],...audioTracks]);
+      combinedStream=new MediaStream([canvasStream.getVideoTracks()[0],...cap.getAudioTracks()]);
 
-      let vBps=220000, aBps=64000;
-      if(video.duration>90) vBps=140000;
-      if(video.duration>150) vBps=100000;
-
+      let vBps = file.size>20*1024*1024? 90000 : 160000;
+      if(video.duration>120) vBps=90000;
       const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'video/webm';
-      recorder=new MediaRecorder(combinedStream,{mimeType:mime,videoBitsPerSecond:vBps,audioBitsPerSecond:aBps});
-      recorder.ondataavailable=e=>{if(e.data.size) chunks.push(e.data);};
-      recorder.onstop=()=>{ if(finished) return; finished=true; cleanup(); const blob=new Blob(chunks,{type:'video/webm'}); resolve(new File([blob],'video.mp4',{type:'video/mp4'})); };
+
+      recorder=new MediaRecorder(combinedStream,{mimeType:mime, videoBitsPerSecond:vBps, audioBitsPerSecond:64000});
+      chunks=[];
+      recorder.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+      recorder.onstop=()=>{
+        if(finished) return; finished=true;
+        cleanup();
+        const blob=new Blob(chunks,{type:'video/webm'});
+        console.log('compressed', (blob.size/1048576).toFixed(2)+'MB');
+        resolve(new File([blob],'video.mp4',{type:'video/mp4'}));
+      };
+      recorder.start(100);
 
       function draw(){
         if(finished) return;
-        if(video.ended || video.currentTime>=video.duration-0.05){ try{recorder.stop();}catch{} return; }
+        if(video.ended || video.currentTime>=video.duration-0.1){ try{recorder.stop();}catch{} return; }
+        // detect stuck
+        if(Math.abs(video.currentTime-lastTime)<0.01){ stuckTimer++; if(stuckTimer>120){ try{recorder.stop();}catch{} return; } }
+        else { stuckTimer=0; lastTime=video.currentTime; }
         try{ ctx.drawImage(video,0,0,canvas.width,canvas.height); }catch{}
         if(onProgress) onProgress(Math.floor((video.currentTime/video.duration)*100));
         anim=requestAnimationFrame(draw);
       }
-
-      recorder.start(100);
-      try{ await video.play(); }catch{}
       draw();
-      video.onended=()=>{ try{recorder.stop();}catch{} };
     };
-    video.onerror=()=>fail('Video load failed');
-    setTimeout(()=>{ if(!finished) fail('Timeout - try smaller file'); }, 120000);
+    video.onerror=()=>fail('Load failed - try different video');
+    setTimeout(()=>{ if(!finished) fail('Compress timeout - file too big, trim to <2min'); }, 90000);
   });
 }
 
 async function startUpload(){
   if(busy) return;
   const file=fileInput.files[0]; if(!file) return alert('Select file');
-  if(file.type.startsWith('video/')&&currentDuration>MAX_SECONDS) return alert('3 MINUTES ONLY');
-  busy=true; btn.disabled=true; progressBar.style.display='block'; progressFill.style.width='0%';
+  if(file.type.startsWith('video/') && currentDuration>MAX_SECONDS) return alert('3 MINUTES ONLY');
+  busy=true; btn.disabled=true; progressBar.style.display='block'; progressFill.style.width='5%';
+
+  // STOP preview sound immediately
+  if(previewVideo){ try{ previewVideo.pause(); previewVideo.muted=true; }catch{} }
+
   let uploadFile=file;
   try{
-    if(file.type.startsWith('video/')){
-      setStatus('Compressing - preview stopped...');
+    // IF ALREADY UNDER 4MB - DON'T COMPRESS AT ALL - NO STUCK
+    if(file.type.startsWith('video/') && file.size>MAX_BYTES){
+      setStatus('Compressing... preview paused, no background sound');
       uploadFile=await compressTo3MB(file,p=>{
-        progressFill.style.width=(p*0.6)+'%';
+        progressFill.style.width=(p*0.7)+'%';
         btn.textContent=`Compressing ${p}%`;
-        setStatus(`Compressing ${p}%`);
       });
       const mb=uploadFile.size/1048576;
-      if(mb>4) throw new Error(`Still ${mb.toFixed(2)}MB - use 2min`);
-      setStatus(`✅ ${mb.toFixed(2)}MB ready`,'#0f0');
-      progressFill.style.width='65%';
+      if(mb>4) throw new Error(`Still ${mb.toFixed(2)}MB - trim video shorter`);
+      setStatus(`✅ ${mb.toFixed(2)}MB - clear & synced`,'#0f0');
+    } else {
+      setStatus('Uploading directly - no compress needed','lime');
+      progressFill.style.width='40%';
     }
+
     const fd=new FormData(); fd.append('file',uploadFile); fd.append('caption',document.getElementById('caption').value);
     btn.textContent='Uploading...';
+    progressFill.style.width='80%';
     const res=await fetch(`${BASE_URL}/api/posts`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:fd});
     const txt=await res.text(); console.log(res.status,txt);
     if(!res.ok) throw new Error(txt);
-    progressFill.style.width='100%'; location.href='feed.html';
-  }catch(e){ console.error(e); setStatus(e.message,'#f44'); alert(e.message); btn.disabled=false; busy=false; btn.textContent='Share'; }
+    progressFill.style.width='100%'; setStatus('Done','#0f0');
+    location.href='feed.html';
+  }catch(e){
+    console.error(e); setStatus('Failed: '+e.message,'#f44'); alert(e.message);
+    btn.disabled=false; busy=false; btn.textContent='Share'; progressFill.style.width='0%';
+  }
 }
 </script>
 </body>
