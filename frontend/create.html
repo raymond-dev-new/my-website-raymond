@@ -28,7 +28,7 @@ small{color:#777;font-size:11px}
 <div id="progressBar"><div id="progressFill"></div></div>
 </div>
 <script>
-const BASE_URL="http://localhost:8000";
+const BASE_URL="https://raymonddomain.dev";
 let token=localStorage.getItem('token');
 if(!token) location.replace('login.html');
 if(token.startsWith('Bearer ')) token=token.slice(7);
