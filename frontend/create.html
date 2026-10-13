@@ -17,7 +17,7 @@ button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select video (max 2:00)</div>
+<div class="preview" id="preview">Select video (max 2:00) <br> Please wait still post finish loading..."></video></div>
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
@@ -64,7 +64,7 @@ function ultraFastCompress(file, onProgress){
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
     rec.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); res(new File([blob],'f.webm',{type:'video/webm'})); };
     rec.start(100);
-    v.playbackRate=1.5; // 1.5x = fast but clear sound
+    v.playbackRate=1; // 1.5x = fast but clear sound
     v.play().then(()=>{
       function draw(){
         if(v.ended || v.paused) return;
