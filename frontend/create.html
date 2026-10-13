@@ -10,8 +10,8 @@ body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-
 .preview{width:100%;background:#111;min-height:250px;display:flex;justify-content:center;align-items:center;border-radius:12px;border:1px solid #262626;margin:10px 0;overflow:hidden}
 .preview video,img{width:100%;max-height:520px}
 input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0;box-sizing:border-box}
-button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-radius:8px;font-weight:700;font-size:15px}
-#status{font-size:13px;color:#888;margin-top:8px}
+button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-radius:8px;font-weight:700}
+#status{font-size:12px;color:#888;margin-top:8px}
 </style>
 </head>
 <body>
@@ -21,7 +21,7 @@ button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
-<p id="status">Ultra compressed: 2 min = ~1.5MB with sound</p>
+<p id="status"> Create Post </p>
 <canvas id="canvas" style="display:none"></canvas>
 </div>
 <script src="upload-manager.js"></script>
@@ -29,47 +29,59 @@ button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
-let dur=0, fileInput=document.getElementById('file'), preview=document.getElementById('preview'), info=document.getElementById('info'), statusEl=document.getElementById('status');
+let fileInput=document.getElementById('file'), preview=document.getElementById('preview'), info=document.getElementById('info'), statusEl=document.getElementById('status');
 
 fileInput.onchange=()=>{
   const f=fileInput.files[0]; if(!f) return;
   const url=URL.createObjectURL(f);
   if(f.type.startsWith('video')){
-    preview.innerHTML=`<video id="vp" src="${url}" controls playsinline></video>`;
+    preview.innerHTML=`<video id="vp" src="${url}" controls playsinline muted></video>`;
     document.getElementById('vp').onloadedmetadata=e=>{
-      dur=e.target.duration;
-      info.innerText=`Duration ${Math.floor(dur/60)}:${String(Math.floor(dur%60)).padStart(2,'0')}/2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB`;
-      if(dur>120){ alert('Max 2 mins'); fileInput.value=''; }
+      const d=e.target.duration;
+      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB`;
+      if(d>120){ alert('Max 2 mins'); fileInput.value=''; }
     };
   } else { preview.innerHTML=`<img src="${url}">`; }
 };
 
-// ULTRA COMPRESS: 240p + 150kbps video + 32k audio = FASTEST + SMALLEST WITH SOUND
-function ultraCompress(file){
+// FASTEST COMPRESS - 3.5x speed, 15fps, 240p, 100kbps video + 24k audio
+function ultraFastCompress(file, onProgress){
  return new Promise((res,rej)=>{
   const v=document.createElement('video');
   v.src=URL.createObjectURL(file);
-  v.muted=false; v.playsInline=true; v.crossOrigin="anonymous";
+  v.muted=true; v.playsInline=true; v.crossOrigin="anonymous";
+  v.preload="auto";
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
   v.onloadedmetadata=()=>{
-    canvas.width=240; // 240p = super small
-    canvas.height=v.videoHeight*(240/v.videoWidth);
-    const canvasStream=canvas.captureStream(20); // 20fps = faster
-    let micStream=null; try{ micStream=v.captureStream(); }catch{}
+    canvas.width=240; canvas.height=Math.round(v.videoHeight*(240/v.videoWidth));
+    const canvasStream=canvas.captureStream(15); // 15fps = half CPU = 2x faster
+    let audioTracks=[];
+    try{ const s=v.captureStream(); audioTracks=s.getAudioTracks(); }catch{}
     const combined=new MediaStream();
     canvasStream.getVideoTracks().forEach(t=>combined.addTrack(t));
-    if(micStream) micStream.getAudioTracks().forEach(t=>combined.addTrack(t));
+    audioTracks.forEach(t=>combined.addTrack(t));
 
     const chunks=[];
-    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:150000, audioBitsPerSecond:32000});
+    // 100k video + 24k audio = ULTRA SMALL
+    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:100000, audioBitsPerSecond:24000});
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
-    rec.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); res(new File([blob],'c.webm',{type:'video/webm'})); };
-    rec.start(100);
-    v.playbackRate=2.5; // 2.5x speed = 1:03 = 25 sec but with sound
-    v.play();
-    function draw(){ if(!v.ended){ ctx.drawImage(v,0,0,canvas.width,canvas.height); requestAnimationFrame(draw); } }
-    draw();
-    v.onended=()=>setTimeout(()=>rec.stop(),100);
+    rec.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); res(new File([blob],'f.webm',{type:'video/webm'})); };
+    rec.start(50);
+    v.playbackRate=3.5; // 1:03 = 18 sec to compress
+    v.play().then(()=>{
+      let last=0;
+      function draw(now){
+        if(v.ended || v.paused) return;
+        if(now-last>66){ // 15fps = draw every 66ms
+          ctx.drawImage(v,0,0,canvas.width,canvas.height);
+          last=now;
+          if(onProgress) onProgress(Math.round((v.currentTime/v.duration)*100));
+        }
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+    });
+    v.onended=()=>setTimeout(()=>rec.stop(),80);
   };
   v.onerror=rej;
  });
@@ -77,35 +89,37 @@ function ultraCompress(file){
 
 async function startUpload(){
  const f=fileInput.files[0]; if(!f) return alert('Select file');
- const btn=document.getElementById('btn'); btn.disabled=true;
- UploadManager.start(f, document.getElementById('caption').value, token);
+ const btn=document.getElementById('btn'); btn.disabled=true; btn.innerText='Preparing...';
+ UploadManager.showBar(5,'Preparing fast upload...');
+
  let up=f;
+ if(f.type.startsWith('video')){
+   if(f.size > 1.5*1024*1024){ // compress anything over 1.5MB
+     statusEl.innerText='Compressing FAST 3.5x with sound...';
+     up=await ultraFastCompress(f, (p)=>{
+       UploadManager.showBar(5 + Math.round(p*0.5), `Compressing ${p}% (3.5x fast)...`);
+     });
+     const saved = ((1 - up.size/f.size)*100).toFixed(0);
+     statusEl.innerText=`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB (-${saved}%)`;
+   }
+ }
+
+ // IMMEDIATE BACKGROUND - go to feed instantly
+ const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
+ UploadManager.showBar(70,'Uploading in background... you can leave');
+ localStorage.setItem('uploading', JSON.stringify({progress:70, status:'Uploading in background...'}));
+
+ // Go to feed immediately - upload continues
+ location.href='feed.html';
+
  try{
-  if(f.type.startsWith('video') && f.size > 2*1024*1024){
-    UploadManager.showBar(10,'Compressing 240p ultra fast (2.5x) with sound...');
-    up=await ultraCompress(f);
-    UploadManager.showBar(50,`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB`);
-  }
-  // NOW BACKGROUND UPLOAD - USER CAN LEAVE PAGE
-  const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
-
-  localStorage.setItem('uploading', JSON.stringify({progress:60, status:'Uploading in background... You can leave this page'}));
-  UploadManager.showBar(60,'Uploading in background... You can go to feed');
-
-  // Redirect immediately like TikTok
-  setTimeout(()=>{ location.href='feed.html'; }, 800);
-
-  // Continue upload in background even after redirect - saved in localStorage
-  await UploadManager.uploadWithProgress(fd, token, (p)=>{
-    UploadManager.showBar(60 + Math.round(p*0.4), `Uploading ${p}% in background...`);
-    localStorage.setItem('uploading', JSON.stringify({progress:60+p*0.4, status:`Uploading ${p}%...`}));
-  });
-  localStorage.removeItem('uploading');
-  // Will hide on feed page after success
+   await UploadManager.uploadWithProgress(fd, token, (p)=>{
+     UploadManager.showBar(70 + Math.round(p*0.3), `Uploading ${p}% (top bar)`);
+     localStorage.setItem('uploading', JSON.stringify({progress:70+p*0.3, status:`Uploading ${p}%...`}));
+   });
+   localStorage.removeItem('uploading');
  }catch(e){
-  statusEl.innerText='Error: '+e.message.slice(0,200);
-  btn.disabled=false;
-  UploadManager.hideBar();
+   localStorage.setItem('uploading', JSON.stringify({progress:0, status:'Failed: '+e.message}));
  }
 }
 </script>
