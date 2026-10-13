@@ -28,7 +28,9 @@ const JWT_SECRET = process.env.JWT_SECRET
 const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
 const url = process.env.MONGO_URL
 
-app.use(cors({ origin: "*" }));
+//app.use(cors({ origin: "*" }));
+app.use(cors({ origin: true, credentials: true }));
+app.options('*', cors());
 app.use(bordyparser.json());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'frontend')))
@@ -41,11 +43,25 @@ app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'regi
 let io;
 const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
 const SECRET = "secret123";
-function authh(req, res, next) {
+
+/*function authh(req, res, next) {
   const tokenN = req.headers.authorization;
   if (!tokenN) return res.status(401).json({ msg: "No token" });
   try { req.userId = jwt.verify(tokenN, SECRET).id; next(); }
   catch { return res.status(401).json({ msg: "Invalid" }); }
+} */
+
+  function authh(req, res, next) {
+  const tokenN = req.headers.authorization;
+  if (!tokenN) return res.status(401).json({ msg: "No token" });
+  try { 
+    // ADD THIS LINE - strip Bearer
+    const realToken = tokenN.startsWith('Bearer ') ? tokenN.slice(7) : tokenN;
+    req.userId = jwt.verify(realToken, SECRET).id; 
+    next(); 
+  } catch { 
+    return res.status(401).json({ msg: "Invalid" }); 
+  }
 }
 
 const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
@@ -329,97 +345,48 @@ app.get('/api/users/:id', async (req,res)=>{
 
 
 
-app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
-  try {
-    console.log(
-      'Upload hit:',
-      req.file?.originalname,
-      req.file?.size,
-      req.file?.mimetype
-    );
+  app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => { 
+  try { 
+    console.log('Upload hit:', req.file?.originalname, req.file?.size, req.file?.mimetype); 
 
-    if (!req.file) {
-      return res.status(400).json({
-        msg: 'No file received. Please select a video or image.'
-      });
-    }
+    if (!req.file) { 
+      return res.status(400).json({ msg: 'No file received. Please select a video or image.' }); 
+    } 
 
-    if (!req.file.mimetype.startsWith('image/') &&
-        !req.file.mimetype.startsWith('video/')) {
-      return res.status(400).json({
-        msg: 'Only image and video files are allowed.'
-      });
-    }
+    if (!req.file.mimetype.startsWith('image/') && !req.file.mimetype.startsWith('video/')) { 
+      return res.status(400).json({ msg: 'Only image and video files are allowed.' }); 
+    } 
 
-    // Keep below Vercel's 4.5 MB request-body limit
-    const MAX_SIZE = 4 * 1024 * 1024;
+    const MAX_SIZE = 4 * 1024 * 1024; 
+    if (req.file.size > MAX_SIZE) { 
+      return res.status(413).json({ msg: 'File is too large. Maximum is 4 MB - try shorter video (3min max).' }); 
+    } 
 
-    if (req.file.size > MAX_SIZE) {
-      return res.status(413).json({
-        msg: 'File is too large. Maximum upload size is 4 MB.'
-      });
-    }
+    if (mongoose.connection.readyState !== 1) { 
+      return res.status(503).json({ msg: 'Database not connected.' }); 
+    } 
 
-    // Confirm MongoDB is connected before saving
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        msg: 'Database is not connected. Please try again.'
-      });
-    }
+    const isVideo = req.file.mimetype.startsWith('video/'); 
+    const media = await Media.create({ 
+      userId: req.userId, 
+      img: { data: req.file.buffer, contentType: req.file.mimetype } 
+    }); 
 
-    const isVideo = req.file.mimetype.startsWith('video/');
+    const mediaUrl = `/api/media-file/${media._id}`; 
+    const post = await Post.create({ 
+      user: req.userId, 
+      caption: req.body.caption || '', 
+      mediaUrl, 
+      type: isVideo ? 'video' : 'image' 
+    }); 
 
-    // Store the actual MIME type instead of forcing video/mp4.
-    const media = await Media.create({
-      userId: req.userId,
-      img: {
-        data: req.file.buffer,
-        contentType: req.file.mimetype
-      }
-    });
+    return res.status(201).json(post); 
 
-    const mediaUrl = `/api/media-file/${media._id}`;
-
-    const post = await Post.create({
-      user: req.userId,
-      caption: req.body.caption || '',
-      mediaUrl,
-      type: isVideo ? 'video' : 'image'
-    });
-
-    return res.status(201).json(post);
-
-  } catch (err) {
-    console.error('UPLOAD ERROR:', err);
-
-    return res.status(500).json({
-      msg: 'Upload failed. Please try again.',
-      error: process.env.NODE_ENV === 'production'
-        ? undefined
-        : err.message
-    });
-  }
+  } catch (err) { 
+    console.error('UPLOAD ERROR:', err); 
+    return res.status(500).json({ msg: 'Upload failed.', error: err.message }); 
+  } 
 });
-
-// This middleware must come AFTER your routes.
-app.use((err, req, res, next) => {
-  console.error('Request error:', err);
-
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({
-      msg: 'File too large. Please upload a smaller file.'
-    });
-  }
-
-  if (res.headersSent) {
-    return next(err);
-  }
-
-  return res.status(500).json({
-    msg: 'Server error while processing your request.'
-  });
-});
-
 
 
 app.delete('/api/posts/:id', authh, async (req, res) => {
