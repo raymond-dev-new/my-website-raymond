@@ -338,7 +338,6 @@ app.get('/api/users/:id', async (req,res)=>{
 
 // CREATE POST - FIXED FOR VERCEL 4.5MB LIMIT
 
-
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   try{
     let mediaUrl = req.body.mediaUrl || "";
@@ -374,6 +373,7 @@ app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
     res.status(500).json({msg: e.message});
   }
 });
+
 
 // YOUR EXISTING ROUTES - KEEP SAME
 app.delete('/api/posts/:id', authh, async (req, res) => {

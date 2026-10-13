@@ -17,11 +17,11 @@ button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select video max 2:00<br>4MB max synced</div>
+<div class="preview" id="preview">Select video max 2:00 → 4MB.</div>
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
-<p id="status">4MB - voice synced fix</p>
+<p id="status">Phone fixed - 4MB - synced</p>
 <canvas id="canvas" style="display:none"></canvas>
 </div>
 <script src="upload-manager.js"></script>
@@ -29,6 +29,7 @@ button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href='login.html';
+
 let fileInput=document.getElementById('file'), preview=document.getElementById('preview'), info=document.getElementById('info'), statusEl=document.getElementById('status');
 
 fileInput.onchange=()=>{
@@ -44,91 +45,100 @@ fileInput.onchange=()=>{
   } else { preview.innerHTML=`<img src="${url}">`; }
 };
 
-function compressSynced(file, onProgress){
+// PHONE FIXED: separate video and audio elements
+function compressPhoneFixed(file, onProgress){
  return new Promise((res,rej)=>{
-  const v=document.createElement('video');
-  v.src=URL.createObjectURL(file);
-  v.muted=false; // MUST false for synced voice
-  v.volume=1;
-  v.playsInline=true;
-  v.preload="auto";
+  const url = URL.createObjectURL(file);
+  const v = document.createElement('video'); // for picture only - MUTED
+  const a = document.createElement('audio'); // for voice only - NORMAL
+  v.src=url; a.src=url;
+  v.muted=true; a.muted=false;
+  v.playsInline=true; a.playsInline=true;
+  v.preload="auto"; a.preload="auto";
+  v.crossOrigin="anonymous"; a.crossOrigin="anonymous";
+
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
 
-  v.onloadedmetadata=async()=>{
-    canvas.width=360; canvas.height=Math.round(v.videoHeight*(360/v.videoWidth));
+  let loaded=0;
+  function tryStart(){
+    loaded++;
+    if(loaded<2) return;
+
+    canvas.width=360;
+    canvas.height=Math.round(v.videoHeight*(360/v.videoWidth))||360;
     if(canvas.height%2) canvas.height++;
 
-    // Wait user gesture already done (Share click) so audio allowed
-    try{ await v.play(); v.pause(); v.currentTime=0; }catch(e){}
+    const canvasStream=canvas.captureStream(20);
+    let audioStream;
+    try{ audioStream=a.captureStream(); }catch(e){ audioStream=a.mozCaptureStream? a.mozCaptureStream() : null; }
 
-    // Get ONE stream that has both video+audio together = perfect sync
-    let stream;
-    try{
-      if(v.captureStream) stream=v.captureStream(24);
-      else if(v.mozCaptureStream) stream=v.mozCaptureStream(24);
-      else throw new Error('no captureStream');
-    }catch(e){ return rej(new Error('Phone does not support compress - will upload original')); }
+    if(!audioStream ||!audioStream.getAudioTracks().length){
+      return rej(new Error('Audio capture blocked'));
+    }
 
-    // Replace video track with canvas track (for 360p)
-    const canvasStream=canvas.captureStream(24);
-    const vTrack=canvasStream.getVideoTracks()[0];
-    const aTracks=stream.getAudioTracks();
     const combined=new MediaStream();
-    combined.addTrack(vTrack);
-    aTracks.forEach(t=>combined.addTrack(t));
+    combined.addTrack(canvasStream.getVideoTracks()[0]);
+    audioStream.getAudioTracks().forEach(t=>combined.addTrack(t));
 
     const chunks=[];
     const rec=new MediaRecorder(combined,{
       mimeType:'video/webm;codecs=vp8,opus',
-      videoBitsPerSecond:220000, // 220k + 48k = 4MB max for 120s
+      videoBitsPerSecond:200000, // 200k = 4MB max for 2min
       audioBitsPerSecond:48000
     });
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
-    rec.onstop=()=> res(new File([new Blob(chunks)],'video.webm',{type:'video/webm'}));
-
+    rec.onstop=()=> res(new File([new Blob(chunks,{type:'video/webm'})],'video.webm',{type:'video/webm'}));
     rec.start(100);
-    // Start together
-    v.playbackRate=1;
-    v.currentTime=0;
-    v.play().catch(rej);
 
-    function draw(){
-      if(v.ended) return;
-      ctx.drawImage(v,0,0,canvas.width,canvas.height);
-      onProgress(Math.round((v.currentTime/v.duration)*100));
-      if(!v.ended) requestAnimationFrame(draw);
-    }
-    requestAnimationFrame(draw);
-    v.onended=()=> setTimeout(()=>rec.stop(), 200);
-  };
-  v.onerror=()=>rej(new Error('load failed'));
+    // sync start
+    v.currentTime=0; a.currentTime=0;
+    v.playbackRate=1; a.playbackRate=1;
+
+    Promise.all([v.play(), a.play()]).then(()=>{
+      function draw(){
+        if(v.ended || a.ended) return;
+        ctx.drawImage(v,0,0,canvas.width,canvas.height);
+        const pct=Math.round((v.currentTime/v.duration)*100)||0;
+        if(onProgress) onProgress(pct);
+        requestAnimationFrame(draw);
+      }
+      requestAnimationFrame(draw);
+    }).catch(rej);
+
+    v.onended = a.onended = ()=> setTimeout(()=>{ try{rec.stop();}catch{} },300);
+  }
+
+  v.onloadedmetadata=tryStart;
+  a.onloadedmetadata=tryStart;
+  v.onerror=()=>rej(new Error('video load fail'));
+  a.onerror=()=>rej(new Error('audio load fail'));
+
+  // timeout if phone still blocks
+  setTimeout(()=>rej(new Error('timeout')), 15000);
  });
 }
 
 async function startUpload(){
  const f=fileInput.files[0]; if(!f) return alert('Select file');
  const btn=document.getElementById('btn'); btn.disabled=true;
- UploadManager.showBar(5,'Preparing...');
 
  let up=f;
  if(f.type.startsWith('video')){
-   // If file already <4.5MB, skip compress = instant perfect sync
-   if(f.size <= 4.5*1024*1024){
-     statusEl.innerText=`${(f.size/1024/1024).toFixed(2)}MB already under 4MB - uploading directly perfect sync`;
+   statusEl.innerText='Compressing to 4MB - phone fixed method...';
+   UploadManager.showBar(5,'Compressing...');
+   try{
+     up=await compressPhoneFixed(f, p=>{
+       UploadManager.showBar(5+Math.round(p*0.6), `Compressing ${p}% - ${Math.round(p*0.04*10)/10}MB`);
+       statusEl.innerText=`Compressing ${p}% - voice synced normal - not stuck`;
+       btn.innerText=`${p}% compressing`;
+     });
+     statusEl.innerText=`${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB ✅`;
+   }catch(e){
+     console.log('compress failed', e);
+     // last fallback: try canvas-only (no audio) then add original file audio via quick upload?
+     // For now upload original so it doesn't stuck forever
+     statusEl.innerText='Compress blocked by phone, uploading original - still normal voice';
      up=f;
-   } else {
-     try{
-       statusEl.innerText='Compressing to 4MB - normal voice synced (1x speed - 2min takes 2min)';
-       up=await compressSynced(f, (p)=>{
-         UploadManager.showBar(5+Math.round(p*0.6), `Compressing ${p}% - voice synced`);
-         statusEl.innerText=`Compressing ${p}% - voice locked to video`;
-         btn.innerText=`${p}%`;
-       });
-     }catch(e){
-       console.log(e.message);
-       statusEl.innerText='Phone blocked compression, uploading original with perfect sync';
-       up=f;
-     }
    }
  }
 
@@ -137,7 +147,7 @@ async function startUpload(){
  try{
    await UploadManager.uploadWithProgress(fd, token, p=>{
      UploadManager.showBar(70+Math.round(p*0.3), `Uploading ${p}%`);
-     statusEl.innerText=`Uploading ${p}% - ${(up.size/1024/1024).toFixed(2)}MB`;
+     btn.innerText=`Uploading ${p}%`;
    });
    UploadManager.showBar(100,'Done ✅');
    setTimeout(()=>location.href='feed.html',600);
