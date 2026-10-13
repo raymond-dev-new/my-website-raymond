@@ -35,11 +35,6 @@ app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); 
 mongoose.connect(url).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'register.html')); })
 
-const uploadd = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 4.5 * 1024 * 1024 },
-  fileFilter: (req,file,cb)=>cb(null, true)
-});
 
 let io;
 const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
@@ -50,6 +45,8 @@ function authh(req, res, next) {
   try { req.userId = jwt.verify(tokenN, SECRET).id; next(); }
   catch { return res.status(401).json({ msg: "Invalid" }); }
 }
+
+const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
@@ -346,7 +343,7 @@ app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
         mediaUrl = `/api/media-file/${media._id}`;
         type = 'video';
       } else {
-        if(req.file.size > 4*1024*1024) return res.status(400).json({msg: "Too big for Vercel - compress more"});
+        if(req.file.size > 6*1024*1024) return res.status(400).json({msg: "Image max 6MB"});
         const media = await Media.create({
           userId: req.userId,
           img: { data: req.file.buffer, contentType: req.file.mimetype }
@@ -364,7 +361,7 @@ app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   }
 });
 
-// YOUR EXISTING ROUTES - KEEP SAME
+
 app.delete('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   if (!post) return res.status(404).json({ msg: "Post not found" });
@@ -388,6 +385,7 @@ app.get('/api/posts/:id', authh, async (req, res) => {
   if (!post) return res.status(404).json({ msg: "Post not found" });
   res.json(post);
 });
+
 app.post('/api/posts/:id/like', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   const isLiked = post.likes.includes(req.userId);
@@ -414,7 +412,8 @@ app.post('/api/posts/:id/save', authh, async (req, res) => {
   me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
   await me.save(); res.json(me.savedPosts);
 });
-app.post('/api/posts/:id/view', async (req,res)=>{
+
+ app.post('/api/posts/:id/view', async (req,res)=>{
  try{
   const p = await Post.findByIdAndUpdate(req.params.id, {$inc:{views:1}}, {new:true});
   res.json({views:p.views});
