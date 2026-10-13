@@ -338,7 +338,7 @@ app.get('/api/users/:id', async (req,res)=>{
 
 // CREATE POST - FIXED FOR VERCEL 4.5MB LIMIT
 
-function authhh(req,res,next){
+/*function authhh(req,res,next){
   try{
     const h = req.headers.authorization || "";
     const token = h.replace('Bearer ','');
@@ -349,9 +349,9 @@ function authhh(req,res,next){
   }catch(e){
     return res.status(401).json({msg:"Auth failed: "+e.message});
   }
-}
+} */
 
-app.post('/api/posts', authhh, uploadd.single('file'), async (req, res) => {
+app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   try{
     let mediaUrl = req.body.mediaUrl || "";
     let type = req.body.type || 'image';
