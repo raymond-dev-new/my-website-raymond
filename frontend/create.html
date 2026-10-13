@@ -21,7 +21,7 @@ button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
-<p id="status"> Create Post ss </p>
+<p id="status">Create Post - max 2:00</p>
 <canvas id="canvas" style="display:none"></canvas>
 </div>
 <script src="upload-manager.js"></script>
@@ -39,99 +39,91 @@ fileInput.onchange=()=>{
     document.getElementById('vp').onloadedmetadata=e=>{
       const d=e.target.duration;
       info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB`;
-      if(d>120){ alert('Max 2 mins'); fileInput.value=''; }
+      if(d>120){ alert('Max 2 mins - trim video'); fileInput.value=''; preview.innerHTML='Select video (max 2:00)'; info.innerText=''; }
     };
   } else { preview.innerHTML=`<img src="${url}">`; }
 };
 
-// FASTEST COMPRESS - 3.5x speed, 15fps, 240p, 100kbps video + 24k audio
 function ultraFastCompress(file, onProgress){
  return new Promise((res,rej)=>{
   const v=document.createElement('video');
   v.src=URL.createObjectURL(file);
   v.muted=true; v.playsInline=true; v.crossOrigin="anonymous";
-  v.preload="auto";
   const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
   v.onloadedmetadata=()=>{
-
-   // canvas.width=240; canvas.height=Math.round(v.videoHeight*(240/v.videoWidth));
-       
-     canvas.width=480; canvas.height=Math.round(v.videoHeight*(480/v.videoWidth));
-
-    const canvasStream=canvas.captureStream(24); // 15fps = half CPU = 2x faster
+    canvas.width=480; canvas.height=Math.round(v.videoHeight*(480/v.videoWidth));
+    const canvasStream=canvas.captureStream(24);
     let audioTracks=[];
     try{ const s=v.captureStream(); audioTracks=s.getAudioTracks(); }catch{}
     const combined=new MediaStream();
     canvasStream.getVideoTracks().forEach(t=>combined.addTrack(t));
     audioTracks.forEach(t=>combined.addTrack(t));
-
     const chunks=[];
-    // 100k video + 24k audio = ULTRA SMALL
-
-    /*const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:100000, audioBitsPerSecond:24000}); 
-     const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:600000, audioBitsPerSecond:64000}); 
-    */
-
-    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:250000, audioBitsPerSecond:64000});
-
-    
-
+    const rec=new MediaRecorder(combined,{mimeType:'video/webm;codecs=vp8,opus', videoBitsPerSecond:400000, audioBitsPerSecond:64000});
     rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
     rec.onstop=()=>{ const blob=new Blob(chunks,{type:'video/webm'}); res(new File([blob],'f.webm',{type:'video/webm'})); };
-    rec.start(50);
-    v.playbackRate=1.1; // 1:03 = 18 sec to compress
+    rec.start(100);
+    v.playbackRate=1.5; // 1.5x = fast but clear sound
     v.play().then(()=>{
-      let last=0;
-      function draw(now){
+      function draw(){
         if(v.ended || v.paused) return;
-        if(now-last>66){ // 15fps = draw every 66ms
-          ctx.drawImage(v,0,0,canvas.width,canvas.height);
-          last=now;
-          if(onProgress) onProgress(Math.round((v.currentTime/v.duration)*100));
-        }
+        ctx.drawImage(v,0,0,canvas.width,canvas.height);
+        if(onProgress) onProgress(Math.round((v.currentTime/v.duration)*100));
         requestAnimationFrame(draw);
       }
       requestAnimationFrame(draw);
     });
-    v.onended=()=>setTimeout(()=>rec.stop(),80);
+    v.onended=()=>setTimeout(()=>rec.stop(),150);
   };
-  v.onerror=rej;
+  v.onerror=()=>rej(new Error('Compress failed'));
  });
 }
 
 async function startUpload(){
  const f=fileInput.files[0]; if(!f) return alert('Select file');
- const btn=document.getElementById('btn'); btn.disabled=true; btn.innerText='Preparing...';
- UploadManager.showBar(5,'Preparing fast upload...');
+ const btn=document.getElementById('btn');
+ btn.disabled=true; btn.innerText='Processing...';
+ statusEl.innerText='Preparing...';
+ UploadManager.showBar(5,'Preparing...');
 
  let up=f;
  if(f.type.startsWith('video')){
-   if(f.size > 1.5*1024*1024){ // compress anything over 1.5MB
-     statusEl.innerText='Compressing FAST 3.5x with sound...';
-     up=await ultraFastCompress(f, (p)=>{
-       UploadManager.showBar(5 + Math.round(p*0.5), `Compressing ${p}% (3.5x fast)...`);
-     });
-     const saved = ((1 - up.size/f.size)*100).toFixed(0);
-     statusEl.innerText=`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB (-${saved}%)`;
+   // compress if > 2MB to keep quality good
+   if(f.size > 2*1024*1024){
+     statusEl.innerText='Compressing (1.5x) with sound... please wait';
+     try{
+       up=await ultraFastCompress(f, (p)=>{
+         UploadManager.showBar(5 + Math.round(p*0.5), `Compressing ${p}%...`);
+         statusEl.innerText=`Compressing ${p}%...`;
+       });
+       statusEl.innerText=`Compressed ${(f.size/1024/1024).toFixed(1)}MB → ${(up.size/1024/1024).toFixed(2)}MB`;
+     }catch(e){
+       console.log(e);
+       up=f; // fallback to original if compress fails
+       statusEl.innerText='Compress failed, uploading original...';
+     }
    }
  }
 
- // IMMEDIATE BACKGROUND - go to feed instantly
  const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
- UploadManager.showBar(70,'Uploading in background... you can leave');
- localStorage.setItem('uploading', JSON.stringify({progress:70, status:'Uploading in background...'}));
-
- // Go to feed immediately - upload continues
- //location.href='feed.html';
+ UploadManager.showBar(70,'Uploading... 0%');
+ statusEl.innerText='Uploading... please stay on page';
 
  try{
    await UploadManager.uploadWithProgress(fd, token, (p)=>{
-     UploadManager.showBar(70 + Math.round(p*0.3), `Uploading ${p}% (top bar)`);
-     localStorage.setItem('uploading', JSON.stringify({progress:70+p*0.3, status:`Uploading ${p}%...`}));
+     UploadManager.showBar(70 + Math.round(p*0.3), `Uploading ${p}%`);
+     statusEl.innerText=`Uploading ${p}% - don't close`;
+     btn.innerText=`Uploading ${p}%`;
    });
+   UploadManager.showBar(100,'Done! Opening feed...');
+   statusEl.innerText='Done!';
    localStorage.removeItem('uploading');
+   setTimeout(()=> location.href='feed.html', 800);
  }catch(e){
-   localStorage.setItem('uploading', JSON.stringify({progress:0, status:'Failed: '+e.message}));
+   btn.disabled=false; btn.innerText='Share';
+   statusEl.innerText='Upload failed: '+e.message;
+   UploadManager.showBar(0,'Failed: '+e.message);
+   setTimeout(()=>UploadManager.hideBar(), 3000);
  }
 }
 </script>
