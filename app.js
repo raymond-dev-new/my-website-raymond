@@ -380,6 +380,7 @@ app.get('/api/users/:id', async (req,res)=>{
       type: isVideo ? 'video' : 'image' 
     }); 
 
+    
     return res.status(201).json(post); 
 
   } catch (err) { 
