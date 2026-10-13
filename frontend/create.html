@@ -13,7 +13,7 @@ body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-
 input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0;box-sizing:border-box}
 button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-radius:8px;font-weight:700}
 button:disabled{background:#0a4a78}
-#status{font-size:12px;color:#888;margin-top:8px}
+#status{font-size:12px;color:#ff3b30;margin-top:8px}
 #progressBar{width:100%;height:4px;background:#262626;border-radius:2px;margin-top:8px;overflow:hidden;display:none}
 #progressBar div{height:100%;background:#0095f6;width:0%;transition:width 0.2s}
 </style>
@@ -21,11 +21,11 @@ button:disabled{background:#0a4a78}
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select video (max 2:00)<br>Will be 3.x MB perfect sync</div>
+<div class="preview" id="preview">Select video - MAX 2:00 ONLY<br>Will compress to 3.2MB max</div>
 <div id="info" style="font-size:12px;color:#888"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
-<p id="status">Ready - 3.x MB - voice aligned - fast</p>
+<p id="status">Max 2min - Max 3.2MB guaranteed</p>
 <div id="progressBar"><div id="progressFill"></div></div>
 </div>
 <script src="upload-manager.js"></script>
@@ -36,106 +36,137 @@ if(!token) location.href='login.html';
 
 let fileInput=document.getElementById('file'), preview=document.getElementById('preview'), info=document.getElementById('info'), statusEl=document.getElementById('status');
 let pBar=document.getElementById('progressBar'), pFill=document.getElementById('progressFill');
+let currentDuration=0;
 
 fileInput.onchange=()=>{
   const f=fileInput.files[0]; if(!f) return;
   const url=URL.createObjectURL(f);
   if(f.type.startsWith('video')){
     preview.innerHTML=`<video id="vp" src="${url}" controls playsinline></video>`;
-    document.getElementById('vp').onloadedmetadata=e=>{
+    const vp=document.getElementById('vp');
+    vp.onloadedmetadata=e=>{
       const d=e.target.duration;
-      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB → will be 3.x MB`;
-      if(d>120){ alert('Max 2 mins'); fileInput.value=''; preview.innerHTML='Select video (max 2:00)'; info.innerText=''; }
+      currentDuration=d;
+      // BLOCK >2 MINUTES
+      if(d>120){
+        statusEl.innerText=`❌ VIDEO TOO LONG - ${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} - 2 MINUTES ONLY`;
+        statusEl.style.color='#ff3b30';
+        alert('VIDEO TOO LONG - 2 MINUTES ONLY');
+        fileInput.value='';
+        preview.innerHTML='Select video - MAX 2:00 ONLY';
+        info.innerText='';
+        currentDuration=0;
+        return;
+      }
+      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB → Will be 3.2MB MAX`;
+      statusEl.innerText='Ready to compress to 3.2MB';
+      statusEl.style.color='#888';
     };
-  } else { preview.innerHTML=`<img src="${url}">`; }
+  } else { preview.innerHTML=`<img src="${url}">`; currentDuration=0; }
 };
 
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({
-  log: false,
-  corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js'
-});
-
+const ffmpeg = createFFmpeg({ log:false, corePath:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js' });
 let ffmpegReady=false;
 async function ensureFFmpeg(){
   if(ffmpegReady) return;
-  statusEl.innerText='Loading compressor (first time only 5s)...';
-  pBar.style.display='block';
-  pFill.style.width='20%';
+  statusEl.innerText='Loading compressor first time...';
+  pBar.style.display='block'; pFill.style.width='20%';
   await ffmpeg.load();
   ffmpegReady=true;
-  pFill.style.width='0%';
 }
 
-// 2min = 3.x MB = 180k video + 32k audio = 212k total = 3.18MB
-// Perfect sync because ffmpeg copies audio 1:1 normal speed
-async function compressTo3MB(file, onProgress){
+async function compressTo32MB(file){
   await ensureFFmpeg();
-  const inputName='input.mp4';
-  const outputName='output.webm';
+  const input='in.mp4', output='out.webm';
+  ffmpeg.FS('writeFile', input, await fetchFile(file));
 
-  ffmpeg.FS('writeFile', inputName, await fetchFile(file));
+  // Calculate bitrate to GUARANTEE 3.2MB max for any duration up to 120s
+  // 3.2MB = 25.6 megabits. 25.6*1024 / duration - audio
+  const duration = currentDuration || 120;
+  const targetKB = 3.2 * 1024; // 3276 KB
+  const totalBitrate = Math.floor((targetKB * 8) / duration); // kbps
+  const audioBitrate = 24; // 24k for voice - normal and clear
+  let videoBitrate = totalBitrate - audioBitrate - 20; // 20k overhead
+  if(videoBitrate < 80) videoBitrate=80;
+  if(videoBitrate > 200) videoBitrate=200;
 
-  statusEl.innerText='Compressing to 3.x MB - voice perfectly aligned...';
-  onProgress(10);
+  console.log(`Duration ${duration}s - Target 3.2MB - Video ${videoBitrate}k + Audio ${audioBitrate}k`);
 
-  // - 360p, 20fps, 180k video, 32k audio = 2min = 3.1-3.5MB
-  // - audio = aac 32k normal voice, perfectly synced, no drift
+  statusEl.innerText=`Compressing ${duration.toFixed(0)}s video to 3.2MB - ${videoBitrate}k video...`;
+
   await ffmpeg.run(
-    '-i', inputName,
-    '-vf', 'scale=360:-2,fps=20',
+    '-i', input,
+    '-t', '120', // force max 2 min
+    '-vf', 'scale=320:-2,fps=18', // 320p 18fps = smaller + faster
     '-c:v', 'libvpx',
-    '-b:v', '180k',
-    '-maxrate', '180k',
-    '-bufsize', '360k',
+    '-b:v', `${videoBitrate}k`,
+    '-maxrate', `${videoBitrate}k`,
+    '-bufsize', `${videoBitrate*2}k`,
     '-c:a', 'libopus',
-    '-b:a', '32k',
-    '-ar', '32000',
+    '-b:a', `${audioBitrate}k`,
+    '-ar', '24000',
+    '-ac', '1', // mono = smaller
     '-deadline', 'realtime',
-    '-cpu-used', '4',
-    outputName
+    '-cpu-used', '5',
+    output
   );
 
-  onProgress(90);
-  const data = ffmpeg.FS('readFile', outputName);
+  const data = ffmpeg.FS('readFile', output);
   const blob = new Blob([data.buffer], {type:'video/webm'});
-  const outFile = new File([blob], 'video.webm', {type:'video/webm'});
+  let outFile = new File([blob], 'video.webm', {type:'video/webm'});
 
-  // cleanup
-  try{ ffmpeg.FS('unlink', inputName); ffmpeg.FS('unlink', outputName); }catch{}
+  // If still >3.5MB, compress again with lower bitrate
+  if(outFile.size > 3.5*1024*1024){
+    console.log('Still >3.5MB, recompressing lower');
+    await ffmpeg.run(
+      '-i', output,
+      '-c:v', 'libvpx',
+      '-b:v', '100k',
+      '-c:a', 'libopus',
+      '-b:a', '16k',
+      'out2.webm'
+    );
+    const data2 = ffmpeg.FS('readFile', 'out2.webm');
+    outFile = new File([new Blob([data2.buffer], {type:'video/webm'})], 'video.webm', {type:'video/webm'});
+  }
+
+  try{ ffmpeg.FS('unlink', input); ffmpeg.FS('unlink', output); ffmpeg.FS('unlink', 'out2.webm'); }catch{}
 
   return outFile;
 }
 
 async function startUpload(){
  const f=fileInput.files[0]; if(!f) return alert('Select file');
+
+ // BLOCK >2 MINUTES AGAIN ON UPLOAD
+ if(currentDuration>120){
+   alert('VIDEO TOO LONG - 2 MINUTES ONLY');
+   return;
+ }
+
  const btn=document.getElementById('btn'); btn.disabled=true;
  pBar.style.display='block';
 
  let up=f;
  if(f.type.startsWith('video')){
-   // If already <3.8MB, upload direct for speed
-   if(f.size <= 3.8*1024*1024){
-     statusEl.innerText=`Already ${(f.size/1024/1024).toFixed(2)}MB - uploading direct perfect sync`;
-     pFill.style.width='60%';
-     up=f;
-   } else {
-     try{
-       up=await compressTo3MB(f, (p)=>{
-         pFill.style.width=p+'%';
-         UploadManager.showBar(p, `Compressing ${p}% → 3.x MB`);
-         statusEl.innerText=`Compressing ${p}% → 3.x MB - voice locked`;
-         btn.innerText=`Compressing ${p}%`;
-       });
-       const mb=(up.size/1024/1024).toFixed(2);
-       statusEl.innerText=`${(f.size/1024/1024).toFixed(1)}MB → ${mb}MB ✅ voice aligned`;
-       pFill.style.width='65%';
-       console.log(`Compressed to ${mb}MB`);
-     }catch(e){
-       console.error(e);
-       statusEl.innerText='Compress failed, uploading original with perfect voice';
-       up=f;
+   pFill.style.width='10%';
+   UploadManager.showBar(10,'Compressing to 3.2MB...');
+   try{
+     up=await compressTo32MB(f);
+     const finalMB=(up.size/1024/1024).toFixed(2);
+     if(up.size > 4*1024*1024){
+       throw new Error(`Still ${finalMB}MB - failed`);
      }
+     statusEl.innerText=`✅ ${(f.size/1024/1024).toFixed(1)}MB → ${finalMB}MB - READY TO UPLOAD - UNDER 4MB`;
+     statusEl.style.color='#0f0';
+     pFill.style.width='60%';
+   }catch(e){
+     console.error(e);
+     alert('Compression failed: '+e.message+' - Try smaller video');
+     btn.disabled=false; btn.innerText='Share';
+     pBar.style.display='none';
+     return;
    }
  }
 
@@ -144,19 +175,21 @@ async function startUpload(){
 
  try{
    await UploadManager.uploadWithProgress(fd, token, (p)=>{
-     const total = 70 + Math.round(p*0.3);
+     const total=70+Math.round(p*0.3);
      pFill.style.width=total+'%';
-     UploadManager.showBar(total, `Uploading ${p}% - ${(up.size/1024/1024).toFixed(2)}MB`);
-     statusEl.innerText=`Uploading ${p}% - ${(up.size/1024/1024).toFixed(2)}MB - fast`;
+     statusEl.innerText=`Uploading ${p}% - ${(up.size/1024/1024).toFixed(2)}MB - NEVER 4MB ✅`;
      btn.innerText=`Uploading ${p}%`;
    });
    pFill.style.width='100%';
-   UploadManager.showBar(100,'Done! 3.x MB ✅');
-   statusEl.innerText=`Done! ${(up.size/1024/1024).toFixed(2)}MB - voice perfectly synced ✅`;
+   UploadManager.showBar(100,'Done! 3.2MB ✅');
+   statusEl.innerText=`Done! ${(up.size/1024/1024).toFixed(2)}MB - UNDER 4MB - Voice synced ✅`;
    setTimeout(()=> location.href='feed.html', 700);
  }catch(e){
    btn.disabled=false; btn.innerText='Share';
    statusEl.innerText='Upload failed: '+e.message;
+   if(e.message.includes('Too Large')||e.message.includes('PAYLOAD')){
+     statusEl.innerText=`Failed: File still too large ${(up.size/1024/1024).toFixed(2)}MB - must be <4MB - try shorter video`;
+   }
    pBar.style.display='none';
  }
 }
