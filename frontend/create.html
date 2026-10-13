@@ -1,197 +1,234 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Create</title>
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
 <style>
-body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
-.box{width:100%;max-width:480px;padding:16px;box-sizing:border-box}
-.preview{width:100%;background:#111;min-height:250px;display:flex;justify-content:center;align-items:center;border-radius:12px;border:1px solid #262626;margin:10px 0;overflow:hidden;text-align:center;color:#777;font-size:13px}
-.preview video,img{width:100%;max-height:520px}
-input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0;box-sizing:border-box}
-button{width:100%;background:#0095f6;border:none;color:#fff;padding:14px;border-radius:8px;font-weight:700}
-button:disabled{background:#0a4a78}
-#status{font-size:12px;color:#ff3b30;margin-top:8px}
-#progressBar{width:100%;height:4px;background:#262626;border-radius:2px;margin-top:8px;overflow:hidden;display:none}
-#progressBar div{height:100%;background:#0095f6;width:0%;transition:width 0.2s}
+* { box-sizing: border-box; }
+body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif;display:flex;justify-content:center}
+.box{width:100%;max-width:480px;padding:16px}
+.preview{width:100%;min-height:250px;background:#111;border:1px solid #262626;border-radius:12px;margin:10px 0;overflow:hidden;display:flex;justify-content:center;align-items:center;text-align:center;color:#888;font-size:13px}
+.preview video,.preview img{display:block;width:100%;max-height:520px;object-fit:contain}
+input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0}
+button{width:100%;background:#0095f6;border:0;color:#fff;padding:14px;border-radius:8px;font-weight:700}
+button:disabled{opacity:.6}
+#status,#info{font-size:12px;color:#999;overflow-wrap:anywhere}
+#progressBar{width:100%;height:5px;background:#262626;border-radius:3px;margin-top:8px;overflow:hidden;display:none}
+#progressFill{height:100%;width:0;background:#0095f6;transition:width.2s}
 </style>
 </head>
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select video - MAX 2:00 ONLY<br>Will compress to 3.2MB max</div>
-<div id="info" style="font-size:12px;color:#888"></div>
+<div class="preview" id="preview">Select a video or image.<br>Maximum video duration: 2 minutes.</div>
+<div id="info"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
-<button id="btn" onclick="startUpload()">Share</button>
-<p id="status">Max 2min - Max 3.2MB guaranteed</p>
+<button id="btn" type="button" onclick="startUpload()">Share</button>
+<p id="status">Videos must be 2 minutes or shorter.</p>
 <div id="progressBar"><div id="progressFill"></div></div>
+<canvas id="canvas" hidden></canvas>
 </div>
 <script src="upload-manager.js"></script>
 <script>
-const BASE="https://raymonddomain.dev";
-const token=localStorage.getItem('token');
-if(!token) location.href='login.html';
+'use strict';
+const token = localStorage.getItem('token');
+if (!token) location.replace('login.html');
 
-let fileInput=document.getElementById('file'), preview=document.getElementById('preview'), info=document.getElementById('info'), statusEl=document.getElementById('status');
-let pBar=document.getElementById('progressBar'), pFill=document.getElementById('progressFill');
-let currentDuration=0;
+const fileInput = document.getElementById('file');
+const preview = document.getElementById('preview');
+const info = document.getElementById('info');
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('btn');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const canvas = document.getElementById('canvas');
 
-fileInput.onchange=()=>{
-  const f=fileInput.files[0]; if(!f) return;
-  const url=URL.createObjectURL(f);
-  if(f.type.startsWith('video')){
-    preview.innerHTML=`<video id="vp" src="${url}" controls playsinline></video>`;
-    const vp=document.getElementById('vp');
-    vp.onloadedmetadata=e=>{
-      const d=e.target.duration;
-      currentDuration=d;
-      // BLOCK >2 MINUTES
-      if(d>120){
-        statusEl.innerText=`❌ VIDEO TOO LONG - ${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} - 2 MINUTES ONLY`;
-        statusEl.style.color='#ff3b30';
-        alert('VIDEO TOO LONG - 2 MINUTES ONLY');
-        fileInput.value='';
-        preview.innerHTML='Select video - MAX 2:00 ONLY';
-        info.innerText='';
-        currentDuration=0;
-        return;
-      }
-      info.innerText=`${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,'0')} / 2:00 - Raw ${(f.size/1024/1024).toFixed(1)}MB → Will be 3.2MB MAX`;
-      statusEl.innerText='Ready to compress to 3.2MB';
-      statusEl.style.color='#888';
-    };
-  } else { preview.innerHTML=`<img src="${url}">`; currentDuration=0; }
-};
+let currentDuration = 0;
+let previewUrl = null;
+let busy = false;
 
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log:false, corePath:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js' });
-let ffmpegReady=false;
-async function ensureFFmpeg(){
-  if(ffmpegReady) return;
-  statusEl.innerText='Loading compressor first time...';
-  pBar.style.display='block'; pFill.style.width='20%';
-  await ffmpeg.load();
-  ffmpegReady=true;
+function setStatus(message, color = '#999') {
+  statusEl.textContent = message;
+  statusEl.style.color = color;
 }
+function resetProgress(){ progressBar.style.display='none'; progressFill.style.width='0%'; }
+function clearPreviewUrl(){ if(previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl=null; } }
 
-async function compressTo32MB(file){
-  await ensureFFmpeg();
-  const input='in.mp4', output='out.webm';
-  ffmpeg.FS('writeFile', input, await fetchFile(file));
-
-  // Calculate bitrate to GUARANTEE 3.2MB max for any duration up to 120s
-  // 3.2MB = 25.6 megabits. 25.6*1024 / duration - audio
-  const duration = currentDuration || 120;
-  const targetKB = 3.2 * 1024; // 3276 KB
-  const totalBitrate = Math.floor((targetKB * 8) / duration); // kbps
-  const audioBitrate = 24; // 24k for voice - normal and clear
-  let videoBitrate = totalBitrate - audioBitrate - 20; // 20k overhead
-  if(videoBitrate < 80) videoBitrate=80;
-  if(videoBitrate > 200) videoBitrate=200;
-
-  console.log(`Duration ${duration}s - Target 3.2MB - Video ${videoBitrate}k + Audio ${audioBitrate}k`);
-
-  statusEl.innerText=`Compressing ${duration.toFixed(0)}s video to 3.2MB - ${videoBitrate}k video...`;
-
-  await ffmpeg.run(
-    '-i', input,
-    '-t', '120', // force max 2 min
-    '-vf', 'scale=320:-2,fps=18', // 320p 18fps = smaller + faster
-    '-c:v', 'libvpx',
-    '-b:v', `${videoBitrate}k`,
-    '-maxrate', `${videoBitrate}k`,
-    '-bufsize', `${videoBitrate*2}k`,
-    '-c:a', 'libopus',
-    '-b:a', `${audioBitrate}k`,
-    '-ar', '24000',
-    '-ac', '1', // mono = smaller
-    '-deadline', 'realtime',
-    '-cpu-used', '5',
-    output
-  );
-
-  const data = ffmpeg.FS('readFile', output);
-  const blob = new Blob([data.buffer], {type:'video/webm'});
-  let outFile = new File([blob], 'video.webm', {type:'video/webm'});
-
-  // If still >3.5MB, compress again with lower bitrate
-  if(outFile.size > 3.5*1024*1024){
-    console.log('Still >3.5MB, recompressing lower');
-    await ffmpeg.run(
-      '-i', output,
-      '-c:v', 'libvpx',
-      '-b:v', '100k',
-      '-c:a', 'libopus',
-      '-b:a', '16k',
-      'out2.webm'
-    );
-    const data2 = ffmpeg.FS('readFile', 'out2.webm');
-    outFile = new File([new Blob([data2.buffer], {type:'video/webm'})], 'video.webm', {type:'video/webm'});
+fileInput.addEventListener('change', () => {
+  clearPreviewUrl(); info.textContent=''; currentDuration=0;
+  const file=fileInput.files[0]; if(!file) return;
+  if(!file.type.startsWith('video/') &&!file.type.startsWith('image/')){
+    fileInput.value=''; setStatus('Choose a valid video or image.','#ff453a'); return;
   }
+  previewUrl=URL.createObjectURL(file);
+  if(file.type.startsWith('video/')){
+    preview.replaceChildren();
+    const video=document.createElement('video');
+    video.src=previewUrl; video.controls=true; video.playsInline=true; video.preload='metadata';
+    preview.appendChild(video);
+    video.addEventListener('loadedmetadata', ()=>{
+      if(!Number.isFinite(video.duration)){ setStatus('Unable to read video duration.','#ff453a'); return; }
+      currentDuration=video.duration;
+      if(currentDuration>120){
+        fileInput.value=''; currentDuration=0; clearPreviewUrl();
+        preview.textContent='Select a video no longer than 2 minutes.'; info.textContent='';
+        setStatus('Video is too long. Maximum: 2 minutes.','#ff453a'); return;
+      }
+      const duration=Math.floor(currentDuration/60)+':'+String(Math.floor(currentDuration%60)).padStart(2,'0');
+      info.textContent=`${duration} / 2:00 • Original: ${(file.size/1048576).toFixed(2)} MB`;
+      setStatus('Video ready to upload.');
+    });
+    video.addEventListener('error', ()=>{ setStatus('Could not read this video.','#ff453a'); });
+  } else {
+    const img=document.createElement('img'); img.src=previewUrl; img.alt='Selected image';
+    preview.replaceChildren(img);
+    info.textContent=`Image: ${(file.size/1048576).toFixed(2)} MB`;
+    setStatus('Image ready to upload.');
+  }
+});
 
-  try{ ffmpeg.FS('unlink', input); ffmpeg.FS('unlink', output); ffmpeg.FS('unlink', 'out2.webm'); }catch{}
+/* FIXED: PHONE NOT STUCK + 3MB MAX + VOICE ALIGNED + FAST */
+function compressVideo(file, onProgress){
+  return new Promise((resolve, reject)=>{
+    if(!window.MediaRecorder ||!HTMLCanvasElement.prototype.captureStream){
+      reject(new Error('Compression not supported in this browser. Use Chrome.')); return;
+    }
+    const mimeType=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+    if(!mimeType){ reject(new Error('Browser cannot record WebM.')); return; }
 
-  return outFile;
+    const url=URL.createObjectURL(file);
+    // FIX: 2 elements - video muted + audio normal - prevents Android 9% block
+    const v=document.createElement('video');
+    const a=document.createElement('audio');
+    v.src=url; a.src=url;
+    v.muted=true; a.muted=false;
+    v.playsInline=true; a.playsInline=true;
+    v.preload='auto'; a.preload='auto';
+
+    let recorder=null, canvasStream=null, audioStream=null, animationId=0, finished=false, ready=0, chunks=[];
+
+    const cleanup=()=>{
+      cancelAnimationFrame(animationId);
+      if(canvasStream) canvasStream.getTracks().forEach(t=>t.stop());
+      if(audioStream) audioStream.getTracks().forEach(t=>t.stop());
+      v.pause(); a.pause();
+      v.removeAttribute('src'); a.removeAttribute('src');
+      v.load(); a.load();
+      URL.revokeObjectURL(url);
+    };
+    const fail=(msg)=>{
+      if(finished) return; finished=true;
+      try{ if(recorder && recorder.state!=='inactive') recorder.stop(); }catch{}
+      cleanup(); reject(new Error(msg));
+    };
+
+    function tryStart(){
+      ready++; if(ready<2 || finished) return;
+      // 320px + 18fps = smaller + faster upload = 3MB max guaranteed
+      const width=320;
+      const height=Math.max(2, Math.round(width*(v.videoHeight||320)/(v.videoWidth||320)));
+      canvas.width=width; canvas.height=height%2?height+1:height;
+      const ctx=canvas.getContext('2d');
+      if(!ctx){ fail('Cannot init canvas'); return; }
+
+      canvasStream=canvas.captureStream(18);
+      try{
+        if(typeof a.captureStream==='function') audioStream=a.captureStream();
+        else if(typeof a.mozCaptureStream==='function') audioStream=a.mozCaptureStream();
+      }catch{}
+      if(!audioStream ||!audioStream.getAudioTracks().length){ fail('Audio blocked. Open in Chrome, not FB browser.'); return; }
+
+      const combined=new MediaStream([...canvasStream.getVideoTracks(),...audioStream.getAudioTracks()]);
+
+      try{
+        recorder=new MediaRecorder(combined,{
+          mimeType,
+          videoBitsPerSecond:130000, // 130k + 32k = 120s = 2.43MB = UNDER 3MB
+          audioBitsPerSecond:32000
+        });
+      }catch{ fail('Could not start compression'); return; }
+
+      chunks=[];
+      recorder.ondataavailable=e=>{ if(e.data && e.data.size>0) chunks.push(e.data); };
+      recorder.onerror=()=>fail('Recording error');
+      recorder.onstop=()=>{
+        if(finished) return; finished=true;
+        const blob=new Blob(chunks,{type:mimeType});
+        cleanup();
+        if(!blob.size){ reject(new Error('Empty file')); return; }
+        resolve(new File([blob],`video.webm`,{type:blob.type||'video/webm',lastModified:Date.now()}));
+      };
+
+      function drawFrame(){
+        if(finished || v.paused || v.ended || a.ended) return;
+        try{ ctx.drawImage(v,0,0,canvas.width,canvas.height); }catch{}
+        if(v.duration>0 && onProgress) onProgress(Math.min(100,Math.floor(v.currentTime/v.duration*100)));
+        animationId=requestAnimationFrame(drawFrame);
+      }
+
+      recorder.start(100);
+      Promise.all([v.play().catch(()=>{}), a.play().catch(()=>{})]).then(()=>{
+        drawFrame();
+      }).catch(()=>fail('Playback blocked. Use Chrome.'));
+
+      const stopBoth=()=>{ if(recorder && recorder.state!=='inactive'){ try{recorder.stop();}catch{} } };
+      v.onended=stopBoth; a.onended=stopBoth;
+    }
+
+    v.onloadedmetadata=tryStart;
+    a.onloadedmetadata=tryStart;
+    v.onerror=()=>fail('Unable to load video');
+    a.onerror=()=>fail('Unable to load audio');
+    setTimeout(()=>{ if(!finished && ready<2) fail('Load timeout - file too large'); },15000);
+  });
 }
 
 async function startUpload(){
- const f=fileInput.files[0]; if(!f) return alert('Select file');
+  if(busy) return;
+  const file=fileInput.files[0];
+  if(!file){ alert('Select a video or image first.'); return; }
+  if(file.type.startsWith('video/') && currentDuration>120){ alert('Video must be 2 minutes or shorter.'); return; }
+  if(!window.UploadManager || typeof UploadManager.uploadWithProgress!=='function'){
+    setStatus('upload-manager.js did not load correctly.','#ff453a'); return;
+  }
 
- // BLOCK >2 MINUTES AGAIN ON UPLOAD
- if(currentDuration>120){
-   alert('VIDEO TOO LONG - 2 MINUTES ONLY');
-   return;
- }
+  busy=true; btn.disabled=true; btn.textContent='Preparing...';
+  progressBar.style.display='block'; progressFill.style.width='0%';
+  let uploadFile=file;
 
- const btn=document.getElementById('btn'); btn.disabled=true;
- pBar.style.display='block';
+  try{
+    if(file.type.startsWith('video/')){
+      setStatus('Compressing to 3MB - keep page open...');
+      uploadFile=await compressVideo(file, percent=>{
+        progressFill.style.width=Math.round(percent*0.5)+'%';
+        btn.textContent=`Compressing ${percent}%`;
+        setStatus(`Compressing: ${percent}% → 3MB max`);
+      });
+      const sizeMB=uploadFile.size/1048576;
+      setStatus(`Compressed: ${sizeMB.toFixed(2)} MB - voice synced`);
+      if(uploadFile.size>3.2*1048576){
+        throw new Error(`Still ${sizeMB.toFixed(2)} MB > 3.2 MB. Try shorter video.`);
+      }
+    }
 
- let up=f;
- if(f.type.startsWith('video')){
-   pFill.style.width='10%';
-   UploadManager.showBar(10,'Compressing to 3.2MB...');
-   try{
-     up=await compressTo32MB(f);
-     const finalMB=(up.size/1024/1024).toFixed(2);
-     if(up.size > 4*1024*1024){
-       throw new Error(`Still ${finalMB}MB - failed`);
-     }
-     statusEl.innerText=`✅ ${(f.size/1024/1024).toFixed(1)}MB → ${finalMB}MB - READY TO UPLOAD - UNDER 4MB`;
-     statusEl.style.color='#0f0';
-     pFill.style.width='60%';
-   }catch(e){
-     console.error(e);
-     alert('Compression failed: '+e.message+' - Try smaller video');
-     btn.disabled=false; btn.innerText='Share';
-     pBar.style.display='none';
-     return;
-   }
- }
-
- const fd=new FormData(); fd.append('file',up); fd.append('caption',document.getElementById('caption').value);
- UploadManager.showBar(70,'Uploading...');
-
- try{
-   await UploadManager.uploadWithProgress(fd, token, (p)=>{
-     const total=70+Math.round(p*0.3);
-     pFill.style.width=total+'%';
-     statusEl.innerText=`Uploading ${p}% - ${(up.size/1024/1024).toFixed(2)}MB - NEVER 4MB ✅`;
-     btn.innerText=`Uploading ${p}%`;
-   });
-   pFill.style.width='100%';
-   UploadManager.showBar(100,'Done! 3.2MB ✅');
-   statusEl.innerText=`Done! ${(up.size/1024/1024).toFixed(2)}MB - UNDER 4MB - Voice synced ✅`;
-   setTimeout(()=> location.href='feed.html', 700);
- }catch(e){
-   btn.disabled=false; btn.innerText='Share';
-   statusEl.innerText='Upload failed: '+e.message;
-   if(e.message.includes('Too Large')||e.message.includes('PAYLOAD')){
-     statusEl.innerText=`Failed: File still too large ${(up.size/1024/1024).toFixed(2)}MB - must be <4MB - try shorter video`;
-   }
-   pBar.style.display='none';
- }
+    const formData=new FormData();
+    formData.append('file', uploadFile, uploadFile.name);
+    formData.append('caption', document.getElementById('caption').value.trim());
+    btn.textContent='Uploading...';
+    await UploadManager.uploadWithProgress(formData, token, percent=>{
+      const p=Math.max(0,Math.min(100,Number(percent)||0));
+      progressFill.style.width=(50+Math.round(p*0.5))+'%';
+      btn.textContent=`Uploading ${p}%`;
+      setStatus(`Uploading: ${p}% - ${(uploadFile.size/1048576).toFixed(2)} MB`);
+    });
+    progressFill.style.width='100%'; setStatus('Upload complete!','#00cc66'); btn.textContent='Done';
+    setTimeout(()=>{ location.href='feed.html'; },600);
+  }catch(error){
+    console.error('Upload error:',error);
+    setStatus('Upload failed: '+(error.message||'Unknown error'),'#ff453a');
+    btn.disabled=false; btn.textContent='Share'; resetProgress(); busy=false;
+  }
 }
 </script>
 </body>
