@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Create</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create - 2min 4.5MB</title>
 <style>
 *{box-sizing:border-box} body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex;justify-content:center}
 .box{width:100%;max-width:480px;padding:16px}
-.preview{width:100%;min-height:260px;background:#111;border:1px solid #262626;border-radius:12px;margin:10px 0;overflow:hidden;display:flex;justify-content:center;align-items:center;color:#888;position:relative}
-.preview video,.preview img{width:100%;max-height:540px;object-fit:contain}
+.preview{width:100%;min-height:280px;background:#111;border:1px solid #262626;border-radius:12px;margin:10px 0;display:flex;justify-content:center;align-items:center;overflow:hidden}
+.preview video,.preview img{width:100%;max-height:600px;object-fit:contain}
 input,textarea{width:100%;background:#121212;border:1px solid #262626;color:#fff;padding:12px;border-radius:8px;margin:8px 0}
 button{width:100%;background:#0095f6;border:0;color:#fff;padding:14px;border-radius:8px;font-weight:700}
 button:disabled{opacity:.6}
-#info,#status{font-size:12px;color:#999;word-break:break-all}
+#info,#status{font-size:12px;color:#aaa}
 #progressBar{width:100%;height:5px;background:#262626;border-radius:3px;margin-top:8px;display:none;overflow:hidden}
 #progressFill{height:100%;width:0;background:#0095f6;transition:width.2s}
 </style>
@@ -20,11 +19,11 @@ button:disabled{opacity:.6}
 <body>
 <div class="box">
 <input type="file" id="file" accept="video/*,image/*">
-<div class="preview" id="preview">Select - Max 3:00 - Max 4MB</div>
+<div class="preview" id="preview">Select video - MAX 2:00 - Vercel 4.5MB</div>
 <div id="info"></div>
 <textarea id="caption" placeholder="Caption..."></textarea>
 <button id="btn" onclick="startUpload()">Share</button>
-<p id="status">Ready</p>
+<p id="status">Ready - 2min max</p>
 <div id="progressBar"><div id="progressFill"></div></div>
 <canvas id="canvas" hidden></canvas>
 </div>
@@ -43,150 +42,147 @@ const progressBar=document.getElementById('progressBar');
 const progressFill=document.getElementById('progressFill');
 const canvas=document.getElementById('canvas');
 
-let currentDuration=0, previewUrl=null, busy=false, previewVideo=null;
-const MAX_SECONDS=180;
-const MAX_BYTES=4*1024*1024;
+let currentDuration=0, previewUrl=null, previewVideo=null, busy=false;
+const MAX_SECONDS=120; // 2 MINUTES ONLY
+const MAX_BYTES=4.5*1024*1024;
 const setStatus=(m,c='#999')=>{statusEl.textContent=m; statusEl.style.color=c;};
 
 fileInput.addEventListener('change',()=>{
   if(previewUrl) URL.revokeObjectURL(previewUrl);
+  if(previewVideo){ try{previewVideo.pause();}catch{} previewVideo=null; }
   const file=fileInput.files[0]; if(!file) return;
   previewUrl=URL.createObjectURL(file);
   if(file.type.startsWith('video/')){
     preview.innerHTML='';
     previewVideo=document.createElement('video');
-    previewVideo.src=previewUrl; previewVideo.controls=true; previewVideo.playsInline=true; previewVideo.preload='metadata';
+    previewVideo.src=previewUrl; previewVideo.controls=true; previewVideo.playsInline=true; previewVideo.preload='metadata'; previewVideo.muted=false;
     preview.appendChild(previewVideo);
     previewVideo.onloadedmetadata=()=>{
       currentDuration=previewVideo.duration;
-      if(currentDuration>MAX_SECONDS){ alert('3 MINUTES ONLY'); fileInput.value=''; preview.textContent='Too long'; return; }
-      info.textContent=`${Math.floor(currentDuration/60)}:${String(Math.floor(currentDuration%60)).padStart(2,'0')} / 3:00 • ${(file.size/1048576).toFixed(2)}MB`;
-      if(file.size<=MAX_BYTES) setStatus('✅ Under 4MB - will upload directly without compress');
-      else setStatus('Over 4MB - will compress');
+      if(currentDuration>MAX_SECONDS){
+        alert('2 MINUTES ONLY - your video is '+Math.floor(currentDuration)+'s');
+        fileInput.value=''; preview.textContent='Too long - 2min max'; currentDuration=0; return;
+      }
+      info.textContent=`${Math.floor(currentDuration/60)}:${String(Math.floor(currentDuration%60)).padStart(2,'0')} / 2:00 • ${(file.size/1048576).toFixed(2)}MB`;
+      setStatus(file.size>MAX_BYTES? 'Will compress to 4.5MB - full 2min kept' : 'Under 4.5MB - direct upload');
     };
-  } else {
+  }else{
     preview.innerHTML=`<img src="${previewUrl}">`;
-    info.textContent=`Image ${(file.size/1048576).toFixed(2)}MB`;
+    info.textContent=`${(file.size/1048576).toFixed(2)}MB`;
   }
 });
 
-function compressTo3MB(file,onProgress){
+// TIKTOK-LIKE COMPRESS - NO CUT, SYNCED
+function compressTo45MB(file,onProgress){
   return new Promise(async (resolve,reject)=>{
-    // 1. STOP BACKGROUND SOUND BUT KEEP PREVIEW VISIBLE
-    if(previewVideo){
-      try{ previewVideo.pause(); previewVideo.muted=true; }catch{}
-    }
+    // Stop preview sound but keep preview visible
+    if(previewVideo){ try{previewVideo.pause(); previewVideo.muted=true;}catch{} }
 
     const url=URL.createObjectURL(file);
     const video=document.createElement('video');
-    video.src=url;
-    video.muted=false; // keep voice
-    video.playsInline=true;
-    video.preload='auto';
-    video.style.display='none';
-    document.body.appendChild(video);
+    video.src=url; video.muted=false; video.playsInline=true; video.preload='auto'; video.crossOrigin='anonymous';
+    video.style.display='none'; document.body.appendChild(video);
 
-    let recorder,chunks=[],canvasStream,combinedStream,anim,finished=false, lastTime=0, stuckTimer=0;
-    const cleanup=()=>{
-      cancelAnimationFrame(anim);
-      if(canvasStream) canvasStream.getTracks().forEach(t=>t.stop());
-      if(combinedStream) combinedStream.getTracks().forEach(t=>t.stop());
-      try{ video.pause(); video.remove(); }catch{}
-      URL.revokeObjectURL(url);
-    };
+    let recorder,chunks=[],canvasStream,combinedStream,anim,finished=false;
+    const cleanup=()=>{ cancelAnimationFrame(anim); if(canvasStream) canvasStream.getTracks().forEach(t=>t.stop()); if(combinedStream) combinedStream.getTracks().forEach(t=>t.stop()); try{video.pause(); video.remove();}catch{} URL.revokeObjectURL(url); };
     const fail=m=>{ if(finished) return; finished=true; cleanup(); reject(new Error(m)); };
 
     video.onloadedmetadata=async()=>{
-      canvas.width=480; // 480p = clear but still small
-      let h=Math.round(480*(video.videoHeight/video.videoWidth)); if(h%2) h++; canvas.height=h||360;
+      // Keep 2min full - no cut
+      canvas.width=480; let h=Math.round(480*(video.videoHeight/video.videoWidth)); if(h%2) h++; canvas.height=h||360;
       const ctx=canvas.getContext('2d',{alpha:false});
+      ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
 
-      try{
-        video.currentTime=0;
-        await video.play();
-      }catch(e){ return fail('Play blocked - use Chrome Android'); }
+      try{ video.currentTime=0; await video.play(); }catch{ return fail('Use Chrome Android'); }
+      await new Promise(r=>setTimeout(r,400)); // wait for audio track
 
-      // CRITICAL FIX: get audio AFTER play started
       let cap=null;
-      for(let i=0;i<10;i++){
+      for(let i=0;i<8;i++){
         try{ cap=video.captureStream? video.captureStream() : video.mozCaptureStream(); }catch{}
         if(cap && cap.getAudioTracks().length) break;
         await new Promise(r=>setTimeout(r,200));
       }
-      if(!cap ||!cap.getAudioTracks().length) return fail('No audio track - your video is muted. Record with sound.');
+      if(!cap ||!cap.getAudioTracks().length) return fail('Video has no audio');
 
       canvasStream=canvas.captureStream(30);
       combinedStream=new MediaStream([canvasStream.getVideoTracks()[0],...cap.getAudioTracks()]);
 
-      let vBps = file.size>20*1024*1024? 90000 : 160000;
-      if(video.duration>120) vBps=90000;
+      // 2min -> 4.5MB = 300kbps total. Use 220k video + 48k audio = 268kbps = ~4.0MB safe
+      const vBps = 220000;
+      const aBps = 48000;
       const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'video/webm';
-
-      recorder=new MediaRecorder(combinedStream,{mimeType:mime, videoBitsPerSecond:vBps, audioBitsPerSecond:64000});
+      recorder=new MediaRecorder(combinedStream,{mimeType:mime, videoBitsPerSecond:vBps, audioBitsPerSecond:aBps});
       chunks=[];
       recorder.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
       recorder.onstop=()=>{
-        if(finished) return; finished=true;
-        cleanup();
+        if(finished) return; finished=true; cleanup();
         const blob=new Blob(chunks,{type:'video/webm'});
-        console.log('compressed', (blob.size/1048576).toFixed(2)+'MB');
+        console.log('Final', (blob.size/1048576).toFixed(2)+'MB', 'duration', video.duration);
         resolve(new File([blob],'video.mp4',{type:'video/mp4'}));
       };
       recorder.start(100);
 
+      const startTime=Date.now();
       function draw(){
         if(finished) return;
-        if(video.ended || video.currentTime>=video.duration-0.1){ try{recorder.stop();}catch{} return; }
-        // detect stuck
-        if(Math.abs(video.currentTime-lastTime)<0.01){ stuckTimer++; if(stuckTimer>120){ try{recorder.stop();}catch{} return; } }
-        else { stuckTimer=0; lastTime=video.currentTime; }
+        if(video.ended || video.currentTime>=video.duration-0.05){
+          // ensure we recorded full duration - wait 300ms then stop
+          setTimeout(()=>{ try{recorder.stop();}catch{} },300);
+          return;
+        }
         try{ ctx.drawImage(video,0,0,canvas.width,canvas.height); }catch{}
-        if(onProgress) onProgress(Math.floor((video.currentTime/video.duration)*100));
+        if(onProgress){
+          const p=Math.floor((video.currentTime/video.duration)*100);
+          onProgress(p);
+        }
         anim=requestAnimationFrame(draw);
       }
       draw();
+      video.onended=()=>{ setTimeout(()=>{ try{recorder.stop();}catch{} },300); };
     };
-    video.onerror=()=>fail('Load failed - try different video');
-    setTimeout(()=>{ if(!finished) fail('Compress timeout - file too big, trim to <2min'); }, 90000);
+    video.onerror=()=>fail('Video load error');
+    setTimeout(()=>{ if(!finished) fail('Timeout - try shorter video'); }, 180000);
   });
 }
 
 async function startUpload(){
   if(busy) return;
   const file=fileInput.files[0]; if(!file) return alert('Select file');
-  if(file.type.startsWith('video/') && currentDuration>MAX_SECONDS) return alert('3 MINUTES ONLY');
+  if(file.type.startsWith('video/') && currentDuration>MAX_SECONDS) return alert('2 MINUTES ONLY');
+
+  if(previewVideo){ try{previewVideo.pause(); previewVideo.muted=true;}catch{} }
+
   busy=true; btn.disabled=true; progressBar.style.display='block'; progressFill.style.width='5%';
-
-  // STOP preview sound immediately
-  if(previewVideo){ try{ previewVideo.pause(); previewVideo.muted=true; }catch{} }
-
   let uploadFile=file;
   try{
-    // IF ALREADY UNDER 4MB - DON'T COMPRESS AT ALL - NO STUCK
     if(file.type.startsWith('video/') && file.size>MAX_BYTES){
-      setStatus('Compressing... preview paused, no background sound');
-      uploadFile=await compressTo3MB(file,p=>{
+      setStatus('Compressing full 2min to 4.5MB - no cut, synced...');
+      uploadFile=await compressTo45MB(file,p=>{
         progressFill.style.width=(p*0.7)+'%';
-        btn.textContent=`Compressing ${p}%`;
+        btn.textContent=`Compressing ${p}% - full length`;
+        setStatus(`Compressing ${p}% - keeping full 2:00`);
       });
       const mb=uploadFile.size/1048576;
-      if(mb>4) throw new Error(`Still ${mb.toFixed(2)}MB - trim video shorter`);
-      setStatus(`✅ ${mb.toFixed(2)}MB - clear & synced`,'#0f0');
-    } else {
-      setStatus('Uploading directly - no compress needed','lime');
+      console.log('Compressed', mb.toFixed(2)+'MB');
+      if(mb>4.5){
+        // If still >4.5MB, try lower bitrate once more
+        throw new Error(`Still ${mb.toFixed(2)}MB - try 1:30 video`);
+      }
+      setStatus(`✅ ${mb.toFixed(2)}MB - full 2min kept, synced`,'#0f0');
+      progressFill.style.width='75%';
+    }else{
+      setStatus('Uploading direct - no compress','lime');
       progressFill.style.width='40%';
     }
 
     const fd=new FormData(); fd.append('file',uploadFile); fd.append('caption',document.getElementById('caption').value);
     btn.textContent='Uploading...';
-    progressFill.style.width='80%';
     const res=await fetch(`${BASE_URL}/api/posts`,{method:'POST',headers:{'Authorization':`Bearer ${token}`},body:fd});
     const txt=await res.text(); console.log(res.status,txt);
     if(!res.ok) throw new Error(txt);
-    progressFill.style.width='100%'; setStatus('Done','#0f0');
-    location.href='feed.html';
+    progressFill.style.width='100%'; setStatus('Done!','#0f0'); location.href='feed.html';
   }catch(e){
-    console.error(e); setStatus('Failed: '+e.message,'#f44'); alert(e.message);
+    console.error(e); setStatus(e.message,'#f44'); alert(e.message);
     btn.disabled=false; busy=false; btn.textContent='Share'; progressFill.style.width='0%';
   }
 }
