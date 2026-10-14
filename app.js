@@ -359,42 +359,16 @@ app.get('/api/users/:id', async (req,res)=>{
 
  // CLOUDINARY CONFIGURATION
 
-cloudinary.config({
-  cloud_name: 'v8mwxmlb',
-  api_key: '967794739896149',
-  api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk',
-  secure: true
-});
-
+  cloudinary.config({ cloud_name: 'v8mwxmlb', api_key: '967794739896149', api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk', secure: true });
+  
 const BANNED_WORDS = [ 'xxx','porn','sex','nude','naked','boobs','boob','ass', 'pussy','dick','cock','fuck','blowjob','handjob','cum', 'orgasm','erotic','nsfw','onlyfans','18+','hentai', 'brazzers','xnxx','xvideos','pornhub','strip','bikini', 'lingerie','sexy','seductive','horny','suck','tits', 'titty','vagina','penis','anal','escort','prostitute', 'sugar','mommy','incest','rape','bdsm','nudes','undress', 'masturb' ];
-
 const containsBanned = (t) => { if (!t) return false; const l = String(t).toLowerCase(); return BANNED_WORDS.some(w => l.includes(w)); };
 
 app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
   let uploadedId = null;
   let uploadedResourceType = 'image';
   try {
-    console.log('Upload hit:', req.file?.originalname, req.file?.size, req.file?.mimetype);
-    if (!req.file) {
-      return res.status(400).json({ msg: 'No file received. Please select a video or image.' });
-    }
-    if (!req.file.mimetype?.startsWith('image/') && !req.file.mimetype?.startsWith('video/')) {
-      return res.status(400).json({ msg: 'Only image and video files are allowed.' });
-    }
-    const MAX_SIZE = 30 * 1024 * 1024;
-    if (req.file.size > MAX_SIZE) {
-      return res.status(413).json({ msg: 'File is too large. Maximum size is 30 MB.' });
-    }
-    if (!req.file.buffer || req.file.buffer.length === 0) {
-      return res.status(400).json({ msg: 'The uploaded file is empty or could not be read.' });
-    }
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ msg: 'Database not connected.' });
-    }
-    const caption = String(req.body.caption || '');
-    if (containsBanned(caption) || containsBanned(req.file.originalname)) {
-      return res.status(400).json({ msg: 'Blocked: banned word in caption or file name.' });
-    }
+    if (!req.file) return res.status(400).json({ msg: 'No file received' });
     const isVideo = req.file.mimetype.startsWith('video/');
     uploadedResourceType = isVideo ? 'video' : 'image';
 
@@ -402,27 +376,17 @@ app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
       const stream = cloudinary.uploader.upload_stream(
         { resource_type: uploadedResourceType, folder: 'Postsmedia' },
         (err, result) => {
-          if (err) {
-            console.error('CLOUDINARY UPLOAD ERROR:', { message: err.message, http_code: err.http_code, name: err.name });
-            return reject(err);
-          }
-          if (!result?.secure_url || !result?.public_id) {
-            return reject(new Error('Cloudinary did not return a valid media URL and public ID.'));
-          }
+          if (err) return reject(err);
           resolve(result);
         }
       );
-      stream.on('error', (err) => {
-        console.error('CLOUDINARY STREAM ERROR:', err.message);
-        reject(err);
-      });
       stream.end(req.file.buffer);
     });
 
     uploadedId = result.public_id;
     const post = await Post.create({
       user: req.userId,
-      caption: caption,
+      caption: String(req.body.caption || ''),
       mediaUrl: result.secure_url,
       publicId: result.public_id,
       type: isVideo ? 'video' : 'image'
@@ -431,15 +395,10 @@ app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
     return res.status(201).json(post);
   } catch (err) {
     if (uploadedId) {
-      try {
-        await cloudinary.uploader.destroy(uploadedId, { resource_type: uploadedResourceType, invalidate: true });
-      } catch (cleanupError) {
-        console.error('CLOUDINARY CLEANUP ERROR:', cleanupError.message);
-      }
+      await cloudinary.uploader.destroy(uploadedId, { resource_type: uploadedResourceType }).catch(()=>{});
     }
-    console.error('UPLOAD ERROR:', err);
-    const status = Number.isInteger(err.http_code) && err.http_code >= 400 && err.http_code < 500 ? err.http_code : 500;
-    return res.status(status).json({ msg: 'Upload failed. Check the server terminal for the Cloudinary error.', error: err.message || 'Unknown upload error.' });
+    console.error('UPLOAD ERROR:', err.message, err.http_code);
+    return res.status(err.http_code || 500).json({ msg: err.message });
   }
 });
 
