@@ -64,7 +64,18 @@ const SECRET = "secret123";
   }
 }
 
-const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
+
+
+
+const uploadd = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 30 * 1024 * 1024
+  }
+});
+
+//const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
+
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
@@ -343,110 +354,418 @@ app.get('/api/users/:id', async (req,res)=>{
   }catch(e){ res.status(500).json({msg:e.message}) }
 });
 
+ // FIX 1: Check your upload variable name - you wrote uploadd
+// FIX 2: Added detailed error log for 403
 
+ // CLOUDINARY CONFIGURATION
 
-  app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => { 
-  try { 
-    console.log('Upload hit:', req.file?.originalname, req.file?.size, req.file?.mimetype); 
-
-    if (!req.file) { 
-      return res.status(400).json({ msg: 'No file received. Please select a video or image.' }); 
-    } 
-
-    if (!req.file.mimetype.startsWith('image/') && !req.file.mimetype.startsWith('video/')) { 
-      return res.status(400).json({ msg: 'Only image and video files are allowed.' }); 
-    } 
-
-    const MAX_SIZE = 4 * 1024 * 1024; 
-    if (req.file.size > MAX_SIZE) { 
-      return res.status(413).json({ msg: 'File is too large. Maximum is 4 MB - try shorter video (3min max).' }); 
-    } 
-
-    if (mongoose.connection.readyState !== 1) { 
-      return res.status(503).json({ msg: 'Database not connected.' }); 
-    } 
-
-    const isVideo = req.file.mimetype.startsWith('video/'); 
-    const media = await Media.create({ 
-      userId: req.userId, 
-      img: { data: req.file.buffer, contentType: req.file.mimetype } 
-    }); 
-
-    const mediaUrl = `/api/media-file/${media._id}`; 
-    const post = await Post.create({ 
-      user: req.userId, 
-      caption: req.body.caption || '', 
-      mediaUrl, 
-      type: isVideo ? 'video' : 'image' 
-    }); 
-
-    
-    return res.status(201).json(post); 
-
-  } catch (err) { 
-    console.error('UPLOAD ERROR:', err); 
-    return res.status(500).json({ msg: 'Upload failed.', error: err.message }); 
-  } 
+cloudinary.config({
+  cloud_name: 'v8mwxmlb',
+  api_key: '967794739896149',
+  api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk',
+  secure: true
 });
 
+const BANNED_WORDS = [ 'xxx','porn','sex','nude','naked','boobs','boob','ass', 'pussy','dick','cock','fuck','blowjob','handjob','cum', 'orgasm','erotic','nsfw','onlyfans','18+','hentai', 'brazzers','xnxx','xvideos','pornhub','strip','bikini', 'lingerie','sexy','seductive','horny','suck','tits', 'titty','vagina','penis','anal','escort','prostitute', 'sugar','mommy','incest','rape','bdsm','nudes','undress', 'masturb' ];
 
+const containsBanned = (t) => { if (!t) return false; const l = String(t).toLowerCase(); return BANNED_WORDS.some(w => l.includes(w)); };
+
+app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
+  let uploadedId = null;
+  let uploadedResourceType = 'image';
+  try {
+    console.log('Upload hit:', req.file?.originalname, req.file?.size, req.file?.mimetype);
+    if (!req.file) {
+      return res.status(400).json({ msg: 'No file received. Please select a video or image.' });
+    }
+    if (!req.file.mimetype?.startsWith('image/') && !req.file.mimetype?.startsWith('video/')) {
+      return res.status(400).json({ msg: 'Only image and video files are allowed.' });
+    }
+    const MAX_SIZE = 30 * 1024 * 1024;
+    if (req.file.size > MAX_SIZE) {
+      return res.status(413).json({ msg: 'File is too large. Maximum size is 30 MB.' });
+    }
+    if (!req.file.buffer || req.file.buffer.length === 0) {
+      return res.status(400).json({ msg: 'The uploaded file is empty or could not be read.' });
+    }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ msg: 'Database not connected.' });
+    }
+    const caption = String(req.body.caption || '');
+    if (containsBanned(caption) || containsBanned(req.file.originalname)) {
+      return res.status(400).json({ msg: 'Blocked: banned word in caption or file name.' });
+    }
+    const isVideo = req.file.mimetype.startsWith('video/');
+    uploadedResourceType = isVideo ? 'video' : 'image';
+
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: uploadedResourceType, folder: 'Postsmedia' },
+        (err, result) => {
+          if (err) {
+            console.error('CLOUDINARY UPLOAD ERROR:', { message: err.message, http_code: err.http_code, name: err.name });
+            return reject(err);
+          }
+          if (!result?.secure_url || !result?.public_id) {
+            return reject(new Error('Cloudinary did not return a valid media URL and public ID.'));
+          }
+          resolve(result);
+        }
+      );
+      stream.on('error', (err) => {
+        console.error('CLOUDINARY STREAM ERROR:', err.message);
+        reject(err);
+      });
+      stream.end(req.file.buffer);
+    });
+
+    uploadedId = result.public_id;
+    const post = await Post.create({
+      user: req.userId,
+      caption: caption,
+      mediaUrl: result.secure_url,
+      publicId: result.public_id,
+      type: isVideo ? 'video' : 'image'
+    });
+    uploadedId = null;
+    return res.status(201).json(post);
+  } catch (err) {
+    if (uploadedId) {
+      try {
+        await cloudinary.uploader.destroy(uploadedId, { resource_type: uploadedResourceType, invalidate: true });
+      } catch (cleanupError) {
+        console.error('CLOUDINARY CLEANUP ERROR:', cleanupError.message);
+      }
+    }
+    console.error('UPLOAD ERROR:', err);
+    const status = Number.isInteger(err.http_code) && err.http_code >= 400 && err.http_code < 500 ? err.http_code : 500;
+    return res.status(status).json({ msg: 'Upload failed. Check the server terminal for the Cloudinary error.', error: err.message || 'Unknown upload error.' });
+  }
+});
+
+// DELETE POST
 app.delete('/api/posts/:id', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  if (!post) return res.status(404).json({ msg: "Post not found" });
-  if (post.user.toString()!== req.userId) return res.status(403).json({ msg: "Not yours" });
-  await Post.findByIdAndDelete(req.params.id); res.json({ msg: "Deleted" });
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+
+    if (post.user.toString() !== req.userId.toString()) {
+      return res.status(403).json({
+        msg: 'You cannot delete this post.'
+      });
+    }
+
+    if (post.publicId) {
+      await cloudinary.uploader.destroy(post.publicId, {
+        resource_type: post.type === 'video' ? 'video' : 'image',
+        invalidate: true
+      });
+    }
+
+    await Post.findByIdAndDelete(req.params.id);
+
+    return res.json({ msg: 'Deleted.' });
+
+  } catch (err) {
+    console.error('DELETE POST ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not delete post.',
+      error: err.message
+    });
+  }
 });
+
+
+// UPDATE POST CAPTION
 app.put('/api/posts/:id', authh, async (req, res) => {
-  const post = await Post.findByIdAndUpdate(req.params.id, { caption: req.body.caption }, { new: true });
-  res.json(post);
+  try {
+    if (containsBanned(req.body.caption)) {
+      return res.status(400).json({
+        msg: 'Caption has banned word.'
+      });
+    }
+
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+
+    if (post.user.toString() !== req.userId.toString()) {
+      return res.status(403).json({
+        msg: 'You cannot edit this post.'
+      });
+    }
+
+    post.caption = req.body.caption || '';
+    await post.save();
+
+    return res.json(post);
+
+  } catch (err) {
+    console.error('UPDATE POST ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not update post.',
+      error: err.message
+    });
+  }
 });
+
+
+// POSTS FEED
 app.get('/api/posts/feed', authh, async (req, res) => {
-  const posts = await Post.find().populate('user').populate('comments.user').sort({ createdAt: -1 });
-  res.json(posts);
+  try {
+    const posts = await Post.find()
+      .populate('user')
+      .populate('comments.user')
+      .sort({ createdAt: -1 });
+
+    return res.json(posts);
+
+  } catch (err) {
+    console.error('FEED ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not load feed.'
+    });
+  }
 });
+
+
+// VIDEO REELS
 app.get('/api/posts/reels', async (req, res) => {
-  const reels = await Post.find({ type: 'video' }).populate('user').populate('comments.user').sort({ createdAt: -1 });
-  res.json(reels);
+  try {
+    const reels = await Post.find({ type: 'video' })
+      .populate('user')
+      .populate('comments.user')
+      .sort({ createdAt: -1 });
+
+    return res.json(reels);
+
+  } catch (err) {
+    console.error('REELS ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not load reels.'
+    });
+  }
 });
+
+
+// GET SINGLE POST
 app.get('/api/posts/:id', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id).populate('user').populate('comments.user');
-  if (!post) return res.status(404).json({ msg: "Post not found" });
-  res.json(post);
+  try {
+    const post = await Post.findById(req.params.id)
+      .populate('user')
+      .populate('comments.user');
+
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+
+    return res.json(post);
+
+  } catch (err) {
+    console.error('GET POST ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not load post.'
+    });
+  }
 });
 
+
+// LIKE OR UNLIKE POST
 app.post('/api/posts/:id/like', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  const isLiked = post.likes.includes(req.userId);
-  if(isLiked) post.likes.pull(req.userId); else post.likes.push(req.userId);
-  await post.save();
-  if(!isLiked) await createNotif(post.user, req.userId, 'like', post._id);
-  else { await Notification.deleteMany({ receiver:post.user, sender:req.userId, type:'like', post:post._id }); }
-  const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
-  res.json(updated);
-});
-app.post('/api/posts/:id/comment', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  post.comments.push({ user: req.userId, text: req.body.text });
-  await post.save();
-  await createNotif(post.user, req.userId, 'comment', post._id, req.body.text);
-  const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
-  res.json(updated);
-});
-app.post('/api/posts/:id/share', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id); post.shares += 1; await post.save(); res.json(post);
-});
-app.post('/api/posts/:id/save', authh, async (req, res) => {
-  const me = await Userd.findById(req.userId);
-  me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
-  await me.save(); res.json(me.savedPosts);
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+
+    const isLiked = post.likes.some(
+      id => id.toString() === req.userId.toString()
+    );
+
+    if (isLiked) {
+      post.likes.pull(req.userId);
+    } else {
+      post.likes.push(req.userId);
+    }
+
+    await post.save();
+
+    if (!isLiked) {
+      await createNotif(post.user, req.userId, 'like', post._id);
+    } else {
+      await Notification.deleteMany({
+        receiver: post.user,
+        sender: req.userId,
+        type: 'like',
+        post: post._id
+      });
+    }
+
+    const updated = await Post.findById(req.params.id)
+      .populate('user')
+      .populate('comments.user');
+
+    return res.json(updated);
+
+  } catch (err) {
+    console.error('LIKE ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not update like.'
+    });
+  }
 });
 
- app.post('/api/posts/:id/view', async (req,res)=>{
- try{
-  const p = await Post.findByIdAndUpdate(req.params.id, {$inc:{views:1}}, {new:true});
-  res.json({views:p.views});
- }catch(e){ res.status(500).json({msg:e.message}) }
+
+// COMMENT ON POST
+app.post('/api/posts/:id/comment', authh, async (req, res) => {
+  try {
+    const commentText = req.body.text || '';
+
+    if (!commentText.trim()) {
+      return res.status(400).json({
+        msg: 'Comment cannot be empty.'
+      });
+    }
+
+    if (containsBanned(commentText)) {
+      return res.status(400).json({
+        msg: 'Comment has banned word.'
+      });
+    }
+
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+
+    post.comments.push({
+      user: req.userId,
+      text: commentText
+    });
+
+    await post.save();
+
+    await createNotif(
+      post.user,
+      req.userId,
+      'comment',
+      post._id,
+      commentText
+    );
+
+    const updated = await Post.findById(req.params.id)
+      .populate('user')
+      .populate('comments.user');
+
+    return res.json(updated);
+
+  } catch (err) {
+    console.error('COMMENT ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not add comment.'
+    });
+  }
 });
+
+
+// SHARE POST
+app.post('/api/posts/:id/share', authh, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+
+    post.shares += 1;
+    await post.save();
+
+    return res.json(post);
+
+  } catch (err) {
+    console.error('SHARE ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not share post.'
+    });
+  }
+});
+
+
+// SAVE OR UNSAVE POST
+app.post('/api/posts/:id/save', authh, async (req, res) => {
+  try {
+    const me = await Userd.findById(req.userId);
+
+    if (!me) {
+      return res.status(404).json({ msg: 'User not found.' });
+    }
+
+    if (!me.savedPosts) {
+      me.savedPosts = [];
+    }
+
+    const alreadySaved = me.savedPosts.some(
+      id => id.toString() === req.params.id
+    );
+
+    if (alreadySaved) {
+      me.savedPosts.pull(req.params.id);
+    } else {
+      const postExists = await Post.exists({
+        _id: req.params.id
+      });
+
+      if (!postExists) {
+        return res.status(404).json({ msg: 'Post not found.' });
+      }
+
+      me.savedPosts.push(req.params.id);
+    }
+
+    await me.save();
+
+    return res.json(me.savedPosts);
+
+  } catch (err) {
+    console.error('SAVE POST ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not save post.'
+    });
+  }
+});
+
+
+// COUNT POST VIEWS
+app.post('/api/posts/:id/view', async (req, res) => {
+  try {
+    const p = await Post.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+
+    if (!p) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+
+    return res.json({ views: p.views });
+
+  } catch (err) {
+    console.error('VIEW ERROR:', err);
+    return res.status(500).json({
+      msg: 'Could not count view.'
+    });
+  }
+});
+
+//end here hgfddfghj;kjhgfd
 
 app.get('/api/users/:id', async (req, res) => {
   const user = await Userd.findById(req.params.id).populate('followers', 'username avatar').populate('following', 'username avatar');

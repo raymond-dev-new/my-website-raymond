@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create - 1min</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#000;
+  color:#fff;
+  font-family:Arial,sans-serif;
+  display:flex;
+  justify-content:center;
+  min-height:100vh
+}
+.box{
+  width:100%;
+  max-width:480px;
+  padding:16px
+}
+h2{margin:8px 0 18px}
+.preview{
+  width:100%;
+  min-height:260px;
+  max-height:65vh;
+  background:#151515;
+  border:1px solid #333;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  margin-bottom:16px;
+  color:#aaa;
+  text-align:center
+}
+.preview img,.preview video{
+  display:none;
+  width:100%;
+  max-height:65vh;
+  object-fit:contain;
+  background:#000
+}
+input[type=file]{
+  width:100%;
+  padding:12px;
+  background:#151515;
+  border:1px solid #333;
+  color:#fff;
+  border-radius:10px;
+  margin-bottom:14px
+}
+textarea{
+  width:100%;
+  min-height:100px;
+  resize:vertical;
+  background:#151515;
+  border:1px solid #333;
+  border-radius:10px;
+  padding:13px;
+  color:#fff;
+  font:16px Arial,sans-serif;
+  outline:none;
+  margin-bottom:14px
+}
+button{
+  width:100%;
+  padding:15px;
+  background:#fff;
+  color:#000;
+  font-weight:bold;
+  font-size:16px;
+  border:0;
+  border-radius:10px;
+  cursor:pointer
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status{
+  margin:14px 0;
+  font-size:14px;
+  line-height:1.5;
+  overflow-wrap:anywhere
+}
+.track{
+  height:7px;
+  background:#292929;
+  border-radius:10px;
+  overflow:hidden;
+  margin:12px 0
+}
+.bar{
+  height:100%;
+  width:0;
+  background:#fff;
+  transition:width .15s linear
+}
+.small{color:#999;font-size:12px;margin:0 0 12px}
+</style>
+</head>
+
+<body>
+<main class="box">
+  <h2>Create post</h2>
+
+  <div class="preview" id="preview">
+    <span id="placeholder">Choose an image or video to preview it here</span>
+    <img id="imagePreview" alt="Image preview">
+    <video id="videoPreview" controls playsinline></video>
+  </div>
+
+  <input
+    type="file"
+    id="file"
+    accept="image/*,video/*"
+  >
+
+  <p class="small">Images and videos up to 30 MB. No one-minute duration limit.</p>
+
+  <textarea
+    id="caption"
+    maxlength="2000"
+    placeholder="Write a caption..."
+  ></textarea>
+
+  <div class="track">
+    <div class="bar" id="bar"></div>
+  </div>
+
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+
+  <button id="shareBtn" type="button">Share</button>
+</main>
+
+<script>
+const API_URL = 'https://raymonddomain.dev/api/posts';
+
+const fileInput = document.getElementById('file');
+const captionInput = document.getElementById('caption');
+const imagePreview = document.getElementById('imagePreview');
+const videoPreview = document.getElementById('videoPreview');
+const placeholder = document.getElementById('placeholder');
+const shareBtn = document.getElementById('shareBtn');
+const statusBox = document.getElementById('status');
+const bar = document.getElementById('bar');
+
+let previewURL = null;
+let uploading = false;
+
+function setStatus(message) {
+  statusBox.textContent = message;
+}
+
+function resetProgress() {
+  bar.style.width = '0%';
+}
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+
+  if (previewURL) {
+    URL.revokeObjectURL(previewURL);
+    previewURL = null;
+  }
+
+  imagePreview.style.display = 'none';
+  videoPreview.style.display = 'none';
+  videoPreview.pause();
+  imagePreview.removeAttribute('src');
+  videoPreview.removeAttribute('src');
+  resetProgress();
+
+  if (!file) {
+    placeholder.style.display = 'block';
+    setStatus('');
+    return;
+  }
+
+  const validType =
+    file.type.startsWith('image/') ||
+    file.type.startsWith('video/');
+
+  if (!validType) {
+    fileInput.value = '';
+    placeholder.style.display = 'block';
+    setStatus('Choose a valid image or video file.');
+    return;
+  }
+
+  if (file.size > 30 * 1024 * 1024) {
+    fileInput.value = '';
+    placeholder.style.display = 'block';
+    setStatus('File is too large. Maximum size is 30 MB.');
+    return;
+  }
+
+  previewURL = URL.createObjectURL(file);
+  placeholder.style.display = 'none';
+
+  if (file.type.startsWith('image/')) {
+    imagePreview.src = previewURL;
+    imagePreview.style.display = 'block';
+  } else {
+    videoPreview.src = previewURL;
+    videoPreview.style.display = 'block';
+  }
+
+  setStatus(file.name);
+});
+
+shareBtn.addEventListener('click', () => {
+  if (uploading) return;
+
+  const file = fileInput.files[0];
+  const caption = captionInput.value.trim();
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    setStatus('Please log in before sharing.');
+    return;
+  }
+
+  if (!file) {
+    setStatus('Please choose an image or video first.');
+    return;
+  }
+
+  if (
+    !file.type.startsWith('image/') &&
+    !file.type.startsWith('video/')
+  ) {
+    setStatus('Only image and video files are allowed.');
+    return;
+  }
+
+  if (file.size > 30 * 1024 * 1024) {
+    setStatus('File is too large. Maximum size is 30 MB.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('caption', caption);
+
+  const xhr = new XMLHttpRequest();
+  uploading = true;
+  shareBtn.disabled = true;
+  shareBtn.textContent = 'Uploading...';
+  setStatus('Preparing upload...');
+  resetProgress();
+
+  xhr.open('POST', API_URL);
+  xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+
+  xhr.upload.addEventListener('progress', event => {
+    if (event.lengthComputable) {
+      const percent = Math.round(
+        (event.loaded / event.total) * 100
+      );
+
+      bar.style.width = percent + '%';
+      setStatus('Uploading: ' + percent + '%');
+    }
+  });
+
+  xhr.onload = () => {
+    uploading = false;
+    shareBtn.disabled = false;
+    shareBtn.textContent = 'Share';
+
+    let data = {};
+
+    try {
+      data = JSON.parse(xhr.responseText);
+    } catch (_) {}
+
+    if (xhr.status >= 200 && xhr.status < 300) {
+      bar.style.width = '100%';
+      setStatus('Post uploaded successfully!');
+
+      window.location.href = 'feed.html';
+      return;
+    }
+
+    setStatus(
+      data.msg ||
+      data.error ||
+      'Upload failed. Please try again.'
+    );
+  };
+
+  xhr.onerror = () => {
+    uploading = false;
+    shareBtn.disabled = false;
+    shareBtn.textContent = 'Share';
+    setStatus(
+      'Could not connect to the server. Check your backend URL and connection.'
+    );
+  };
+
+  xhr.onabort = () => {
+    uploading = false;
+    shareBtn.disabled = false;
+    shareBtn.textContent = 'Share';
+    setStatus('Upload cancelled.');
+  };
+
+  xhr.send(formData);
+});
+
+window.addEventListener('beforeunload', () => {
+  if (previewURL) URL.revokeObjectURL(previewURL);
+});
+</script>
+</body>
+</html>
