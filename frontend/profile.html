@@ -17,9 +17,12 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial;
 .cam{position:absolute;bottom:0;right:0;background:#0095f6;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #000}
 .profile-main{flex:1;min-width:0}
 #name{margin:0;font-size:22px;font-weight:800}
-.stats{display:flex;gap:20px;margin-top:10px;font-size:16.5px}
-.stats b{color:#fff;font-size:18px;font-weight:800}
-.bio-wrap{margin-top:8px;max-width:340px}
+/* FOLLOWERS TOP MIDDLE */
+.stats{display:flex;gap:24px;margin-top:12px;align-items:flex-start}
+.stat{display:flex;flex-direction:column;align-items:center;cursor:pointer;line-height:1.1}
+.stat b{color:#fff;font-size:20px;font-weight:800;display:block}
+.stat span{color:#fff;font-size:14px;margin-top:2px}
+.bio-wrap{margin-top:10px;max-width:340px}
 .bio-name{font-weight:700;color:#fff;font-size:15px;display:block}
 .bio-text{color:#fff!important;font-size:14.5px;line-height:1.35;white-space:pre-wrap;word-break:break-word;display:block;margin-top:2px}
 .bio-link a{color:#e0f1ff;font-weight:600;text-decoration:none;font-size:14px;word-break:break-all}
@@ -76,8 +79,8 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial;
 .profile-info{padding:14px 14px;gap:16px}
 .avatar-wrap,.circle{width:86px;height:86px;font-size:28px}
 #name{font-size:20px}
-.stats{font-size:15px;gap:14px}
-.stats b{font-size:16.5px}
+.stats{gap:18px}
+.stat b{font-size:18px}
 .posts{max-width:100%;gap:2px}
 .modal-box{flex-direction:column;width:100%;border-radius:0;margin:0;min-height:100dvh}
 }
@@ -89,10 +92,14 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Roboto,Arial;
 <div class="avatar-wrap" onclick="openAvatarModal()"><div class="circle" id="letter">R</div><div class="cam" id="camIcon" style="display:none">📷</div></div>
 <div class="profile-main">
 <h3 id="name">raymond</h3>
-<div class="stats"><span><b id="pc">0</b> posts</span><span onclick="showFollowers()"><b id="followersCount">0</b> followers</span><span onclick="showFollowing()"><b id="followingCount">0</b> following</span></div>
+<div class="stats">
+<div class="stat"><b id="pc">0</b><span>posts</span></div>
+<div class="stat" onclick="showFollowers()"><b id="followersCount">0</b><span>followers</span></div>
+<div class="stat" onclick="showFollowing()"><b id="followingCount">0</b><span>following</span></div>
+</div>
 <div class="bio-wrap"><span class="bio-name" id="bioDisplayName"></span><span class="bio-text" id="bioText"></span><div class="bio-link" id="bioLink"></div><button class="edit-bio-btn" id="editBioBtn" onclick="openBioModal()">Edit bio</button></div>
 <button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button>
-<div class="action-row" id="ownActions" style="display:none"><a href="create.html" class="btn-post">+ Post</a><button onclick="openAvatarModal()" class="btn-gray">Edit profile </button></div>
+<div class="action-row" id="ownActions" style="display:none"><a href="create.html" class="btn-post">+ Post</a><button onclick="openAvatarModal()" class="btn-gray">Edit Avatar</button></div>
 </div>
 </div>
 <div class="posts" id="grid"></div>
@@ -109,6 +116,8 @@ let currentId="",profileData=null,selectedAvatarFile=null,isOwnProfile=false;
 let allPosts=[];
 function getMyId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getParamId(){return new URLSearchParams(location.search).get('id')}
+function getCache(k){try{return JSON.parse(localStorage.getItem(k)||null)}catch{return null}}
+function setCache(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 function fixUrl(u){if(!u) return "";if(u.startsWith('data:')) return u;if(u.startsWith('/api/')) return BASE+u;if(u.startsWith('/uploads')) return BASE+u;if(u.startsWith('http')) return u;return u}
 function isVideoFile(u){if(!u) return false;return u.includes('/api/media-file')||u.endsWith('.mp4')}
 function renderAvatar(user){
@@ -151,6 +160,9 @@ function renderProfileUI(data){
 async function loadProfile(){
  const vid=getParamId()||getMyId();
  isOwnProfile=vid===getMyId();
+ const key='profile_'+vid;
+ const cached=getCache(key);
+ if(cached){renderProfileUI(cached);}
  try{
   let url=isOwnProfile?BASE+'/api/users/me/profile':BASE+'/api/users/'+vid+'/profile';
   let res=await fetch(url,{headers:{authorization:token}});
@@ -159,24 +171,45 @@ async function loadProfile(){
   let norm;
   if(data.user){norm=data;} else{norm={user:data,posts:data.posts||[],followersCount:(data.followers?data.followers.length:0),followingCount:(data.following?data.following.length:0)};}
   renderProfileUI(norm);
+  setCache(key,norm);
  }catch(e){console.log(e);}
 }
 window.addEventListener('scroll',()=>{ const y=window.scrollY; const head=document.getElementById('header'); if(y>50) head.classList.add('shrink'); else head.classList.remove('shrink'); },{passive:true});
 function openBioModal(){if(!isOwnProfile) return;const u=profileData&&profileData.user?profileData.user:{};document.getElementById('bioNameInput').value=u.displayName||'';document.getElementById('bioInput').value=u.bio||'';document.getElementById('linkInput').value=u.link||'';document.getElementById('bioCount').innerText=(u.bio||'').length;document.getElementById('bioModal').classList.add('open');}
 function closeBioModal(){document.getElementById('bioModal').classList.remove('open');}
 document.getElementById('bioInput').addEventListener('input',function(e){document.getElementById('bioCount').innerText=e.target.value.length;});
-async function saveBio(){const btn=document.getElementById('saveBioBtn');btn.innerText='Saving...';btn.disabled=true;const payload={displayName:document.getElementById('bioNameInput').value.trim(),bio:document.getElementById('bioInput').value.trim(),link:document.getElementById('linkInput').value.trim()};try{let r=await fetch(BASE+'/api/users/me',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});if(!r.ok){r=await fetch(BASE+'/api/users/update',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});}closeBioModal();loadProfile();}catch(e){alert(e.message);}btn.innerText='Save Bio';btn.disabled=false;}
+async function saveBio(){const btn=document.getElementById('saveBioBtn');btn.innerText='Saving...';btn.disabled=true;const payload={displayName:document.getElementById('bioNameInput').value.trim(),bio:document.getElementById('bioInput').value.trim(),link:document.getElementById('linkInput').value.trim()};try{let r=await fetch(BASE+'/api/users/me',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});if(!r.ok){r=await fetch(BASE+'/api/users/update',{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify(payload)});}localStorage.removeItem('profile_'+getMyId());closeBioModal();loadProfile();}catch(e){alert(e.message);}btn.innerText='Save Bio';btn.disabled=false;}
 function openAvatarModal(){if(!isOwnProfile) return;document.getElementById('avatarModal').classList.add('open');}
 function closeAvatarModal(){document.getElementById('avatarModal').classList.remove('open');selectedAvatarFile=null;document.getElementById('saveAvatarBtn').style.display='none';document.getElementById('avatarInput').value='';}
 function handleAvatarSelect(i){if(i.files&&i.files[0]){selectedAvatarFile=i.files[0];const u=URL.createObjectURL(selectedAvatarFile);const p=document.getElementById('avatarPreview');p.src=u;p.style.display='block';document.getElementById('avatarLetter').style.display='none';document.getElementById('saveAvatarBtn').style.display='block';}}
-async function uploadAvatar(){if(!selectedAvatarFile) return;const b=document.getElementById('saveAvatarBtn');b.innerText='Uploading...';b.disabled=true;const fd=new FormData();fd.append('file',selectedAvatarFile);try{await fetch(BASE+'/api/users/avatar',{method:'PUT',headers:{authorization:token},body:fd});closeAvatarModal();loadProfile();}catch(e){alert(e.message);}b.innerText='Save';b.disabled=false;}
-async function removeAvatar(){if(!confirm('Remove?')) return;try{await fetch(BASE+'/api/users/avatar',{method:'DELETE',headers:{authorization:token}});}catch{}closeAvatarModal();setTimeout(loadProfile,400);}
-async function toggleFollow(){const id=getParamId()||getMyId();const btn=document.getElementById('followBtn');const countEl=document.getElementById('followersCount');const wasFollowing=btn.innerText==='Following';btn.innerText=wasFollowing?'Follow':'Following';btn.className=wasFollowing?'follow-btn follow':'follow-btn following';let currentCount=parseInt(countEl.innerText||"0");countEl.innerText=wasFollowing?Math.max(0,currentCount-1):currentCount+1;try{await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});}catch(e){btn.innerText=wasFollowing?'Following':'Follow';btn.className=wasFollowing?'follow-btn following':'follow-btn follow';countEl.innerText=currentCount;}}
+async function uploadAvatar(){if(!selectedAvatarFile) return;const b=document.getElementById('saveAvatarBtn');b.innerText='Uploading...';b.disabled=true;const fd=new FormData();fd.append('file',selectedAvatarFile);try{await fetch(BASE+'/api/users/avatar',{method:'PUT',headers:{authorization:token},body:fd});localStorage.removeItem('profile_'+getMyId());closeAvatarModal();loadProfile();}catch(e){alert(e.message);}b.innerText='Save';b.disabled=false;}
+async function removeAvatar(){if(!confirm('Remove?')) return;try{await fetch(BASE+'/api/users/avatar',{method:'DELETE',headers:{authorization:token}});}catch{}localStorage.removeItem('profile_'+getMyId());closeAvatarModal();setTimeout(loadProfile,400);}
+async function toggleFollow(){const id=getParamId()||getMyId();const btn=document.getElementById('followBtn');const countEl=document.getElementById('followersCount');const wasFollowing=btn.innerText==='Following';btn.innerText=wasFollowing?'Follow':'Following';btn.className=wasFollowing?'follow-btn follow':'follow-btn following';let currentCount=parseInt(countEl.innerText||"0");countEl.innerText=wasFollowing?Math.max(0,currentCount-1):currentCount+1;try{await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});localStorage.removeItem('profile_'+id);}catch(e){btn.innerText=wasFollowing?'Following':'Follow';btn.className=wasFollowing?'follow-btn following':'follow-btn follow';countEl.innerText=currentCount;}}
 async function openWide(id){currentId=id;const cachedPost=allPosts.find(p=>p._id===id);const mediaDiv=document.getElementById("wideMedia");const userDiv=document.getElementById("wideUser");const listDiv=document.getElementById("commentList");const likesDiv=document.getElementById("likesCount");const likeBtn=document.getElementById("likeBtn");if(cachedPost){const url=fixUrl(cachedPost.mediaUrl||"");const isVid=cachedPost.type==='video'||isVideoFile(cachedPost.mediaUrl||"");if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>';}else{mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">';}userDiv.innerText='@'+(profileData.user.username||"");likesDiv.innerText=(cachedPost.likes?cachedPost.likes.length:0)+" likes";likeBtn.innerText=cachedPost.likes&&cachedPost.likes.includes(getMyId())?"❤️":"🤍";listDiv.innerHTML='<p style="color:#666">Loading...</p>';document.getElementById("wide").style.display="flex";}try{const r=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}});const p=await r.json();const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");if(!cachedPost){if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>';}else{mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">';}document.getElementById("wide").style.display="flex";}userDiv.innerText='@'+p.user.username;likesDiv.innerText=p.likes.length+" likes";likeBtn.innerText=p.likes.includes(getMyId())?"❤️":"🤍";let c="";for(let x of p.comments){c+='<div class="cmt"><b>'+x.user.username+'</b> '+x.text+'</div>';}listDiv.innerHTML=c||"<p style='color:#777'>No comments</p>";}catch(e){console.log(e);}}
 function closeWide(){const v=document.getElementById("activeVideo");if(v){v.pause();v.src="";}document.getElementById("wideMedia").innerHTML="";document.getElementById("wide").style.display="none";}
 async function likePost(){const likeBtn=document.getElementById("likeBtn");const likesDiv=document.getElementById("likesCount");const wasLiked=likeBtn.innerText==="❤️";likeBtn.innerText=wasLiked?"🤍":"❤️";let num=parseInt((likesDiv.innerText||"0").split(" ")[0]||"0");likesDiv.innerText=(wasLiked?Math.max(0,num-1):num+1)+" likes";try{await fetch(BASE+"/api/posts/"+currentId+"/like",{method:"POST",headers:{authorization:token}});}catch{}}
 async function addComment(){const t=document.getElementById("cmtInput").value;if(!t) return;document.getElementById("cmtInput").value="";const listDiv=document.getElementById("commentList");listDiv.innerHTML+='<div class="cmt"><b>You</b> '+t+'</div>';await fetch(BASE+"/api/posts/"+currentId+"/comment",{method:"POST",headers:{"Content-Type":"application/json",authorization:token},body:JSON.stringify({text:t})});openWide(currentId);}
-async function deletePost(){if(!confirm("Delete?")) return;closeWide();document.getElementById("grid").innerHTML='<p style="grid-column:1/3;text-align:center;color:#777">Deleting...</p>';await fetch(BASE+"/api/posts/"+currentId,{method:"DELETE",headers:{authorization:token}});loadProfile();}
+async function deletePost(){
+ if(!confirm("Delete this post? This will delete from Cloudinary too.")) return;
+ closeWide();
+ document.getElementById("grid").innerHTML='<p style="grid-column:1/3;text-align:center;color:#777">Deleting from storage and Cloudinary...</p>';
+ try{
+  const res=await fetch(BASE+"/api/posts/"+currentId,{method:"DELETE",headers:{authorization:token}});
+  if(!res.ok){const e=await res.json();throw new Error(e.msg||'Delete failed');}
+  // REMOVE FROM LOCAL STORAGE CACHE
+  const vid=getParamId()||getMyId();
+  const key='profile_'+vid;
+  const cached=getCache(key);
+  if(cached && cached.posts){
+   cached.posts=cached.posts.filter(p=>p._id!==currentId);
+   setCache(key,cached);
+  }
+  // also remove from memory
+  allPosts=allPosts.filter(p=>p._id!==currentId);
+  if(profileData && profileData.posts){profileData.posts=profileData.posts.filter(p=>p._id!==currentId);}
+  renderProfileUI({user:profileData.user,posts:allPosts,followersCount:profileData.followersCount,followingCount:profileData.followingCount});
+ }catch(err){alert(err.message);loadProfile();}
+}
 function showFollowers(){if(!profileData) return;document.getElementById('listTitle').innerText='Followers';const list=profileData.user.followers||[];let html="";for(let u of list){const id=u._id||u;const name=u.username||id;const av=u.avatar?'<img src="'+fixUrl(u.avatar)+'">':(name[0]||'U').toUpperCase();html+='<div class="user-row" onclick="goToUser(\''+id+'\')"><div class="avatar-sm">'+av+'</div><b>'+name+'</b></div>';}document.getElementById('listBody').innerHTML=html||'<p style="padding:15px;color:#777">No followers</p>';document.getElementById('followModal').style.display='flex';}
 function showFollowing(){if(!profileData) return;document.getElementById('listTitle').innerText='Following';const list=profileData.user.following||[];let html="";for(let u of list){const id=u._id||u;const name=u.username||id;const av=u.avatar?'<img src="'+fixUrl(u.avatar)+'">':(name[0]||'U').toUpperCase();html+='<div class="user-row" onclick="goToUser(\''+id+'\')"><div class="avatar-sm">'+av+'</div><b>'+name+'</b></div>';}document.getElementById('listBody').innerHTML=html||'<p style="padding:15px;color:#777">None</p>';document.getElementById('followModal').style.display='flex';}
 function goToUser(id){closeList();location.href='profile.html?id='+id;}
