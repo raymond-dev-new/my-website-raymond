@@ -70,7 +70,7 @@ const SECRET = "secret123";
 const uploadd = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 30 * 1024 * 1024
+    fileSize: 200 * 1024 * 1024
   }
 });
 
@@ -359,84 +359,197 @@ app.get('/api/users/:id', async (req,res)=>{
 
  // CLOUDINARY CONFIGURATION
 
-  cloudinary.config({ cloud_name: 'v8mwxmlb', api_key: '967794739896149', api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk', secure: true });
-  
-const BANNED_WORDS = [ 'xxx','porn','sex','nude','naked','boobs','boob','ass', 'pussy','dick','cock','fuck','blowjob','handjob','cum', 'orgasm','erotic','nsfw','onlyfans','18+','hentai', 'brazzers','xnxx','xvideos','pornhub','strip','bikini', 'lingerie','sexy','seductive','horny','suck','tits', 'titty','vagina','penis','anal','escort','prostitute', 'sugar','mommy','incest','rape','bdsm','nudes','undress', 'masturb' ];
-const containsBanned = (t) => { if (!t) return false; const l = String(t).toLowerCase(); return BANNED_WORDS.some(w => l.includes(w)); };
+// Keep your Cloudinary configuration on the backend.
+// Replace the exposed API secret with your newly generated secret.
 
-app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
-  let uploadedId = null;
-  let uploadedResourceType = 'image';
-  try {
-    if (!req.file) return res.status(400).json({ msg: 'No file received' });
-    const isVideo = req.file.mimetype.startsWith('video/');
-    uploadedResourceType = isVideo ? 'video' : 'image';
+    cloudinary.config({
+    cloud_name: 'v8mwxmlb',
+    api_key: '967794739896149',
+    api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk',
+    secure: true
+    });
 
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: uploadedResourceType, folder: 'Postsmedia' },
-        (err, result) => {
-          if (err) return reject(err);
-          resolve(result);
+const BANNED_WORDS = [
+  'xxx', 'porn', 'sex', 'nude', 'naked', 'boobs', 'boob',
+  'ass', 'pussy', 'dick', 'cock', 'fuck', 'blowjob',
+  'handjob', 'cum', 'orgasm', 'erotic', 'nsfw', 'onlyfans',
+  '18+', 'hentai', 'brazzers', 'xnxx', 'xvideos',
+  'pornhub', 'strip', 'bikini', 'lingerie', 'sexy',
+  'seductive', 'horny', 'suck', 'tits', 'titty',
+  'vagina', 'penis', 'anal', 'escort', 'prostitute',
+  'sugar', 'mommy', 'incest', 'rape', 'bdsm', 'nudes',
+  'undress', 'masturb'
+];
+
+const containsBanned = (value) => {
+  if (!value) return false;
+  const text = String(value).toLowerCase();
+  return BANNED_WORDS.some(word => text.includes(word));
+};
+
+app.post(
+  '/api/posts',
+  authh,
+  uploadd.single('file'),
+  async (req, res) => {
+    let uploadedId = null;
+    let resourceType = 'image';
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          msg: 'No file received. Please select a video or image.'
+        });
+      }
+
+      const file = req.file;
+      const filename = file.originalname || '';
+      const extension = path.extname(filename).toLowerCase();
+
+      const videoExtensions = [
+        '.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv', '.3gp'
+      ];
+
+      const imageExtensions = [
+        '.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif'
+      ];
+
+      const mime = (file.mimetype || '').toLowerCase();
+
+      const isVideo =
+        mime.startsWith('video/') ||
+        videoExtensions.includes(extension);
+
+      const isImage =
+        mime.startsWith('image/') ||
+        imageExtensions.includes(extension);
+
+      // Reject generic MIME types unless the extension is recognized.
+      if (!isVideo && !isImage) {
+        return res.status(400).json({
+          msg: 'Unsupported file type. Select a supported image or video.'
+        });
+      }
+
+      const MAX_SIZE = 200 * 1024 * 1024;
+
+      if (file.size > MAX_SIZE) {
+        return res.status(413).json({
+          msg: 'Video or image exceeds the 30 MB limit.'
+        });
+      }
+
+      if (!file.buffer || file.buffer.length === 0) {
+        return res.status(400).json({
+          msg: 'The selected file is empty or could not be read.'
+        });
+      }
+
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+          msg: 'Database is not connected. Please try again.'
+        });
+      }
+
+      const caption = String(req.body.caption || '');
+
+      if (
+        containsBanned(caption) ||
+        containsBanned(filename)
+      ) {
+        return res.status(400).json({
+          msg: 'Blocked: banned word in caption or file name.'
+        });
+      }
+
+      resourceType = isVideo ? 'video' : 'image';
+
+      console.log('Starting upload:', {
+        filename,
+        size: file.size,
+        mimetype: mime,
+        resourceType
+      });
+
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: resourceType,
+            folder: 'Postsmedia',
+            timeout: 180000
+          },
+          (error, uploadResult) => {
+            if (error) {
+              return reject(error);
+            }
+
+            if (
+              !uploadResult ||
+              !uploadResult.secure_url ||
+              !uploadResult.public_id
+            ) {
+              return reject(
+                new Error('Cloudinary returned an incomplete result.')
+              );
+            }
+
+            resolve(uploadResult);
+          }
+        );
+
+        stream.on('error', reject);
+        stream.end(file.buffer);
+      });
+
+      uploadedId = result.public_id;
+
+      const post = await Post.create({
+        user: req.userId,
+        caption,
+        mediaUrl: result.secure_url,
+        publicId: result.public_id,
+        type: isVideo ? 'video' : 'image'
+      });
+
+      uploadedId = null;
+
+      return res.status(201).json(post);
+
+    } catch (error) {
+      console.error('POST UPLOAD FAILED:', {
+        message: error.message,
+        http_code: error.http_code,
+        name: error.name,
+        code: error.code
+      });
+
+      if (uploadedId) {
+        try {
+          await cloudinary.uploader.destroy(uploadedId, {
+            resource_type: resourceType,
+            invalidate: true
+          });
+        } catch (cleanupError) {
+          console.error(
+            'Cloudinary cleanup failed:',
+            cleanupError.message
+          );
         }
-      );
-      stream.end(req.file.buffer);
-    });
+      }
 
-    uploadedId = result.public_id;
-    const post = await Post.create({
-      user: req.userId,
-      caption: String(req.body.caption || ''),
-      mediaUrl: result.secure_url,
-      publicId: result.public_id,
-      type: isVideo ? 'video' : 'image'
-    });
-    uploadedId = null;
-    return res.status(201).json(post);
-  } catch (err) {
-    if (uploadedId) {
-      await cloudinary.uploader.destroy(uploadedId, { resource_type: uploadedResourceType }).catch(()=>{});
-    }
-    console.error('UPLOAD ERROR:', err.message, err.http_code);
-    return res.status(err.http_code || 500).json({ msg: err.message });
-  }
-});
-
-// DELETE POST
-app.delete('/api/posts/:id', authh, async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-
-    if (!post) {
-      return res.status(404).json({ msg: 'Post not found.' });
-    }
-
-    if (post.user.toString() !== req.userId.toString()) {
-      return res.status(403).json({
-        msg: 'You cannot delete this post.'
+      return res.status(
+        Number.isInteger(error.http_code) &&
+        error.http_code >= 400 &&
+        error.http_code < 500
+          ? error.http_code
+          : 500
+      ).json({
+        msg: 'Upload failed.',
+        error: error.message || 'Unknown server error.'
       });
     }
-
-    if (post.publicId) {
-      await cloudinary.uploader.destroy(post.publicId, {
-        resource_type: post.type === 'video' ? 'video' : 'image',
-        invalidate: true
-      });
-    }
-
-    await Post.findByIdAndDelete(req.params.id);
-
-    return res.json({ msg: 'Deleted.' });
-
-  } catch (err) {
-    console.error('DELETE POST ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not delete post.',
-      error: err.message
-    });
   }
-});
-
+);
 
 // UPDATE POST CAPTION
 app.put('/api/posts/:id', authh, async (req, res) => {

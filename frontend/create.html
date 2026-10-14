@@ -2,317 +2,350 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Create - 1min</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Post</title>
 
 <style>
-*{box-sizing:border-box}
-body{
-  margin:0;
-  background:#000;
-  color:#fff;
-  font-family:Arial,sans-serif;
-  display:flex;
-  justify-content:center;
-  min-height:100vh
+* {
+  box-sizing: border-box;
 }
-.box{
-  width:100%;
-  max-width:480px;
-  padding:16px
+
+body {
+  margin: 0;
+  background: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
 }
-h2{margin:8px 0 18px}
-.preview{
-  width:100%;
-  min-height:260px;
-  max-height:65vh;
-  background:#151515;
-  border:1px solid #333;
-  border-radius:14px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  margin-bottom:16px;
-  color:#aaa;
-  text-align:center
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  margin: auto;
+  padding: 18px;
 }
-.preview img,.preview video{
-  display:none;
-  width:100%;
-  max-height:65vh;
-  object-fit:contain;
-  background:#000
+
+h2 {
+  text-align: center;
 }
-input[type=file]{
-  width:100%;
-  padding:12px;
-  background:#151515;
-  border:1px solid #333;
-  color:#fff;
-  border-radius:10px;
-  margin-bottom:14px
+
+label {
+  display: block;
+  margin: 16px 0 8px;
 }
-textarea{
-  width:100%;
-  min-height:100px;
-  resize:vertical;
-  background:#151515;
-  border:1px solid #333;
-  border-radius:10px;
-  padding:13px;
-  color:#fff;
-  font:16px Arial,sans-serif;
-  outline:none;
-  margin-bottom:14px
+
+input[type="file"],
+textarea {
+  width: 100%;
+  padding: 12px;
+  background: #151515;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
 }
-button{
-  width:100%;
-  padding:15px;
-  background:#fff;
-  color:#000;
-  font-weight:bold;
-  font-size:16px;
-  border:0;
-  border-radius:10px;
-  cursor:pointer
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
 }
-button:disabled{opacity:.5;cursor:not-allowed}
-.status{
-  margin:14px 0;
-  font-size:14px;
-  line-height:1.5;
-  overflow-wrap:anywhere
+
+.preview {
+  width: 100%;
+  max-height: 400px;
+  margin-top: 14px;
+  background: #111;
+  border-radius: 10px;
+  object-fit: contain;
 }
-.track{
-  height:7px;
-  background:#292929;
-  border-radius:10px;
-  overflow:hidden;
-  margin:12px 0
+
+button {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  background: #ff3040;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
 }
-.bar{
-  height:100%;
-  width:0;
-  background:#fff;
-  transition:width .15s linear
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
-.small{color:#999;font-size:12px;margin:0 0 12px}
+
+.progress-container {
+  display: none;
+  margin-top: 18px;
+}
+
+progress {
+  width: 100%;
+  height: 18px;
+}
+
+#status {
+  margin-top: 14px;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.note {
+  color: #aaa;
+  font-size: 13px;
+  line-height: 1.5;
+}
 </style>
 </head>
 
 <body>
-<main class="box">
-  <h2>Create post</h2>
+<div class="container">
 
-  <div class="preview" id="preview">
-    <span id="placeholder">Choose an image or video to preview it here</span>
-    <img id="imagePreview" alt="Image preview">
-    <video id="videoPreview" controls playsinline></video>
+  <h2>Create Post</h2>
+
+  <form id="uploadForm">
+
+    <label for="file">Select an image or video</label>
+
+    <input
+      id="file"
+      name="file"
+      type="file"
+      accept="image/*,video/*"
+      required
+    >
+
+    <p class="note">
+      Maximum file size: 200 MB.
+    </p>
+
+    <video
+      id="videoPreview"
+      class="preview"
+      controls
+      playsinline
+      style="display:none"
+    ></video>
+
+    <img
+      id="imagePreview"
+      class="preview"
+      alt="Image preview"
+      style="display:none"
+    >
+
+    <label for="caption">Caption</label>
+
+    <textarea
+      id="caption"
+      name="caption"
+      maxlength="2000"
+      placeholder="Write a caption..."
+    ></textarea>
+
+    <button id="uploadButton" type="submit">
+      Upload Post
+    </button>
+
+  </form>
+
+  <div id="progressContainer" class="progress-container">
+    <p id="progressText">Preparing upload...</p>
+    <progress id="progressBar" value="0" max="100"></progress>
   </div>
 
-  <input
-    type="file"
-    id="file"
-    accept="image/*,video/*"
-  >
+  <div id="status" role="status" aria-live="polite"></div>
 
-  <p class="small">Images and videos up to 30 MB. No one-minute duration limit.</p>
-
-  <textarea
-    id="caption"
-    maxlength="2000"
-    placeholder="Write a caption..."
-  ></textarea>
-
-  <div class="track">
-    <div class="bar" id="bar"></div>
-  </div>
-
-  <div class="status" id="status" role="status" aria-live="polite"></div>
-
-  <button id="shareBtn" type="button">Share</button>
-</main>
+</div>
 
 <script>
-const API_URL = 'https://raymonddomain.dev/api/posts';
+const API_URL = 'https://raymonddomain.dev';
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
+const form = document.getElementById('uploadForm');
 const fileInput = document.getElementById('file');
 const captionInput = document.getElementById('caption');
-const imagePreview = document.getElementById('imagePreview');
+const uploadButton = document.getElementById('uploadButton');
 const videoPreview = document.getElementById('videoPreview');
-const placeholder = document.getElementById('placeholder');
-const shareBtn = document.getElementById('shareBtn');
-const statusBox = document.getElementById('status');
-const bar = document.getElementById('bar');
+const imagePreview = document.getElementById('imagePreview');
+const progressContainer = document.getElementById('progressContainer');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const status = document.getElementById('status');
 
-let previewURL = null;
-let uploading = false;
+let previewUrl = null;
 
-function setStatus(message) {
-  statusBox.textContent = message;
-}
-
-function resetProgress() {
-  bar.style.width = '0%';
+function showStatus(message, isError = false) {
+  status.textContent = message;
+  status.style.color = isError ? '#ff5964' : '#40dc8b';
 }
 
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
 
-  if (previewURL) {
-    URL.revokeObjectURL(previewURL);
-    previewURL = null;
-  }
-
-  imagePreview.style.display = 'none';
   videoPreview.style.display = 'none';
-  videoPreview.pause();
-  imagePreview.removeAttribute('src');
-  videoPreview.removeAttribute('src');
-  resetProgress();
+  imagePreview.style.display = 'none';
 
-  if (!file) {
-    placeholder.style.display = 'block';
-    setStatus('');
-    return;
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
   }
 
-  const validType =
-    file.type.startsWith('image/') ||
-    file.type.startsWith('video/');
+  if (!file) return;
 
-  if (!validType) {
+  if (file.size > MAX_FILE_SIZE) {
+    showStatus('File exceeds the 200 MB limit.', true);
     fileInput.value = '';
-    placeholder.style.display = 'block';
-    setStatus('Choose a valid image or video file.');
     return;
   }
 
-  if (file.size > 30 * 1024 * 1024) {
-    fileInput.value = '';
-    placeholder.style.display = 'block';
-    setStatus('File is too large. Maximum size is 30 MB.');
-    return;
-  }
+  previewUrl = URL.createObjectURL(file);
 
-  previewURL = URL.createObjectURL(file);
-  placeholder.style.display = 'none';
-
-  if (file.type.startsWith('image/')) {
-    imagePreview.src = previewURL;
+  if (file.type.startsWith('video/')) {
+    videoPreview.src = previewUrl;
+    videoPreview.style.display = 'block';
+  } else if (file.type.startsWith('image/')) {
+    imagePreview.src = previewUrl;
     imagePreview.style.display = 'block';
   } else {
-    videoPreview.src = previewURL;
-    videoPreview.style.display = 'block';
+    showStatus('Your phone returned an unsupported file type.', true);
   }
 
-  setStatus(file.name);
+  showStatus(
+    'Selected: ' + file.name + ' (' +
+    (file.size / (1024 * 1024)).toFixed(2) + ' MB)'
+  );
 });
 
-shareBtn.addEventListener('click', () => {
-  if (uploading) return;
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
 
   const file = fileInput.files[0];
-  const caption = captionInput.value.trim();
+
+  if (!file) {
+    showStatus('Please select a video or image.', true);
+    return;
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    showStatus('Maximum file size is 200 MB.', true);
+    return;
+  }
+
+  /*
+    Replace this with the same token retrieval method
+    your existing login system uses.
+  */
   const token = localStorage.getItem('token');
 
   if (!token) {
-    setStatus('Please log in before sharing.');
-    return;
-  }
-
-  if (!file) {
-    setStatus('Please choose an image or video first.');
-    return;
-  }
-
-  if (
-    !file.type.startsWith('image/') &&
-    !file.type.startsWith('video/')
-  ) {
-    setStatus('Only image and video files are allowed.');
-    return;
-  }
-
-  if (file.size > 30 * 1024 * 1024) {
-    setStatus('File is too large. Maximum size is 50 MB.');
+    showStatus(
+      'Please log in first. Your authentication token was not found.',
+      true
+    );
     return;
   }
 
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('caption', caption);
+  formData.append('caption', captionInput.value.trim());
 
+  uploadButton.disabled = true;
+  progressContainer.style.display = 'block';
+  progressBar.value = 0;
+
+  showStatus('Uploading... Please keep this page open.');
+
+  /*
+    XMLHttpRequest provides upload progress.
+    The request is sent to your localhost backend.
+  */
   const xhr = new XMLHttpRequest();
-  uploading = true;
-  shareBtn.disabled = true;
-  shareBtn.textContent = 'Uploading...';
-  setStatus('Preparing upload...');
-  resetProgress();
 
-  xhr.open('POST', API_URL);
+  xhr.open('POST', API_URL + '/api/posts');
   xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+  xhr.timeout = 300000;
 
-  xhr.upload.addEventListener('progress', event => {
+  xhr.upload.onprogress = (event) => {
     if (event.lengthComputable) {
       const percent = Math.round(
         (event.loaded / event.total) * 100
       );
 
-      bar.style.width = percent + '%';
-      setStatus('Uploading: ' + percent + '%');
+      progressBar.value = percent;
+      progressText.textContent = 'Uploading: ' + percent + '%';
+    } else {
+      progressText.textContent = 'Uploading video...';
     }
-  });
+  };
 
   xhr.onload = () => {
-    uploading = false;
-    shareBtn.disabled = false;
-    shareBtn.textContent = 'Share';
+    uploadButton.disabled = false;
 
-    let data = {};
+    let result = {};
 
     try {
-      data = JSON.parse(xhr.responseText);
-    } catch (_) {}
-
-    if (xhr.status >= 200 && xhr.status < 300) {
-      bar.style.width = '100%';
-      setStatus('Post uploaded successfully!');
-
-      window.location.href = 'feed.html';
-      return;
+      result = JSON.parse(xhr.responseText);
+    } catch (_) {
+      result = {};
     }
 
-    setStatus(
-      data.msg ||
-      data.error ||
-      'Upload failed. Please try again.'
-    );
+    if (xhr.status >= 200 && xhr.status < 300) {
+      progressBar.value = 100;
+      progressText.textContent = 'Upload complete!';
+      showStatus('Post uploaded successfully!');
+
+      form.reset();
+
+      videoPreview.pause();
+      videoPreview.removeAttribute('src');
+      videoPreview.load();
+
+      imagePreview.removeAttribute('src');
+      videoPreview.style.display = 'none';
+      imagePreview.style.display = 'none';
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+      }
+    } else {
+      const message =
+        result.error ||
+        result.msg ||
+        ('Server returned HTTP ' + xhr.status);
+
+      showStatus('Upload failed: ' + message, true);
+    }
   };
 
   xhr.onerror = () => {
-    uploading = false;
-    shareBtn.disabled = false;
-    shareBtn.textContent = 'Share';
-    setStatus(
-      'Could not connect to the server. Check your backend URL and connection.'
+    uploadButton.disabled = false;
+
+    showStatus(
+      'Network error. Check your connection, backend, and CORS settings.',
+      true
+    );
+  };
+
+  xhr.ontimeout = () => {
+    uploadButton.disabled = false;
+
+    showStatus(
+      'Upload timed out. Try a smaller video or a more stable connection.',
+      true
     );
   };
 
   xhr.onabort = () => {
-    uploading = false;
-    shareBtn.disabled = false;
-    shareBtn.textContent = 'Share';
-    setStatus('Upload cancelled.');
+    uploadButton.disabled = false;
+    showStatus('Upload was cancelled.', true);
   };
 
   xhr.send(formData);
 });
-
-window.addEventListener('beforeunload', () => {
-  if (previewURL) URL.revokeObjectURL(previewURL);
-});
 </script>
+
 </body>
 </html>
