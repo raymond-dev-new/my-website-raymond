@@ -362,17 +362,13 @@ app.get('/api/users/:id', async (req,res)=>{
 // Keep your Cloudinary configuration on the backend.
 // Replace the exposed API secret with your newly generated secret.
 
+
    cloudinary.config({
     cloud_name: 'v8mwxmlb',
     api_key: '967794739896149',
     api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk',
     secure: true
-    });
-
-// Keep your existing cloudinary.config({...}) block above this code.
-
-// Keep your existing cloudinary.config({...}) block above this code.
-// Do not expose your Cloudinary API secret in frontend code.
+});
 
 const BANNED_WORDS = [
   'xxx', 'porn', 'sex', 'nude', 'naked', 'boobs', 'boob',
@@ -388,9 +384,7 @@ const BANNED_WORDS = [
 
 const containsBanned = (value) => {
   if (!value) return false;
-
   const text = String(value).toLowerCase();
-
   return BANNED_WORDS.some(word => text.includes(word));
 };
 
@@ -406,76 +400,32 @@ const IMAGE_EXTENSIONS = new Set([
   '.gif', '.heic', '.heif'
 ]);
 
-const receivePostFile = (req, res, next) => {
-  uploadd.single('file')(req, res, (error) => {
-    if (error) {
-      if (error instanceof multer.MulterError) {
-        if (error.code === 'LIMIT_FILE_SIZE') {
-          return res.status(413).json({
-            msg: 'File is too large. Maximum size is 200 MB.'
-          });
-        }
-
-        return res.status(400).json({
-          msg: 'File upload error: ' + error.message
-        });
-      }
-
-      console.error('FILE RECEIVING ERROR:', error.message);
-
-      return res.status(400).json({
-        msg: 'Could not receive the selected file.'
-      });
-    }
-
-    next();
+// NEW: Signature for direct upload - tiny request, bypasses Vercel limit
+app.get('/api/cloudinary-signature', authh, (req, res) => {
+  const timestamp = Math.round((new Date).getTime() / 1000);
+  const params = { timestamp, folder: 'newpost' };
+  const signature = cloudinary.utils.api_sign_request(params, 'ZtOZ1BdM7uyeki3wDRgtgueFRHk');
+  return res.json({
+    timestamp,
+    signature,
+    cloudName: 'v8mwxmlb',
+    apiKey: '967794739896149',
+    folder: 'newpost'
   });
-};
+});
 
+// FIXED: Same route /api/posts but now DIRECT upload - no file goes through Vercel
 app.post(
   '/api/posts',
   authh,
-  receivePostFile,
   async (req, res) => {
-    let uploadedId = null;
-    let resourceType = 'image';
-
     try {
-      const file = req.file;
+      // Now expects JSON from frontend after direct Cloudinary upload
+      const { mediaUrl, publicId, type, caption, filename } = req.body;
 
-      if (!file) {
+      if (!mediaUrl || !publicId) {
         return res.status(400).json({
-          msg: 'No file received. Select a video or image.'
-        });
-      }
-
-      const filename = file.originalname || '';
-      const extension = path.extname(filename).toLowerCase();
-      const mime = (file.mimetype || '').toLowerCase();
-
-      const isVideo =
-        mime.startsWith('video/') ||
-        VIDEO_EXTENSIONS.has(extension);
-
-      const isImage =
-        mime.startsWith('image/') ||
-        IMAGE_EXTENSIONS.has(extension);
-
-      if (!isVideo && !isImage) {
-        return res.status(400).json({
-          msg: 'Unsupported file type. Select a supported image or video.'
-        });
-      }
-
-      if (file.size > MAX_SIZE) {
-        return res.status(413).json({
-          msg: 'File is too large. Maximum size is 200 MB.'
-        });
-      }
-
-      if (!file.buffer || file.buffer.length === 0) {
-        return res.status(400).json({
-          msg: 'The selected file is empty.'
+          msg: 'No file received. Upload to Cloudinary first from frontend.'
         });
       }
 
@@ -485,111 +435,46 @@ app.post(
         });
       }
 
-      const caption = String(req.body.caption || '');
+      const captionText = String(caption || '');
+      const fileNameText = String(filename || '');
 
       if (
-        containsBanned(caption) ||
-        containsBanned(filename)
+        containsBanned(captionText) ||
+        containsBanned(fileNameText)
       ) {
+        // Delete from Cloudinary if banned
+        await cloudinary.uploader.destroy(publicId, {
+          resource_type: type || 'auto',
+          invalidate: true
+        }).catch(()=>{});
         return res.status(400).json({
           msg: 'Blocked: banned word in caption or file name.'
         });
       }
 
-      resourceType = isVideo ? 'video' : 'image';
+      const resourceType = type === 'video' ? 'video' : 'image';
 
-      console.log('Starting Cloudinary upload:', {
-        filename,
-        sizeMB: (file.size / (1024 * 1024)).toFixed(2),
-        mimetype: mime,
+      console.log('Post saving direct from Cloudinary:', {
+        publicId,
         resourceType
       });
 
-      const result = await new Promise((resolve, reject) => {
-        const uploadOptions = {
-          resource_type: resourceType,
-          folder: 'newpost',
-          chunk_size: 6 * 1024 * 1024
-        };
-
-        const callback = (error, uploadResult) => {
-          if (error) {
-            console.error('CLOUDINARY UPLOAD ERROR:', {
-              message: error.message,
-              http_code: error.http_code,
-              name: error.name
-            });
-
-            return reject(error);
-          }
-
-          if (
-            !uploadResult ||
-            !uploadResult.secure_url ||
-            !uploadResult.public_id
-          ) {
-            return reject(
-              new Error(
-                'Cloudinary returned an incomplete upload result.'
-              )
-            );
-          }
-
-          resolve(uploadResult);
-        };
-
-        const stream = resourceType === 'video'
-          ? cloudinary.uploader.upload_chunked_stream(
-              uploadOptions,
-              callback
-            )
-          : cloudinary.uploader.upload_stream(
-              uploadOptions,
-              callback
-            );
-
-        stream.once('error', reject);
-        stream.end(file.buffer);
-      });
-
-      uploadedId = result.public_id;
-
       const post = await Post.create({
         user: req.userId,
-        caption,
-        mediaUrl: result.secure_url,
-        publicId: result.public_id,
+        caption: captionText,
+        mediaUrl: mediaUrl,
+        publicId: publicId,
         type: resourceType
       });
 
-      uploadedId = null;
-
       console.log('Post uploaded successfully:', post._id);
-
       return res.status(201).json(post);
 
     } catch (error) {
       console.error('POST UPLOAD FAILED:', {
         message: error.message,
-        http_code: error.http_code,
-        name: error.name,
-        code: error.code
+        name: error.name
       });
-
-      if (uploadedId) {
-        try {
-          await cloudinary.uploader.destroy(uploadedId, {
-            resource_type: resourceType,
-            invalidate: true
-          });
-        } catch (cleanupError) {
-          console.error(
-            'Cloudinary cleanup failed:',
-            cleanupError.message
-          );
-        }
-      }
-
       return res.status(500).json({
         msg: 'Upload failed. Check the backend terminal.',
         error: error.message || 'Unknown upload error.'
@@ -597,7 +482,6 @@ app.post(
     }
   }
 );
-
 
 // UPDATE POST CAPTION
 app.put('/api/posts/:id', authh, async (req, res) => {
@@ -634,7 +518,6 @@ app.put('/api/posts/:id', authh, async (req, res) => {
   }
 });
 
-
 // POSTS FEED
 app.get('/api/posts/feed', authh, async (req, res) => {
   try {
@@ -653,7 +536,6 @@ app.get('/api/posts/feed', authh, async (req, res) => {
   }
 });
 
-
 // VIDEO REELS
 app.get('/api/posts/reels', async (req, res) => {
   try {
@@ -671,7 +553,6 @@ app.get('/api/posts/reels', async (req, res) => {
     });
   }
 });
-
 
 // GET SINGLE POST
 app.get('/api/posts/:id', authh, async (req, res) => {
@@ -693,7 +574,6 @@ app.get('/api/posts/:id', authh, async (req, res) => {
     });
   }
 });
-
 
 // LIKE OR UNLIKE POST
 app.post('/api/posts/:id/like', authh, async (req, res) => {
@@ -740,7 +620,6 @@ app.post('/api/posts/:id/like', authh, async (req, res) => {
     });
   }
 });
-
 
 // COMMENT ON POST
 app.post('/api/posts/:id/comment', authh, async (req, res) => {
@@ -794,7 +673,6 @@ app.post('/api/posts/:id/comment', authh, async (req, res) => {
   }
 });
 
-
 // SHARE POST
 app.post('/api/posts/:id/share', authh, async (req, res) => {
   try {
@@ -816,7 +694,6 @@ app.post('/api/posts/:id/share', authh, async (req, res) => {
     });
   }
 });
-
 
 // SAVE OR UNSAVE POST
 app.post('/api/posts/:id/save', authh, async (req, res) => {
@@ -860,7 +737,6 @@ app.post('/api/posts/:id/save', authh, async (req, res) => {
     });
   }
 });
-
 
 // COUNT POST VIEWS
 app.post('/api/posts/:id/view', async (req, res) => {
