@@ -483,74 +483,103 @@ app.post(
   }
 );
 
+app.delete('/api/posts/:id', authh, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ msg: 'Post not found' });
+    
+    if (post.user.toString() !== req.userId) {
+      return res.status(403).json({ msg: 'Not authorized to delete this post' });
+    }
+
+    // Delete from Cloudinary if publicId exists
+    if (post.publicId) {
+      await cloudinary.uploader.destroy(post.publicId, {
+        resource_type: post.type === 'video' ? 'video' : 'image',
+        invalidate: true
+      }).catch((e) => console.log('Cloudinary delete skip:', e.message));
+    }
+
+    // Delete from DB
+    await Post.findByIdAndDelete(postId);
+    
+    return res.json({ msg: 'Post deleted from DB and Cloudinary' });
+  } catch (error) {
+    console.error('DELETE POST FAILED:', error);
+    return res.status(500).json({ msg: 'Delete failed', error: error.message });
+  }
+});
+
+// UPDATE POST CAPTION
 // UPDATE POST CAPTION
 app.put('/api/posts/:id', authh, async (req, res) => {
   try {
     if (containsBanned(req.body.caption)) {
-      return res.status(400).json({
-        msg: 'Caption has banned word.'
-      });
+      return res.status(400).json({ msg: 'Caption has banned word.' });
     }
-
     const post = await Post.findById(req.params.id);
-
     if (!post) {
       return res.status(404).json({ msg: 'Post not found.' });
     }
-
     if (post.user.toString() !== req.userId.toString()) {
-      return res.status(403).json({
-        msg: 'You cannot edit this post.'
-      });
+      return res.status(403).json({ msg: 'You cannot edit this post.' });
     }
-
     post.caption = req.body.caption || '';
     await post.save();
-
     return res.json(post);
-
   } catch (err) {
     console.error('UPDATE POST ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not update post.',
-      error: err.message
-    });
+    return res.status(500).json({ msg: 'Could not update post.', error: err.message });
   }
 });
 
-// POSTS FEED
+// POSTS FEED - Shows Cloudinary posts
 app.get('/api/posts/feed', authh, async (req, res) => {
   try {
     const posts = await Post.find()
       .populate('user')
       .populate('comments.user')
       .sort({ createdAt: -1 });
-
     return res.json(posts);
-
   } catch (err) {
     console.error('FEED ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not load feed.'
-    });
+    return res.status(500).json({ msg: 'Could not load feed.' });
   }
 });
 
-// VIDEO REELS
+// VIDEO REELS - Shows Cloudinary videos
+/*
 app.get('/api/posts/reels', async (req, res) => {
   try {
     const reels = await Post.find({ type: 'video' })
       .populate('user')
       .populate('comments.user')
       .sort({ createdAt: -1 });
-
     return res.json(reels);
-
   } catch (err) {
     console.error('REELS ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not load reels.'
-    });
+    return res.status(500).json({ msg: 'Could not load reels.' });
+  }
+}); */
+
+// VIDEO REELS - PURE RANDOM EVERY REFRESH
+app.get('/api/posts/reels', async (req, res) => {
+  try {
+    const reels = await Post.aggregate([
+      { $match: { type: 'video' } },
+      { $sample: { size: 100 } }
+    ]);
+
+    const populated = await Post.populate(reels, [
+      { path: 'user' },
+      { path: 'comments.user' }
+    ]);
+
+    return res.json(populated);
+  } catch (err) {
+    console.error('REELS ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load reels.' });
   }
 });
 
@@ -560,18 +589,13 @@ app.get('/api/posts/:id', authh, async (req, res) => {
     const post = await Post.findById(req.params.id)
       .populate('user')
       .populate('comments.user');
-
     if (!post) {
       return res.status(404).json({ msg: 'Post not found.' });
     }
-
     return res.json(post);
-
   } catch (err) {
     console.error('GET POST ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not load post.'
-    });
+    return res.status(500).json({ msg: 'Could not load post.' });
   }
 });
 
@@ -579,45 +603,35 @@ app.get('/api/posts/:id', authh, async (req, res) => {
 app.post('/api/posts/:id/like', authh, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-
     if (!post) {
       return res.status(404).json({ msg: 'Post not found.' });
     }
-
     const isLiked = post.likes.some(
       id => id.toString() === req.userId.toString()
     );
-
     if (isLiked) {
       post.likes.pull(req.userId);
     } else {
       post.likes.push(req.userId);
     }
-
     await post.save();
-
     if (!isLiked) {
       await createNotif(post.user, req.userId, 'like', post._id);
     } else {
-      await Notification.deleteMany({
-        receiver: post.user,
-        sender: req.userId,
-        type: 'like',
-        post: post._id
+      await Notification.deleteMany({ 
+        receiver: post.user, 
+        sender: req.userId, 
+        type: 'like', 
+        post: post._id 
       });
     }
-
     const updated = await Post.findById(req.params.id)
       .populate('user')
       .populate('comments.user');
-
     return res.json(updated);
-
   } catch (err) {
     console.error('LIKE ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not update like.'
-    });
+    return res.status(500).json({ msg: 'Could not update like.' });
   }
 });
 
@@ -625,32 +639,18 @@ app.post('/api/posts/:id/like', authh, async (req, res) => {
 app.post('/api/posts/:id/comment', authh, async (req, res) => {
   try {
     const commentText = req.body.text || '';
-
     if (!commentText.trim()) {
-      return res.status(400).json({
-        msg: 'Comment cannot be empty.'
-      });
+      return res.status(400).json({ msg: 'Comment cannot be empty.' });
     }
-
     if (containsBanned(commentText)) {
-      return res.status(400).json({
-        msg: 'Comment has banned word.'
-      });
+      return res.status(400).json({ msg: 'Comment has banned word.' });
     }
-
     const post = await Post.findById(req.params.id);
-
     if (!post) {
       return res.status(404).json({ msg: 'Post not found.' });
     }
-
-    post.comments.push({
-      user: req.userId,
-      text: commentText
-    });
-
+    post.comments.push({ user: req.userId, text: commentText });
     await post.save();
-
     await createNotif(
       post.user,
       req.userId,
@@ -658,18 +658,13 @@ app.post('/api/posts/:id/comment', authh, async (req, res) => {
       post._id,
       commentText
     );
-
     const updated = await Post.findById(req.params.id)
       .populate('user')
       .populate('comments.user');
-
     return res.json(updated);
-
   } catch (err) {
     console.error('COMMENT ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not add comment.'
-    });
+    return res.status(500).json({ msg: 'Could not add comment.' });
   }
 });
 
@@ -677,21 +672,15 @@ app.post('/api/posts/:id/comment', authh, async (req, res) => {
 app.post('/api/posts/:id/share', authh, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
-
     if (!post) {
       return res.status(404).json({ msg: 'Post not found.' });
     }
-
     post.shares += 1;
     await post.save();
-
     return res.json(post);
-
   } catch (err) {
     console.error('SHARE ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not share post.'
-    });
+    return res.status(500).json({ msg: 'Could not share post.' });
   }
 });
 
@@ -699,42 +688,29 @@ app.post('/api/posts/:id/share', authh, async (req, res) => {
 app.post('/api/posts/:id/save', authh, async (req, res) => {
   try {
     const me = await Userd.findById(req.userId);
-
     if (!me) {
       return res.status(404).json({ msg: 'User not found.' });
     }
-
     if (!me.savedPosts) {
       me.savedPosts = [];
     }
-
     const alreadySaved = me.savedPosts.some(
       id => id.toString() === req.params.id
     );
-
     if (alreadySaved) {
       me.savedPosts.pull(req.params.id);
     } else {
-      const postExists = await Post.exists({
-        _id: req.params.id
-      });
-
+      const postExists = await Post.exists({ _id: req.params.id });
       if (!postExists) {
         return res.status(404).json({ msg: 'Post not found.' });
       }
-
       me.savedPosts.push(req.params.id);
     }
-
     await me.save();
-
     return res.json(me.savedPosts);
-
   } catch (err) {
     console.error('SAVE POST ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not save post.'
-    });
+    return res.status(500).json({ msg: 'Could not save post.' });
   }
 });
 
@@ -746,21 +722,15 @@ app.post('/api/posts/:id/view', async (req, res) => {
       { $inc: { views: 1 } },
       { new: true }
     );
-
     if (!p) {
       return res.status(404).json({ msg: 'Post not found.' });
     }
-
     return res.json({ views: p.views });
-
   } catch (err) {
     console.error('VIEW ERROR:', err);
-    return res.status(500).json({
-      msg: 'Could not count view.'
-    });
+    return res.status(500).json({ msg: 'Could not count view.' });
   }
 });
-
 //end here hgfddfghj;kjhgfd
 
 app.get('/api/users/:id', async (req, res) => {
