@@ -117,7 +117,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
     accept="image/*,video/*"
   >
 
-  <p class="small">Images and videos up to 300 MB. No one-minute duration limit.</p>
+  <p class="small">Images and videos up to 30 MB. No one-minute duration limit.</p>
 
   <textarea
     id="caption"
@@ -135,7 +135,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </main>
 
 <script>
-const API_URL = 'http://localhost:8000/api/posts';
+const API_URL = 'https://raymonddomain.dev/api/posts';
 
 const fileInput = document.getElementById('file');
 const captionInput = document.getElementById('caption');
