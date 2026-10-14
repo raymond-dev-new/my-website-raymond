@@ -362,12 +362,14 @@ app.get('/api/users/:id', async (req,res)=>{
 // Keep your Cloudinary configuration on the backend.
 // Replace the exposed API secret with your newly generated secret.
 
-    cloudinary.config({
+   cloudinary.config({
     cloud_name: 'v8mwxmlb',
     api_key: '967794739896149',
     api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk',
     secure: true
     });
+
+// Keep your existing cloudinary.config({...}) block above this code.
 
 const BANNED_WORDS = [
   'xxx', 'porn', 'sex', 'nude', 'naked', 'boobs', 'boob',
@@ -383,71 +385,105 @@ const BANNED_WORDS = [
 
 const containsBanned = (value) => {
   if (!value) return false;
+
   const text = String(value).toLowerCase();
+
   return BANNED_WORDS.some(word => text.includes(word));
+};
+
+const MAX_SIZE = 200 * 1024 * 1024;
+
+const VIDEO_EXTENSIONS = new Set([
+  '.mp4', '.mov', '.m4v', '.webm',
+  '.avi', '.mkv', '.3gp'
+]);
+
+const IMAGE_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.webp',
+  '.gif', '.heic', '.heif'
+]);
+
+// Ensure Multer can receive files up to 200 MB.
+// Keep any existing fileFilter or other required settings
+// from your original uploadd configuration.
+
+
+const receivePostFile = (req, res, next) => {
+  uploadd.single('file')(req, res, (error) => {
+    if (error) {
+      if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({
+            msg: 'File is too large. Maximum size is 200 MB.'
+          });
+        }
+
+        return res.status(400).json({
+          msg: 'File upload error: ' + error.message
+        });
+      }
+
+      console.error('FILE RECEIVING ERROR:', error.message);
+
+      return res.status(400).json({
+        msg: 'Could not receive the selected file.'
+      });
+    }
+
+    next();
+  });
 };
 
 app.post(
   '/api/posts',
   authh,
-  uploadd.single('file'),
+  receivePostFile,
   async (req, res) => {
     let uploadedId = null;
     let resourceType = 'image';
 
     try {
-      if (!req.file) {
+      const file = req.file;
+
+      if (!file) {
         return res.status(400).json({
-          msg: 'No file received. Please select a video or image.'
+          msg: 'No file received. Select a video or image.'
         });
       }
 
-      const file = req.file;
       const filename = file.originalname || '';
       const extension = path.extname(filename).toLowerCase();
-
-      const videoExtensions = [
-        '.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv', '.3gp'
-      ];
-
-      const imageExtensions = [
-        '.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif'
-      ];
-
       const mime = (file.mimetype || '').toLowerCase();
 
       const isVideo =
         mime.startsWith('video/') ||
-        videoExtensions.includes(extension);
+        VIDEO_EXTENSIONS.has(extension);
 
       const isImage =
         mime.startsWith('image/') ||
-        imageExtensions.includes(extension);
+        IMAGE_EXTENSIONS.has(extension);
 
-      // Reject generic MIME types unless the extension is recognized.
       if (!isVideo && !isImage) {
         return res.status(400).json({
           msg: 'Unsupported file type. Select a supported image or video.'
         });
       }
 
-      const MAX_SIZE = 200 * 1024 * 1024;
-
       if (file.size > MAX_SIZE) {
         return res.status(413).json({
-          msg: 'Video or image exceeds the 30 MB limit.'
+          msg: 'File is too large. Maximum size is 200 MB.'
         });
       }
 
       if (!file.buffer || file.buffer.length === 0) {
         return res.status(400).json({
-          msg: 'The selected file is empty or could not be read.'
+          msg: 'The selected file is empty.'
         });
       }
 
       if (mongoose.connection.readyState !== 1) {
         return res.status(503).json({
-          msg: 'Database is not connected. Please try again.'
+          msg: 'Database is not connected. Check MongoDB.'
         });
       }
 
@@ -464,9 +500,9 @@ app.post(
 
       resourceType = isVideo ? 'video' : 'image';
 
-      console.log('Starting upload:', {
+      console.log('Starting Cloudinary upload:', {
         filename,
-        size: file.size,
+        sizeMB: (file.size / (1024 * 1024)).toFixed(2),
         mimetype: mime,
         resourceType
       });
@@ -475,8 +511,7 @@ app.post(
         const stream = cloudinary.uploader.upload_stream(
           {
             resource_type: resourceType,
-            folder: 'Postsmedia',
-            timeout: 180000
+            folder: 'Postsmedia'
           },
           (error, uploadResult) => {
             if (error) {
@@ -489,7 +524,7 @@ app.post(
               !uploadResult.public_id
             ) {
               return reject(
-                new Error('Cloudinary returned an incomplete result.')
+                new Error('Cloudinary returned an incomplete upload result.')
               );
             }
 
@@ -497,7 +532,7 @@ app.post(
           }
         );
 
-        stream.on('error', reject);
+        stream.once('error', reject);
         stream.end(file.buffer);
       });
 
@@ -508,10 +543,12 @@ app.post(
         caption,
         mediaUrl: result.secure_url,
         publicId: result.public_id,
-        type: isVideo ? 'video' : 'image'
+        type: resourceType
       });
 
       uploadedId = null;
+
+      console.log('Post uploaded successfully:', post._id);
 
       return res.status(201).json(post);
 
@@ -537,15 +574,9 @@ app.post(
         }
       }
 
-      return res.status(
-        Number.isInteger(error.http_code) &&
-        error.http_code >= 400 &&
-        error.http_code < 500
-          ? error.http_code
-          : 500
-      ).json({
-        msg: 'Upload failed.',
-        error: error.message || 'Unknown server error.'
+      return res.status(500).json({
+        msg: 'Upload failed. Check the backend terminal.',
+        error: error.message || 'Unknown upload error.'
       });
     }
   }
