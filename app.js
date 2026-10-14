@@ -32,7 +32,7 @@ const url = process.env.MONGO_URL
 app.use(cors({ origin: true, credentials: true }));
 app.options('*', cors());
 app.use(bordyparser.json());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '200mb' }));
 app.use(express.static(path.join(__dirname, 'frontend')))
 app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); })
 
@@ -371,6 +371,9 @@ app.get('/api/users/:id', async (req,res)=>{
 
 // Keep your existing cloudinary.config({...}) block above this code.
 
+// Keep your existing cloudinary.config({...}) block above this code.
+// Do not expose your Cloudinary API secret in frontend code.
+
 const BANNED_WORDS = [
   'xxx', 'porn', 'sex', 'nude', 'naked', 'boobs', 'boob',
   'ass', 'pussy', 'dick', 'cock', 'fuck', 'blowjob',
@@ -402,11 +405,6 @@ const IMAGE_EXTENSIONS = new Set([
   '.jpg', '.jpeg', '.png', '.webp',
   '.gif', '.heic', '.heif'
 ]);
-
-// Ensure Multer can receive files up to 200 MB.
-// Keep any existing fileFilter or other required settings
-// from your original uploadd configuration.
-
 
 const receivePostFile = (req, res, next) => {
   uploadd.single('file')(req, res, (error) => {
@@ -508,29 +506,47 @@ app.post(
       });
 
       const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: resourceType,
-            folder: 'Postsmedia'
-          },
-          (error, uploadResult) => {
-            if (error) {
-              return reject(error);
-            }
+        const uploadOptions = {
+          resource_type: resourceType,
+          folder: 'Postsmedia',
+          chunk_size: 6 * 1024 * 1024
+        };
 
-            if (
-              !uploadResult ||
-              !uploadResult.secure_url ||
-              !uploadResult.public_id
-            ) {
-              return reject(
-                new Error('Cloudinary returned an incomplete upload result.')
-              );
-            }
+        const callback = (error, uploadResult) => {
+          if (error) {
+            console.error('CLOUDINARY UPLOAD ERROR:', {
+              message: error.message,
+              http_code: error.http_code,
+              name: error.name
+            });
 
-            resolve(uploadResult);
+            return reject(error);
           }
-        );
+
+          if (
+            !uploadResult ||
+            !uploadResult.secure_url ||
+            !uploadResult.public_id
+          ) {
+            return reject(
+              new Error(
+                'Cloudinary returned an incomplete upload result.'
+              )
+            );
+          }
+
+          resolve(uploadResult);
+        };
+
+        const stream = resourceType === 'video'
+          ? cloudinary.uploader.upload_chunked_stream(
+              uploadOptions,
+              callback
+            )
+          : cloudinary.uploader.upload_stream(
+              uploadOptions,
+              callback
+            );
 
         stream.once('error', reject);
         stream.end(file.buffer);
@@ -581,6 +597,7 @@ app.post(
     }
   }
 );
+
 
 // UPDATE POST CAPTION
 app.put('/api/posts/:id', authh, async (req, res) => {
