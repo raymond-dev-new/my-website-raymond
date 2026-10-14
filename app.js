@@ -508,7 +508,7 @@ app.post(
       const result = await new Promise((resolve, reject) => {
         const uploadOptions = {
           resource_type: resourceType,
-          folder: 'Postsmedia',
+          folder: 'newpost',
           chunk_size: 6 * 1024 * 1024
         };
 
