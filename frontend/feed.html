@@ -47,6 +47,9 @@
    .full-head button{background:#262626;border:none;color:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:18px}
    .full-body{max-width:470px;margin:0 auto;padding:16px}
    .card{background:#121212;border:1px solid #262626;border-radius:12px;padding:14px;margin-bottom:12px}
+   .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px}
+   .spinner{width:36px;height:36px;border:3px solid #262626;border-top:3px solid #fff;border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -74,7 +77,12 @@
     </div>
   </div>
 
-  <div class="wrap" id="feed">Loading...</div>
+  <div class="wrap" id="feed">
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <div style="color:#aaa;font-size:14px">Loading feed...</div>
+    </div>
+  </div>
 
   <div class="bottom"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a><a href="reels.html">🎬</a><a href="notification.html"> 🔔 </a><a href="profile.html">👤</a></div>
 
@@ -84,7 +92,7 @@
   if(!token) location.href = "login.html";
 
   function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null')}catch{return null} }
-  function setCache(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
   function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
   function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
   function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
@@ -106,6 +114,7 @@
   async function loadMsgBadge(){
     try{
       let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}});
+      if(!r.ok) return;
       let map=await r.json();
       let total=Object.values(map).reduce((a,b)=>a+b,0);
       let el=document.getElementById('msgCount');
@@ -115,8 +124,8 @@
 
   function renderFeed(posts){
     const f=document.getElementById('feed');
-    if(!posts.length){
-      f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet <br> Click logout! register or login your account to see posts </p>";
+    if(!posts ||!Array.isArray(posts) ||!posts.length){
+      f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet <br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer'>Retry</button></p>";
       return;
     }
     f.innerHTML=posts.map(p=>{
@@ -128,6 +137,7 @@
       const username=p.user?.username||'user';
       const avatarUrl=fixUrl(p.user?.avatar);
       const avatarHtml=avatarUrl?`<img src="${avatarUrl}" onclick="goToProfile('${userId}')" loading="lazy">`:username[0].toUpperCase();
+      const likes = p.likes || [];
       return `<div class="post">
         <div class="post-head">
           <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
@@ -137,8 +147,8 @@
           </div>
         </div>
         <div class="media" ondblclick="like('${p._id}')">${mediaHtml}</div>
-        <div class="actions"><span onclick="like('${p._id}')">${p.likes.includes(getMyId())?'❤️':'🤍'}</span><span onclick="goToProfile('${userId}')">💬</span><span onclick="saveP('${p._id}')">🔖</span></div>
-        <div class="likes">${p.likes.length} likes</div>
+        <div class="actions"><span onclick="like('${p._id}')">${likes.includes(getMyId())?'❤️':'🤍'}</span><span onclick="goToProfile('${userId}')">💬</span><span onclick="saveP('${p._id}')">🔖</span></div>
+        <div class="likes">${likes.length} likes</div>
         <div class="cap"><b style="cursor:pointer" onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div>
         <div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)} • ${new Date(p.createdAt).toLocaleDateString()}</div>
         <div id="c-${p._id}">${(p.comments||[]).map(c=>`<div class="comment"><b style="cursor:pointer" onclick="goToProfile('${c.user?._id||''}')">${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div>
@@ -149,14 +159,45 @@
 
   async function load(){
     const cached = getCache('feed_posts');
-    if(cached) renderFeed(cached);
+    if(cached && Array.isArray(cached) && cached.length>0){
+      renderFeed(cached);
+    }
+
     try{
       const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
-      const posts=await r.json();
+
+      // If API returns HTML or 401, handle it
+      if(!r.ok){
+        if(r.status===401){
+          localStorage.removeItem('token');
+          location.href='login.html';
+          return;
+        }
+        throw new Error('API error '+r.status);
+      }
+
+      const text = await r.text();
+      let posts;
+      try{
+        posts = JSON.parse(text);
+      }catch{
+        console.log('API returned HTML not JSON', text.slice(0,200));
+        throw new Error('Invalid JSON');
+      }
+
+      if(!Array.isArray(posts)){
+        posts = posts.posts || posts.data || [];
+      }
+
       renderFeed(posts);
       setCache('feed_posts', posts);
+
     }catch(e){
-      if(!cached) document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#777'>Offline</p>";
+      console.log('load error', e);
+      const cached2 = getCache('feed_posts');
+      if(!cached2 ||!cached2.length){
+        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#aaa'>Failed to load feed<br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer'>Retry</button><br><br><span style='font-size:12px'>"+e.message+"</span></p>";
+      }
     }
   }
 
@@ -164,7 +205,7 @@
     let posts=getCache('feed_posts')||[];
     let p=posts.find(x=>x._id===id);
     if(p){
-      if(p.likes.includes(getMyId())) p.likes=p.likes.filter(x=>x!==getMyId());
+      if((p.likes||[]).includes(getMyId())) p.likes=p.likes.filter(x=>x!==getMyId());
       else p.likes.push(getMyId());
       renderFeed(posts);
       setCache('feed_posts', posts);
@@ -197,16 +238,15 @@
   const ball = document.querySelector('.ball')
   const Country = document.querySelector('.Country')
   ball.addEventListener('click', async () => {
-    const response = fetch('https://raymonddomain.dev/api/sync')
+    fetch('https://raymonddomain.dev/api/sync')
     window.location.href="football.html";
   });
   Country.addEventListener('click', () => {
-    const response = fetch('https://raymonddomain.dev/api/fetch-now')
+    fetch('https://raymonddomain.dev/api/fetch-now')
     window.location.href="countrymatch.html"
   })
 </script>
 
-<!-- TIKTOK BACKGROUND UPLOAD BAR - ADDED HERE -->
 <script src="upload-manager.js"></script>
 <script>
   const upData = localStorage.getItem('uploading');
