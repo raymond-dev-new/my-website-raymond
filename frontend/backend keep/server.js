@@ -19,6 +19,8 @@ import cron from "node-cron"
 import fetch from "node-fetch";
 import http from 'http'
 import { Server } from 'socket.io'
+import { exec } from 'child_process'
+import util from 'util'
 
 const app = express()
 const port = process.env.PORT || 8000
@@ -26,9 +28,11 @@ const JWT_SECRET = process.env.JWT_SECRET
 const JWT_SECRETT = 'jhgfdghjkhytredfgjhkjhgjfhdgsHJJHDKJHRHJERKJhkgjhjfhdgsHJJHDKJHRHJERKJhkgjhjbknhghfdgjhkjkh'
 const url = process.env.MONGO_URL
 
-app.use(cors({ origin: "*" }));
+//app.use(cors({ origin: "*" }));
+app.use(cors({ origin: true, credentials: true }));
+app.options('*', cors());
 app.use(bordyparser.json());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '200mb' }));
 app.use(express.static(path.join(__dirname, 'frontend')))
 app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); })
 
@@ -39,14 +43,39 @@ app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'regi
 let io;
 const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
 const SECRET = "secret123";
-function authh(req, res, next) {
+
+/*function authh(req, res, next) {
   const tokenN = req.headers.authorization;
   if (!tokenN) return res.status(401).json({ msg: "No token" });
   try { req.userId = jwt.verify(tokenN, SECRET).id; next(); }
   catch { return res.status(401).json({ msg: "Invalid" }); }
+} */
+
+  function authh(req, res, next) {
+  const tokenN = req.headers.authorization;
+  if (!tokenN) return res.status(401).json({ msg: "No token" });
+  try { 
+    // ADD THIS LINE - strip Bearer
+    const realToken = tokenN.startsWith('Bearer ') ? tokenN.slice(7) : tokenN;
+    req.userId = jwt.verify(realToken, SECRET).id; 
+    next(); 
+  } catch { 
+    return res.status(401).json({ msg: "Invalid" }); 
+  }
 }
 
-const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
+
+
+
+const uploadd = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 200 * 1024 * 1024
+  }
+});
+
+//const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
+
 
 // ========== MODELS - FIXED ==========
 const UserSchema = new mongoose.Schema({
@@ -325,100 +354,396 @@ app.get('/api/users/:id', async (req,res)=>{
   }catch(e){ res.status(500).json({msg:e.message}) }
 });
 
+ // FIX 1: Check your upload variable name - you wrote uploadd
+// FIX 2: Added detailed error log for 403
 
-app.post('/api/posts', authh, uploadd.single('file'), async (req, res) => {
-  try{
-    let mediaUrl = "";
-    let type = 'image';
+ // CLOUDINARY CONFIGURATION
 
-    if(req.file){
-      if(req.file.mimetype.startsWith('video')){
-        // After frontend compression, 2 mins = ~8MB
-        if(req.file.size > 16*1024*1024) return res.status(400).json({msg: "Still too big - try shorter video"});
+// Keep your Cloudinary configuration on the backend.
+// Replace the exposed API secret with your newly generated secret.
 
-        const media = await Media.create({
-          userId: req.userId,
-          img: { data: req.file.buffer, contentType: 'video/mp4' }
+
+   cloudinary.config({
+    cloud_name: 'v8mwxmlb',
+    api_key: '967794739896149',
+    api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk',
+    secure: true
+});
+
+const BANNED_WORDS = [
+  'xxx', 'porn', 'sex', 'nude', 'naked', 'boobs', 'boob',
+  'ass', 'pussy', 'dick', 'cock', 'fuck', 'blowjob',
+  'handjob', 'cum', 'orgasm', 'erotic', 'nsfw', 'onlyfans',
+  '18+', 'hentai', 'brazzers', 'xnxx', 'xvideos',
+  'pornhub', 'strip', 'bikini', 'lingerie', 'sexy',
+  'seductive', 'horny', 'suck', 'tits', 'titty',
+  'vagina', 'penis', 'anal', 'escort', 'prostitute',
+  'sugar', 'mommy', 'incest', 'rape', 'bdsm', 'nudes',
+  'undress', 'masturb'
+];
+
+const containsBanned = (value) => {
+  if (!value) return false;
+  const text = String(value).toLowerCase();
+  return BANNED_WORDS.some(word => text.includes(word));
+};
+
+const MAX_SIZE = 200 * 1024 * 1024;
+
+const VIDEO_EXTENSIONS = new Set([
+  '.mp4', '.mov', '.m4v', '.webm',
+  '.avi', '.mkv', '.3gp'
+]);
+
+const IMAGE_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.webp',
+  '.gif', '.heic', '.heif'
+]);
+
+// NEW: Signature for direct upload - tiny request, bypasses Vercel limit
+app.get('/api/cloudinary-signature', authh, (req, res) => {
+  const timestamp = Math.round((new Date).getTime() / 1000);
+  const params = { timestamp, folder: 'newpost' };
+  const signature = cloudinary.utils.api_sign_request(params, 'ZtOZ1BdM7uyeki3wDRgtgueFRHk');
+  return res.json({
+    timestamp,
+    signature,
+    cloudName: 'v8mwxmlb',
+    apiKey: '967794739896149',
+    folder: 'newpost'
+  });
+});
+
+// FIXED: Same route /api/posts but now DIRECT upload - no file goes through Vercel
+app.post(
+  '/api/posts',
+  authh,
+  async (req, res) => {
+    try {
+      // Now expects JSON from frontend after direct Cloudinary upload
+      const { mediaUrl, publicId, type, caption, filename } = req.body;
+
+      if (!mediaUrl || !publicId) {
+        return res.status(400).json({
+          msg: 'No file received. Upload to Cloudinary first from frontend.'
         });
-        mediaUrl = `/api/media-file/${media._id}`;
-        type = 'video';
-      } else {
-        if(req.file.size > 6*1024*1024) return res.status(400).json({msg: "Image max 6MB"});
-        const media = await Media.create({
-          userId: req.userId,
-          img: { data: req.file.buffer, contentType: req.file.mimetype }
-        });
-        mediaUrl = `/api/media-file/${media._id}`;
-        type = 'image';
       }
+
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+          msg: 'Database is not connected. Check MongoDB.'
+        });
+      }
+
+      const captionText = String(caption || '');
+      const fileNameText = String(filename || '');
+
+      if (
+        containsBanned(captionText) ||
+        containsBanned(fileNameText)
+      ) {
+        // Delete from Cloudinary if banned
+        await cloudinary.uploader.destroy(publicId, {
+          resource_type: type || 'auto',
+          invalidate: true
+        }).catch(()=>{});
+        return res.status(400).json({
+          msg: 'Blocked: banned word in caption or file name.'
+        });
+      }
+
+      const resourceType = type === 'video' ? 'video' : 'image';
+
+      console.log('Post saving direct from Cloudinary:', {
+        publicId,
+        resourceType
+      });
+
+      const post = await Post.create({
+        user: req.userId,
+        caption: captionText,
+        mediaUrl: mediaUrl,
+        publicId: publicId,
+        type: resourceType
+      });
+
+      console.log('Post uploaded successfully:', post._id);
+      return res.status(201).json(post);
+
+    } catch (error) {
+      console.error('POST UPLOAD FAILED:', {
+        message: error.message,
+        name: error.name
+      });
+      return res.status(500).json({
+        msg: 'Upload failed. Check the backend terminal.',
+        error: error.message || 'Unknown upload error.'
+      });
+    }
+  }
+);
+
+app.delete('/api/posts/:id', authh, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ msg: 'Post not found' });
+    
+    if (post.user.toString() !== req.userId) {
+      return res.status(403).json({ msg: 'Not authorized to delete this post' });
     }
 
-    const post = await Post.create({ user: req.userId, caption: req.body.caption || "", mediaUrl, type });
-    res.json(post);
-  }catch(e){
-    console.error(e);
-    res.status(500).json({msg: e.message});
+    // Delete from Cloudinary if publicId exists
+    if (post.publicId) {
+      await cloudinary.uploader.destroy(post.publicId, {
+        resource_type: post.type === 'video' ? 'video' : 'image',
+        invalidate: true
+      }).catch((e) => console.log('Cloudinary delete skip:', e.message));
+    }
+
+    // Delete from DB
+    await Post.findByIdAndDelete(postId);
+    
+    return res.json({ msg: 'Post deleted from DB and Cloudinary' });
+  } catch (error) {
+    console.error('DELETE POST FAILED:', error);
+    return res.status(500).json({ msg: 'Delete failed', error: error.message });
   }
 });
 
-
-app.delete('/api/posts/:id', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  if (!post) return res.status(404).json({ msg: "Post not found" });
-  if (post.user.toString()!== req.userId) return res.status(403).json({ msg: "Not yours" });
-  await Post.findByIdAndDelete(req.params.id); res.json({ msg: "Deleted" });
+//EDIT NAME
+ app.put('/api/users/me', authh, async(req,res)=>{
+  const { username, displayName, bio, link } = req.body;
+  const update = {};
+  if(username) update.username = username;
+  if(displayName) update.displayName = displayName;
+  if(bio) update.bio = bio;
+  if(link) update.link = link;
+  const user = await User.findByIdAndUpdate(req.userId, update, {new:true});
+  res.json(user);
 });
+
+// UPDATE POST CAPTION
+// UPDATE POST CAPTION
 app.put('/api/posts/:id', authh, async (req, res) => {
-  const post = await Post.findByIdAndUpdate(req.params.id, { caption: req.body.caption }, { new: true });
-  res.json(post);
+  try {
+    if (containsBanned(req.body.caption)) {
+      return res.status(400).json({ msg: 'Caption has banned word.' });
+    }
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+    if (post.user.toString() !== req.userId.toString()) {
+      return res.status(403).json({ msg: 'You cannot edit this post.' });
+    }
+    post.caption = req.body.caption || '';
+    await post.save();
+    return res.json(post);
+  } catch (err) {
+    console.error('UPDATE POST ERROR:', err);
+    return res.status(500).json({ msg: 'Could not update post.', error: err.message });
+  }
 });
+
+// POSTS FEED - Shows Cloudinary posts
 app.get('/api/posts/feed', authh, async (req, res) => {
-  const posts = await Post.find().populate('user').populate('comments.user').sort({ createdAt: -1 });
-  res.json(posts);
+  try {
+    const posts = await Post.find()
+      .populate('user')
+      .populate('comments.user')
+      .sort({ createdAt: -1 });
+    return res.json(posts);
+  } catch (err) {
+    console.error('FEED ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load feed.' });
+  }
 });
+
+// VIDEO REELS - Shows Cloudinary videos
+/*
 app.get('/api/posts/reels', async (req, res) => {
-  const reels = await Post.find({ type: 'video' }).populate('user').populate('comments.user').sort({ createdAt: -1 });
-  res.json(reels);
+  try {
+    const reels = await Post.find({ type: 'video' })
+      .populate('user')
+      .populate('comments.user')
+      .sort({ createdAt: -1 });
+    return res.json(reels);
+  } catch (err) {
+    console.error('REELS ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load reels.' });
+  }
+}); */
+
+// VIDEO REELS - PURE RANDOM EVERY REFRESH
+app.get('/api/posts/reels', async (req, res) => {
+  try {
+    const reels = await Post.aggregate([
+      { $match: { type: 'video' } },
+      { $sample: { size: 100 } }
+    ]);
+
+    const populated = await Post.populate(reels, [
+      { path: 'user' },
+      { path: 'comments.user' }
+    ]);
+
+    return res.json(populated);
+  } catch (err) {
+    console.error('REELS ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load reels.' });
+  }
 });
+
+// GET SINGLE POST
 app.get('/api/posts/:id', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id).populate('user').populate('comments.user');
-  if (!post) return res.status(404).json({ msg: "Post not found" });
-  res.json(post);
+  try {
+    const post = await Post.findById(req.params.id)
+      .populate('user')
+      .populate('comments.user');
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+    return res.json(post);
+  } catch (err) {
+    console.error('GET POST ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load post.' });
+  }
 });
 
+// LIKE OR UNLIKE POST
 app.post('/api/posts/:id/like', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  const isLiked = post.likes.includes(req.userId);
-  if(isLiked) post.likes.pull(req.userId); else post.likes.push(req.userId);
-  await post.save();
-  if(!isLiked) await createNotif(post.user, req.userId, 'like', post._id);
-  else { await Notification.deleteMany({ receiver:post.user, sender:req.userId, type:'like', post:post._id }); }
-  const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
-  res.json(updated);
-});
-app.post('/api/posts/:id/comment', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id);
-  post.comments.push({ user: req.userId, text: req.body.text });
-  await post.save();
-  await createNotif(post.user, req.userId, 'comment', post._id, req.body.text);
-  const updated = await Post.findById(req.params.id).populate('user').populate('comments.user');
-  res.json(updated);
-});
-app.post('/api/posts/:id/share', authh, async (req, res) => {
-  const post = await Post.findById(req.params.id); post.shares += 1; await post.save(); res.json(post);
-});
-app.post('/api/posts/:id/save', authh, async (req, res) => {
-  const me = await Userd.findById(req.userId);
-  me.savedPosts.includes(req.params.id)? me.savedPosts.pull(req.params.id) : me.savedPosts.push(req.params.id);
-  await me.save(); res.json(me.savedPosts);
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+    const isLiked = post.likes.some(
+      id => id.toString() === req.userId.toString()
+    );
+    if (isLiked) {
+      post.likes.pull(req.userId);
+    } else {
+      post.likes.push(req.userId);
+    }
+    await post.save();
+    if (!isLiked) {
+      await createNotif(post.user, req.userId, 'like', post._id);
+    } else {
+      await Notification.deleteMany({ 
+        receiver: post.user, 
+        sender: req.userId, 
+        type: 'like', 
+        post: post._id 
+      });
+    }
+    const updated = await Post.findById(req.params.id)
+      .populate('user')
+      .populate('comments.user');
+    return res.json(updated);
+  } catch (err) {
+    console.error('LIKE ERROR:', err);
+    return res.status(500).json({ msg: 'Could not update like.' });
+  }
 });
 
- app.post('/api/posts/:id/view', async (req,res)=>{
- try{
-  const p = await Post.findByIdAndUpdate(req.params.id, {$inc:{views:1}}, {new:true});
-  res.json({views:p.views});
- }catch(e){ res.status(500).json({msg:e.message}) }
+// COMMENT ON POST
+app.post('/api/posts/:id/comment', authh, async (req, res) => {
+  try {
+    const commentText = req.body.text || '';
+    if (!commentText.trim()) {
+      return res.status(400).json({ msg: 'Comment cannot be empty.' });
+    }
+    if (containsBanned(commentText)) {
+      return res.status(400).json({ msg: 'Comment has banned word.' });
+    }
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+    post.comments.push({ user: req.userId, text: commentText });
+    await post.save();
+    await createNotif(
+      post.user,
+      req.userId,
+      'comment',
+      post._id,
+      commentText
+    );
+    const updated = await Post.findById(req.params.id)
+      .populate('user')
+      .populate('comments.user');
+    return res.json(updated);
+  } catch (err) {
+    console.error('COMMENT ERROR:', err);
+    return res.status(500).json({ msg: 'Could not add comment.' });
+  }
 });
+
+// SHARE POST
+app.post('/api/posts/:id/share', authh, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+    post.shares += 1;
+    await post.save();
+    return res.json(post);
+  } catch (err) {
+    console.error('SHARE ERROR:', err);
+    return res.status(500).json({ msg: 'Could not share post.' });
+  }
+});
+
+// SAVE OR UNSAVE POST
+app.post('/api/posts/:id/save', authh, async (req, res) => {
+  try {
+    const me = await Userd.findById(req.userId);
+    if (!me) {
+      return res.status(404).json({ msg: 'User not found.' });
+    }
+    if (!me.savedPosts) {
+      me.savedPosts = [];
+    }
+    const alreadySaved = me.savedPosts.some(
+      id => id.toString() === req.params.id
+    );
+    if (alreadySaved) {
+      me.savedPosts.pull(req.params.id);
+    } else {
+      const postExists = await Post.exists({ _id: req.params.id });
+      if (!postExists) {
+        return res.status(404).json({ msg: 'Post not found.' });
+      }
+      me.savedPosts.push(req.params.id);
+    }
+    await me.save();
+    return res.json(me.savedPosts);
+  } catch (err) {
+    console.error('SAVE POST ERROR:', err);
+    return res.status(500).json({ msg: 'Could not save post.' });
+  }
+});
+
+// COUNT POST VIEWS
+app.post('/api/posts/:id/view', async (req, res) => {
+  try {
+    const p = await Post.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+    if (!p) {
+      return res.status(404).json({ msg: 'Post not found.' });
+    }
+    return res.json({ views: p.views });
+  } catch (err) {
+    console.error('VIEW ERROR:', err);
+    return res.status(500).json({ msg: 'Could not count view.' });
+  }
+});
+//end here hgfddfghj;kjhgfd
 
 app.get('/api/users/:id', async (req, res) => {
   const user = await Userd.findById(req.params.id).populate('followers', 'username avatar').populate('following', 'username avatar');
