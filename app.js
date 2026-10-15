@@ -548,11 +548,15 @@ app.put('/api/posts/:id', authh, async (req, res) => {
 
 // POSTS FEED - Shows Cloudinary posts
 app.get('/api/posts/feed', authh, async (req, res) => {
+  const { page = 1, limit = 30 } = req.query;
   try {
     const posts = await Post.find()
-      .populate('user')
-      .populate('comments.user')
-      .sort({ createdAt: -1 });
+      .populate('user', 'username avatar')
+      .populate('comments.user', 'username avatar')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
     return res.json(posts);
   } catch (err) {
     console.error('FEED ERROR:', err);
