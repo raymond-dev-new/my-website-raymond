@@ -10,7 +10,7 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 .reel { height:100vh; scroll-snap-align:start; position:relative; display:flex; align-items:center; justify-content:center; background:#111; }
 .reel video { height:100%; width:100%; object-fit:cover; }
 .info { position:absolute; bottom:135px; left:12px; right:85px; z-index:5; line-height:1.4; font-size:14px; text-shadow:0 1px 4px rgba(0,0,0,.8); }
-.info b{cursor:pointer;font-size:15px}
+.info b{cursor:pointer;font-size:15px;text-decoration:underline}
 .actions { position:absolute; right:10px; bottom:135px; display:flex; flex-direction:column; gap:22px; font-size:24px; text-align:center; z-index:5; }
 .actions small{font-size:12px;display:block;margin-top:2px}
 .view-badge{position:absolute;top:18px;left:12px;background:rgba(0,0,0,.65);padding:6px 12px;border-radius:20px;font-size:12px;z-index:5;display:flex;gap:6px;align-items:center}
@@ -37,7 +37,7 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 .cmt-input-area{padding:10px;border-top:1px solid #262626;display:flex;gap:8px}
 .cmt-input-area input{flex:1;background:#262626;border:none;color:#fff;padding:10px;border-radius:20px;outline:none}
 .cmt-input-area button{background:none;border:none;color:#0095f6;font-weight:bold;cursor:pointer}
-.load-more{height:100vh;display:flex;align-items:center;justify-content:center;color:#555}
+.follow-btn{margin-left:8px;border:1px solid #fff;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;background:transparent;color:#fff}
 </style>
 </head>
 <body>
@@ -74,7 +74,7 @@ let reelsData=[], activeReelId="", currentPage=1, isLoadingMore=false, hasMore=t
 
 function saveState(){
   const container=document.getElementById('reels');
-  if(container && container.children.length>0 && reelsData.length>0){
+  if(container && reelsData.length>0){
     sessionStorage.setItem('reels_html', container.innerHTML);
     sessionStorage.setItem('reels_scroll', container.scrollTop.toString());
     sessionStorage.setItem('reels_time', Date.now().toString());
@@ -98,12 +98,16 @@ function restoreState(){
   }
   return false;
 }
-
-function showShimmer(){
-  const c=document.getElementById('reels');
-  c.innerHTML=`<div class="shimmer-reel"><div class="shimmer-line"></div><div class="shimmer-line small"></div></div><div class="shimmer-reel"><div class="shimmer-line"></div><div class="shimmer-line small"></div></div>`;
+function goToProfile(uid){
+  saveState();
+  if(uid) location.href='profile.html?id='+uid;
+  else location.href='profile.html';
 }
-
+function showShimmer(){
+  document.getElementById('reels').innerHTML=`
+    <div class="shimmer-reel"><div class="shimmer-line"></div><div class="shimmer-line small"></div></div>
+    <div class="shimmer-reel"><div class="shimmer-line"></div><div class="shimmer-line small"></div></div>`;
+}
 function appendReels(reels){
  const container=document.getElementById('reels');
  if(reels.length===0 && currentPage===1){
@@ -115,10 +119,16 @@ function appendReels(reels){
   const likes=r.likes||[];
   const isLiked=likes.includes(getMyId())||likes.some(l=> (l._id||l)==getMyId());
   const views=r.views||0;
+  const userId=r.user?._id||r.user;
+  const username=r.user?.username||'user';
   return `<div class="reel" data-id="${r._id}">
    <div class="view-badge">👁️ <span id="view-${r._id}">${views}</span> views</div>
    <video src="${url}" loop playsinline preload="metadata" onclick="toggleMute(this, '${r._id}')"></video>
-   <div class="info"><b onclick="saveState();location.href='profile.html?id=${r.user?._id}'">@${r.user?.username||'user'}</b><br>${r.caption||''}</div>
+   <div class="info">
+    <b onclick="goToProfile('${userId}')">@${username}</b>
+    <button class="follow-btn" onclick="goToProfile('${userId}')">View Profile</button><br>
+    ${r.caption||''}
+   </div>
    <div class="actions">
     <div onclick="like('${r._id}')" style="cursor:pointer">${isLiked?'❤️':'🤍'}<br><small id="like-${r._id}">${likes.length}</small></div>
     <div onclick="openComments('${r._id}')" style="cursor:pointer">💬<br><small>${(r.comments||[]).length}</small></div>
@@ -130,7 +140,6 @@ function appendReels(reels){
  else container.insertAdjacentHTML('beforeend', html);
  observeViews();
 }
-
 function toggleMute(vid, id){ vid.muted=!vid.muted; addView(id); }
 async function addView(id){
  const el=document.getElementById('view-'+id);
@@ -147,7 +156,6 @@ function observeViews(){
     document.querySelectorAll('.reel video').forEach(v=>{ if(v!==vid) v.pause(); });
     addView(e.target.dataset.id);
     vid.play().catch(()=>{});
-    // TikTok preload next page when near bottom
     const all=document.querySelectorAll('.reel');
     if(e.target===all[all.length-2]) loadReels(true);
    } else { vid.pause(); }
@@ -155,7 +163,6 @@ function observeViews(){
  },{threshold:0.7});
  document.querySelectorAll('.reel').forEach(el=>observer.observe(el));
 }
-
 async function loadReels(isNext=false){
   if(isNext){
     if(isLoadingMore||!hasMore) return;
@@ -171,45 +178,44 @@ async function loadReels(isNext=false){
     let reels=await res.json();
     if(!Array.isArray(reels)) reels=reels.posts||reels.data||[];
     if(reels.length<12) hasMore=false;
-    if(isNext){ reelsData=[...reelsData,...reels]; }
-    else{ reelsData=reels; }
+    if(isNext) reelsData=[...reelsData,...reels];
+    else reelsData=reels;
     appendReels(reels);
     saveState();
   }catch(e){
-    if(!isNext) document.getElementById('reels').innerHTML=`<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><div style="font-size:40px">⚠️</div><div style="color:#aaa">Failed</div><button onclick="loadReels(false)" style="background:#222;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:20px">Retry</button></div>`;
+    if(!isNext) document.getElementById('reels').innerHTML=`<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><div>⚠️ Failed</div><button onclick="loadReels(false)" style="background:#222;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:20px">Retry</button></div>`;
     else currentPage--;
   }
   isLoadingMore=false;
 }
-
 async function like(id){
  const r=reelsData.find(x=>x._id===id);
  if(r){
   const my=getMyId();
   const has = r.likes.includes(my) || r.likes.some(x=> (x._id||x)==my);
   if(has) r.likes=r.likes.filter(x=> (x._id||x)!==my && x!==my); else r.likes.push(my);
-  const elLike=document.getElementById('like-'+id);
-  if(elLike){ elLike.innerText=r.likes.length; }
-  // update heart without full re-render
-  const reelEl=document.querySelector(`.reel[data-id="${id}"]`);
-  if(reelEl){ reelEl.querySelector('.actions div').innerHTML=`${has?'🤍':'❤️'}<br><small id="like-${id}">${r.likes.length}</small>`; }
+  const el=document.getElementById('like-'+id);
+  if(el) el.innerText=r.likes.length;
   saveState();
  }
  try{ await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}}); }catch{}
 }
-async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); }catch{} }
-
+async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); }catch{} if(navigator.share){ navigator.share({url: location.origin+'/reels.html?id='+id}) } }
 async function openComments(id){
  activeReelId=id;
- const currentVid=document.querySelector(`.reel[data-id="${id}"] video`);
- if(currentVid) currentVid.pause();
+ const v=document.querySelector(`.reel[data-id="${id}"] video`);
+ if(v) v.pause();
  document.getElementById('cmtModal').style.display='flex';
  document.getElementById('cmtList').innerHTML=`<div style="display:flex;justify-content:center;padding:20px"><div class="spinner" style="width:24px;height:24px"></div></div>`;
  try{
   const res=await fetch(BASE+'/api/posts/'+id,{headers:{authorization:token}});
   const post=await res.json();
   document.getElementById('cmtCount').innerText=post.comments.length+' comments';
-  document.getElementById('cmtList').innerHTML=!post.comments.length?`<p style="color:#777;text-align:center;padding:20px">No comments</p>`:post.comments.map(c=>`<div class="cmt-row"><div class="cmt-avatar">${(c.user?.username||'U')[0].toUpperCase()}</div><div class="cmt-text"><b>${c.user?.username||'user'}</b> ${c.text}</div></div>`).join('');
+  document.getElementById('cmtList').innerHTML=!post.comments.length?`<p style="color:#777;text-align:center;padding:20px">No comments</p>`:
+  post.comments.map(c=>{
+   const name=c.user?.username||'user'; const uid=c.user?._id||c.user||'';
+   return `<div class="cmt-row"><div class="cmt-avatar" onclick="goToProfile('${uid}')">${name[0].toUpperCase()}</div><div class="cmt-text"><b onclick="goToProfile('${uid}')">${name}</b> ${c.text}</div></div>`;
+  }).join('');
  }catch{}
 }
 function closeComments(){ document.getElementById('cmtModal').style.display='none'; if(activeReelId){ const v=document.querySelector(`.reel[data-id="${activeReelId}"] video`); if(v) v.play().catch(()=>{}); } activeReelId=""; }
@@ -221,7 +227,7 @@ window.addEventListener('beforeunload', saveState);
 document.getElementById('reels').addEventListener('scroll', ()=>{ clearTimeout(window._rt); window._rt=setTimeout(saveState,300); });
 
 const upData = localStorage.getItem('uploading');
-if(upData){ try{ const d=JSON.parse(upData); UploadManager.showBar(d.progress||20, d.status||'Uploading...'); }catch{} }
+if(upData){ try{ const d=JSON.parse(upData); if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading...'); }catch{} }
 
 loadReels(false); loadMsgBadge();
 </script>

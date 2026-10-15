@@ -597,80 +597,51 @@ app.get('/api/posts/feed', authh, async (req, res) => {
    }); */
    
    // VIDEO REELS - PURE RANDOM EVERY REFRESH
-    // REELS - Random TikTok shuffle, 12 per page, instant
-app.get('/api/posts/reels', authh, async (req, res) => {
-  try {
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.min(parseInt(req.query.limit) || 12, 20);
 
-    // For true random per page, we sample 12 each request
-    // Add seed by page to avoid same videos repeating too much
-    const reels = await Post.aggregate([
+     app.get('/api/posts/reels', authh, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 12, 20);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+
+    // Step 1: get random IDs (fast)
+    const randomIds = await Post.aggregate([
       { $match: { type: 'video' } },
-      { $sample: { size: limit } }, // random 12, not 100
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user'
-        }
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'comments.user',
-          foreignField: '_id',
-          as: 'commentUsers'
-        }
-      },
-      {
-        $project: {
-          caption: 1,
-          mediaUrl: 1,
-          type: 1,
-          likes: 1,
-          views: 1,
-          shares: 1,
-          createdAt: 1,
-          // only last 2 comments with username
-          comments: {
-            $slice: [
-              {
-                $map: {
-                  input: { $slice: ['$comments', -2] },
-                  as: 'c',
-                  in: {
-                    text: '$$c.text',
-                    user: {
-                      _id: '$$c.user',
-                      username: {
-                        $arrayElemAt: [
-                          {
-                            $filter: {
-                              input: '$commentUsers',
-                              cond: { $eq: ['$$this._id', '$$c.user'] }
-                            }
-                          },
-                          0
-                        ]
-                      }
-                    }
-                  }
-                }
-              },
-              2
-            ]
-          },
-          'user._id': 1,
-          'user.username': 1,
-          'user.avatar': 1
-        }
-      }
+      { $sample: { size: limit } },
+      { $project: { _id: 1 } }
     ]);
 
-    return res.json(reels);
+    const ids = randomIds.map(r => r._id);
+
+    // Step 2: populate correctly (this keeps username)
+    const reels = await Post.find({ _id: { $in: ids } })
+     .populate('user', 'username avatar _id')
+     .lean();
+
+    // Optional: shuffle result again so page order is random
+    for (let i = reels.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [reels[i], reels[j]] = [reels[j], reels[i]];
+    }
+
+    // Light response
+    const light = reels.map(r => ({
+      _id: r._id,
+      caption: r.caption,
+      mediaUrl: r.mediaUrl,
+      type: r.type,
+      views: r.views || 0,
+      likes: r.likes || [],
+      shares: r.shares || 0,
+      createdAt: r.createdAt,
+      comments: (r.comments || []).slice(-2),
+      user: {
+        _id: r.user?._id,
+        username: r.user?.username || 'unknown',
+        avatar: r.user?.avatar || ''
+      }
+    }));
+
+    return res.json(light);
 
   } catch (err) {
     console.error('REELS ERROR:', err);
