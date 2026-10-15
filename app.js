@@ -547,15 +547,17 @@ app.put('/api/posts/:id', authh, async (req, res) => {
 });
 
 // POSTS FEED - Shows Cloudinary posts
- app.get('/api/posts/feed', authh, async (req, res) => {
-  const { page = 1, limit = 30 } = req.query;
-  const posts = await Post.find()
-   .populate('user', 'username avatar')
-   .populate('comments.user', 'username avatar')
-   .sort({ createdAt: -1 })
-   .skip((page - 1) * limit)
-   .limit(parseInt(limit));
-  return res.json(posts);
+app.get('/api/posts/feed', authh, async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .populate('user')
+      .populate('comments.user')
+      .sort({ createdAt: -1 });
+    return res.json(posts);
+  } catch (err) {
+    console.error('FEED ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load feed.' });
+  }
 });
 
 // VIDEO REELS - Shows Cloudinary videos

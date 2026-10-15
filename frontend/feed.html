@@ -41,6 +41,7 @@
  .side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;display:none}
  .overlay.show{display:block}
+ .card{background:#121212;border:1px solid #262626;border-radius:12px;padding:14px;margin-bottom:12px}
  .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px}
  .spinner{width:36px;height:36px;border:3px solid #262626;border-top:3px solid #fff;border-radius:50%;animation:spin 0.8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -51,11 +52,11 @@
  .big-heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:80px;color:#ff2d55;pointer-events:none;opacity:0}
  .big-heart.show{animation:bigHeart 0.8s ease-out forwards}
     @keyframes bigHeart{0%{transform:translate(-50%,-50%) scale(0);opacity:0}15%{transform:translate(-50%,-50%) scale(1.2);opacity:1}30%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(0);opacity:0}}
- .load-more{padding:20px;text-align:center;color:#666;font-size:13px}
   </style>
 </head>
 <body>
   <div class="overlay" id="overlay" onclick="closeAll()"></div>
+
   <div class="sidebar" id="sidebar">
     <div class="sidebar-top"><b>RAyMoNd Menu</b><span class="close" onclick="closeAll()">×</span></div>
     <div class="sidebar-links">
@@ -79,7 +80,6 @@
   </div>
 
   <div class="wrap" id="feed"></div>
-  <div class="load-more" id="loadMore"></div>
 
   <div class="bottom"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a><a href="reels.html">🎬</a><a href="notification.html"> 🔔 </a><a href="profile.html">👤</a></div>
 
@@ -88,11 +88,6 @@
   const token = localStorage.getItem('token');
   if(!token) location.href = "login.html";
 
-  let page = 1;
-  let isLoadingMore = false;
-  let hasMore = true;
-  let feedObserver = null;
-
   function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null')}catch{return null} }
   function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
   function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
@@ -100,14 +95,17 @@
   function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
   function closeAll(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
   function goToProfile(userId){ if(!userId) return; location.href='profile.html?id='+userId; }
+
   function formatDate(d){
     if(!d) return "";
-    const date=new Date(d);
-    const diff=Math.floor((new Date()-date)/1000);
-    if(diff<60) return diff+"s ago";
-    if(diff<3600) return Math.floor(diff/60)+"m ago";
-    if(diff<86400) return Math.floor(diff/3600)+"h ago";
-    return Math.floor(diff/86400)+"d ago";
+    const date = new Date(d);
+    const now = new Date();
+    const diff = Math.floor((now - date)/1000);
+    if(diff < 60) return diff + "s ago";
+    if(diff < 3600) return Math.floor(diff/60) + "m ago";
+    if(diff < 86400) return Math.floor(diff/3600) + "h ago";
+    if(diff < 604800) return Math.floor(diff/86400) + "d ago";
+    return date.toLocaleDateString();
   }
 
   async function loadMsgBadge(){
@@ -121,169 +119,109 @@
     }catch{}
   }
 
-  function postHTML(p){
-    const raw=p.mediaUrl||"";
-    const mediaUrl=fixUrl(raw);
-    const isVid=p.type==='video'||raw.includes('video');
-    const mediaHtml=isVid
-    ? `<video src="${mediaUrl}" preload="none" playsinline muted controls></video>`
-      : `<img src="${mediaUrl}" loading="lazy" decoding="async" width="400" height="400" />`;
-    const userId=p.user?._id||p.user;
-    const username=p.user?.username||'user';
-    const avatarUrl=fixUrl(p.user?.avatar);
-    const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
-    const likes=p.likes||[];
-    const isLiked=likes.includes(getMyId());
-    return `<div class="post" id="post-${p._id}" data-id="${p._id}">
-      <div class="post-head">
-        <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
-        <div style="display:flex;flex-direction:column">
-          <b onclick="goToProfile('${userId}')">${username}</b>
-          <span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span>
-        </div>
-      </div>
-      <div class="media" ondblclick="like('${p._id}', true)">${mediaHtml}<div class="big-heart" id="big-heart-${p._id}">❤️</div></div>
-      <div class="actions">
-        <span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}', false)">${isLiked?'❤️':'🤍'}</span>
-        <span onclick="document.getElementById('i-${p._id}').focus()">💬</span>
-        <span onclick="saveP('${p._id}')">🔖</span>
-      </div>
-      <div class="likes" id="likes-${p._id}">${likes.length} likes</div>
-      <div class="cap"><b onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div>
-      <div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)}</div>
-      <div id="c-${p._id}">${(p.comments||[]).slice(-2).map(c=>`<div class="comment"><b>${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div>
-      <div class="input-row"><input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')"><button onclick="comment('${p._id}')">Post</button></div>
-    </div>`;
-  }
-
-  function renderFeed(posts, restoreScroll=true){
+  function renderFeed(posts){
     const f=document.getElementById('feed');
-    if(!posts ||!posts.length){
-      f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet<br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px'>Retry</button></p>";
+    if(!posts ||!Array.isArray(posts) ||!posts.length){
+      f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet<br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer'>Retry</button></p>";
       return;
     }
-    const first = posts.slice(0,15);
-    const rest = posts.slice(15);
-    f.innerHTML = first.map(postHTML).join('');
-    if(restoreScroll) restoreLastPosition();
-    setupScrollTracker();
-    if(rest.length){
-      setTimeout(()=>{
-        f.insertAdjacentHTML('beforeend', rest.map(postHTML).join(''));
-        setupScrollTracker();
-      }, 300);
-    }
-  }
-
-  function restoreLastPosition(){
-    const lastId=localStorage.getItem('last_post_id');
-    if(lastId){
-      requestAnimationFrame(()=>{
-        const el=document.getElementById('post-'+lastId);
-        if(el) el.scrollIntoView({block:'start'});
-      });
-    }
-  }
-
-  function setupScrollTracker(){
-    if(feedObserver) feedObserver.disconnect();
-    feedObserver = new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{
-        if(e.isIntersecting) localStorage.setItem('last_post_id', e.target.dataset.id);
-      });
-    }, {threshold:0.5});
-    document.querySelectorAll('.post').forEach(p=>feedObserver.observe(p));
+    f.innerHTML=posts.map(p=>{
+      const raw=p.mediaUrl||"";
+      const mediaUrl=fixUrl(raw);
+      const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
+      const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline preload="metadata"></video>`:`<img src="${mediaUrl}" loading="lazy" decoding="async" />`;
+      const userId=p.user?._id||p.user;
+      const username=p.user?.username||'user';
+      const avatarUrl=fixUrl(p.user?.avatar);
+      const avatarHtml=avatarUrl?`<img src="${avatarUrl}" onclick="goToProfile('${userId}')" loading="lazy">`:username[0].toUpperCase();
+      const likes = p.likes || [];
+      const isLiked = likes.includes(getMyId());
+      return `<div class="post" id="post-${p._id}">
+        <div class="post-head">
+          <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
+          <div style="display:flex;flex-direction:column">
+            <b onclick="goToProfile('${userId}')">${username}</b>
+            <span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span>
+          </div>
+        </div>
+        <div class="media" ondblclick="like('${p._id}', true)">
+          ${mediaHtml}
+          <div class="big-heart" id="big-heart-${p._id}">❤️</div>
+        </div>
+        <div class="actions">
+          <span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}', false)">${isLiked?'❤️':'🤍'}</span>
+          <span onclick="document.getElementById('i-${p._id}').focus()">💬</span>
+          <span onclick="saveP('${p._id}')">🔖</span>
+        </div>
+        <div class="likes" id="likes-${p._id}">${likes.length} likes</div>
+        <div class="cap"><b style="cursor:pointer" onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div>
+        <div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)} • ${new Date(p.createdAt).toLocaleDateString()}</div>
+        <div id="c-${p._id}">${(p.comments||[]).map(c=>`<div class="comment"><b style="cursor:pointer" onclick="goToProfile('${c.user?._id||''}')">${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div>
+        <div class="input-row"><input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')"><button onclick="comment('${p._id}')">Post</button></div>
+      </div>`;
+    }).join('');
   }
 
   function showSpinner(){
-    document.getElementById('feed').innerHTML=`<div class="loading-screen"><div class="spinner"></div><div style="color:#aaa">Loading...</div></div>`;
+    document.getElementById('feed').innerHTML=`<div class="loading-screen"><div class="spinner"></div><div style="color:#aaa;font-size:14px">Loading feed...</div></div>`;
   }
 
   async function load(){
-    const cached=getCache('feed_posts');
-    if(cached?.length){
-      renderFeed(cached, true);
-      page = 2;
-      hasMore = true;
-      fetchFresh(false);
+    const cached = getCache('feed_posts');
+
+    // CACHE FIRST LOGIC
+    if(cached && Array.isArray(cached) && cached.length>0){
+      renderFeed(cached);
+      // update in background silently
+      fetchFresh();
     }else{
+      // No cache -> show spinner
       showSpinner();
-      await fetchFresh(false);
+      await fetchFresh();
     }
   }
 
-  async function fetchFresh(isLoadMore=false){
-    if(isLoadingMore) return;
-    isLoadingMore = true;
-    const loadMoreEl = document.getElementById('loadMore');
-
+  async function fetchFresh(){
     try{
-      if(!isLoadMore){
-        page = 1;
-        hasMore = true;
-      }
-
-      if(isLoadMore) loadMoreEl.innerText = "Loading more...";
-
-      const controller=new AbortController();
-      setTimeout(()=>controller.abort(), 8000);
-      const r=await fetch(`${BASE}/api/posts/feed?page=${page}&limit=30`,{headers:{authorization:token}, signal:controller.signal});
-
+      const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
       if(!r.ok){
         if(r.status===401){ localStorage.removeItem('token'); location.href='login.html'; return; }
-        throw new Error('API error');
+        throw new Error('API error '+r.status);
       }
+      const text=await r.text();
+      let posts;
+      try{ posts=JSON.parse(text); }catch{ throw new Error('Invalid JSON'); }
+      if(!Array.isArray(posts)){ posts=posts.posts||posts.data||[]; }
 
-      let newPosts=await r.json();
-      if(!Array.isArray(newPosts)) newPosts=newPosts.posts||newPosts.data||[];
-
-      if(newPosts.length < 30) hasMore = false;
-
-      if(isLoadMore){
-        const cached = getCache('feed_posts') || [];
-        const combined = [...cached,...newPosts];
-        setCache('feed_posts', combined);
-        document.getElementById('feed').insertAdjacentHTML('beforeend', newPosts.map(postHTML).join(''));
-        setupScrollTracker();
-        page++;
-        loadMoreEl.innerText = hasMore? "" : "No more posts";
-      }else{
-        const cached=getCache('feed_posts');
-        const isDifferent=!cached || cached.length!==newPosts.length || cached[0]?._id!==newPosts[0]?._id;
-        if(isDifferent ||!cached?.length){
-          renderFeed(newPosts, cached?.length? false : true);
-          setCache('feed_posts', newPosts);
-        }
-        page = 2;
-        loadMoreEl.innerText = "";
+      // Only re-render if different or first time
+      const cached=getCache('feed_posts');
+      const cachedStr=JSON.stringify(cached||[]);
+      const freshStr=JSON.stringify(posts||[]);
+      if(cachedStr!==freshStr ||!cached){
+        renderFeed(posts);
       }
+      setCache('feed_posts', posts);
     }catch(e){
-      console.log('fetch error', e.name);
-      loadMoreEl.innerText = "";
+      console.log('fetch error', e);
+      const cached2=getCache('feed_posts');
+      if(!cached2 ||!cached2.length){
+        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#aaa'>Failed to load feed<br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer'>Retry</button></p>";
+      }
     }
-    isLoadingMore = false;
   }
-
-  // INFINITE SCROLL - TikTok style
-  window.addEventListener('scroll', ()=>{
-    if(!hasMore || isLoadingMore) return;
-    if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 1200){
-      fetchFresh(true);
-    }
-  }, {passive:true});
 
   async function like(id, showBigHeart){
     const btn=document.getElementById('like-btn-'+id);
     const likesEl=document.getElementById('likes-'+id);
     const bigHeart=document.getElementById('big-heart-'+id);
-    if(!btn) return;
+    if(!btn ||!likesEl) return;
     const wasLiked=btn.classList.contains('liked');
     if(wasLiked){
       btn.classList.remove('liked'); btn.innerText='🤍';
-      likesEl.innerText=Math.max(0, parseInt(likesEl.innerText)-1)+' likes';
+      likesEl.innerText=Math.max(0, parseInt(likesEl.innerText||'0')-1)+' likes';
     }else{
       btn.classList.add('liked'); btn.innerText='❤️';
-      likesEl.innerText=(parseInt(likesEl.innerText)+1)+' likes';
+      likesEl.innerText=(parseInt(likesEl.innerText||'0')+1)+' likes';
       btn.style.animation='none'; btn.offsetHeight; btn.style.animation='likePop 0.35s cubic-bezier(.17,.89,.32,1.49)';
     }
     if(showBigHeart &&!wasLiked && bigHeart){
@@ -296,26 +234,28 @@
       else p.likes.push(getMyId());
       setCache('feed_posts', posts);
     }
-    fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}});
+    try{ await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); }catch{}
   }
 
   async function comment(id){
     const input=document.getElementById('i-'+id);
     const t=input.value.trim(); if(!t) return; input.value='';
-    document.getElementById('c-'+id).insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`);
-    fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
+    const list=document.getElementById('c-'+id);
+    list.insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`);
+    try{
+      await fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
+      let posts=getCache('feed_posts')||[];
+      let p=posts.find(x=>x._id===id);
+      if(p){ if(!p.comments) p.comments=[]; p.comments.push({user:{username:'You'}, text:t}); setCache('feed_posts', posts); }
+    }catch{}
   }
 
   async function saveP(id){
-    fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}});
+    await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}});
     alert('Saved!');
   }
 
-  function logout(){
-    localStorage.removeItem('token');
-    localStorage.removeItem('last_post_id');
-    location.href='login.html';
-  }
+  function logout(){ localStorage.removeItem('token'); location.href='login.html'; }
 
   load();
   loadMsgBadge();
@@ -336,11 +276,12 @@
     const check=setInterval(async()=>{
       try{
         const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
-        if(r.ok){ UploadManager.hideBar(); clearInterval(check); fetchFresh(false); }
+        if(r.ok){ UploadManager.hideBar(); clearInterval(check); fetchFresh(); }
       }catch{}
     },3000);
     setTimeout(()=>{ UploadManager.hideBar(); clearInterval(check); },30000);
   }
 </script>
+
 </body>
 </html>
