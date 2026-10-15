@@ -511,6 +511,18 @@ app.delete('/api/posts/:id', authh, async (req, res) => {
   }
 });
 
+//EDIT NAME
+ app.put('/api/users/me', authh, async(req,res)=>{
+  const { username, displayName, bio, link } = req.body;
+  const update = {};
+  if(username) update.username = username;
+  if(displayName) update.displayName = displayName;
+  if(bio) update.bio = bio;
+  if(link) update.link = link;
+  const user = await User.findByIdAndUpdate(req.userId, update, {new:true});
+  res.json(user);
+});
+
 // UPDATE POST CAPTION
 // UPDATE POST CAPTION
 app.put('/api/posts/:id', authh, async (req, res) => {
