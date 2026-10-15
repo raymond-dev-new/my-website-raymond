@@ -8,55 +8,56 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
     a{color:inherit;text-decoration:none}
- .top{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);border-bottom:1px solid #262626;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
- .logo{font-family:cursive;font-size:24px}
- .wrap{max-width:470px;margin:0 auto;width:100%}
- .post{background:#000;border-bottom:1px solid #262626;padding-bottom:12px}
- .post-head{padding:12px 12px;display:flex;align-items:center;gap:10px}
- .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:bold;overflow:hidden;cursor:pointer}
- .avatar img{width:100%;height:100%;object-fit:cover}
- .post-head b{cursor:pointer}
- .media{width:100%;background:#111;min-height:300px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
- .media img,.media video{width:100%;max-height:580px;object-fit:contain;display:block}
- .cap{padding:8px 12px}
- .actions{display:flex;gap:16px;padding:8px 12px;font-size:24px;align-items:center}
- .actions span{cursor:pointer;user-select:none}
- .likes{padding:0 12px;font-weight:600;font-size:14px}
- .comment{padding:4px 12px;font-size:14px}
- .input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #1a1a1a}
- .input-row input{flex:1;background:transparent;border:none;color:#fff;outline:none}
- .input-row button{color:#0095f6;background:none;border:none;font-weight:600;cursor:pointer}
- .bottom{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;align-items:center;padding:10px 0;z-index:20}
- .bottom a{position:relative;font-size:22px}
- .msg-badge{position:absolute;top:-6px;right:-10px;background:#ff3040;color:#fff;min-width:18px;height:18px;border-radius:9px;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;padding:0 4px}
- .msg-badge.hide{display:none}
+.top{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);border-bottom:1px solid #262626;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:cursive;font-size:24px}
+.wrap{max-width:470px;margin:0 auto;width:100%}
+.post{background:#000;border-bottom:1px solid #262626;padding-bottom:12px}
+.post-head{padding:12px 12px;display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:bold;overflow:hidden;cursor:pointer}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.post-head b{cursor:pointer}
+.media{width:100%;background:#111;min-height:300px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.media img,.media video{width:100%;max-height:580px;object-fit:contain;display:block}
+.cap{padding:8px 12px}
+.actions{display:flex;gap:16px;padding:8px 12px;font-size:24px;align-items:center}
+.actions span{cursor:pointer;user-select:none}
+.likes{padding:0 12px;font-weight:600;font-size:14px}
+.comment{padding:4px 12px;font-size:14px}
+.input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #1a1a1a}
+.input-row input{flex:1;background:transparent;border:none;color:#fff;outline:none}
+.input-row button{color:#0095f6;background:none;border:none;font-weight:600;cursor:pointer}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;align-items:center;padding:10px 0;z-index:20}
+.bottom a{position:relative;font-size:22px}
+.msg-badge{position:absolute;top:-6px;right:-10px;background:#ff3040;color:#fff;min-width:18px;height:18px;border-radius:9px;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.msg-badge.hide{display:none}
     @media(min-width:768px){.post{border:1px solid #262626;border-radius:8px;margin:20px 0}.bottom{max-width:470px;margin:0 auto}}
- .logout{cursor:pointer;font-size:14px;color:#fff;background:#262626;padding:6px 12px;border-radius:6px}
- .hamburger{font-size:26px;cursor:pointer;margin-right:12px}
- .sidebar{position:fixed;top:0;left:-100%;width:85%;max-width:340px;height:100vh;background:#121212;z-index:99;transition:left 0.35s cubic-bezier(.4,0,.2,1);border-right:1px solid #262626;display:flex;flex-direction:column}
- .sidebar.open{left:0}
- .sidebar-top{padding:20px 16px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center}
- .close{font-size:28px;cursor:pointer}
- .sidebar-links{padding:12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
- .side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
- .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;display:none}
- .overlay.show{display:block}
- .card{background:#121212;border:1px solid #262626;border-radius:12px;padding:14px;margin-bottom:12px}
- .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px}
- .spinner{width:36px;height:36px;border:3px solid #262626;border-top:3px solid #fff;border-radius:50%;animation:spin 0.8s linear infinite}
+.logout{cursor:pointer;font-size:14px;color:#fff;background:#262626;padding:6px 12px;border-radius:6px}
+.hamburger{font-size:26px;cursor:pointer;margin-right:12px}
+.sidebar{position:fixed;top:0;left:-100%;width:85%;max-width:340px;height:100vh;background:#121212;z-index:99;transition:left 0.35s cubic-bezier(.4,0,.2,1);border-right:1px solid #262626;display:flex;flex-direction:column}
+.sidebar.open{left:0}
+.sidebar-top{padding:20px 16px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center}
+.close{font-size:28px;cursor:pointer}
+.sidebar-links{padding:12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;display:none}
+.overlay.show{display:block}
+.card{background:#121212;border:1px solid #262626;border-radius:12px;padding:14px;margin-bottom:12px}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid #262626;border-top:3px solid #fff;border-radius:50%;animation:spin 0.8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
- .like-btn{font-size:28px;transition:transform 0.15s;display:inline-block}
- .like-btn.liked{color:#ff2d55;animation:likePop 0.35s cubic-bezier(.17,.89,.32,1.49)}
- .like-btn:active{transform:scale(0.8)}
+.like-btn{font-size:28px;transition:transform 0.15s;display:inline-block}
+.like-btn.liked{color:#ff2d55;animation:likePop 0.35s cubic-bezier(.17,.89,.32,1.49)}
+.like-btn:active{transform:scale(0.8)}
     @keyframes likePop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
- .big-heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:80px;color:#ff2d55;pointer-events:none;opacity:0}
- .big-heart.show{animation:bigHeart 0.8s ease-out forwards}
+.big-heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:80px;color:#ff2d55;pointer-events:none;opacity:0}
+.big-heart.show{animation:bigHeart 0.8s ease-out forwards}
     @keyframes bigHeart{0%{transform:translate(-50%,-50%) scale(0);opacity:0}15%{transform:translate(-50%,-50%) scale(1.2);opacity:1}30%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(0);opacity:0}}
+.new-bar{position:sticky;top:50px;z-index:15;background:#0095f6;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;cursor:pointer;display:none}
+.new-bar.show{display:block}
   </style>
 </head>
 <body>
   <div class="overlay" id="overlay" onclick="closeAll()"></div>
-
   <div class="sidebar" id="sidebar">
     <div class="sidebar-top"><b>RAyMoNd Menu</b><span class="close" onclick="closeAll()">×</span></div>
     <div class="sidebar-links">
@@ -71,22 +72,24 @@
       <div class="side-link" onclick="logout()"><span>🚪</span> Logout</div>
     </div>
   </div>
-
   <div class="top">
     <div class="wrap" style="display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center"><span class="hamburger" onclick="openSidebar()">☰</span><span class="logo">RAyMoNd</span></div>
       <div style="display:flex;gap:14px;align-items:center"><a href="notification.html" style="font-size:22px">🤍</a><span class="logout" onclick="logout()">Logout</span></div>
     </div>
   </div>
-
+  <div class="new-bar" id="newBar" onclick="applyNewPosts()">↑ New posts available - Tap to refresh</div>
   <div class="wrap" id="feed"></div>
-
   <div class="bottom"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a><a href="reels.html">🎬</a><a href="notification.html"> 🔔 </a><a href="profile.html">👤</a></div>
 
 <script>
   const BASE = "https://raymonddomain.dev";
   const token = localStorage.getItem('token');
   if(!token) location.href = "login.html";
+
+  let pendingPosts = null;
+  let isFetching = false;
+  let lastPosObserver = null;
 
   function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null')}catch{return null} }
   function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
@@ -95,19 +98,16 @@
   function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
   function closeAll(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
   function goToProfile(userId){ if(!userId) return; location.href='profile.html?id='+userId; }
-
   function formatDate(d){
     if(!d) return "";
     const date = new Date(d);
-    const now = new Date();
-    const diff = Math.floor((now - date)/1000);
+    const diff = Math.floor((new Date() - date)/1000);
     if(diff < 60) return diff + "s ago";
     if(diff < 3600) return Math.floor(diff/60) + "m ago";
     if(diff < 86400) return Math.floor(diff/3600) + "h ago";
     if(diff < 604800) return Math.floor(diff/86400) + "d ago";
     return date.toLocaleDateString();
   }
-
   async function loadMsgBadge(){
     try{
       let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}});
@@ -125,7 +125,9 @@
       f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet<br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer'>Retry</button></p>";
       return;
     }
-    f.innerHTML=posts.map(p=>{
+    const first = posts.slice(0,15);
+    const rest = posts.slice(15);
+    f.innerHTML=first.map(p=>{
       const raw=p.mediaUrl||"";
       const mediaUrl=fixUrl(raw);
       const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
@@ -133,140 +135,172 @@
       const userId=p.user?._id||p.user;
       const username=p.user?.username||'user';
       const avatarUrl=fixUrl(p.user?.avatar);
-      const avatarHtml=avatarUrl?`<img src="${avatarUrl}" onclick="goToProfile('${userId}')" loading="lazy">`:username[0].toUpperCase();
+      const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
       const likes = p.likes || [];
       const isLiked = likes.includes(getMyId());
-      return `<div class="post" id="post-${p._id}">
+      return `<div class="post" data-id="${p._id}" id="post-${p._id}">
         <div class="post-head">
           <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
-          <div style="display:flex;flex-direction:column">
-            <b onclick="goToProfile('${userId}')">${username}</b>
-            <span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span>
-          </div>
+          <div style="display:flex;flex-direction:column"><b onclick="goToProfile('${userId}')">${username}</b><span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span></div>
         </div>
-        <div class="media" ondblclick="like('${p._id}', true)">
-          ${mediaHtml}
-          <div class="big-heart" id="big-heart-${p._id}">❤️</div>
-        </div>
+        <div class="media" ondblclick="like('${p._id}', true)">${mediaHtml}<div class="big-heart" id="big-heart-${p._id}">❤️</div></div>
         <div class="actions">
           <span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}', false)">${isLiked?'❤️':'🤍'}</span>
           <span onclick="document.getElementById('i-${p._id}').focus()">💬</span>
           <span onclick="saveP('${p._id}')">🔖</span>
         </div>
         <div class="likes" id="likes-${p._id}">${likes.length} likes</div>
-        <div class="cap"><b style="cursor:pointer" onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div>
-        <div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)} • ${new Date(p.createdAt).toLocaleDateString()}</div>
-        <div id="c-${p._id}">${(p.comments||[]).map(c=>`<div class="comment"><b style="cursor:pointer" onclick="goToProfile('${c.user?._id||''}')">${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div>
+        <div class="cap"><b onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div>
+        <div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)}</div>
+        <div id="c-${p._id}">${(p.comments||[]).slice(-2).map(c=>`<div class="comment"><b>${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div>
         <div class="input-row"><input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')"><button onclick="comment('${p._id}')">Post</button></div>
       </div>`;
     }).join('');
+    setupTracker();
+    restorePos();
+    if(rest.length){
+      setTimeout(()=>{
+        f.insertAdjacentHTML('beforeend', rest.map(p=>{
+          const raw=p.mediaUrl||""; const mediaUrl=fixUrl(raw);
+          const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
+          const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline preload="metadata"></video>`:`<img src="${mediaUrl}" loading="lazy" />`;
+          const userId=p.user?._id||p.user; const username=p.user?.username||'user';
+          const avatarUrl=fixUrl(p.user?.avatar); const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
+          const likes=p.likes||[]; const isLiked=likes.includes(getMyId());
+          return `<div class="post" data-id="${p._id}" id="post-${p._id}"><div class="post-head"><div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div><div style="display:flex;flex-direction:column"><b onclick="goToProfile('${userId}')">${username}</b><span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span></div></div><div class="media" ondblclick="like('${p._id}', true)">${mediaHtml}<div class="big-heart" id="big-heart-${p._id}">❤️</div></div><div class="actions"><span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}', false)">${isLiked?'❤️':'🤍'}</span><span onclick="document.getElementById('i-${p._id}').focus()">💬</span><span onclick="saveP('${p._id}')">🔖</span></div><div class="likes" id="likes-${p._id}">${likes.length} likes</div><div class="cap"><b onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div><div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)}</div><div id="c-${p._id}">${(p.comments||[]).slice(-2).map(c=>`<div class="comment"><b>${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div><div class="input-row"><input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')"><button onclick="comment('${p._id}')">Post</button></div></div>`;
+        }).join(''));
+        setupTracker();
+      },250);
+    }
   }
 
-  function showSpinner(){
-    document.getElementById('feed').innerHTML=`<div class="loading-screen"><div class="spinner"></div><div style="color:#aaa;font-size:14px">Loading feed...</div></div>`;
+  function setupTracker(){
+    if(lastPosObserver) lastPosObserver.disconnect();
+    lastPosObserver = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting) localStorage.setItem('last_post_id', e.target.dataset.id); });
+    },{threshold:0.5});
+    document.querySelectorAll('.post').forEach(p=>lastPosObserver.observe(p));
+  }
+  function restorePos(){
+    const lastId=localStorage.getItem('last_post_id');
+    if(lastId) requestAnimationFrame(()=>{ const el=document.getElementById('post-'+lastId); if(el) el.scrollIntoView({block:'start'}); });
+  }
+  function showSpinner(){ document.getElementById('feed').innerHTML=`<div class="loading-screen"><div class="spinner"></div><div style="color:#aaa">Loading...</div></div>`; }
+  function applyNewPosts(){
+    if(pendingPosts){
+      renderFeed(pendingPosts);
+      setCache('feed_posts', pendingPosts);
+      pendingPosts=null;
+      document.getElementById('newBar').classList.remove('show');
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
   }
 
+  // === CACHE FIRST LOGIC ===
   async function load(){
     const cached = getCache('feed_posts');
-
-    // CACHE FIRST LOGIC
-    if(cached && Array.isArray(cached) && cached.length>0){
-      renderFeed(cached);
-      // update in background silently
-      fetchFresh();
+    if(cached && cached.length){
+      renderFeed(cached); // INSTANT from storage
+      fetchFresh(); // background fetch
     }else{
-      // No cache -> show spinner
       showSpinner();
       await fetchFresh();
     }
   }
 
   async function fetchFresh(){
+    if(isFetching) return;
+    isFetching=true;
     try{
       const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
       if(!r.ok){
         if(r.status===401){ localStorage.removeItem('token'); location.href='login.html'; return; }
         throw new Error('API error '+r.status);
       }
-      const text=await r.text();
-      let posts;
-      try{ posts=JSON.parse(text); }catch{ throw new Error('Invalid JSON'); }
-      if(!Array.isArray(posts)){ posts=posts.posts||posts.data||[]; }
+      let posts=await r.json();
+      if(!Array.isArray(posts)) posts=posts.posts||posts.data||[];
 
-      // Only re-render if different or first time
-      const cached=getCache('feed_posts');
-      const cachedStr=JSON.stringify(cached||[]);
-      const freshStr=JSON.stringify(posts||[]);
-      if(cachedStr!==freshStr ||!cached){
-        renderFeed(posts);
-      }
+      const cached = getCache('feed_posts');
+
+      // SAVE TO STORAGE EVERY TIME WE FETCH FROM DB - THIS IS KEY
       setCache('feed_posts', posts);
+      localStorage.setItem('feed_last_fetch', Date.now().toString());
+
+      // FAST CHECK - don't use JSON.stringify (slow)
+      const isDifferent =!cached || cached.length!==posts.length || cached[0]?._id!==posts[0]?._id;
+
+      if(isDifferent){
+        if(window.scrollY < 400 && document.getElementById('feed').children.length){
+          // User at top - auto show new posts
+          if(cached) {
+            pendingPosts = posts;
+            document.getElementById('newBar').classList.add('show');
+            // Auto refresh after 1s if still at top
+            setTimeout(()=>{ if(window.scrollY < 400 && pendingPosts) applyNewPosts(); }, 1000);
+          } else {
+            renderFeed(posts);
+          }
+        } else if(!cached){
+          renderFeed(posts);
+        } else {
+          // User scrolled down - show bar
+          pendingPosts = posts;
+          document.getElementById('newBar').classList.add('show');
+        }
+      }
     }catch(e){
       console.log('fetch error', e);
-      const cached2=getCache('feed_posts');
-      if(!cached2 ||!cached2.length){
-        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#aaa'>Failed to load feed<br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer'>Retry</button></p>";
+      if(!getCache('feed_posts')?.length){
+        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#aaa'>Failed to load<br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px'>Retry</button></p>";
       }
     }
+    isFetching=false;
   }
 
   async function like(id, showBigHeart){
     const btn=document.getElementById('like-btn-'+id);
     const likesEl=document.getElementById('likes-'+id);
     const bigHeart=document.getElementById('big-heart-'+id);
-    if(!btn ||!likesEl) return;
+    if(!btn) return;
     const wasLiked=btn.classList.contains('liked');
-    if(wasLiked){
-      btn.classList.remove('liked'); btn.innerText='🤍';
-      likesEl.innerText=Math.max(0, parseInt(likesEl.innerText||'0')-1)+' likes';
-    }else{
-      btn.classList.add('liked'); btn.innerText='❤️';
-      likesEl.innerText=(parseInt(likesEl.innerText||'0')+1)+' likes';
-      btn.style.animation='none'; btn.offsetHeight; btn.style.animation='likePop 0.35s cubic-bezier(.17,.89,.32,1.49)';
-    }
-    if(showBigHeart &&!wasLiked && bigHeart){
-      bigHeart.classList.remove('show'); void bigHeart.offsetWidth; bigHeart.classList.add('show');
-    }
+    if(wasLiked){ btn.classList.remove('liked'); btn.innerText='🤍'; likesEl.innerText=Math.max(0, parseInt(likesEl.innerText)-1)+' likes'; }
+    else { btn.classList.add('liked'); btn.innerText='❤️'; likesEl.innerText=(parseInt(likesEl.innerText)+1)+' likes'; btn.style.animation='none'; btn.offsetHeight; btn.style.animation='likePop 0.35s cubic-bezier(.17,.89,.32,1.49)'; }
+    if(showBigHeart &&!wasLiked && bigHeart){ bigHeart.classList.remove('show'); void bigHeart.offsetWidth; bigHeart.classList.add('show'); }
     let posts=getCache('feed_posts')||[];
     let p=posts.find(x=>x._id===id);
-    if(p){
-      if(wasLiked) p.likes=p.likes.filter(x=>x!==getMyId());
-      else p.likes.push(getMyId());
-      setCache('feed_posts', posts);
-    }
-    try{ await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); }catch{}
+    if(p){ if(wasLiked) p.likes=p.likes.filter(x=>x!==getMyId()); else p.likes.push(getMyId()); setCache('feed_posts', posts); }
+    fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}});
   }
-
   async function comment(id){
     const input=document.getElementById('i-'+id);
     const t=input.value.trim(); if(!t) return; input.value='';
-    const list=document.getElementById('c-'+id);
-    list.insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`);
-    try{
-      await fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
-      let posts=getCache('feed_posts')||[];
-      let p=posts.find(x=>x._id===id);
-      if(p){ if(!p.comments) p.comments=[]; p.comments.push({user:{username:'You'}, text:t}); setCache('feed_posts', posts); }
-    }catch{}
+    document.getElementById('c-'+id).insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`);
+    fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
   }
-
-  async function saveP(id){
-    await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}});
-    alert('Saved!');
-  }
-
+  async function saveP(id){ fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); alert('Saved!'); }
   function logout(){ localStorage.removeItem('token'); location.href='login.html'; }
 
   load();
   loadMsgBadge();
   setInterval(loadMsgBadge,5000);
 
+  // Keep fetching in background every 30s even when user on other pages
+  // When he comes back, cached will already be fresh
+  setInterval(()=>{ fetchFresh(); }, 30000);
+
+  // If user navigates away, we already saved in storage, so next time instant
+  window.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible'){
+      const lastFetch = parseInt(localStorage.getItem('feed_last_fetch')||'0');
+      if(Date.now() - lastFetch > 20000) fetchFresh(); // if >20s ago, refresh in bg
+    }
+  });
+
   const ball=document.querySelector('.ball')
   const Country=document.querySelector('.Country')
   ball.addEventListener('click', async()=>{ fetch('https://raymonddomain.dev/api/sync'); window.location.href="football.html"; });
   Country.addEventListener('click', ()=>{ fetch('https://raymonddomain.dev/api/fetch-now'); window.location.href="countrymatch.html"; })
 </script>
-
 <script src="upload-manager.js"></script>
 <script>
   const upData=localStorage.getItem('uploading');
@@ -282,6 +316,5 @@
     setTimeout(()=>{ UploadManager.hideBar(); clearInterval(check); },30000);
   }
 </script>
-
 </body>
 </html>

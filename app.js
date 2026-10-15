@@ -546,6 +546,8 @@ app.put('/api/posts/:id', authh, async (req, res) => {
   }
 });
 
+
+
 // POSTS FEED - Shows Cloudinary posts
 app.get('/api/posts/feed', authh, async (req, res) => {
   try {
@@ -559,9 +561,9 @@ app.get('/api/posts/feed', authh, async (req, res) => {
     return res.status(500).json({ msg: 'Could not load feed.' });
   }
 });
-
-// VIDEO REELS - Shows Cloudinary videos
 /*
+// VIDEO REELS - Shows Cloudinary videos
+
 app.get('/api/posts/reels', async (req, res) => {
   try {
     const reels = await Post.find({ type: 'video' })
