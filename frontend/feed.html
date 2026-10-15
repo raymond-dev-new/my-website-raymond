@@ -12,15 +12,13 @@
 .logo{font-family:cursive;font-size:24px}
 .wrap{max-width:470px;margin:0 auto;width:100%}
 .post{background:#000;border-bottom:1px solid #262626;padding-bottom:12px}
-.post-head{padding:12px 12px;display:flex;align-items:center;gap:10px}
+.post-head{padding:12px;display:flex;align-items:center;gap:10px}
 .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:bold;overflow:hidden;cursor:pointer}
 .avatar img{width:100%;height:100%;object-fit:cover}
-.post-head b{cursor:pointer}
-.media{width:100%;background:#111;min-height:300px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
-.media img,.media video{width:100%;max-height:580px;object-fit:contain;display:block}
+.media{width:100%;background:#111;min-height:380px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.media img,.media video{width:100%;max-height:580px;object-fit:contain;display:block;background:#000}
 .cap{padding:8px 12px}
-.actions{display:flex;gap:16px;padding:8px 12px;font-size:24px;align-items:center}
-.actions span{cursor:pointer;user-select:none}
+.actions{display:flex;gap:16px;padding:8px 12px;font-size:24px}
 .likes{padding:0 12px;font-weight:600;font-size:14px}
 .comment{padding:4px 12px;font-size:14px}
 .input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #1a1a1a}
@@ -30,10 +28,9 @@
 .bottom a{position:relative;font-size:22px}
 .msg-badge{position:absolute;top:-6px;right:-10px;background:#ff3040;color:#fff;min-width:18px;height:18px;border-radius:9px;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .msg-badge.hide{display:none}
-    @media(min-width:768px){.post{border:1px solid #262626;border-radius:8px;margin:20px 0}.bottom{max-width:470px;margin:0 auto}}
 .logout{cursor:pointer;font-size:14px;color:#fff;background:#262626;padding:6px 12px;border-radius:6px}
 .hamburger{font-size:26px;cursor:pointer;margin-right:12px}
-.sidebar{position:fixed;top:0;left:-100%;width:85%;max-width:340px;height:100vh;background:#121212;z-index:99;transition:left 0.35s cubic-bezier(.4,0,.2,1);border-right:1px solid #262626;display:flex;flex-direction:column}
+.sidebar{position:fixed;top:0;left:-100%;width:85%;max-width:340px;height:100vh;background:#121212;z-index:99;transition:left 0.35s;border-right:1px solid #262626;display:flex;flex-direction:column}
 .sidebar.open{left:0}
 .sidebar-top{padding:20px 16px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center}
 .close{font-size:28px;cursor:pointer}
@@ -41,19 +38,16 @@
 .side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;display:none}
 .overlay.show{display:block}
-.card{background:#121212;border:1px solid #262626;border-radius:12px;padding:14px;margin-bottom:12px}
-.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px}
-.spinner{width:36px;height:36px;border:3px solid #262626;border-top:3px solid #fff;border-radius:50%;animation:spin 0.8s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-.like-btn{font-size:28px;transition:transform 0.15s;display:inline-block}
-.like-btn.liked{color:#ff2d55;animation:likePop 0.35s cubic-bezier(.17,.89,.32,1.49)}
-.like-btn:active{transform:scale(0.8)}
-    @keyframes likePop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
+.like-btn{font-size:28px}
+.like-btn.liked{color:#ff2d55}
 .big-heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:80px;color:#ff2d55;pointer-events:none;opacity:0}
 .big-heart.show{animation:bigHeart 0.8s ease-out forwards}
-    @keyframes bigHeart{0%{transform:translate(-50%,-50%) scale(0);opacity:0}15%{transform:translate(-50%,-50%) scale(1.2);opacity:1}30%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(0);opacity:0}}
+@keyframes bigHeart{0%{transform:translate(-50%,-50%) scale(0);opacity:0}15%{transform:translate(-50%,-50%) scale(1.2);opacity:1}30%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(0);opacity:0}}
 .new-bar{position:sticky;top:50px;z-index:15;background:#0095f6;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;cursor:pointer;display:none}
 .new-bar.show{display:block}
+.skel{animation:pulse 1.5s infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
+.load-more{padding:20px;text-align:center;color:#555;font-size:13px}
   </style>
 </head>
 <body>
@@ -78,40 +72,69 @@
       <div style="display:flex;gap:14px;align-items:center"><a href="notification.html" style="font-size:22px">🤍</a><span class="logout" onclick="logout()">Logout</span></div>
     </div>
   </div>
-  <div class="new-bar" id="newBar" onclick="applyNewPosts()">↑ New posts available - Tap to refresh</div>
-  <div class="wrap" id="feed"></div>
-  <div class="bottom"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬<span id="msgCount" class="msg-badge hide">0</span></a><a href="reels.html">🎬</a><a href="notification.html"> 🔔 </a><a href="profile.html">👤</a></div>
+  <div class="new-bar" id="newBar" onclick="applyNewPosts()">↑ New posts - Tap</div>
+  <div class="wrap" id="feed">
+    <div class="post skel"><div style="padding:12px;display:flex;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:#222"></div><div style="width:100px;height:12px;background:#222;margin-top:10px;border-radius:6px"></div></div><div style="width:100%;height:380px;background:#151515"></div></div>
+    <div class="post skel"><div style="padding:12px;display:flex;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:#222"></div><div style="width:100px;height:12px;background:#222;margin-top:10px;border-radius:6px"></div></div><div style="width:100%;height:380px;background:#151515"></div></div>
+  </div>
+  <div id="loadMore" class="load-more" style="display:none">Loading more...</div>
+  <div style="height:70px"></div>
+  <div class="bottom">
+    <a href="feed.html" onclick="if(sessionStorage.getItem('feed_html')){ event.preventDefault(); restorePageState(); }">🏠</a>
+    <a href="explore.html" onclick="savePageState()">🔍</a>
+    <a href="create.html" onclick="savePageState()">➕</a>
+    <a href="message.html" onclick="savePageState()">💬<span id="msgCount" class="msg-badge hide">0</span></a>
+    <a href="reels.html" onclick="savePageState()">🎬</a>
+    <a href="notification.html" onclick="savePageState()">🔔</a>
+    <a href="profile.html" onclick="savePageState()">👤</a>
+  </div>
 
 <script>
   const BASE = "https://raymonddomain.dev";
   const token = localStorage.getItem('token');
   if(!token) location.href = "login.html";
 
-  let pendingPosts = null;
-  let isFetching = false;
-  let lastPosObserver = null;
+  let currentPage=1, isLoadingMore=false, hasMore=true, allPosts=[], pendingPosts=null;
 
-  function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null')}catch{return null} }
-  function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
-  function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; return u; }
+  function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
   function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
   function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
   function closeAll(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-  function goToProfile(userId){ if(!userId) return; location.href='profile.html?id='+userId; }
-  function formatDate(d){
-    if(!d) return "";
-    const date = new Date(d);
-    const diff = Math.floor((new Date() - date)/1000);
-    if(diff < 60) return diff + "s ago";
-    if(diff < 3600) return Math.floor(diff/60) + "m ago";
-    if(diff < 86400) return Math.floor(diff/3600) + "h ago";
-    if(diff < 604800) return Math.floor(diff/86400) + "d ago";
-    return date.toLocaleDateString();
+  function goToProfile(id){ savePageState(); if(id) location.href='profile.html?id='+id; }
+  function formatDate(d){ if(!d) return ""; const date=new Date(d); const diff=Math.floor((new Date()-date)/1000); if(diff<60) return diff+"s ago"; if(diff<3600) return Math.floor(diff/60)+"m ago"; if(diff<86400) return Math.floor(diff/3600)+"h ago"; return date.toLocaleDateString(); }
+
+  function savePageState(){
+    const feedEl=document.getElementById('feed');
+    if(feedEl && feedEl.innerHTML &&!feedEl.innerHTML.includes('skel') &&!feedEl.innerHTML.includes('Failed')){
+      sessionStorage.setItem('feed_html', feedEl.innerHTML);
+      sessionStorage.setItem('feed_scroll', window.scrollY.toString());
+      sessionStorage.setItem('feed_time', Date.now().toString());
+      sessionStorage.setItem('feed_page', currentPage.toString());
+      sessionStorage.setItem('feed_all', JSON.stringify(allPosts));
+    }
   }
+  function restorePageState(){
+    const html=sessionStorage.getItem('feed_html');
+    const scroll=sessionStorage.getItem('feed_scroll');
+    const time=parseInt(sessionStorage.getItem('feed_time')||'0');
+    const page=parseInt(sessionStorage.getItem('feed_page')||'1');
+    const savedAll=sessionStorage.getItem('feed_all');
+    if(html && Date.now()-time < 10*60*1000){
+      document.getElementById('feed').innerHTML=html;
+      currentPage=page;
+      if(savedAll){ try{ allPosts=JSON.parse(savedAll); }catch{} }
+      requestAnimationFrame(()=>{ window.scrollTo(0, parseInt(scroll||'0')); });
+      return true;
+    }
+    return false;
+  }
+
+  window.addEventListener('pagehide', savePageState);
+  window.addEventListener('beforeunload', savePageState);
+
   async function loadMsgBadge(){
     try{
       let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}});
-      if(!r.ok) return;
       let map=await r.json();
       let total=Object.values(map).reduce((a,b)=>a+b,0);
       let el=document.getElementById('msgCount');
@@ -119,201 +142,103 @@
     }catch{}
   }
 
-  function renderFeed(posts){
+  function renderPosts(posts, append=false){
     const f=document.getElementById('feed');
-    if(!posts ||!Array.isArray(posts) ||!posts.length){
-      f.innerHTML="<p style='text-align:center;padding:40px'>No posts yet<br><br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer'>Retry</button></p>";
-      return;
-    }
-    const first = posts.slice(0,15);
-    const rest = posts.slice(15);
-    f.innerHTML=first.map(p=>{
-      const raw=p.mediaUrl||"";
-      const mediaUrl=fixUrl(raw);
+    if(!append) f.innerHTML="";
+    if(posts.length===0 &&!append){ f.innerHTML="<p style='text-align:center;padding:60px;color:#777'>No posts yet</p>"; return; }
+    const html=posts.map(p=>{
+      const raw=p.mediaUrl||""; const mediaUrl=fixUrl(raw);
       const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
-      const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline preload="metadata"></video>`:`<img src="${mediaUrl}" loading="lazy" decoding="async" />`;
-      const userId=p.user?._id||p.user;
-      const username=p.user?.username||'user';
-      const avatarUrl=fixUrl(p.user?.avatar);
-      const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
-      const likes = p.likes || [];
-      const isLiked = likes.includes(getMyId());
-      return `<div class="post" data-id="${p._id}" id="post-${p._id}">
-        <div class="post-head">
-          <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
-          <div style="display:flex;flex-direction:column"><b onclick="goToProfile('${userId}')">${username}</b><span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span></div>
-        </div>
-        <div class="media" ondblclick="like('${p._id}', true)">${mediaHtml}<div class="big-heart" id="big-heart-${p._id}">❤️</div></div>
-        <div class="actions">
-          <span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}', false)">${isLiked?'❤️':'🤍'}</span>
-          <span onclick="document.getElementById('i-${p._id}').focus()">💬</span>
-          <span onclick="saveP('${p._id}')">🔖</span>
-        </div>
-        <div class="likes" id="likes-${p._id}">${likes.length} likes</div>
-        <div class="cap"><b onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div>
-        <div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)}</div>
-        <div id="c-${p._id}">${(p.comments||[]).slice(-2).map(c=>`<div class="comment"><b>${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div>
-        <div class="input-row"><input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')"><button onclick="comment('${p._id}')">Post</button></div>
-      </div>`;
+      const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline preload="metadata"></video>`:`<img src="${mediaUrl}" loading="lazy" />`;
+      const userId=p.user?._id||p.user; const username=p.user?.username||'user';
+      const avatarUrl=fixUrl(p.user?.avatar); const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
+      const likes=p.likes||[]; const isLiked=likes.includes(getMyId());
+      return `<div class="post" id="post-${p._id}"><div class="post-head"><div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div><div style="display:flex;flex-direction:column"><b onclick="goToProfile('${userId}')">${username}</b><span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span></div></div><div class="media" ondblclick="like('${p._id}',true)">${mediaHtml}<div class="big-heart" id="big-heart-${p._id}">❤️</div></div><div class="actions"><span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}',false)">${isLiked?'❤️':'🤍'}</span><span>💬</span><span onclick="saveP('${p._id}')">🔖</span></div><div class="likes" id="likes-${p._id}">${likes.length} likes</div><div class="cap"><b>${username}</b> ${p.caption||''}</div><div id="c-${p._id}">${(p.comments||[]).slice(-2).map(c=>`<div class="comment"><b>${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div><div class="input-row"><input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')"><button onclick="comment('${p._id}')">Post</button></div></div>`;
     }).join('');
-    setupTracker();
-    restorePos();
-    if(rest.length){
-      setTimeout(()=>{
-        f.insertAdjacentHTML('beforeend', rest.map(p=>{
-          const raw=p.mediaUrl||""; const mediaUrl=fixUrl(raw);
-          const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
-          const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline preload="metadata"></video>`:`<img src="${mediaUrl}" loading="lazy" />`;
-          const userId=p.user?._id||p.user; const username=p.user?.username||'user';
-          const avatarUrl=fixUrl(p.user?.avatar); const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
-          const likes=p.likes||[]; const isLiked=likes.includes(getMyId());
-          return `<div class="post" data-id="${p._id}" id="post-${p._id}"><div class="post-head"><div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div><div style="display:flex;flex-direction:column"><b onclick="goToProfile('${userId}')">${username}</b><span style="font-size:11px;color:#8e8e8e">${formatDate(p.createdAt)}</span></div></div><div class="media" ondblclick="like('${p._id}', true)">${mediaHtml}<div class="big-heart" id="big-heart-${p._id}">❤️</div></div><div class="actions"><span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}', false)">${isLiked?'❤️':'🤍'}</span><span onclick="document.getElementById('i-${p._id}').focus()">💬</span><span onclick="saveP('${p._id}')">🔖</span></div><div class="likes" id="likes-${p._id}">${likes.length} likes</div><div class="cap"><b onclick="goToProfile('${userId}')">${username}</b> ${p.caption||''}</div><div style="padding:0 12px;font-size:12px;color:#8e8e8e">${formatDate(p.createdAt)}</div><div id="c-${p._id}">${(p.comments||[]).slice(-2).map(c=>`<div class="comment"><b>${c.user?.username||'user'}</b> ${c.text}</div>`).join('')}</div><div class="input-row"><input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')"><button onclick="comment('${p._id}')">Post</button></div></div>`;
-        }).join(''));
-        setupTracker();
-      },250);
-    }
+    if(append) f.insertAdjacentHTML('beforeend', html);
+    else f.innerHTML=html;
+    savePageState();
   }
 
-  function setupTracker(){
-    if(lastPosObserver) lastPosObserver.disconnect();
-    lastPosObserver = new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{ if(e.isIntersecting) localStorage.setItem('last_post_id', e.target.dataset.id); });
-    },{threshold:0.5});
-    document.querySelectorAll('.post').forEach(p=>lastPosObserver.observe(p));
-  }
-  function restorePos(){
-    const lastId=localStorage.getItem('last_post_id');
-    if(lastId) requestAnimationFrame(()=>{ const el=document.getElementById('post-'+lastId); if(el) el.scrollIntoView({block:'start'}); });
-  }
-  function showSpinner(){ document.getElementById('feed').innerHTML=`<div class="loading-screen"><div class="spinner"></div><div style="color:#aaa">Loading...</div></div>`; }
-  function applyNewPosts(){
-    if(pendingPosts){
-      renderFeed(pendingPosts);
-      setCache('feed_posts', pendingPosts);
-      pendingPosts=null;
-      document.getElementById('newBar').classList.remove('show');
-      window.scrollTo({top:0, behavior:'smooth'});
-    }
-  }
+  function applyNewPosts(){ if(pendingPosts){ allPosts=pendingPosts; currentPage=1; hasMore=true; renderPosts(allPosts,false); pendingPosts=null; document.getElementById('newBar').classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'}); } }
 
-  // === CACHE FIRST LOGIC ===
-  async function load(){
-    const cached = getCache('feed_posts');
-    if(cached && cached.length){
-      renderFeed(cached); // INSTANT from storage
-      fetchFresh(); // background fetch
+  async function load(isNext=false){
+    if(isNext){
+      if(isLoadingMore||!hasMore) return;
+      isLoadingMore=true;
+      currentPage++;
+      document.getElementById('loadMore').style.display='block';
     }else{
-      showSpinner();
-      await fetchFresh();
+      if(restorePageState()){ loadMsgBadge(); return; }
+      currentPage=1; allPosts=[]; hasMore=true;
     }
-  }
-
-  async function fetchFresh(){
-    if(isFetching) return;
-    isFetching=true;
     try{
-      const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
-      if(!r.ok){
-        if(r.status===401){ localStorage.removeItem('token'); location.href='login.html'; return; }
-        throw new Error('API error '+r.status);
-      }
+      const r=await fetch(`${BASE}/api/posts/feed?page=${currentPage}&limit=12`,{headers:{authorization:token}});
+      if(r.status===401){ localStorage.removeItem('token'); location.href='login.html'; return; }
+      if(!r.ok) throw new Error('feed '+r.status);
       let posts=await r.json();
-      if(!Array.isArray(posts)) posts=posts.posts||posts.data||[];
+      if(!Array.isArray(posts)) posts=posts.posts||posts.data||posts.items||[];
 
-      const cached = getCache('feed_posts');
+      if(posts.length<12) hasMore=false;
+      if(posts.length===0 && isNext){ hasMore=false; document.getElementById('loadMore').innerText='No more posts'; return; }
 
-      // SAVE TO STORAGE EVERY TIME WE FETCH FROM DB - THIS IS KEY
-      setCache('feed_posts', posts);
-      localStorage.setItem('feed_last_fetch', Date.now().toString());
-
-      // FAST CHECK - don't use JSON.stringify (slow)
-      const isDifferent =!cached || cached.length!==posts.length || cached[0]?._id!==posts[0]?._id;
-
-      if(isDifferent){
-        if(window.scrollY < 400 && document.getElementById('feed').children.length){
-          // User at top - auto show new posts
-          if(cached) {
-            pendingPosts = posts;
-            document.getElementById('newBar').classList.add('show');
-            // Auto refresh after 1s if still at top
-            setTimeout(()=>{ if(window.scrollY < 400 && pendingPosts) applyNewPosts(); }, 1000);
-          } else {
-            renderFeed(posts);
-          }
-        } else if(!cached){
-          renderFeed(posts);
-        } else {
-          // User scrolled down - show bar
-          pendingPosts = posts;
-          document.getElementById('newBar').classList.add('show');
-        }
+      if(isNext){
+        allPosts=[...allPosts,...posts];
+        renderPosts(posts,true);
+      }else{
+        allPosts=posts;
+        renderPosts(posts,false);
+        localStorage.setItem('feed_last_fetch', Date.now().toString());
       }
     }catch(e){
-      console.log('fetch error', e);
-      if(!getCache('feed_posts')?.length){
-        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:40px;color:#aaa'>Failed to load<br><button onclick='load()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px'>Retry</button></p>";
+      console.log('load error',e);
+      if(!isNext){
+        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:60px;color:#777'>Failed<br><button onclick='location.reload()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px'>Retry</button></p>";
+      }else{
+        currentPage--; // revert page
       }
     }
-    isFetching=false;
+    isLoadingMore=false;
+    document.getElementById('loadMore').style.display='none';
   }
 
-  async function like(id, showBigHeart){
-    const btn=document.getElementById('like-btn-'+id);
-    const likesEl=document.getElementById('likes-'+id);
-    const bigHeart=document.getElementById('big-heart-'+id);
-    if(!btn) return;
-    const wasLiked=btn.classList.contains('liked');
-    if(wasLiked){ btn.classList.remove('liked'); btn.innerText='🤍'; likesEl.innerText=Math.max(0, parseInt(likesEl.innerText)-1)+' likes'; }
-    else { btn.classList.add('liked'); btn.innerText='❤️'; likesEl.innerText=(parseInt(likesEl.innerText)+1)+' likes'; btn.style.animation='none'; btn.offsetHeight; btn.style.animation='likePop 0.35s cubic-bezier(.17,.89,.32,1.49)'; }
-    if(showBigHeart &&!wasLiked && bigHeart){ bigHeart.classList.remove('show'); void bigHeart.offsetWidth; bigHeart.classList.add('show'); }
-    let posts=getCache('feed_posts')||[];
-    let p=posts.find(x=>x._id===id);
-    if(p){ if(wasLiked) p.likes=p.likes.filter(x=>x!==getMyId()); else p.likes.push(getMyId()); setCache('feed_posts', posts); }
-    fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}});
-  }
-  async function comment(id){
-    const input=document.getElementById('i-'+id);
-    const t=input.value.trim(); if(!t) return; input.value='';
-    document.getElementById('c-'+id).insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`);
-    fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
-  }
-  async function saveP(id){ fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); alert('Saved!'); }
-  function logout(){ localStorage.removeItem('token'); location.href='login.html'; }
-
-  load();
-  loadMsgBadge();
-  setInterval(loadMsgBadge,5000);
-
-  // Keep fetching in background every 30s even when user on other pages
-  // When he comes back, cached will already be fresh
-  setInterval(()=>{ fetchFresh(); }, 30000);
-
-  // If user navigates away, we already saved in storage, so next time instant
-  window.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState==='visible'){
-      const lastFetch = parseInt(localStorage.getItem('feed_last_fetch')||'0');
-      if(Date.now() - lastFetch > 20000) fetchFresh(); // if >20s ago, refresh in bg
+  // TikTok infinite scroll
+  window.addEventListener('scroll', ()=>{
+    if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 900){
+      load(true);
     }
+    // save scroll pos
+    clearTimeout(window._scrollTimer);
+    window._scrollTimer=setTimeout(()=>{ sessionStorage.setItem('feed_scroll', window.scrollY.toString()); },200);
   });
 
-  const ball=document.querySelector('.ball')
-  const Country=document.querySelector('.Country')
-  ball.addEventListener('click', async()=>{ fetch('https://raymonddomain.dev/api/sync'); window.location.href="football.html"; });
-  Country.addEventListener('click', ()=>{ fetch('https://raymonddomain.dev/api/fetch-now'); window.location.href="countrymatch.html"; })
+  async function like(id, showBig){ const btn=document.getElementById('like-btn-'+id); const likesEl=document.getElementById('likes-'+id); const big=document.getElementById('big-heart-'+id); if(!btn) return; const was=btn.classList.contains('liked'); if(was){ btn.classList.remove('liked'); btn.innerText='🤍'; if(likesEl) likesEl.innerText=Math.max(0,parseInt(likesEl.innerText)-1)+' likes'; } else{ btn.classList.add('liked'); btn.innerText='❤️'; if(likesEl) likesEl.innerText=(parseInt(likesEl.innerText)+1)+' likes'; if(showBig&&big){ big.classList.remove('show'); void big.offsetWidth; big.classList.add('show'); } } savePageState(); fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); }
+  async function comment(id){ const input=document.getElementById('i-'+id); const t=input.value.trim(); if(!t) return; input.value=''; document.getElementById('c-'+id).insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`); savePageState(); fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})}); }
+  async function saveP(id){ fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); alert('Saved!'); }
+  function logout(){ sessionStorage.clear(); localStorage.removeItem('token'); location.href='login.html'; }
+
+  load(false);
+  loadMsgBadge();
+  setInterval(loadMsgBadge,5000);
+  const ball=document.querySelector('.ball'); const Country=document.querySelector('.Country');
+  if(ball) ball.addEventListener('click', ()=>{ savePageState(); fetch(BASE+'/api/sync'); location.href="football.html"; });
+  if(Country) Country.addEventListener('click', ()=>{ savePageState(); fetch(BASE+'/api/fetch-now'); location.href="countrymatch.html"; });
 </script>
+
+<!-- upload-manager.js UNTOUCHED -->
 <script src="upload-manager.js"></script>
 <script>
   const upData=localStorage.getItem('uploading');
   if(upData){
     const d=JSON.parse(upData);
-    UploadManager.showBar(d.progress||20, d.status||'Uploading in background...');
+    if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading in background...');
     const check=setInterval(async()=>{
       try{
-        const r=await fetch(BASE+'/api/posts/feed',{headers:{authorization:token}});
-        if(r.ok){ UploadManager.hideBar(); clearInterval(check); fetchFresh(); }
+        const r=await fetch(BASE+'/api/posts/feed?page=1&limit=12',{headers:{authorization:token}});
+        if(r.ok){ if(window.UploadManager) UploadManager.hideBar(); clearInterval(check); load(false); }
       }catch{}
     },3000);
-    setTimeout(()=>{ UploadManager.hideBar(); clearInterval(check); },30000);
+    setTimeout(()=>{ if(window.UploadManager) UploadManager.hideBar(); clearInterval(check); },30000);
   }
 </script>
 </body>

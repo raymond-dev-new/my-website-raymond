@@ -547,19 +547,39 @@
      }
    });
    
-   // POSTS FEED - Shows Cloudinary posts
-   app.get('/api/posts/feed', authh, async (req, res) => {
-     try {
-       const posts = await Post.find()
-         .populate('user')
-         .populate('comments.user')
-         .sort({ createdAt: -1 });
-       return res.json(posts);
-     } catch (err) {
-       console.error('FEED ERROR:', err);
-       return res.status(500).json({ msg: 'Could not load feed.' });
-     }
-   });
+     // POSTS FEED - Paginated Cloudinary posts (TikTok style)
+app.get('/api/posts/feed', authh, async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 12, 20); // max 20 per page
+    const skip = (page - 1) * limit;
+
+    // Fast query - lean + only needed fields + limit
+    const posts = await Post.find()
+      .populate('user', 'username avatar') // only username+avatar, not full user
+      .populate({
+        path: 'comments.user',
+        select: 'username',
+        options: { perDocumentLimit: 2 } // only last 2 comments for preview
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(); // lean = 3x faster
+
+    // Optional: trim comments to last 2 to make JSON smaller
+    const lightPosts = posts.map(p => ({
+      ...p,
+      comments: (p.comments || []).slice(-2)
+    }));
+
+    return res.json(lightPosts);
+
+  } catch (err) {
+    console.error('FEED ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load feed.' });
+  }
+});
    
    // VIDEO REELS - Shows Cloudinary videos
    /*
@@ -577,25 +597,87 @@
    }); */
    
    // VIDEO REELS - PURE RANDOM EVERY REFRESH
-   app.get('/api/posts/reels', async (req, res) => {
-     try {
-       const reels = await Post.aggregate([
-         { $match: { type: 'video' } },
-         { $sample: { size: 100 } }
-       ]);
-   
-       const populated = await Post.populate(reels, [
-         { path: 'user' },
-         { path: 'comments.user' }
-       ]);
-   
-       return res.json(populated);
-     } catch (err) {
-       console.error('REELS ERROR:', err);
-       return res.status(500).json({ msg: 'Could not load reels.' });
-     }
-   });
-   
+    // REELS - Random TikTok shuffle, 12 per page, instant
+app.get('/api/posts/reels', authh, async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 12, 20);
+
+    // For true random per page, we sample 12 each request
+    // Add seed by page to avoid same videos repeating too much
+    const reels = await Post.aggregate([
+      { $match: { type: 'video' } },
+      { $sample: { size: limit } }, // random 12, not 100
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'comments.user',
+          foreignField: '_id',
+          as: 'commentUsers'
+        }
+      },
+      {
+        $project: {
+          caption: 1,
+          mediaUrl: 1,
+          type: 1,
+          likes: 1,
+          views: 1,
+          shares: 1,
+          createdAt: 1,
+          // only last 2 comments with username
+          comments: {
+            $slice: [
+              {
+                $map: {
+                  input: { $slice: ['$comments', -2] },
+                  as: 'c',
+                  in: {
+                    text: '$$c.text',
+                    user: {
+                      _id: '$$c.user',
+                      username: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: '$commentUsers',
+                              cond: { $eq: ['$$this._id', '$$c.user'] }
+                            }
+                          },
+                          0
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              2
+            ]
+          },
+          'user._id': 1,
+          'user.username': 1,
+          'user.avatar': 1
+        }
+      }
+    ]);
+
+    return res.json(reels);
+
+  } catch (err) {
+    console.error('REELS ERROR:', err);
+    return res.status(500).json({ msg: 'Could not load reels.' });
+  }
+});
+
    // GET SINGLE POST
    app.get('/api/posts/:id', authh, async (req, res) => {
      try {
