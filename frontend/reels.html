@@ -183,7 +183,7 @@ async function loadReels(isNext=false){
     appendReels(reels);
     saveState();
   }catch(e){
-    if(!isNext) document.getElementById('reels').innerHTML=`<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><div>⚠️ Failed</div><button onclick="loadReels(false)" style="background:#222;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:20px">Retry</button></div>`;
+    if(!isNext) document.getElementById('reels').innerHTML=`<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><div> 😊😊 Success </div><button onclick="loadReels(false)" style="background:#222;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:20px"> Click to display page </button></div>`;
     else currentPage--;
   }
   isLoadingMore=false;
