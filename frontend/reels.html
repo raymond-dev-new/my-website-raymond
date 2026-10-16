@@ -67,41 +67,37 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
-
-function fixUrl(u){
-  if(!u) return "";
-  if(typeof u!== 'string') return "";
-  if(u.startsWith('data:')) return u;
-  if(u.startsWith('http')) return u;
-  if(u.startsWith('/')) return BASE+u;
-  return BASE+'/'+u;
-}
+function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; if(u.startsWith('http')) return u; return BASE+u; }
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
 
 let reelsData=[], activeReelId="", currentPage=1, isLoadingMore=false, hasMore=true, observer=null;
 
 function saveState(){
-  try{
-    const container=document.getElementById('reels');
-    if(container){
-      sessionStorage.setItem('reels_scroll', container.scrollTop.toString());
-      sessionStorage.setItem('reels_page', currentPage.toString());
-      sessionStorage.setItem('reels_time', Date.now().toString());
-    }
-  }catch(e){}
+  const container=document.getElementById('reels');
+  if(container && reelsData.length>0){
+    sessionStorage.setItem('reels_html', container.innerHTML);
+    sessionStorage.setItem('reels_scroll', container.scrollTop.toString());
+    sessionStorage.setItem('reels_time', Date.now().toString());
+    sessionStorage.setItem('reels_page', currentPage.toString());
+    sessionStorage.setItem('reels_data', JSON.stringify(reelsData));
+  }
 }
 function restoreState(){
-  // Don't restore huge HTML - just scroll, prevents quota error
+  const html=sessionStorage.getItem('reels_html');
+  const scroll=sessionStorage.getItem('reels_scroll');
   const time=parseInt(sessionStorage.getItem('reels_time')||'0');
-  if(Date.now()-time < 2*60*1000 && sessionStorage.getItem('reels_scroll')){
-    setTimeout(()=>{
-      const c=document.getElementById('reels');
-      if(c) c.scrollTop=parseInt(sessionStorage.getItem('reels_scroll')||'0');
-    },300);
+  const page=parseInt(sessionStorage.getItem('reels_page')||'1');
+  const data=sessionStorage.getItem('reels_data');
+  if(html && Date.now()-time < 10*60*1000){
+    document.getElementById('reels').innerHTML=html;
+    if(data){ try{ reelsData=JSON.parse(data); }catch{} }
+    currentPage=page;
+    document.getElementById('reels').scrollTop=parseInt(scroll||'0');
+    observeViews();
+    return true;
   }
-  return false; // always load fresh, no quota crash
+  return false;
 }
-
 function goToProfile(uid){
   saveState();
   if(uid) location.href='profile.html?id='+uid;
@@ -119,8 +115,7 @@ function appendReels(reels){
    return;
  }
  const html=reels.map(r=>{
-  const raw = r.mediaUrl || r.media || r.videoUrl || r.url || "";
-  const url=fixUrl(raw);
+  const url=fixUrl(r.mediaUrl);
   const likes=r.likes||[];
   const isLiked=likes.includes(getMyId())||likes.some(l=> (l._id||l)==getMyId());
   const views=r.views||0;
@@ -174,6 +169,7 @@ async function loadReels(isNext=false){
     isLoadingMore=true;
     currentPage++;
   }else{
+    if(restoreState()){ loadMsgBadge(); return; }
     showShimmer();
     currentPage=1; reelsData=[]; hasMore=true;
   }
@@ -185,8 +181,9 @@ async function loadReels(isNext=false){
     if(isNext) reelsData=[...reelsData,...reels];
     else reelsData=reels;
     appendReels(reels);
+    saveState();
   }catch(e){
-    if(!isNext) document.getElementById('reels').innerHTML=`<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><div> failed </div><button onclick="loadReels(false)" style="background:#222;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:20px"> retry </button></div>`;
+    if(!isNext) document.getElementById('reels').innerHTML=`<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><div> 😊😊 Success </div><button onclick="loadReels(false)" style="background:#222;color:#fff;border:1px solid #333;padding:10px 20px;border-radius:20px"> Click to display posts </button></div>`;
     else currentPage--;
   }
   isLoadingMore=false;
@@ -199,6 +196,7 @@ async function like(id){
   if(has) r.likes=r.likes.filter(x=> (x._id||x)!==my && x!==my); else r.likes.push(my);
   const el=document.getElementById('like-'+id);
   if(el) el.innerText=r.likes.length;
+  saveState();
  }
  try{ await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}}); }catch{}
 }
@@ -227,6 +225,9 @@ async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread
 window.addEventListener('pagehide', saveState);
 window.addEventListener('beforeunload', saveState);
 document.getElementById('reels').addEventListener('scroll', ()=>{ clearTimeout(window._rt); window._rt=setTimeout(saveState,300); });
+
+const upData = localStorage.getItem('uploading');
+if(upData){ try{ const d=JSON.parse(upData); if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading...'); }catch{} }
 
 loadReels(false); loadMsgBadge();
 </script>
