@@ -80,7 +80,7 @@
   <div id="loadMore" class="load-more" style="display:none">Loading more...</div>
   <div style="height:70px"></div>
   <div class="bottom">
-    <a href="feed.html" onclick="if(sessionStorage.getItem('feed_html')){ event.preventDefault(); restorePageState(); }">🏠</a>
+    <a href="feed.html">🏠</a>
     <a href="explore.html" onclick="savePageState()">🔍</a>
     <a href="create.html" onclick="savePageState()">➕</a>
     <a href="message.html" onclick="savePageState()">💬<span id="msgCount" class="msg-badge hide">0</span></a>
@@ -93,10 +93,16 @@
   const BASE = "https://raymonddomain.dev";
   const token = localStorage.getItem('token');
   if(!token) location.href = "login.html";
+  let currentPage=1, isLoadingMore=false, hasMore=true, allPosts=[];
 
-  let currentPage=1, isLoadingMore=false, hasMore=true, allPosts=[], pendingPosts=null;
-
-  function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
+  function fixUrl(u){
+    if(!u) return "";
+    if(typeof u!== 'string') return "";
+    if(u.startsWith('data:')) return u;
+    if(u.startsWith('http')) return u;
+    if(u.startsWith('/')) return BASE+u;
+    return BASE+'/'+u;
+  }
   function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
   function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
   function closeAll(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
@@ -106,25 +112,17 @@
   function savePageState(){
     const feedEl=document.getElementById('feed');
     if(feedEl && feedEl.innerHTML &&!feedEl.innerHTML.includes('skel') &&!feedEl.innerHTML.includes('Failed')){
-      sessionStorage.setItem('feed_html', feedEl.innerHTML);
-      sessionStorage.setItem('feed_scroll', window.scrollY.toString());
-      sessionStorage.setItem('feed_time', Date.now().toString());
-      sessionStorage.setItem('feed_page', currentPage.toString());
-      sessionStorage.setItem('feed_all', JSON.stringify(allPosts));
+      try{
+        sessionStorage.setItem('feed_scroll', window.scrollY.toString());
+        sessionStorage.setItem('feed_page', currentPage.toString());
+        sessionStorage.setItem('feed_time', Date.now().toString());
+      }catch(e){}
     }
   }
   function restorePageState(){
-    const html=sessionStorage.getItem('feed_html');
-    const scroll=sessionStorage.getItem('feed_scroll');
     const time=parseInt(sessionStorage.getItem('feed_time')||'0');
-    const page=parseInt(sessionStorage.getItem('feed_page')||'1');
-    const savedAll=sessionStorage.getItem('feed_all');
-    if(html && Date.now()-time < 10*60*1000){
-      document.getElementById('feed').innerHTML=html;
-      currentPage=page;
-      if(savedAll){ try{ allPosts=JSON.parse(savedAll); }catch{} }
-      requestAnimationFrame(()=>{ window.scrollTo(0, parseInt(scroll||'0')); });
-      return true;
+    if(Date.now()-time < 2*60*1000 && sessionStorage.getItem('feed_scroll')){
+      requestAnimationFrame(()=>{ window.scrollTo(0, parseInt(sessionStorage.getItem('feed_scroll')||'0')); });
     }
     return false;
   }
@@ -147,9 +145,10 @@
     if(!append) f.innerHTML="";
     if(posts.length===0 &&!append){ f.innerHTML="<p style='text-align:center;padding:60px;color:#777'>No posts yet</p>"; return; }
     const html=posts.map(p=>{
-      const raw=p.mediaUrl||""; const mediaUrl=fixUrl(raw);
-      const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
-      const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline preload="metadata"></video>`:`<img src="${mediaUrl}" loading="lazy" />`;
+      const raw = p.mediaUrl || p.media || p.videoUrl || p.imageUrl || p.url || "";
+      const mediaUrl = fixUrl(raw);
+      const isVid = p.type==='video' || p.mediaType==='video' || String(raw).match(/\.mp4|mov|webm|m4v/i) || String(raw).includes('video');
+      const mediaHtml =!mediaUrl? `<div style="height:380px;background:#111;display:flex;align-items:center;justify-content:center">No media</div>` : isVid? `<video src="${mediaUrl}" controls playsinline preload="metadata" style="width:100%;max-height:580px;background:#000"></video>` : `<img src="${mediaUrl}" loading="lazy" style="width:100%" />`;
       const userId=p.user?._id||p.user; const username=p.user?.username||'user';
       const avatarUrl=fixUrl(p.user?.avatar); const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
       const likes=p.likes||[]; const isLiked=likes.includes(getMyId());
@@ -157,10 +156,9 @@
     }).join('');
     if(append) f.insertAdjacentHTML('beforeend', html);
     else f.innerHTML=html;
-    savePageState();
   }
 
-  function applyNewPosts(){ if(pendingPosts){ allPosts=pendingPosts; currentPage=1; hasMore=true; renderPosts(allPosts,false); pendingPosts=null; document.getElementById('newBar').classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'}); } }
+  function applyNewPosts(){}
 
   async function load(isNext=false){
     if(isNext){
@@ -169,7 +167,6 @@
       currentPage++;
       document.getElementById('loadMore').style.display='block';
     }else{
-      if(restorePageState()){ loadMsgBadge(); return; }
       currentPage=1; allPosts=[]; hasMore=true;
     }
     try{
@@ -178,42 +175,28 @@
       if(!r.ok) throw new Error('feed '+r.status);
       let posts=await r.json();
       if(!Array.isArray(posts)) posts=posts.posts||posts.data||posts.items||[];
-
       if(posts.length<12) hasMore=false;
       if(posts.length===0 && isNext){ hasMore=false; document.getElementById('loadMore').innerText='No more posts'; return; }
-
-      if(isNext){
-        allPosts=[...allPosts,...posts];
-        renderPosts(posts,true);
-      }else{
-        allPosts=posts;
-        renderPosts(posts,false);
-        localStorage.setItem('feed_last_fetch', Date.now().toString());
-      }
+      if(isNext){ allPosts=[...allPosts,...posts]; renderPosts(posts,true); }
+      else{ allPosts=posts; renderPosts(posts,false); }
     }catch(e){
       console.log('load error',e);
       if(!isNext){
-        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:60px;color:#777'>  😊😊 Success <br><button onclick='location.reload()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px'> Click to display page </button></p>";
-      }else{
-        currentPage--; // revert page
-      }
+        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:60px;color:#777'> failed: "+e.message+" <br><button onclick='location.reload()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px'> Retry </button></p>";
+      }else{ currentPage--; }
     }
     isLoadingMore=false;
     document.getElementById('loadMore').style.display='none';
   }
 
-  // TikTok infinite scroll
   window.addEventListener('scroll', ()=>{
-    if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 900){
-      load(true);
-    }
-    // save scroll pos
+    if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 900){ load(true); }
     clearTimeout(window._scrollTimer);
-    window._scrollTimer=setTimeout(()=>{ sessionStorage.setItem('feed_scroll', window.scrollY.toString()); },200);
+    window._scrollTimer=setTimeout(()=>{ try{ sessionStorage.setItem('feed_scroll', window.scrollY.toString()); }catch(e){} },200);
   });
 
-  async function like(id, showBig){ const btn=document.getElementById('like-btn-'+id); const likesEl=document.getElementById('likes-'+id); const big=document.getElementById('big-heart-'+id); if(!btn) return; const was=btn.classList.contains('liked'); if(was){ btn.classList.remove('liked'); btn.innerText='🤍'; if(likesEl) likesEl.innerText=Math.max(0,parseInt(likesEl.innerText)-1)+' likes'; } else{ btn.classList.add('liked'); btn.innerText='❤️'; if(likesEl) likesEl.innerText=(parseInt(likesEl.innerText)+1)+' likes'; if(showBig&&big){ big.classList.remove('show'); void big.offsetWidth; big.classList.add('show'); } } savePageState(); fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); }
-  async function comment(id){ const input=document.getElementById('i-'+id); const t=input.value.trim(); if(!t) return; input.value=''; document.getElementById('c-'+id).insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`); savePageState(); fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})}); }
+  async function like(id, showBig){ const btn=document.getElementById('like-btn-'+id); const likesEl=document.getElementById('likes-'+id); const big=document.getElementById('big-heart-'+id); if(!btn) return; const was=btn.classList.contains('liked'); if(was){ btn.classList.remove('liked'); btn.innerText='🤍'; if(likesEl) likesEl.innerText=Math.max(0,parseInt(likesEl.innerText)-1)+' likes'; } else{ btn.classList.add('liked'); btn.innerText='❤️'; if(likesEl) likesEl.innerText=(parseInt(likesEl.innerText)+1)+' likes'; if(showBig&&big){ big.classList.remove('show'); void big.offsetWidth; big.classList.add('show'); } } fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); }
+  async function comment(id){ const input=document.getElementById('i-'+id); const t=input.value.trim(); if(!t) return; input.value=''; document.getElementById('c-'+id).insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`); fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})}); }
   async function saveP(id){ fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); alert('Saved!'); }
   function logout(){ sessionStorage.clear(); localStorage.removeItem('token'); location.href='login.html'; }
 
@@ -224,22 +207,6 @@
   if(ball) ball.addEventListener('click', ()=>{ savePageState(); fetch(BASE+'/api/sync'); location.href="football.html"; });
   if(Country) Country.addEventListener('click', ()=>{ savePageState(); fetch(BASE+'/api/fetch-now'); location.href="countrymatch.html"; });
 </script>
-
-<!-- upload-manager.js UNTOUCHED -->
 <script src="upload-manager.js"></script>
-<script>
-  const upData=localStorage.getItem('uploading');
-  if(upData){
-    const d=JSON.parse(upData);
-    if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading in background...');
-    const check=setInterval(async()=>{
-      try{
-        const r=await fetch(BASE+'/api/posts/feed?page=1&limit=12',{headers:{authorization:token}});
-        if(r.ok){ if(window.UploadManager) UploadManager.hideBar(); clearInterval(check); load(false); }
-      }catch{}
-    },3000);
-    setTimeout(()=>{ if(window.UploadManager) UploadManager.hideBar(); clearInterval(check); },30000);
-  }
-</script>
 </body>
 </html>
