@@ -69,7 +69,8 @@
   <div class="top">
     <div class="wrap" style="display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center"><span class="hamburger" onclick="openSidebar()">☰</span><span class="logo">RAyMoNd</span></div>
-      <div style="display:flex;gap:14px;align-items:center"><a href="football.html" style="font-size:22px">Live  <div style="margin-left: -15px; margin-top: -6px;">football</div> </a><span class="logout" onclick="logout()">Logout</span></div>
+      <div style="display:flex;gap:14px;align-items:center" onclick="football()"> <a href="football.html" style="font-size:22px">Live  <div style="margin-left: -15px; margin-top: -6px;">football</div> 
+      </a><span class="logout" onclick="logout()">Logout</span></div>
     </div>
   </div>
   <div class="new-bar" id="newBar" onclick="applyNewPosts()">↑ New posts - Tap</div>
@@ -220,9 +221,17 @@
   load(false);
   loadMsgBadge();
   setInterval(loadMsgBadge,5000);
+
   const ball=document.querySelector('.ball'); const Country=document.querySelector('.Country');
-  if(ball) ball.addEventListener('click', ()=>{ savePageState(); fetch(BASE+'/api/sync'); location.href="football.html"; });
+
+  if(ball) ball.addEventListener('click', ()=>{ savePageState(); fetch(BASE+'/api/sync'); location.href="football.html"; 
+  });
+
   if(Country) Country.addEventListener('click', ()=>{ savePageState(); fetch(BASE+'/api/fetch-now'); location.href="countrymatch.html"; });
+
+  function football() {
+     const response = fetch('https://raymonddomain.dev/api/sync')
+  }
 </script>
 
 <!-- upload-manager.js UNTOUCHED -->
