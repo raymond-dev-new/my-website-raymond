@@ -560,7 +560,7 @@ app.get('/api/posts/feed', authh, async (req, res) => {
       .populate({
         path: 'comments.user',
         select: 'username',
-        options: { perDocumentLimit: 2 } // only last 2 comments for preview
+        options: { perDocumentLimit: 2} // only last 2 comments for preview
       })
       .sort({ createdAt: -1 })
       .skip(skip)
