@@ -53,7 +53,7 @@
 <body>
   <div class="overlay" id="overlay" onclick="closeAll()"></div>
   <div class="sidebar" id="sidebar">
-    <div class="sidebar-top"><b>RAyMoNd Menu</b><span class="close" onclick="closeAll()">×</span></div>
+    <div class="sidebar-top"><b>Menu</b><span class="close" onclick="closeAll()">×</span></div>
     <div class="sidebar-links">
       <div class="side-link ball"><span>🏆</span> League Match </div>
       <div class="side-link Country"><span>🌍</span> Country Match </div>
@@ -69,7 +69,7 @@
   <div class="top">
     <div class="wrap" style="display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center"><span class="hamburger" onclick="openSidebar()">☰</span><span class="logo">RAyMoNd</span></div>
-      <div style="display:flex;gap:14px;align-items:center"><a href="notification.html" style="font-size:22px">🤍</a><span class="logout" onclick="logout()">Logout</span></div>
+      <div style="display:flex;gap:14px;align-items:center"><a href="football.html" style="font-size:22px">Live  <div style="margin-left: -15px; margin-top: -6px;">football</div> </a><span class="logout" onclick="logout()">Logout</span></div>
     </div>
   </div>
   <div class="new-bar" id="newBar" onclick="applyNewPosts()">↑ New posts - Tap</div>
@@ -173,7 +173,7 @@
       currentPage=1; allPosts=[]; hasMore=true;
     }
     try{
-      const r=await fetch(`${BASE}/api/posts/feed?page=${currentPage}&limit=12`,{headers:{authorization:token}});
+      const r=await fetch(`${BASE}/api/posts/feed?page=${currentPage}&limit=8`,{headers:{authorization:token}});
       if(r.status===401){ localStorage.removeItem('token'); location.href='login.html'; return; }
       if(!r.ok) throw new Error('feed '+r.status);
       let posts=await r.json();

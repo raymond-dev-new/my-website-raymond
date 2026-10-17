@@ -128,7 +128,7 @@
         <span class="bio-name" id="bioDisplayName"></span>
         <span class="bio-text" id="bioText"></span>
         <div class="bio-link" id="bioLink"></div>
-        <button class="edit-bio-btn" id="editBioBtn" onclick="openBioModal()">Edit profile</button>
+        <button class="edit-bio-btn" id="editBioBtn" onclick="openBioModal()">Edit Bio</button>
       </div>
 
       <button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button>
@@ -487,9 +487,12 @@
     const b = document.getElementById('saveAvatarBtn');
     b.innerText = 'Uploading...';
     b.disabled = true;
-    const fd = new FormData();
+    /* const fd = new FormData();
     fd.append('file', selectedAvatarFile);
     fd.append('avatar', selectedAvatarFile);
+    */
+      const fd = new FormData();
+      fd.append('file', selectedAvatarFile);
     try {
       let r = await fetch(BASE + '/api/users/avatar', { method: 'POST', headers: { authorization: token }, body: fd });
       if (!r.ok) {
