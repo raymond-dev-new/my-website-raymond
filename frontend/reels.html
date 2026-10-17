@@ -174,7 +174,7 @@ async function loadReels(isNext=false){
     currentPage=1; reelsData=[]; hasMore=true;
   }
   try{
-    const res=await fetch(`${BASE}/api/posts/reels?page=${currentPage}&limit=12`,{headers:{authorization:token}});
+    const res=await fetch(`${BASE}/api/posts/reels?page=${currentPage}&limit=8`,{headers:{authorization:token}});
     let reels=await res.json();
     if(!Array.isArray(reels)) reels=reels.posts||reels.data||[];
     if(reels.length<12) hasMore=false;
