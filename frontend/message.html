@@ -101,7 +101,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
-//if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
 function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ try{ localStorage.setItem(k, JSON.stringify(v.slice(-30))); }catch{} } }
@@ -121,6 +120,53 @@ function updateBadges(){
   const b=document.getElementById('badge-'+uid);
   if(b){ const c=unreadMap[uid]; if(c>0){b.innerText=c; b.classList.remove('hide');} else b.classList.add('hide'); }
  });
+}
+// --- NEW: MERGE SO USERS NEVER DISAPPEAR ---
+function mergeAndSaveUsers(serverUsers){
+  const cached = getCache('chat_users') || [];
+  const map = new Map();
+  cached.forEach(u=>{ if(u && u._id) map.set(u._id, u); });
+  serverUsers.forEach(u=>{ if(u && u._id){ const ex=map.get(u._id)||{}; map.set(u._id, {...ex, ...u}); } });
+  // keep anyone who has local chat history
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k && k.startsWith('chat_')){
+      const uid=k.replace('chat_','');
+      if(!map.has(uid)){
+        const found=cached.find(x=>x._id==uid);
+        if(found) map.set(uid, found);
+      }
+    }
+  }
+  const merged=[...map.values()];
+  setCache('chat_users', merged);
+  return merged;
+}
+async function ensureUserInList(id, fallbackName='user'){
+  if(usersCache.some(u=>u._id==id)) return usersCache.find(u=>u._id==id);
+  const cached=getCache('chat_users')||[];
+  let found=cached.find(u=>u._id==id);
+  if(found){
+    if(!usersCache.some(u=>u._id==id)){ usersCache.push(found); renderUsers(usersCache); }
+    return found;
+  }
+  try{
+    let r=await fetch(BASE+'/api/users/'+id,{headers:{authorization:token}});
+    let du=await r.json();
+    let uname=du.username || du.user?.username || fallbackName;
+    let av=du.avatar || du.user?.avatar || '';
+    let nu={_id:id, username:uname, avatar:av};
+    if(!usersCache.some(u=>u._id==id)) usersCache.push(nu);
+    mergeAndSaveUsers(usersCache);
+    renderUsers(usersCache);
+    return nu;
+  }catch{
+    let nu={_id:id, username:fallbackName, avatar:''};
+    if(!usersCache.some(u=>u._id==id)) usersCache.push(nu);
+    mergeAndSaveUsers(usersCache);
+    renderUsers(usersCache);
+    return nu;
+  }
 }
 function renderUsers(users){
  const el=document.getElementById('list');
@@ -152,11 +198,30 @@ async function load(){
    users=[...(d2.user.followers||[]),...(d2.user.following||[])];
    users=[...new Map(users.map(u=>[u._id,u])).values()];
   }
-  setCache('chat_users', users);
-  for(let u of users){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
-  renderUsers(users);
+  let merged=mergeAndSaveUsers(users);
+  for(let u of merged){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
+  renderUsers(merged);
   await loadUnread();
-  users.forEach(async (u)=>{
+  // AUTO OPEN FROM PROFILE ?id=
+  try{
+    const qId=new URLSearchParams(location.search).get('id');
+    if(qId){
+      let tu=merged.find(x=>x._id==qId);
+      if(tu) openC(qId, tu.username);
+      else {
+        let ru=await fetch(BASE+'/api/users/'+qId,{headers:{authorization:token}});
+        let du=await ru.json();
+        let uname=du.username || du.user?.username || 'user';
+        let av=du.avatar || du.user?.avatar || '';
+        let nu={_id:qId, username:uname, avatar:av};
+        merged.push(nu);
+        mergeAndSaveUsers(merged);
+        renderUsers(merged);
+        openC(qId, uname);
+      }
+    }
+  }catch{}
+  merged.forEach(async (u)=>{
     try{
       let rr=await fetch(BASE+'/api/messages/'+u._id,{headers:{authorization:token}});
       let mm=await rr.json();
@@ -206,6 +271,7 @@ async function openC(id,name){
  document.getElementById('cName').innerText=name;
  document.getElementById('topAvatar').innerText=name[0].toUpperCase();
  document.getElementById('chat').classList.add('open');
+ await ensureUserInList(id, name);
  const cachedMsgs=getCache('chat_'+id);
  if(cachedMsgs){ msgsCache=dedupMessages(cachedMsgs); renderAll(); }
  else { document.getElementById('msgs').innerHTML='<div style="text-align:center;color:#777;padding:20px">Loading...</div>'; }
@@ -244,6 +310,7 @@ async function send(){
     lastMsgMap[active]=new Date(saved.createdAt).getTime();
   }
   renderAll(); renderUsers(usersCache);
+  await ensureUserInList(active);
  }catch{ msgsCache=msgsCache.filter(x=>x._id!==tempId); renderAll(); }
  finally{ setTimeout(()=>{ isSending=false; document.getElementById('sendBtn').disabled=false; }, 800); }
 }
@@ -368,10 +435,13 @@ function closeMenu(){ document.getElementById('menu').classList.remove('open'); 
 function startEdit(){ if(!selectedIsMe) return; closeMenu(); document.getElementById('editBox').classList.add('open'); }
 async function saveEdit(){ let newText=document.getElementById('editInput').value.trim(); if(!newText) return; await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'PUT',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:newText})}); closeBox(); }
 async function deleteMsg(){ if(!confirm('Unsend?')) return; closeMenu(); msgsCache=msgsCache.filter(x=>x._id!==selectedMsg); renderAll(); try{ await fetch(BASE+'/api/messages/msg/'+selectedMsg,{method:'DELETE',headers:{authorization:token}}); }catch{} if(active) setCache('chat_'+active, msgsCache); }
-socket.on('receiveMessage',m=>{
+// --- FIXED: RECEIVE KEEPS USER FOREVER ---
+socket.on('receiveMessage',async m=>{
  let senderId=m.sender._id||m.sender;
  if(String(senderId)===String(myId())) return;
  let receiverId=m.receiver._id||m.receiver;
+ // ensure sender stays in list forever
+ await ensureUserInList(senderId, m.sender?.username || 'user');
  if(senderId==active || receiverId==active){
   if(!msgsCache.find(x=>x._id===m._id)){
     msgsCache.push(m);

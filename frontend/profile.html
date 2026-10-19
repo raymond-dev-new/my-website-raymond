@@ -75,7 +75,6 @@
   .bio-card { text-align: left; }
   .bio-card textarea,.bio-card input { width: 100%; background: #111; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 11px; margin-top: 6px; outline: none; font-size: 14px; }
   .bio-card textarea { height: 90px; resize: none; }
-  /* SKELETON - REPLACES FETCHING SPINNER */
   .skeleton-wrap{ max-width:935px; margin:0 auto; padding:16px 14px; display:flex; gap:20px; align-items:flex-start; }
   .sk{ background: linear-gradient(90deg,#151515 25%,#222 37%,#151515 63%); background-size:400% 100%; animation: shimmer 1.2s ease-in-out infinite; border-radius:8px; }
   @keyframes shimmer{ 0%{background-position:100% 0} 100%{background-position:-100% 0} }
@@ -102,29 +101,13 @@
 </head>
 <body>
   <div class="header" id="header"><b id="topname">Profile</b><span onclick="location.href='feed.html'" style="cursor:pointer">☰</span></div>
-  <div id="skeletonProfile">
-    <div class="skeleton-wrap">
-      <div class="sk sk-avatar"></div>
-      <div style="flex:1">
-        <div class="sk sk-line sk-name"></div>
-        <div class="sk-stats"><div class="sk sk-stat"></div><div class="sk sk-stat"></div><div class="sk sk-stat"></div></div>
-        <div class="sk sk-line sk-bio" style="margin-top:12px"></div><div class="sk sk-line" style="width:140px"></div><div class="sk sk-btn"></div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;max-width:600px;margin:10px auto;padding:0 0 80px">
-      <div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div>
-    </div>
+  <div id="skeletonProfile"><div class="skeleton-wrap"><div class="sk sk-avatar"></div><div style="flex:1"><div class="sk sk-line sk-name"></div><div class="sk-stats"><div class="sk sk-stat"></div><div class="sk sk-stat"></div><div class="sk sk-stat"></div></div><div class="sk sk-line sk-bio" style="margin-top:12px"></div><div class="sk sk-line" style="width:140px"></div><div class="sk sk-btn"></div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;max-width:600px;margin:10px auto;padding:0 0 80px"><div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div></div></div>
+  <div class="profile-info" id="profileInfo" style="display:none"><div class="avatar-wrap" onclick="openAvatarModal()"><div class="circle" id="letter"></div><div class="cam" id="camIcon" style="display:none">📷</div></div><div class="profile-main"><h3 id="name"><span id="nameText"></span><span id="editNameIcon" class="edit-name-icon" style="display:none" onclick="openBioModal()">✏️ Edit</span></h3><div class="stats"><div class="stat"><b id="pc">-</b><span>posts</span></div><div class="stat" onclick="showFollowers()"><b id="followersCount">-</b><span>followers</span></div><div class="stat" onclick="showFollowing()"><b id="followingCount">-</b><span>following</span></div></div><div class="bio-wrap"><span class="bio-name" id="bioDisplayName"></span><span class="bio-text" id="bioText"></span><div class="bio-link" id="bioLink"></div><button class="edit-bio-btn" id="editBioBtn" onclick="openBioModal()">Edit Bio</button></div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+    <button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button>
+    <button id="msgBtn" class="btn-gray" style="display:none" onclick="goToMessage()">Message</button>
   </div>
-  <div class="profile-info" id="profileInfo" style="display:none">
-    <div class="avatar-wrap" onclick="openAvatarModal()"><div class="circle" id="letter"></div><div class="cam" id="camIcon" style="display:none">📷</div></div>
-    <div class="profile-main">
-      <h3 id="name"><span id="nameText"></span><span id="editNameIcon" class="edit-name-icon" style="display:none" onclick="openBioModal()">✏️ Edit</span></h3>
-      <div class="stats"><div class="stat"><b id="pc">-</b><span>posts</span></div><div class="stat" onclick="showFollowers()"><b id="followersCount">-</b><span>followers</span></div><div class="stat" onclick="showFollowing()"><b id="followingCount">-</b><span>following</span></div></div>
-      <div class="bio-wrap"><span class="bio-name" id="bioDisplayName"></span><span class="bio-text" id="bioText"></span><div class="bio-link" id="bioLink"></div><button class="edit-bio-btn" id="editBioBtn" onclick="openBioModal()">Edit Bio</button></div>
-      <button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button>
-      <div class="action-row" id="ownActions" style="display:none"><a href="create.html" class="btn-post">+ Post</a><button onclick="openAvatarModal()" class="btn-gray">Edit profile</button></div>
-    </div>
-  </div>
+  <div class="action-row" id="ownActions" style="display:none"><a href="create.html" class="btn-post">+ Post</a><button onclick="openAvatarModal()" class="btn-gray">Edit profile</button></div></div></div>
   <div class="posts" id="grid" style="display:none"></div>
   <div class="avatar-modal" id="avatarModal" onclick="if(event.target===this) closeAvatarModal()"><div class="avatar-card"><h3>Profile Photo</h3><img id="avatarPreview" style="display:none"><div id="avatarLetter" class="circle" style="width:160px;height:160px;margin:0 auto 12px;font-size:50px"></div><input type="file" id="avatarInput" accept="image/*" hidden onchange="handleAvatarSelect(this)"><button class="btn-blue" onclick="document.getElementById('avatarInput').click()">Choose Photo</button><button class="btn-blue" id="saveAvatarBtn" style="display:none" onclick="uploadAvatar()">Save</button><button class="btn-gray2" onclick="closeAvatarModal()">Cancel</button><button class="btn-blue" style="background:#111;color:#ff3040;border:1px solid #333;display:none" id="removeAvatarBtn" onclick="removeAvatar()">Remove Photo</button></div></div>
   <div class="bio-modal" id="bioModal" onclick="if(event.target===this) closeBioModal()"><div class="bio-card"><h3 style="text-align:center;margin:0">Edit Profile</h3><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Username</label><input id="usernameInput" placeholder="username"><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Display Name</label><input id="bioNameInput" placeholder="Display name"><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Bio</label><textarea id="bioInput" maxlength="150" placeholder="Your bio"></textarea><div style="text-align:right;color:#777;font-size:11px"><span id="bioCount">0</span>/150</div><label style="font-size:11px;color:#aaa;margin-top:8px;display:block">Link</label><input id="linkInput" placeholder="https://..."><button class="btn-blue" id="saveBioBtn" onclick="saveBio()">Save</button><button class="btn-gray2" onclick="closeBioModal()">Cancel</button></div></div>
@@ -143,12 +126,10 @@
   function fixUrl(u){if(!u)return"";if(u.startsWith('data:'))return u;if(u.startsWith('/api/'))return BASE+u;if(u.startsWith('/uploads'))return BASE+u;if(u.startsWith('http'))return u;return u}
   function isVideoFile(u){if(!u)return false;return u.includes('/api/media-file')||u.endsWith('.mp4')}
   async function safeJson(res){const text=await res.text();try{return JSON.parse(text)}catch{throw new Error("API returned HTML - check route: "+res.url)}}
-  // ADDED: instant follow persistence
   function followKey(targetId){return 'follow_opt_'+getMyId()+'_'+targetId}
   function getOptimistic(targetId){try{return JSON.parse(localStorage.getItem(followKey(targetId))||'null')}catch{return null}}
   function setOptimistic(targetId,state){localStorage.setItem(followKey(targetId),JSON.stringify({state,ts:Date.now()}))}
   function clearOptimistic(targetId){localStorage.removeItem(followKey(targetId))}
-
   function renderAvatar(user){
     const el=document.getElementById('letter');
     if(user.avatar){el.innerHTML='<img src="'+fixUrl(user.avatar)+'" loading="lazy">';}
@@ -185,9 +166,9 @@
     document.getElementById('editBioBtn').style.display=isOwnProfile?'block':'none';
     document.getElementById('editNameIcon').style.display=isOwnProfile?'block':'none';
     renderAvatar(u);
-    const fb=document.getElementById('followBtn');const own=document.getElementById('ownActions');const cam=document.getElementById('camIcon');
-    if(isOwnProfile){fb.style.display='none';own.style.display='flex';cam.style.display='flex';document.getElementById('delBtn').style.display='block';}
-    else{own.style.display='none';cam.style.display='none';fb.style.display='block';document.getElementById('delBtn').style.display='none';fb.innerText=isFollowing?'Following':'Follow';fb.className=isFollowing?'follow-btn following':'follow-btn follow';}
+    const fb=document.getElementById('followBtn');const mb=document.getElementById('msgBtn');const own=document.getElementById('ownActions');const cam=document.getElementById('camIcon');
+    if(isOwnProfile){fb.style.display='none';mb.style.display='none';own.style.display='flex';cam.style.display='flex';document.getElementById('delBtn').style.display='block';}
+    else{own.style.display='none';cam.style.display='none';fb.style.display='block';mb.style.display='block';document.getElementById('delBtn').style.display='none';fb.innerText=isFollowing?'Following':'Follow';fb.className=isFollowing?'follow-btn following':'follow-btn follow';}
     const grid=document.getElementById("grid");let h="";for(let p of allPosts){const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");if(isVid){h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><video src="'+url+'#t=0.1" muted preload="metadata" playsinline></video><span class="vid-badge">🎬</span></div>';}else{h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><img src="'+url+'" loading="lazy" decoding="async"></div>';}}grid.innerHTML=h||'<p style="grid-column:1/3;text-align:center;color:#777;padding:20px">No posts yet</p>';
     const observer=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');const vid=entry.target.querySelector('video');if(vid &&!vid.dataset.loaded){vid.load();vid.dataset.loaded='1';}}});},{threshold:0.1,rootMargin:'100px'});document.querySelectorAll('.post-box').forEach(b=>observer.observe(b));
   }
@@ -212,6 +193,19 @@
   function handleAvatarSelect(i){if(i.files&&i.files[0]){selectedAvatarFile=i.files[0];const u=URL.createObjectURL(selectedAvatarFile);const p=document.getElementById('avatarPreview');p.src=u;p.style.display='block';document.getElementById('avatarLetter').style.display='none';document.getElementById('saveAvatarBtn').style.display='block';}}
   async function uploadAvatar(){if(!selectedAvatarFile)return;const b=document.getElementById('saveAvatarBtn');b.innerText='Uploading...';b.disabled=true;const fd=new FormData();fd.append('file',selectedAvatarFile);try{let r=await fetch(BASE+'/api/users/avatar',{method:'POST',headers:{authorization:token},body:fd});if(!r.ok){r=await fetch(BASE+'/api/users/me/avatar',{method:'POST',headers:{authorization:token},body:fd});}if(!r.ok){r=await fetch(BASE+'/api/users/avatar',{method:'PUT',headers:{authorization:token},body:fd});}localStorage.removeItem('profile_'+getMyId());closeAvatarModal();loadProfile();}catch(e){alert(e.message);}b.innerText='Save';b.disabled=false;}
   async function removeAvatar(){if(!confirm('Remove?'))return;try{await fetch(BASE+'/api/users/avatar',{method:'DELETE',headers:{authorization:token}});}catch{}localStorage.removeItem('profile_'+getMyId());closeAvatarModal();setTimeout(loadProfile,400);}
+  function goToMessage(){
+    const id = getParamId() || (profileData?.user?._id);
+    if(!id) return;
+    try{
+      const u = profileData?.user || {};
+      let chats = getCache('chat_users') || [];
+      if(!chats.some(x => (x._id||x) == id)){
+        chats.push({_id: id, username: u.username || 'user', avatar: u.avatar || ''});
+        setCache('chat_users', chats);
+      }
+    }catch{}
+    location.href = 'message.html?id=' + id;
+  }
   async function toggleFollow(){
     const id=getParamId()||getMyId();
     const btn=document.getElementById('followBtn');
