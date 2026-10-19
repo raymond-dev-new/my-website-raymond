@@ -143,6 +143,8 @@ function renderUsers(users){
 async function load(){
  const cachedUsers=getCache('chat_users');
  if(cachedUsers) renderUsers(cachedUsers);
+ // NEW: sync follow state immediately on load (before server fetch)
+ syncMessagesWithFollowState();
  try{
   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
   let users=await r.json();
@@ -152,6 +154,26 @@ async function load(){
    users=[...(d2.user.followers||[]),...(d2.user.following||[])];
    users=[...new Map(users.map(u=>[u._id,u])).values()];
   }
+  // Merge with optimistic follows so they stay
+  let optFollowing = [];
+  try{ optFollowing = JSON.parse(localStorage.getItem('following_opt_'+myId())||'[]'); }catch{}
+  optFollowing.forEach(o=>{
+    if(!users.some(u=>(u._id||u)==(o._id||o))) users.push(o);
+  });
+  // Remove unfollowed optimistically
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      let k=localStorage.key(i);
+      if(k && k.startsWith('follow_opt_'+myId()+'_')){
+        let v=JSON.parse(localStorage.getItem(k)||'null');
+        if(v && v.state==='follow'){
+          let tid=k.substring(('follow_opt_'+myId()+'_').length);
+          users=users.filter(u=>(u._id||u)!=tid);
+        }
+      }
+    }
+  }catch{}
+
   setCache('chat_users', users);
   for(let u of users){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
   renderUsers(users);
@@ -165,6 +187,79 @@ async function load(){
   });
  }catch(e){}
 }
+
+// ===== NEW: INSTANT MESSAGE BOX SYNC FROM FOLLOW/UNFOLLOW (DO NOT TOUCH OTHER LOGIC) =====
+function getFollowingOpt(){
+  try{ return JSON.parse(localStorage.getItem('following_opt_'+myId())||'[]'); }catch{ return []; }
+}
+function syncMessagesWithFollowState(){
+  try{
+    const my = myId();
+    if(!my) return;
+    let current = getCache('chat_users') || usersCache || [];
+    let changed = false;
+
+    // ADD: all users in following_opt list
+    const followingOpt = getFollowingOpt();
+    followingOpt.forEach(u=>{
+      const tid = u._id || u;
+      if(!current.some(x=>(x._id||x)==tid)){
+        current.push({_id: tid, username: u.username||'user', avatar: u.avatar||''});
+        changed = true;
+      }
+    });
+
+    // REMOVE: any follow_opt with state 'follow'
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k || !k.startsWith('follow_opt_'+my+'_')) continue;
+      try{
+        const v=JSON.parse(localStorage.getItem(k)||'null');
+        if(v && v.state==='follow'){
+          const tid=k.substring(('follow_opt_'+my+'_').length);
+          const idx=current.findIndex(x=>(x._id||x)==tid);
+          if(idx>-1){ current.splice(idx,1); changed=true; }
+        }
+      }catch{}
+    }
+
+    // ADD: any follow_opt with state 'following' that may not be in following_opt yet (race)
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k || !k.startsWith('follow_opt_'+my+'_')) continue;
+      try{
+        const v=JSON.parse(localStorage.getItem(k)||'null');
+        if(v && v.state==='following'){
+          const tid=k.substring(('follow_opt_'+my+'_').length);
+          if(!current.some(x=>(x._id||x)==tid)){
+            // try get username from following_opt or from profile cache
+            let found = followingOpt.find(x=>(x._id||x)==tid);
+            let prof = getCache('profile_'+tid);
+            let username = found?.username || prof?.user?.username || 'user';
+            let avatar = found?.avatar || prof?.user?.avatar || '';
+            current.push({_id: tid, username, avatar});
+            changed=true;
+          }
+        }
+      }catch{}
+    }
+
+    if(changed){
+      setCache('chat_users', current);
+      if(current.length || usersCache.length) renderUsers(current);
+    }
+  }catch{}
+}
+// Listen to storage changes from profile page (other tab)
+window.addEventListener('storage', (e)=>{
+  if(e.key && (e.key.startsWith('follow_opt_') || e.key.startsWith('following_opt_') || e.key==='chat_users')){
+    syncMessagesWithFollowState();
+  }
+});
+// Poll every 800ms so same-tab follow shows instantly without refresh
+setInterval(syncMessagesWithFollowState, 800);
+// ===== END NEW SYNC =====
+
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
  const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
