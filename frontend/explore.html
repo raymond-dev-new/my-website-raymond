@@ -17,6 +17,17 @@ body{margin:0;background:#000;color:#fff;font-family:Arial}
 .nav{position:fixed;bottom:0;width:100%;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
 .nav a{color:#fff;text-decoration:none;font-size:22px}
 .empty{text-align:center;padding:40px;color:#777}
+
+/* NEW: Skeleton loader only */
+.skeleton-row{display:flex;align-items:center;gap:12px;padding:10px;background:#111;border-radius:8px;margin-bottom:8px;animation:fadeIn .2s}
+.skeleton-avatar{width:40px;height:40px;border-radius:50%;background:#222;flex-shrink:0}
+.skeleton-line{height:12px;background:#222;border-radius:6px}
+.skeleton-line.name{width:120px}
+.skeleton-line.sub{width:180px;margin-top:6px;height:10px}
+.skeleton-shimmer{position:relative;overflow:hidden;background:#1a1a1a}
+.skeleton-shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);animation:shimmer 1.2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
@@ -44,6 +55,19 @@ const BASE = "https://raymonddomain.dev";
 const token = localStorage.getItem('token');
 if(!token) location.href = "login.html";
 
+function showSkeleton(){
+  const userDiv = document.getElementById('userResults');
+  userDiv.innerHTML = Array(5).fill(0).map(()=>`
+    <div class="skeleton-row">
+      <div class="skeleton-avatar skeleton-shimmer"></div>
+      <div>
+        <div class="skeleton-line name skeleton-shimmer"></div>
+        <div class="skeleton-line sub skeleton-shimmer"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 async function doSearch(){
   const query = document.getElementById('q').value.trim();
   const userDiv = document.getElementById('userResults');
@@ -53,7 +77,10 @@ async function doSearch(){
     return;
   }
 
-  // SEARCH USER - FROM DATABASE
+  // SHOW SKELETON UNTIL FETCH RETURNS - NEW
+  showSkeleton();
+
+  // SEARCH USER - FROM DATABASE (your logic untouched)
   const res = await fetch(BASE + '/api/explore?q=' + encodeURIComponent(query));
   const data = await res.json();
 

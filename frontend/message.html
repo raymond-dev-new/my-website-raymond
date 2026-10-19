@@ -86,16 +86,7 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
   <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
 </div>
 </div>
-<div class="preview" id="preview">
-  <div class="preview-top">
-    <button class="close-preview" onclick="closePreview()">←</button>
-    <b>Photo</b>
-    <button class="close-preview" onclick="closePreview()">✕</button>
-  </div>
-  <div class="preview-body" onclick="closePreview()">
-    <img id="previewImg" src="" onclick="event.stopPropagation()">
-  </div>
-</div>
+<div class="preview" id="preview"><div class="preview-top"><button class="close-preview" onclick="closePreview()">←</button><b>Photo</b><button class="close-preview" onclick="closePreview()">✕</button></div><div class="preview-body" onclick="closePreview()"><img id="previewImg" src="" onclick="event.stopPropagation()"></div></div>
 <div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
 <div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
 <script>
@@ -124,7 +115,7 @@ function updateBadges(){
 function renderUsers(users){
  const el=document.getElementById('list');
  usersCache=users;
- if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>'; return; }
+ if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet<br><small>Follow someone to start chatting</small></p>'; return; }
  let sorted=[...users].sort((a,b)=>{
    let aTime=lastMsgMap[a._id]||0; let bTime=lastMsgMap[b._id]||0;
    if(!aTime){ let ca=getCache('chat_'+a._id); if(ca&&ca.length) aTime=new Date(ca[ca.length-1].createdAt).getTime(); }
@@ -139,25 +130,41 @@ function renderUsers(users){
   return `<div class="row${hasUnread}" onclick="openC('${id}','${name}')"><div class="av">${avatar}</div><div><b>${name}</b><br><small style="color:#999">${count?count+' new':'Tap to chat'}</small></div><div id="badge-${id}" class="badge ${count?'':'hide'}">${count}</div></div>`;
  }).join('');
 }
+async function fetchUserInfoAndAdd(userId){
+  try{
+    let r=await fetch(BASE+'/api/users/'+userId+'/profile',{headers:{authorization:token}});
+    if(!r.ok){ r=await fetch(BASE+'/api/users/'+userId,{headers:{authorization:token}}); }
+    let d=await r.json();
+    let user=d.user||d;
+    let chat=getCache('chat_users')||[];
+    if(!chat.some(x=>(x._id||x)==userId)){
+      chat.push({_id:user._id||userId, username:user.username||'user', avatar:user.avatar||''});
+      setCache('chat_users', chat);
+      renderUsers(chat);
+    }
+  }catch{}
+}
 async function load(){
  const cachedUsers=getCache('chat_users');
  if(cachedUsers) renderUsers(cachedUsers);
  syncMessagesWithFollowState();
  try{
+  let profileUsers=[];
+  try{
+    let r2=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
+    let d2=await r2.json();
+    const u=d2.user||d2;
+    profileUsers=[...(u.followers||[]),...(u.following||[])];
+    setCache('profile_'+myId(), {user: u, followersCount: (u.followers||[]).length, followingCount: (u.following||[]).length, posts: d2.posts||[]});
+  }catch{}
   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
   let users=await r.json();
-  if(!users.length){
-   let r2=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
-   let d2=await r2.json();
-   users=[...(d2.user.followers||[]),...(d2.user.following||[])];
-   users=[...new Map(users.map(u=>[u._id,u])).values()];
-  }
+  if(!Array.isArray(users)) users=[];
+  let merged=[...users, ...profileUsers];
+  merged=[...new Map(merged.map(u=>[u._id||u, u])).values()];
   let optFollowing = [];
   try{ optFollowing = JSON.parse(localStorage.getItem('following_opt_'+myId())||'[]'); }catch{}
-  optFollowing.forEach(o=>{
-    if(!users.some(u=>(u._id||u)==(o._id||o))) users.push(o);
-  });
-  // Don't remove if they are still follower - Option A
+  optFollowing.forEach(o=>{ if(!merged.some(u=>(u._id||u)==(o._id||o))) merged.push(o); });
   try{
     const myProfile = getCache('profile_'+myId());
     const followers = myProfile?.user?.followers || [];
@@ -168,19 +175,16 @@ async function load(){
         if(v && v.state==='follow'){
           let tid=k.substring(('follow_opt_'+myId()+'_').length);
           let isFollower = followers.some(f=>(f._id||f)==tid);
-          if(!isFollower){
-            users=users.filter(u=>(u._id||u)!=tid);
-          }
+          if(!isFollower){ merged=merged.filter(u=>(u._id||u)!=tid); }
         }
       }
     }
   }catch{}
-
-  setCache('chat_users', users);
-  for(let u of users){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
-  renderUsers(users);
+  setCache('chat_users', merged);
+  for(let u of merged){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
+  renderUsers(merged);
   await loadUnread();
-  users.forEach(async (u)=>{
+  merged.forEach(async (u)=>{
     try{
       let rr=await fetch(BASE+'/api/messages/'+u._id,{headers:{authorization:token}});
       let mm=await rr.json();
@@ -189,11 +193,7 @@ async function load(){
   });
  }catch(e){}
 }
-
-// ===== INSTANT SYNC - OPTION A: STAY IF THEY STILL FOLLOW YOU =====
-function getFollowingOpt(){
-  try{ return JSON.parse(localStorage.getItem('following_opt_'+myId())||'[]'); }catch{ return []; }
-}
+function getFollowingOpt(){ try{ return JSON.parse(localStorage.getItem('following_opt_'+myId())||'[]'); }catch{ return []; } }
 function isStillMyFollower(tid){
   try{
     const myProfile = getCache('profile_'+myId());
@@ -204,12 +204,10 @@ function isStillMyFollower(tid){
 }
 function syncMessagesWithFollowState(){
   try{
-    const my = myId();
-    if(!my) return;
+    const my = myId(); if(!my) return;
     let current = getCache('chat_users') || usersCache || [];
     let changed = false;
     const followingOpt = getFollowingOpt();
-
     followingOpt.forEach(u=>{
       const tid = u._id || u;
       if(!current.some(x=>(x._id||x)==tid)){
@@ -217,11 +215,10 @@ function syncMessagesWithFollowState(){
         changed = true;
       }
     });
-
     try{
       const myProfile = getCache('profile_'+my);
-      if(myProfile && myProfile.user && myProfile.user.followers){
-        myProfile.user.followers.forEach(f=>{
+      if(myProfile && myProfile.user){
+        [...(myProfile.user.followers||[]), ...(myProfile.user.following||[])].forEach(f=>{
           const fid = f._id || f;
           if(!current.some(x=>(x._id||x)==fid)){
             current.push({_id: fid, username: f.username||'user', avatar: f.avatar||''});
@@ -230,7 +227,6 @@ function syncMessagesWithFollowState(){
         });
       }
     }catch{}
-
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
       if(!k || !k.startsWith('follow_opt_'+my+'_')) continue;
@@ -244,7 +240,6 @@ function syncMessagesWithFollowState(){
         }
       }catch{}
     }
-
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
       if(!k || !k.startsWith('follow_opt_'+my+'_')) continue;
@@ -259,15 +254,12 @@ function syncMessagesWithFollowState(){
             let avatar = found?.avatar || prof?.user?.avatar || '';
             current.push({_id: tid, username, avatar});
             changed=true;
+            fetchUserInfoAndAdd(tid);
           }
         }
       }catch{}
     }
-
-    if(changed){
-      setCache('chat_users', current);
-      if(current.length || usersCache.length) renderUsers(current);
-    }
+    if(changed){ setCache('chat_users', current); renderUsers(current); }
   }catch{}
 }
 window.addEventListener('storage', (e)=>{
@@ -275,9 +267,34 @@ window.addEventListener('storage', (e)=>{
     syncMessagesWithFollowState();
   }
 });
-setInterval(syncMessagesWithFollowState, 800);
-// ===== END SYNC =====
-
+setInterval(syncMessagesWithFollowState, 600);
+setInterval(async()=>{
+  try{
+    let r=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
+    let d=await r.json();
+    let u=d.user||d;
+    let all=[...(u.followers||[]),...(u.following||[])];
+    let current=getCache('chat_users')||[];
+    let merged=[...current, ...all];
+    merged=[...new Map(merged.map(x=>[x._id||x, x])).values()];
+    for(let i=0;i<localStorage.length;i++){
+      let k=localStorage.key(i);
+      if(k && k.startsWith('follow_opt_'+myId()+'_')){
+        let v=JSON.parse(localStorage.getItem(k)||'null');
+        if(v && v.state==='follow'){
+          let tid=k.substring(('follow_opt_'+myId()+'_').length);
+          let isFollower = (u.followers||[]).some(f=>(f._id||f)==tid);
+          if(!isFollower) merged=merged.filter(x=>(x._id||x)!=tid);
+        }
+      }
+    }
+    if(merged.length!==current.length || JSON.stringify(merged.map(x=>x._id).sort())!==JSON.stringify(current.map(x=>x._id).sort())){
+      setCache('chat_users', merged);
+      setCache('profile_'+myId(), {user: u, followersCount: (u.followers||[]).length, followingCount: (u.following||[]).length, posts: d.posts||[]});
+      renderUsers(merged);
+    }
+  }catch{}
+}, 1500);
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
  const edited=m.edited?'<span style="font-size:10px;opacity:.7"> (edited)</span>':'';
@@ -298,13 +315,7 @@ function renderMsg(m){
 function openPreview(src){ document.getElementById('previewImg').src=src; document.getElementById('preview').classList.add('open'); history.pushState({preview:true},''); }
 function closePreview(){ document.getElementById('preview').classList.remove('open'); if(history.state && history.state.preview) history.back(); }
 window.addEventListener('popstate',()=>{ document.getElementById('preview').classList.remove('open'); });
-function dedupMessages(arr){
-  const map=new Map();
-  for(let m of [...arr].sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt))){
-    if(!map.has(m._id)) map.set(m._id,m);
-  }
-  return [...map.values()];
-}
+function dedupMessages(arr){ const map=new Map(); for(let m of [...arr].sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt))){ if(!map.has(m._id)) map.set(m._id,m); } return [...map.values()]; }
 function renderAll(){
  const container=document.getElementById('msgs');
  if(!msgsCache.length){ container.innerHTML='<div style="color:#666;text-align:center;margin-top:100px">No messages yet<br>Say hi 👋</div>'; return; }
@@ -439,11 +450,8 @@ async function toggleRecord(){
            break;
          }
        }catch(err){
-         if(attempt===5){
-           alert('Voice sending failed! Max seconds recording is 18 seconds Size: '+(blob.size/1024/1024).toFixed(2)+'MB');
-         } else {
-           await new Promise(res=>setTimeout(res, 1200*attempt));
-         }
+         if(attempt===5){ alert('Voice sending failed! Max seconds recording is 18 seconds Size: '+(blob.size/1024/1024).toFixed(2)+'MB'); }
+         else await new Promise(res=>setTimeout(res, 1200*attempt));
        }
      }
     };

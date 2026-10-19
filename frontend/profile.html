@@ -163,6 +163,8 @@
   function getOptimistic(targetId){ try{ return JSON.parse(localStorage.getItem(followKey(targetId))||'null');}catch{return null;}}
   function setOptimistic(targetId, state){ localStorage.setItem(followKey(targetId), JSON.stringify({state, ts: Date.now()}));}
   function clearOptimistic(targetId){ localStorage.removeItem(followKey(targetId));}
+
+  // FIXED: now also adds to chat_users so you can find person in messages instantly
   function updateMyFollowingCache(targetUser, follow){
     const myKey='profile_'+getMyId(); const myCache=getCache(myKey);
     const targetId=targetUser._id||targetUser.id||targetUser;
@@ -176,14 +178,34 @@
       }
       localStorage.setItem(listKey, JSON.stringify(list));
     }catch{}
-    if(!myCache) return;
-    if(!myCache.user.following) myCache.user.following=[];
-    const exists=myCache.user.following.some(f=>(f._id||f)==targetId);
-    if(follow && !exists){ myCache.user.following.push({_id: targetId, username: targetUser.username||'user', avatar: targetUser.avatar||''}); }
-    else if(!follow && exists){ myCache.user.following=myCache.user.following.filter(f=>(f._id||f)!=targetId); }
-    myCache.followingCount=myCache.user.following.length;
-    setCache(myKey, myCache);
+    if(myCache){
+      if(!myCache.user.following) myCache.user.following=[];
+      const exists=myCache.user.following.some(f=>(f._id||f)==targetId);
+      if(follow && !exists){ myCache.user.following.push({_id: targetId, username: targetUser.username||'user', avatar: targetUser.avatar||''}); }
+      else if(!follow && exists){ myCache.user.following=myCache.user.following.filter(f=>(f._id||f)!=targetId); }
+      myCache.followingCount=myCache.user.following.length;
+      setCache(myKey, myCache);
+    }
+    // NEW: add to chat_users for messages box
+    try{
+      let chats=getCache('chat_users')||[];
+      if(follow){
+        if(!chats.some(x=>(x._id||x)==targetId)) chats.push({_id: targetId, username: targetUser.username||'user', avatar: targetUser.avatar||''});
+      }else{
+        // Option A: stay if they still follow you
+        let isFollower=false;
+        try{
+          const myProf=getCache('profile_'+getMyId());
+          isFollower=myProf?.user?.followers?.some(f=>(f._id||f)==targetId);
+        }catch{}
+        if(!isFollower){
+          chats=chats.filter(x=>(x._id||x)!=targetId);
+        }
+      }
+      setCache('chat_users', chats);
+    }catch{}
   }
+
   function getFollowingOptList(){ try{return JSON.parse(localStorage.getItem('following_opt_'+getMyId())||'[]');}catch{return [];}}
   function renderAvatar(user){
     const el=document.getElementById('letter');
@@ -208,14 +230,11 @@
       if((opt.state==='following')===serverFollowing){ clearOptimistic(targetId); }
       else{ followersCountToShow=opt.state==='following'?serverFollowersCount+1:Math.max(0,serverFollowersCount-1); }
     }
-    // Merge following count for own profile from opt list
     let followingCountToShow=data.followingCount||(u.following?u.following.length:0);
     if(isOwnProfile){
       const optList=getFollowingOptList();
-      // if we have opt list, use its length merged with server
       let merged = [...(u.following||[])];
       optList.forEach(o=>{ if(!merged.some(f=>(f._id||f)==(o._id||o))) merged.push(o); });
-      // also handle unfollowed removed ones that are in opt removal? Simple: if optList removed, count already reflects myCache
       const myCache=getCache('profile_'+getMyId());
       if(myCache && myCache.user.following) followingCountToShow=myCache.user.following.length;
     }
@@ -265,11 +284,16 @@
     const nextState=wasFollowing?'follow':'following';
     btn.innerText=nextState==='following'?'Following':'Follow'; btn.className=nextState==='following'?'follow-btn following':'follow-btn follow';
     let currentCount=parseInt(countEl.innerText||"0"); const newCount=wasFollowing?Math.max(0,currentCount-1):currentCount+1; countEl.innerText=newCount;
-    setOptimistic(targetId,nextState); updateMyFollowingCache(targetUser,nextState==='following');
+    
+    // THE LINE YOU ASKED FOR - ADDED
+    localStorage.setItem('follow_opt_'+getMyId()+'_'+targetId, JSON.stringify({state: nextState, ts: Date.now()}));
+    
+    setOptimistic(targetId,nextState); 
+    updateMyFollowingCache(targetUser,nextState==='following');
     const cacheKey='profile_'+targetId; const cached=getCache(cacheKey);
     if(cached){ try{ const myId=getMyId(); if(nextState==='following'){ if(!cached.user.followers) cached.user.followers=[]; if(!cached.user.followers.some(f=>(f._id||f)==myId)) cached.user.followers.push(myId); } else{ if(cached.user.followers) cached.user.followers=cached.user.followers.filter(f=>(f._id||f)!=myId); } cached.followersCount=newCount; setCache(cacheKey,cached); }catch{} }
     try{ const res=await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}}); if(!res.ok) throw new Error('follow failed'); localStorage.removeItem('profile_'+id); localStorage.removeItem('profile_'+getMyId()); setTimeout(()=>{ loadProfile(); },300); }
-    catch(e){ btn.innerText=wasFollowing?'Following':'Follow'; btn.className=wasFollowing?'follow-btn following':'follow-btn follow'; countEl.innerText=currentCount; setOptimistic(targetId,wasFollowing?'following':'follow'); updateMyFollowingCache(targetUser,wasFollowing); }
+    catch(e){ btn.innerText=wasFollowing?'Following':'Follow'; btn.className=wasFollowing?'follow-btn following':'follow-btn follow'; countEl.innerText=currentCount; setOptimistic(targetId,wasFollowing?'following':'follow'); updateMyFollowingCache(targetUser,wasFollowing); localStorage.setItem('follow_opt_'+getMyId()+'_'+targetId, JSON.stringify({state: wasFollowing?'following':'follow', ts: Date.now()})); }
   }
   async function openWide(id){ currentId=id; const cachedPost=allPosts.find(p=>p._id===id); const mediaDiv=document.getElementById("wideMedia"); const userDiv=document.getElementById("wideUser"); const listDiv=document.getElementById("commentList"); const likesDiv=document.getElementById("likesCount"); const likeBtn=document.getElementById("likeBtn"); if(cachedPost){ const url=fixUrl(cachedPost.mediaUrl||""); const isVid=cachedPost.type==='video'||isVideoFile(cachedPost.mediaUrl||""); if(isVid){ mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>'; } else{ mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">'; } userDiv.innerText='@'+(profileData.user.username||""); likesDiv.innerText=(cachedPost.likes?cachedPost.likes.length:0)+" likes"; likeBtn.innerText=cachedPost.likes&&cachedPost.likes.includes(getMyId())?"❤️":"🤍"; listDiv.innerHTML='<p style="color:#666">Loading...</p>'; document.getElementById("wide").style.display="flex"; } try{ const r=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}}); if(!r.ok) throw new Error("Post API failed"); const p=await safeJson(r); const url=fixUrl(p.mediaUrl||""); const isVid=p.type==='video'||isVideoFile(p.mediaUrl||""); if(!cachedPost){ if(isVid){ mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>'; } else{ mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">'; } document.getElementById("wide").style.display="flex"; } userDiv.innerText='@'+p.user.username; likesDiv.innerText=p.likes.length+" likes"; likeBtn.innerText=p.likes.includes(getMyId())?"❤️":"🤍"; let c=""; for(let x of p.comments){ c+='<div class="cmt"><b>'+x.user.username+'</b> '+x.text+'</div>'; } listDiv.innerHTML=c||"<p style='color:#777'>No comments</p>"; }catch(e){ console.log(e); } }
   function closeWide(){ const v=document.getElementById("activeVideo"); if(v){ v.pause(); v.src=""; } document.getElementById("wideMedia").innerHTML=""; document.getElementById("wide").style.display="none"; }
@@ -291,7 +315,6 @@
       const optList=getFollowingOptList();
       const combined=[...list];
       optList.forEach(o=>{ if(!combined.some(f=>(f._id||f)==(o._id||o))) combined.push(o); });
-      // filter out unfollowed if opt says unfollowed
       list=combined.filter(item=>{
         const tid=item._id||item;
         const opt=getOptimistic(tid);

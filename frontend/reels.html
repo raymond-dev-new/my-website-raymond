@@ -1,5 +1,7 @@
  
- <!DOCTYPE html>
+ 
+
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -38,20 +40,20 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 .cmt-input-area{padding:10px;border-top:1px solid #262626;display:flex;gap:8px}
 .cmt-input-area input{flex:1;background:#262626;border:none;color:#fff;padding:10px;border-radius:20px;outline:none}
 .cmt-input-area button{background:none;border:none;color:#0095f6;font-weight:bold;cursor:pointer}
-.follow-btn{margin-left:8px;border:1px solid #fff;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer;background:transparent;color:#fff;font-weight:700;transition:.2s}
-.follow-btn.following{background:#262626;border-color:#555;color:#fff}
-.follow-btn.follow{background:#0095f6;border-color:#0095f6;color:#fff}
+.follow-btn{margin-left:8px;border:1px solid #fff;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;background:transparent;color:#fff}
 </style>
 </head>
 <body>
 <div class="reel-container" id="reels">
   <div class="loader-wrap"><div class="spinner"></div><div style="font-size:13px;color:#777">Loading reels...</div></div>
 </div>
+
 <div class="bottom-nav">
 <a href="feed.html" onclick="saveState()">🏠</a><a href="explore.html" onclick="saveState()">🔍</a><a href="create.html" onclick="saveState()">➕</a>
 <a href="message.html" onclick="saveState()">💬<span id="msgCount" class="msg-badge hide">0</span></a>
 <a href="reels.html">🎬</a> <a href="notification.html" onclick="saveState()">🔔</a> <a href="profile.html" onclick="saveState()">👤</a>
 </div>
+
 <div class="comment-modal" id="cmtModal" onclick="if(event.target===this) closeComments()">
 <div class="comment-box">
 <div class="cmt-head"><span id="cmtCount">Comments</span><span style="cursor:pointer" onclick="closeComments()">✕</span></div>
@@ -62,6 +64,7 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 </div>
 </div>
 </div>
+
 <script src="upload-manager.js"></script>
 <script>
 const BASE="https://raymonddomain.dev";
@@ -69,66 +72,6 @@ const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; if(u.startsWith('http')) return u; return BASE+u; }
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
-function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||null); }catch{ return null } }
-function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
-
-// ===== FOLLOW SYSTEM (SAME AS PROFILE) =====
-function followKey(targetId){ return 'follow_opt_' + getMyId() + '_' + targetId; }
-function getOptimistic(targetId){ try{ return JSON.parse(localStorage.getItem(followKey(targetId))||'null'); }catch{return null;} }
-function setOptimistic(targetId, state){ localStorage.setItem(followKey(targetId), JSON.stringify({state, ts: Date.now()})); }
-function getMyFollowingIds(){
-  const ids = new Set();
-  try{
-    const myProfile = getCache('profile_'+getMyId());
-    if(myProfile && myProfile.user && myProfile.user.following){
-      myProfile.user.following.forEach(f=> ids.add(f._id||f));
-    }
-  }catch{}
-  try{
-    const opt = JSON.parse(localStorage.getItem('following_opt_'+getMyId())||'[]');
-    opt.forEach(u=> ids.add(u._id||u));
-  }catch{}
-  // apply optimistic overrides
-  try{
-    for(let i=0;i<localStorage.length;i++){
-      const k=localStorage.key(i);
-      if(k && k.startsWith('follow_opt_'+getMyId()+'_')){
-        const tid=k.substring(('follow_opt_'+getMyId()+'_').length);
-        const v=getOptimistic(tid);
-        if(v){
-          if(v.state==='following') ids.add(tid);
-          else if(v.state==='follow') ids.delete(tid);
-        }
-      }
-    }
-  }catch{}
-  return ids;
-}
-function isFollowingUser(userId){
-  if(!userId || userId==getMyId()) return false;
-  return getMyFollowingIds().has(userId);
-}
-function updateMyFollowingCache(targetUser, follow){
-  const myKey='profile_'+getMyId(); const myCache=getCache(myKey);
-  const targetId=targetUser._id||targetUser.id||targetUser;
-  const listKey='following_opt_'+getMyId();
-  try{
-    let list=JSON.parse(localStorage.getItem(listKey)||'[]');
-    if(follow){
-      if(!list.find(x=>(x._id||x)==targetId)) list.push({_id: targetId, username: targetUser.username||'user', avatar: targetUser.avatar||''});
-    }else{
-      list=list.filter(x=>(x._id||x)!=targetId);
-    }
-    localStorage.setItem(listKey, JSON.stringify(list));
-  }catch{}
-  if(!myCache) return;
-  if(!myCache.user.following) myCache.user.following=[];
-  const exists=myCache.user.following.some(f=>(f._id||f)==targetId);
-  if(follow && !exists){ myCache.user.following.push({_id: targetId, username: targetUser.username||'user', avatar: targetUser.avatar||''}); }
-  else if(!follow && exists){ myCache.user.following=myCache.user.following.filter(f=>(f._id||f)!=targetId); }
-  myCache.followingCount=myCache.user.following.length;
-  setCache(myKey, myCache);
-}
 
 let reelsData=[], activeReelId="", currentPage=1, isLoadingMore=false, hasMore=true, observer=null;
 
@@ -154,7 +97,6 @@ function restoreState(){
     currentPage=page;
     document.getElementById('reels').scrollTop=parseInt(scroll||'0');
     observeViews();
-    syncFollowButtons();
     return true;
   }
   return false;
@@ -182,16 +124,12 @@ function appendReels(reels){
   const views=r.views||0;
   const userId=r.user?._id||r.user;
   const username=r.user?.username||'user';
-  const avatar=r.user?.avatar||'';
-  const following=isFollowingUser(userId);
-  const isOwn=userId==getMyId();
-  const followBtnHtml=isOwn?'':`<button class="follow-btn ${following?'following':'follow'}" data-user="${userId}" data-username="${username}" data-avatar="${avatar}" onclick="toggleFollowReel(this, '${userId}', '${username}', '${avatar}')">${following?'Following':'Follow'}</button>`;
   return `<div class="reel" data-id="${r._id}">
    <div class="view-badge">👁️ <span id="view-${r._id}">${views}</span> views</div>
    <video src="${url}" loop playsinline preload="metadata" onclick="toggleMute(this, '${r._id}')"></video>
    <div class="info">
     <b onclick="goToProfile('${userId}')">@${username}</b>
-    ${followBtnHtml}<br>
+    <button class="follow-btn" onclick="goToProfile('${userId}')">View Profile</button><br>
     ${r.caption||''}
    </div>
    <div class="actions">
@@ -266,67 +204,6 @@ async function like(id){
  try{ await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}}); }catch{}
 }
 async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); }catch{} if(navigator.share){ navigator.share({url: location.origin+'/reels.html?id='+id}) } }
-
-// NEW: FOLLOW BUTTON LOGIC FOR REELS
-function syncFollowButtons(){
-  const ids=getMyFollowingIds();
-  document.querySelectorAll('.follow-btn[data-user]').forEach(btn=>{
-    const uid=btn.dataset.user;
-    if(uid==getMyId()){ btn.style.display='none'; return; }
-    const isF=ids.has(uid);
-    btn.innerText=isF?'Following':'Follow';
-    btn.className='follow-btn '+(isF?'following':'follow');
-  });
-}
-async function toggleFollowReel(btn, userId, username, avatar){
-  if(!userId || userId==getMyId()) return;
-  const wasFollowing=btn.innerText.trim()==='Following';
-  const nextState=wasFollowing?'follow':'following';
-  
-  // Instant UI for all buttons of same user
-  document.querySelectorAll(`.follow-btn[data-user="${userId}"]`).forEach(b=>{
-    b.innerText=nextState==='following'?'Following':'Follow';
-    b.className='follow-btn '+(nextState==='following'?'following':'follow');
-  });
-
-  setOptimistic(userId, nextState);
-  updateMyFollowingCache({_id:userId, username, avatar}, nextState==='following');
-
-  // Update chat_users cache so messages box shows instantly (same logic as messages file)
-  try{
-    let chatUsers=getCache('chat_users')||[];
-    if(nextState==='following'){
-      if(!chatUsers.some(u=>(u._id||u)==userId)){
-        chatUsers.push({_id:userId, username, avatar});
-        setCache('chat_users', chatUsers);
-      }
-    }else{
-      // Option A: keep if they still follow you
-      const myProfile=getCache('profile_'+getMyId());
-      const isFollower=myProfile?.user?.followers?.some(f=>(f._id||f)==userId);
-      if(!isFollower){
-        chatUsers=chatUsers.filter(u=>(u._id||u)!=userId);
-        setCache('chat_users', chatUsers);
-      }
-    }
-  }catch{}
-
-  try{
-    const res=await fetch(BASE+"/api/users/"+userId+"/follow",{method:'POST',headers:{authorization:token}});
-    if(!res.ok) throw new Error('fail');
-    localStorage.removeItem('profile_'+userId);
-    localStorage.removeItem('profile_'+getMyId());
-  }catch(e){
-    // revert
-    document.querySelectorAll(`.follow-btn[data-user="${userId}"]`).forEach(b=>{
-      b.innerText=wasFollowing?'Following':'Follow';
-      b.className='follow-btn '+(wasFollowing?'following':'follow');
-    });
-    setOptimistic(userId, wasFollowing?'following':'follow');
-    updateMyFollowingCache({_id:userId, username, avatar}, wasFollowing);
-  }
-}
-
 async function openComments(id){
  activeReelId=id;
  const v=document.querySelector(`.reel[data-id="${id}"] video`);
@@ -352,25 +229,10 @@ window.addEventListener('pagehide', saveState);
 window.addEventListener('beforeunload', saveState);
 document.getElementById('reels').addEventListener('scroll', ()=>{ clearTimeout(window._rt); window._rt=setTimeout(saveState,300); });
 
-// Load my profile once to have following list for instant check
-(async()=>{
-  try{
-    const cached=getCache('profile_'+getMyId());
-    if(!cached){
-      const r=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
-      const d=await r.json();
-      const norm=d.user?d:{user:d, posts:d.posts||[], followersCount:(d.followers?d.followers.length:0), followingCount:(d.following?d.following.length:0)};
-      setCache('profile_'+getMyId(), norm);
-      syncFollowButtons();
-    }
-  }catch{}
-})();
-
 const upData = localStorage.getItem('uploading');
 if(upData){ try{ const d=JSON.parse(upData); if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading...'); }catch{} }
 
 loadReels(false); loadMsgBadge();
-setInterval(syncFollowButtons, 1000);
 </script>
 </body>
 </html>
