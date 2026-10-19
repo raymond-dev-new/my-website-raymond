@@ -86,7 +86,16 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
   <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
 </div>
 </div>
-<div class="preview" id="preview"><div class="preview-top"><button class="close-preview" onclick="closePreview()">←</button><b>Photo</b><button class="close-preview" onclick="closePreview()">✕</button></div><div class="preview-body" onclick="closePreview()"><img id="previewImg" src="" onclick="event.stopPropagation()"></div></div>
+<div class="preview" id="preview">
+  <div class="preview-top">
+    <button class="close-preview" onclick="closePreview()">←</button>
+    <b>Photo</b>
+    <button class="close-preview" onclick="closePreview()">✕</button>
+  </div>
+  <div class="preview-body" onclick="closePreview()">
+    <img id="previewImg" src="" onclick="event.stopPropagation()">
+  </div>
+</div>
 <div class="menu" id="menu"><div id="editOpt" onclick="startEdit()">✏️ Edit</div><div class="del" id="delOpt" onclick="deleteMsg()">🗑️ Unsend</div><div onclick="closeMenu()">Cancel</div></div>
 <div class="edit-box" id="editBox"><div class="edit-card"><b>Edit message</b><input id="editInput"><button class="btn-save" onclick="saveEdit()">Save</button><button class="btn-cancel" onclick="closeBox()">Cancel</button></div></div>
 <script>
@@ -94,7 +103,7 @@ const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
-function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ try{ localStorage.setItem(k, JSON.stringify(v.slice(-30))); }catch{} } }
+function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ try{ localStorage.setItem(k, JSON.stringify(v.slice(-100))); }catch{} } }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
 function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
@@ -112,11 +121,27 @@ function updateBadges(){
   if(b){ const c=unreadMap[uid]; if(c>0){b.innerText=c; b.classList.remove('hide');} else b.classList.add('hide'); }
  });
 }
-function mergeAndSaveUsers(serverUsers){
+// NEVER DELETE - MERGE ALL SOURCES
+function mergeAndSaveUsers(lists){
   const cached = getCache('chat_users') || [];
   const map = new Map();
   cached.forEach(u=>{ if(u && u._id) map.set(u._id, u); });
-  serverUsers.forEach(u=>{ if(u && u._id){ const ex=map.get(u._id)||{}; map.set(u._id, {...ex, ...u}); } });
+  lists.flat().forEach(u=>{
+    if(!u || !u._id) return;
+    const ex=map.get(u._id)||{};
+    map.set(u._id, {...ex, ...u, _id:u._id, username:u.username||ex.username||'user', avatar:u.avatar||ex.avatar||''});
+  });
+  // keep anyone with local chat history even if not in lists
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k && k.startsWith('chat_')){
+      const uid=k.replace('chat_','');
+      if(!map.has(uid)){
+        const found=cached.find(x=>x._id==uid);
+        if(found) map.set(uid, found);
+      }
+    }
+  }
   const merged=[...map.values()];
   setCache('chat_users', merged);
   return merged;
@@ -133,13 +158,13 @@ async function ensureUserInList(id, fallbackName='user'){
     let av=du.avatar || du.user?.avatar || '';
     let nu={_id:id, username:uname, avatar:av};
     if(!usersCache.some(u=>u._id==id)) usersCache.push(nu);
-    mergeAndSaveUsers(usersCache);
+    mergeAndSaveUsers([usersCache]);
     renderUsers(usersCache);
     return nu;
   }catch{
     let nu={_id:id, username:fallbackName, avatar:''};
     if(!usersCache.some(u=>u._id==id)) usersCache.push(nu);
-    mergeAndSaveUsers(usersCache);
+    mergeAndSaveUsers([usersCache]);
     renderUsers(usersCache);
     return nu;
   }
@@ -164,20 +189,28 @@ function renderUsers(users){
 }
 async function load(){
  const cachedUsers=getCache('chat_users');
- if(cachedUsers) renderUsers(cachedUsers);
+ if(cachedUsers){ 
+   for(let u of cachedUsers){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
+   renderUsers(cachedUsers); 
+ }
  try{
-  let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
-  let users=await r.json();
-  if(!users.length){
-   let r2=await fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}});
-   let d2=await r2.json();
-   users=[...(d2.user.followers||[]),...(d2.user.following||[])];
-   users=[...new Map(users.map(u=>[u._id,u])).values()];
+  let [msgRes, profileRes] = await Promise.all([
+    fetch(BASE+'/api/messages/users',{headers:{authorization:token}}).then(r=>r.json()).catch(()=>[]),
+    fetch(BASE+'/api/users/me/profile',{headers:{authorization:token}}).then(r=>r.json()).catch(()=>null)
+  ]);
+  let messageUsers = Array.isArray(msgRes) ? msgRes : [];
+  let followUsers = [];
+  if(profileRes && profileRes.user){
+    followUsers = [...(profileRes.user.followers||[]), ...(profileRes.user.following||[])];
   }
-  let merged=mergeAndSaveUsers(users);
+  // always merge - never overwrite
+  let merged = mergeAndSaveUsers([cachedUsers||[], messageUsers, followUsers]);
+  // keep lastMsg times
   for(let u of merged){ let cm=getCache('chat_'+u._id); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
   renderUsers(merged);
   await loadUnread();
+
+  // auto open from profile ?id=
   try{
     const qId=new URLSearchParams(location.search).get('id');
     if(qId){
@@ -190,12 +223,13 @@ async function load(){
         let av=du.avatar || du.user?.avatar || '';
         let nu={_id:qId, username:uname, avatar:av};
         merged.push(nu);
-        mergeAndSaveUsers(merged);
+        mergeAndSaveUsers([merged]);
         renderUsers(merged);
         openC(qId, uname);
       }
     }
   }catch{}
+
   merged.forEach(async (u)=>{
     try{
       let rr=await fetch(BASE+'/api/messages/'+u._id,{headers:{authorization:token}});
@@ -203,7 +237,7 @@ async function load(){
       if(mm&&mm.length){ lastMsgMap[u._id]=new Date(mm[mm.length-1].createdAt).getTime(); renderUsers(usersCache); }
     }catch{}
   });
- }catch(e){}
+ }catch(e){ console.log(e); }
 }
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
@@ -340,7 +374,8 @@ async function toggleRecord(){
    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
    let options = {mimeType:'audio/webm;codecs=opus', audioBitsPerSecond: 32000};
    try{ mediaRecorder=new MediaRecorder(stream, options); }catch{ mediaRecorder=new MediaRecorder(stream); }
-   audioChunks=[]; recordSeconds=0;
+   audioChunks=[];
+   recordSeconds=0;
    mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) audioChunks.push(e.data); };
    mediaRecorder.onstop=async ()=>{
     clearInterval(recordTimer);
@@ -367,8 +402,11 @@ async function toggleRecord(){
            break;
          }
        }catch(err){
-         if(attempt===5){ alert('Voice sending failed! Max 18s Size: '+(blob.size/1024/1024).toFixed(2)+'MB'); }
-         else await new Promise(res=>setTimeout(res, 1200*attempt));
+         if(attempt===5){
+           alert('Voice sending failed! Max seconds recording is 18 seconds Size: '+(blob.size/1024/1024).toFixed(2)+'MB');
+         } else {
+           await new Promise(res=>setTimeout(res, 1200*attempt));
+         }
        }
      }
     };
@@ -376,10 +414,23 @@ async function toggleRecord(){
     stream.getTracks().forEach(s=>s.stop());
    };
    mediaRecorder.start(1000);
-   isRecording=true; btn.classList.add('rec'); btn.innerText='⏹️'; info.classList.add('on');
-   recordTimer=setInterval(()=>{ recordSeconds++; let m=Math.floor(recordSeconds/60); let s=recordSeconds%60; info.innerText=`● Recording ${m}:${String(s).padStart(2,'0')} - tap to send`; },1000);
+   isRecording=true;
+   btn.classList.add('rec');
+   btn.innerText='⏹️';
+   info.classList.add('on');
+   recordTimer=setInterval(()=>{
+     recordSeconds++;
+     let m=Math.floor(recordSeconds/60);
+     let s=recordSeconds%60;
+     info.innerText=`● Recording ${m}:${String(s).padStart(2,'0')} - tap to send`;
+   },1000);
   }catch{ alert('Mic denied'); }
- }else{ mediaRecorder.stop(); isRecording=false; btn.classList.remove('rec'); btn.innerText='🎤'; }
+ }else{
+   mediaRecorder.stop();
+   isRecording=false;
+   btn.classList.remove('rec');
+   btn.innerText='🎤';
+ }
 }
 function openMenu(el){
  selectedMsg=el.dataset.id; if(String(selectedMsg).startsWith('temp_')) return;
@@ -399,12 +450,17 @@ socket.on('receiveMessage',async m=>{
  let receiverId=m.receiver._id||m.receiver;
  await ensureUserInList(senderId, m.sender?.username || 'user');
  if(senderId==active || receiverId==active){
-  if(!msgsCache.find(x=>x._id===m._id)){ msgsCache.push(m); lastMsgMap[active]=new Date(m.createdAt).getTime(); renderAll(); }
+  if(!msgsCache.find(x=>x._id===m._id)){
+    msgsCache.push(m);
+    lastMsgMap[active]=new Date(m.createdAt).getTime();
+    renderAll();
+  }
   if(senderId!=myId()) fetch(BASE+'/api/messages/'+active+'/read',{method:'POST',headers:{authorization:token}});
  }else if(receiverId==myId()){
   unreadMap[senderId]=(unreadMap[senderId]||0)+1;
   lastMsgMap[senderId]=new Date(m.createdAt).getTime();
-  updateBadges(); renderUsers(usersCache);
+  updateBadges();
+  renderUsers(usersCache);
  }
 });
 socket.on('messageEdited',m=>{ let i=msgsCache.findIndex(x=>x._id==m._id); if(i>-1){msgsCache[i]=m; renderAll(); if(active) setCache('chat_'+active, msgsCache);}});
