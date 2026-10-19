@@ -202,6 +202,7 @@
       renderProfileUI(norm);setCache(key,norm);
     }catch(e){console.log("loadProfile error",e);if(!getCache('profile_'+vid)){document.getElementById('skeletonProfile').innerHTML='<p style="text-align:center;color:#777;padding:40px">Failed to load user. Retrying...</p>';}setTimeout(loadProfile,2000);}
   }
+  
   window.addEventListener('scroll',()=>{const y=window.scrollY;const head=document.getElementById('header');if(y>50)head.classList.add('shrink');else head.classList.remove('shrink');},{passive:true});
   function openBioModal(){if(!isOwnProfile)return;const u=profileData&&profileData.user?profileData.user:{};document.getElementById('usernameInput').value=u.username||'';document.getElementById('bioNameInput').value=u.displayName||'';document.getElementById('bioInput').value=u.bio||'';document.getElementById('linkInput').value=u.link||'';document.getElementById('bioCount').innerText=(u.bio||'').length;document.getElementById('bioModal').classList.add('open');}
   function closeBioModal(){document.getElementById('bioModal').classList.remove('open');}
