@@ -203,6 +203,7 @@
         chats.push({_id: id, username: u.username || 'user', avatar: u.avatar || ''});
         setCache('chat_users', chats);
       }
+      if(!getCache('chat_'+id)) setCache('chat_'+id, []);
     }catch{}
     location.href = 'message.html?id=' + id;
   }
