@@ -63,11 +63,12 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 .preview-body{flex:1;display:flex;align-items:center;justify-content:center;padding:10px}
 .preview-body img{max-width:100%;max-height:85vh;border-radius:12px;object-fit:contain}
 .close-preview{width:40px;height:40px;border-radius:50%;background:#262626;border:none;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.loading-chats{text-align:center;color:#aaa;margin-top:50px;font-size:14px}
 </style>
 </head>
 <body>
 <div class="top"><b>Messages <span id="totalUnread" class="total-badge" style="display:none">0</span> <span class="live-dot"></span></b><span onclick="location.href='feed.html'" style="cursor:pointer;font-size:22px">←</span></div>
-<div class="list" id="list"></div>
+<div class="list" id="list"><p class="loading-chats">Loading chats...</p></div>
 <div class="chat" id="chat">
 <div class="top">
   <div class="top-user" onclick="goToProfile()">
@@ -104,7 +105,6 @@ const token=localStorage.getItem('token');
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
 function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ try{ localStorage.setItem(k, JSON.stringify(v.slice(-100))); }catch{} } }
-// ACCOUNT SPECIFIC CHAT LIST - FIXES CROSS ACCOUNT LEAK
 function chatUsersKey(){ return 'chat_users_' + myId(); }
 function chatKey(id){ return 'chat_' + myId() + '_' + id; }
 function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('http')) return u; if(u.startsWith('/api/')) return BASE+u; return u; }
@@ -112,6 +112,7 @@ function formatTime(s){ const d=new Date(s); return d.toLocaleTimeString([],{hou
 function goToProfile(){ if(active) location.href='profile.html?id='+active; }
 function closeBox(){ document.getElementById('editBox').classList.remove('open'); }
 let active="", unreadMap={}, selectedMsg=null, selectedIsMe=false, msgsCache=[], usersCache=[], isSending=false, lastMsgMap={}, lastSentText="", lastSentTime=0;
+let isFirstLoad = true;
 const socket=io(BASE,{transports:['websocket','polling'], reconnection:true});
 socket.on('connect',()=>{ socket.emit('join',myId()); });
 async function loadUnread(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); unreadMap=await r.json(); updateBadges(); }catch{} }
@@ -174,7 +175,14 @@ async function ensureUserInList(id, fallbackName='user'){
 function renderUsers(users){
  const el=document.getElementById('list');
  usersCache=users;
- if(!users.length){ el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>'; return; }
+ if(!users.length){
+   if(isFirstLoad){
+     el.innerHTML='<p class="loading-chats">Loading chats...</p>';
+   } else {
+     el.innerHTML='<p style="text-align:center;color:#777;margin-top:50px">No chats yet</p>';
+   }
+   return;
+ }
  let sorted=[...users].sort((a,b)=>{
    let aTime=lastMsgMap[a._id]||0; let bTime=lastMsgMap[b._id]||0;
    if(!aTime){ let ca=getCache(chatKey(a._id)); if(ca&&ca.length) aTime=new Date(ca[ca.length-1].createdAt).getTime(); }
@@ -191,9 +199,12 @@ function renderUsers(users){
 }
 async function load(){
  const cachedUsers=getCache(chatUsersKey());
- if(cachedUsers){ 
+ if(cachedUsers && cachedUsers.length){ 
    for(let u of cachedUsers){ let cm=getCache(chatKey(u._id)); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
    renderUsers(cachedUsers); 
+   isFirstLoad = false;
+ } else {
+   document.getElementById('list').innerHTML='<p class="loading-chats">Loading chats...</p>';
  }
  try{
   let [msgRes, profileRes] = await Promise.all([
@@ -207,6 +218,7 @@ async function load(){
   }
   let merged = mergeAndSaveUsers([cachedUsers||[], messageUsers, followUsers]);
   for(let u of merged){ let cm=getCache(chatKey(u._id)); if(cm&&cm.length) lastMsgMap[u._id]=new Date(cm[cm.length-1].createdAt).getTime(); }
+  isFirstLoad = false;
   renderUsers(merged);
   await loadUnread();
   const qId=new URLSearchParams(location.search).get('id');
@@ -234,7 +246,10 @@ async function load(){
       if(mm&&mm.length){ lastMsgMap[u._id]=new Date(mm[mm.length-1].createdAt).getTime(); renderUsers(usersCache); }
     }catch{}
   });
- }catch(e){ console.log(e); }
+ }catch(e){ 
+   isFirstLoad = false;
+   console.log(e); 
+ }
 }
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
