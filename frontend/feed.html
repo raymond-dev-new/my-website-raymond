@@ -227,13 +227,13 @@
 
   if(ball) ball.addEventListener('click', async () => { 
     savePageState();
-     await fetch(BASE+'/api/sync'); 
+      fetch(BASE+'/api/sync'); 
      location.href="football.html"; 
   });
 
   if(Country) Country.addEventListener('click', async () => { 
     savePageState(); 
-    await fetch(BASE+'/api/fetch-now'); 
+     fetch(BASE+'/api/fetch-now'); 
     location.href="countrymatch.html"; 
   });
 
