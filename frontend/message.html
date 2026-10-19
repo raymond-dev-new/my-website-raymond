@@ -101,7 +101,6 @@ body{margin:0;background:#000;color:#fff;font-family:-apple-system,Segoe UI,Robo
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
-//if(!token) location.href='login.html';
 function myId(){try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""}}
 function getCache(k){ try{ return JSON.parse(localStorage.getItem(k)||'null') }catch{ return null } }
 function setCache(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{ try{ localStorage.setItem(k, JSON.stringify(v.slice(-30))); }catch{} } }
@@ -143,7 +142,6 @@ function renderUsers(users){
 async function load(){
  const cachedUsers=getCache('chat_users');
  if(cachedUsers) renderUsers(cachedUsers);
- // NEW: sync follow state immediately on load (before server fetch)
  syncMessagesWithFollowState();
  try{
   let r=await fetch(BASE+'/api/messages/users',{headers:{authorization:token}});
@@ -154,21 +152,25 @@ async function load(){
    users=[...(d2.user.followers||[]),...(d2.user.following||[])];
    users=[...new Map(users.map(u=>[u._id,u])).values()];
   }
-  // Merge with optimistic follows so they stay
   let optFollowing = [];
   try{ optFollowing = JSON.parse(localStorage.getItem('following_opt_'+myId())||'[]'); }catch{}
   optFollowing.forEach(o=>{
     if(!users.some(u=>(u._id||u)==(o._id||o))) users.push(o);
   });
-  // Remove unfollowed optimistically
+  // Don't remove if they are still follower - Option A
   try{
+    const myProfile = getCache('profile_'+myId());
+    const followers = myProfile?.user?.followers || [];
     for(let i=0;i<localStorage.length;i++){
       let k=localStorage.key(i);
       if(k && k.startsWith('follow_opt_'+myId()+'_')){
         let v=JSON.parse(localStorage.getItem(k)||'null');
         if(v && v.state==='follow'){
           let tid=k.substring(('follow_opt_'+myId()+'_').length);
-          users=users.filter(u=>(u._id||u)!=tid);
+          let isFollower = followers.some(f=>(f._id||f)==tid);
+          if(!isFollower){
+            users=users.filter(u=>(u._id||u)!=tid);
+          }
         }
       }
     }
@@ -188,9 +190,17 @@ async function load(){
  }catch(e){}
 }
 
-// ===== NEW: INSTANT MESSAGE BOX SYNC FROM FOLLOW/UNFOLLOW (DO NOT TOUCH OTHER LOGIC) =====
+// ===== INSTANT SYNC - OPTION A: STAY IF THEY STILL FOLLOW YOU =====
 function getFollowingOpt(){
   try{ return JSON.parse(localStorage.getItem('following_opt_'+myId())||'[]'); }catch{ return []; }
+}
+function isStillMyFollower(tid){
+  try{
+    const myProfile = getCache('profile_'+myId());
+    if(!myProfile || !myProfile.user) return false;
+    const followers = myProfile.user.followers || [];
+    return followers.some(f => (f._id||f) == tid);
+  }catch{ return false; }
 }
 function syncMessagesWithFollowState(){
   try{
@@ -198,9 +208,8 @@ function syncMessagesWithFollowState(){
     if(!my) return;
     let current = getCache('chat_users') || usersCache || [];
     let changed = false;
-
-    // ADD: all users in following_opt list
     const followingOpt = getFollowingOpt();
+
     followingOpt.forEach(u=>{
       const tid = u._id || u;
       if(!current.some(x=>(x._id||x)==tid)){
@@ -209,7 +218,19 @@ function syncMessagesWithFollowState(){
       }
     });
 
-    // REMOVE: any follow_opt with state 'follow'
+    try{
+      const myProfile = getCache('profile_'+my);
+      if(myProfile && myProfile.user && myProfile.user.followers){
+        myProfile.user.followers.forEach(f=>{
+          const fid = f._id || f;
+          if(!current.some(x=>(x._id||x)==fid)){
+            current.push({_id: fid, username: f.username||'user', avatar: f.avatar||''});
+            changed = true;
+          }
+        });
+      }
+    }catch{}
+
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
       if(!k || !k.startsWith('follow_opt_'+my+'_')) continue;
@@ -217,13 +238,13 @@ function syncMessagesWithFollowState(){
         const v=JSON.parse(localStorage.getItem(k)||'null');
         if(v && v.state==='follow'){
           const tid=k.substring(('follow_opt_'+my+'_').length);
+          if(isStillMyFollower(tid)) continue;
           const idx=current.findIndex(x=>(x._id||x)==tid);
           if(idx>-1){ current.splice(idx,1); changed=true; }
         }
       }catch{}
     }
 
-    // ADD: any follow_opt with state 'following' that may not be in following_opt yet (race)
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
       if(!k || !k.startsWith('follow_opt_'+my+'_')) continue;
@@ -232,7 +253,6 @@ function syncMessagesWithFollowState(){
         if(v && v.state==='following'){
           const tid=k.substring(('follow_opt_'+my+'_').length);
           if(!current.some(x=>(x._id||x)==tid)){
-            // try get username from following_opt or from profile cache
             let found = followingOpt.find(x=>(x._id||x)==tid);
             let prof = getCache('profile_'+tid);
             let username = found?.username || prof?.user?.username || 'user';
@@ -250,15 +270,13 @@ function syncMessagesWithFollowState(){
     }
   }catch{}
 }
-// Listen to storage changes from profile page (other tab)
 window.addEventListener('storage', (e)=>{
-  if(e.key && (e.key.startsWith('follow_opt_') || e.key.startsWith('following_opt_') || e.key==='chat_users')){
+  if(e.key && (e.key.startsWith('follow_opt_') || e.key.startsWith('following_opt_') || e.key==='chat_users' || e.key.startsWith('profile_'))){
     syncMessagesWithFollowState();
   }
 });
-// Poll every 800ms so same-tab follow shows instantly without refresh
 setInterval(syncMessagesWithFollowState, 800);
-// ===== END NEW SYNC =====
+// ===== END SYNC =====
 
 function renderMsg(m){
  const isMe=(m.sender._id||m.sender)==myId();
