@@ -137,36 +137,9 @@
   let currentId = "", profileData = null, selectedAvatarFile = null, isOwnProfile = false, allPosts = [];
   function getMyId(){try{const parts=token.split('.');if(parts.length!==3)return"";return JSON.parse(atob(parts[1])).id||""}catch{return""}}
   function getParamId(){return new URLSearchParams(location.search).get('id')}
-
-  // SESSION + LOCAL STORAGE CACHE - NO REFRESH
-  function getCache(k){
-    try{
-      let s = sessionStorage.getItem(k);
-      if(s) return JSON.parse(s);
-      let l = localStorage.getItem(k);
-      if(l){
-        sessionStorage.setItem(k, l);
-        return JSON.parse(l);
-      }
-    }catch{return null}
-    return null
-  }
-  function setCache(k,v){
-    try{
-      const str = JSON.stringify(v);
-      sessionStorage.setItem(k, str);
-      localStorage.setItem(k, str);
-      localStorage.setItem(k+'_time', Date.now().toString());
-    }catch{}
-  }
-  function isCacheFresh(k, maxMinutes=5){
-    try{
-      let t = localStorage.getItem(k+'_time');
-      if(!t) return false;
-      return (Date.now() - parseInt(t)) < maxMinutes*60*1000;
-    }catch{return false}
-  }
-
+  function getCache(k){try{let s=sessionStorage.getItem(k); if(s) return JSON.parse(s); let l=localStorage.getItem(k); if(l){ sessionStorage.setItem(k,l); return JSON.parse(l);} }catch{return null} return null}
+  function setCache(k,v){try{const str=JSON.stringify(v); sessionStorage.setItem(k,str); localStorage.setItem(k,str); localStorage.setItem(k+'_time',Date.now().toString());}catch{}}
+  function isCacheFresh(k,maxMinutes=5){try{let t=localStorage.getItem(k+'_time'); if(!t) return false; return (Date.now()-parseInt(t)) < maxMinutes*60*1000;}catch{return false}}
   function fixUrl(u){if(!u)return"";if(u.startsWith('data:'))return u;if(u.startsWith('/api/'))return BASE+u;if(u.startsWith('/uploads'))return BASE+u;if(u.startsWith('http'))return u;return u}
   function isVideoFile(u){if(!u)return false;return u.includes('/api/media-file')||u.endsWith('.mp4')}
   async function safeJson(res){const text=await res.text();try{return JSON.parse(text)}catch{throw new Error("API returned HTML - check route: "+res.url)}}
@@ -174,7 +147,6 @@
   function getOptimistic(targetId){try{return JSON.parse(localStorage.getItem(followKey(targetId))||'null')}catch{return null}}
   function setOptimistic(targetId,state){localStorage.setItem(followKey(targetId),JSON.stringify({state,ts:Date.now()}))}
   function clearOptimistic(targetId){localStorage.removeItem(followKey(targetId))}
-
   function renderAvatar(user){
     const el=document.getElementById('letter');
     if(user.avatar){el.innerHTML='<img src="'+fixUrl(user.avatar)+'" loading="lazy">';}
@@ -218,27 +190,14 @@
     const observer=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');const vid=entry.target.querySelector('video');if(vid &&!vid.dataset.loaded){vid.load();vid.dataset.loaded='1';}}});},{threshold:0.1,rootMargin:'100px'});document.querySelectorAll('.post-box').forEach(b=>observer.observe(b));
   }
   async function loadProfile(){
-    const vid=getParamId()||getMyId();
-    isOwnProfile=vid===getMyId();
-    const key='profile_'+vid;
-    const cached=getCache(key);
-    // INSTANT LOAD - no refresh
-    if(cached){
-      renderProfileUI(cached);
-      if(isCacheFresh(key, 5)){
-        return; // fresh, don't fetch
-      }
-    }
-    // BACKGROUND UPDATE
+    const vid=getParamId()||getMyId();isOwnProfile=vid===getMyId();const key='profile_'+vid;const cached=getCache(key);
+    if(cached){renderProfileUI(cached); if(isCacheFresh(key,5)) return;}
     try{
       let url=isOwnProfile?BASE+'/api/users/me/profile':BASE+'/api/users/'+vid+'/profile';
       let res=await fetch(url,{headers:{authorization:token}});
       if(!res.ok){const res2=await fetch(BASE+'/api/users/'+vid,{headers:{authorization:token}});if(res2.ok){res=res2;}else{throw new Error("Profile API 404");}}
       const data=await safeJson(res);let norm;if(data.user){norm=data;}else{norm={user:data,posts:data.posts||[],followersCount:(data.followers?data.followers.length:0),followingCount:(data.following?data.following.length:0)};}
-      // only re-render if changed
-      if(JSON.stringify(cached||{}) !== JSON.stringify(norm)){
-        renderProfileUI(norm);
-      }
+      if(JSON.stringify(cached||{})!==JSON.stringify(norm)) renderProfileUI(norm);
       setCache(key,norm);
     }catch(e){console.log("loadProfile error",e);if(!getCache('profile_'+vid)){document.getElementById('skeletonProfile').innerHTML='<p style="text-align:center;color:#777;padding:40px">Failed to load user. Retrying...</p>';}setTimeout(loadProfile,2000);}
   }
@@ -259,6 +218,7 @@
     const targetId=profileData?.user?._id||id;
     const wasFollowing=btn.innerText.trim()==='Following';
     const nextState=wasFollowing?'follow':'following';
+    // instant UI
     btn.innerText=nextState==='following'?'Following':'Follow';
     btn.className=nextState==='following'?'follow-btn following':'follow-btn follow';
     let currentCount=parseInt(countEl.innerText||"0");
@@ -267,7 +227,45 @@
     setOptimistic(targetId,nextState);
     const cacheKey='profile_'+targetId; const cached=getCache(cacheKey);
     if(cached){try{const myId=getMyId();if(nextState==='following'){if(!cached.user.followers) cached.user.followers=[];if(!cached.user.followers.some(f=>(f._id||f)==myId)) cached.user.followers.push(myId);}else{if(cached.user.followers) cached.user.followers=cached.user.followers.filter(f=>(f._id||f)!=myId);}cached.followersCount=newCount;setCache(cacheKey,cached);}catch{}}
-    try{const res=await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});if(!res.ok)throw new Error('follow failed');localStorage.removeItem('profile_'+id);sessionStorage.removeItem('profile_'+id);setTimeout(()=>{loadProfile();},300);}catch(e){btn.innerText=wasFollowing?'Following':'Follow';btn.className=wasFollowing?'follow-btn following':'follow-btn follow';countEl.innerText=currentCount;setOptimistic(targetId,wasFollowing?'following':'follow');}
+    // INSTANT OWN FOLLOWING UPDATE - FIXED
+    try{
+      const myKey='profile_'+getMyId();
+      let myCache=getCache(myKey);
+      if(myCache){
+        if(nextState==='following'){
+          if(!myCache.user.following) myCache.user.following=[];
+          // push full object if we have it, else id
+          if(!myCache.user.following.some(f=>(f._id||f)==targetId)){
+            let targetUser = profileData?.user || {_id:targetId, username:document.getElementById('nameText').innerText||'user', avatar:''};
+            myCache.user.following.push(targetUser);
+          }
+          myCache.followingCount=(myCache.followingCount||0)+1;
+          if(myCache.user.following) myCache.followingCount=myCache.user.following.length;
+        }else{
+          if(myCache.user.following) myCache.user.following=myCache.user.following.filter(f=>(f._id||f)!=targetId);
+          myCache.followingCount=Math.max(0,(myCache.followingCount||1)-1);
+          if(myCache.user.following) myCache.followingCount=myCache.user.following.length;
+        }
+        setCache(myKey,myCache);
+        // if you are viewing your own profile, update UI
+        if(isOwnProfile){
+          document.getElementById('followingCount').innerText=myCache.followingCount;
+          profileData=myCache;
+        }
+      }
+    }catch(e){console.log(e)}
+    try{
+      const res=await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});
+      if(!res.ok) throw new Error('follow failed');
+      localStorage.removeItem('profile_'+id);
+      sessionStorage.removeItem('profile_'+id);
+      setTimeout(()=>{loadProfile();},300);
+    }catch(e){
+      btn.innerText=wasFollowing?'Following':'Follow';
+      btn.className=wasFollowing?'follow-btn following':'follow-btn follow';
+      countEl.innerText=currentCount;
+      setOptimistic(targetId,wasFollowing?'following':'follow');
+    }
   }
   async function openWide(id){currentId=id;const cachedPost=allPosts.find(p=>p._id===id);const mediaDiv=document.getElementById("wideMedia");const userDiv=document.getElementById("wideUser");const listDiv=document.getElementById("commentList");const likesDiv=document.getElementById("likesCount");const likeBtn=document.getElementById("likeBtn");if(cachedPost){const url=fixUrl(cachedPost.mediaUrl||"");const isVid=cachedPost.type==='video'||isVideoFile(cachedPost.mediaUrl||"");if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>';}else{mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">';}userDiv.innerText='@'+(profileData.user.username||"");likesDiv.innerText=(cachedPost.likes?cachedPost.likes.length:0)+" likes";likeBtn.innerText=cachedPost.likes&&cachedPost.likes.includes(getMyId())?"❤️":"🤍";listDiv.innerHTML='<p style="color:#666">Loading...</p>';document.getElementById("wide").style.display="flex";}try{const r=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}});if(!r.ok)throw new Error("Post API failed");const p=await safeJson(r);const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");if(!cachedPost){if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>';}else{mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">';}document.getElementById("wide").style.display="flex";}userDiv.innerText='@'+p.user.username;likesDiv.innerText=p.likes.length+" likes";likeBtn.innerText=p.likes.includes(getMyId())?"❤️":"🤍";let c="";for(let x of p.comments){c+='<div class="cmt"><b>'+x.user.username+'</b> '+x.text+'</div>';}listDiv.innerHTML=c||"<p style='color:#777'>No comments</p>";}catch(e){console.log(e);}}
   function closeWide(){const v=document.getElementById("activeVideo");if(v){v.pause();v.src="";}document.getElementById("wideMedia").innerHTML="";document.getElementById("wide").style.display="none";}
