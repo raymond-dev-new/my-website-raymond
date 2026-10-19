@@ -75,6 +75,7 @@
   .bio-card { text-align: left; }
   .bio-card textarea,.bio-card input { width: 100%; background: #111; border: 1px solid #333; border-radius: 8px; color: #fff; padding: 11px; margin-top: 6px; outline: none; font-size: 14px; }
   .bio-card textarea { height: 90px; resize: none; }
+  /* SKELETON - REPLACES SPINNER */
   .skeleton-wrap{ max-width:935px; margin:0 auto; padding:16px 14px; display:flex; gap:20px; align-items:flex-start; }
   .sk{ background: linear-gradient(90deg,#151515 25%,#222 37%,#151515 63%); background-size:400% 100%; animation: shimmer 1.2s ease-in-out infinite; border-radius:8px; }
   @keyframes shimmer{ 0%{background-position:100% 0} 100%{background-position:-100% 0} }
@@ -101,8 +102,30 @@
 </head>
 <body>
   <div class="header" id="header"><b id="topname">Profile</b><span onclick="location.href='feed.html'" style="cursor:pointer">☰</span></div>
-  <div id="skeletonProfile"><div class="skeleton-wrap"><div class="sk sk-avatar"></div><div style="flex:1"><div class="sk sk-line sk-name"></div><div class="sk-stats"><div class="sk sk-stat"></div><div class="sk sk-stat"></div><div class="sk sk-stat"></div></div><div class="sk sk-line sk-bio" style="margin-top:12px"></div><div class="sk sk-line" style="width:140px"></div><div class="sk sk-btn"></div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;max-width:600px;margin:10px auto;padding:0 0 80px"><div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div></div></div>
-  <div class="profile-info" id="profileInfo" style="display:none"><div class="avatar-wrap" onclick="openAvatarModal()"><div class="circle" id="letter"></div><div class="cam" id="camIcon" style="display:none">📷</div></div><div class="profile-main"><h3 id="name"><span id="nameText"></span><span id="editNameIcon" class="edit-name-icon" style="display:none" onclick="openBioModal()">✏️ Edit</span></h3><div class="stats"><div class="stat"><b id="pc">-</b><span>posts</span></div><div class="stat" onclick="showFollowers()"><b id="followersCount">-</b><span>followers</span></div><div class="stat" onclick="showFollowing()"><b id="followingCount">-</b><span>following</span></div></div><div class="bio-wrap"><span class="bio-name" id="bioDisplayName"></span><span class="bio-text" id="bioText"></span><div class="bio-link" id="bioLink"></div><button class="edit-bio-btn" id="editBioBtn" onclick="openBioModal()">Edit Bio</button></div><button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button><div class="action-row" id="ownActions" style="display:none"><a href="create.html" class="btn-post">+ Post</a><button onclick="openAvatarModal()" class="btn-gray">Edit profile</button></div></div></div>
+  <!-- SKELETON STATE - REPLACES OLD SPINNER -->
+  <div id="skeletonProfile">
+    <div class="skeleton-wrap">
+      <div class="sk sk-avatar"></div>
+      <div style="flex:1">
+        <div class="sk sk-line sk-name"></div>
+        <div class="sk-stats"><div class="sk sk-stat"></div><div class="sk sk-stat"></div><div class="sk sk-stat"></div></div>
+        <div class="sk sk-line sk-bio" style="margin-top:12px"></div><div class="sk sk-line" style="width:140px"></div><div class="sk sk-btn"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;max-width:600px;margin:10px auto;padding:0 0 80px">
+      <div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div><div class="sk sk-post"></div>
+    </div>
+  </div>
+  <div class="profile-info" id="profileInfo" style="display:none">
+    <div class="avatar-wrap" onclick="openAvatarModal()"><div class="circle" id="letter"></div><div class="cam" id="camIcon" style="display:none">📷</div></div>
+    <div class="profile-main">
+      <h3 id="name"><span id="nameText"></span><span id="editNameIcon" class="edit-name-icon" style="display:none" onclick="openBioModal()">✏️ Edit</span></h3>
+      <div class="stats"><div class="stat"><b id="pc">-</b><span>posts</span></div><div class="stat" onclick="showFollowers()"><b id="followersCount">-</b><span>followers</span></div><div class="stat" onclick="showFollowing()"><b id="followingCount">-</b><span>following</span></div></div>
+      <div class="bio-wrap"><span class="bio-name" id="bioDisplayName"></span><span class="bio-text" id="bioText"></span><div class="bio-link" id="bioLink"></div><button class="edit-bio-btn" id="editBioBtn" onclick="openBioModal()">Edit Bio</button></div>
+      <button id="followBtn" class="follow-btn follow" style="display:none" onclick="toggleFollow()">Follow</button>
+      <div class="action-row" id="ownActions" style="display:none"><a href="create.html" class="btn-post">+ Post</a><button onclick="openAvatarModal()" class="btn-gray">Edit profile</button></div>
+    </div>
+  </div>
   <div class="posts" id="grid" style="display:none"></div>
   <div class="avatar-modal" id="avatarModal" onclick="if(event.target===this) closeAvatarModal()"><div class="avatar-card"><h3>Profile Photo</h3><img id="avatarPreview" style="display:none"><div id="avatarLetter" class="circle" style="width:160px;height:160px;margin:0 auto 12px;font-size:50px"></div><input type="file" id="avatarInput" accept="image/*" hidden onchange="handleAvatarSelect(this)"><button class="btn-blue" onclick="document.getElementById('avatarInput').click()">Choose Photo</button><button class="btn-blue" id="saveAvatarBtn" style="display:none" onclick="uploadAvatar()">Save</button><button class="btn-gray2" onclick="closeAvatarModal()">Cancel</button><button class="btn-blue" style="background:#111;color:#ff3040;border:1px solid #333;display:none" id="removeAvatarBtn" onclick="removeAvatar()">Remove Photo</button></div></div>
   <div class="bio-modal" id="bioModal" onclick="if(event.target===this) closeBioModal()"><div class="bio-card"><h3 style="text-align:center;margin:0">Edit Profile</h3><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Username</label><input id="usernameInput" placeholder="username"><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Display Name</label><input id="bioNameInput" placeholder="Display name"><label style="font-size:11px;color:#aaa;margin-top:10px;display:block">Bio</label><textarea id="bioInput" maxlength="150" placeholder="Your bio"></textarea><div style="text-align:right;color:#777;font-size:11px"><span id="bioCount">0</span>/150</div><label style="font-size:11px;color:#aaa;margin-top:8px;display:block">Link</label><input id="linkInput" placeholder="https://..."><button class="btn-blue" id="saveBioBtn" onclick="saveBio()">Save</button><button class="btn-gray2" onclick="closeBioModal()">Cancel</button></div></div>
@@ -110,10 +133,10 @@
   <div class="list-modal" id="followModal" onclick="if(event.target===this) closeList()"><div class="list-box"><div class="list-head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div><div class="list-body" id="listBody"></div></div></div>
   <div class="nav"><a href="feed.html">🏠</a><a href="explore.html">🔍</a><a href="create.html">➕</a><a href="message.html">💬</a><a href="reels.html">🎬</a><a href="notification.html">🔔</a><a href="profile.html">👤</a></div>
 <script>
-  const BASE="https://raymonddomain.dev";
-  const token=localStorage.getItem('token');
-  if(!token) location.href="login.html";
-  let currentId="",profileData=null,selectedAvatarFile=null,isOwnProfile=false,allPosts=[];
+  const BASE = "https://raymonddomain.dev";
+  const token = localStorage.getItem('token');
+  if (!token) location.href = "login.html";
+  let currentId = "", profileData = null, selectedAvatarFile = null, isOwnProfile = false, allPosts = [];
   function getMyId(){try{const parts=token.split('.');if(parts.length!==3)return"";return JSON.parse(atob(parts[1])).id||""}catch{return""}}
   function getParamId(){return new URLSearchParams(location.search).get('id')}
   function getCache(k){try{return JSON.parse(localStorage.getItem(k)||null)}catch{return null}}
@@ -121,39 +144,12 @@
   function fixUrl(u){if(!u)return"";if(u.startsWith('data:'))return u;if(u.startsWith('/api/'))return BASE+u;if(u.startsWith('/uploads'))return BASE+u;if(u.startsWith('http'))return u;return u}
   function isVideoFile(u){if(!u)return false;return u.includes('/api/media-file')||u.endsWith('.mp4')}
   async function safeJson(res){const text=await res.text();try{return JSON.parse(text)}catch{throw new Error("API returned HTML - check route: "+res.url)}}
+  // --- ADDED: INSTANT FOLLOW PERSISTENCE ---
   function followKey(targetId){return 'follow_opt_'+getMyId()+'_'+targetId}
   function getOptimistic(targetId){try{return JSON.parse(localStorage.getItem(followKey(targetId))||'null')}catch{return null}}
   function setOptimistic(targetId,state){localStorage.setItem(followKey(targetId),JSON.stringify({state,ts:Date.now()}))}
   function clearOptimistic(targetId){localStorage.removeItem(followKey(targetId))}
-  function getFollowingOptList(){try{return JSON.parse(localStorage.getItem('following_opt_'+getMyId())||'[]')}catch{return[]}}
-  function updateMyFollowingCache(targetUser, follow){
-    const targetId=targetUser._id||targetUser.id||targetUser;
-    try{
-      let list=getFollowingOptList();
-      if(follow){ if(!list.find(x=>(x._id||x)==targetId)) list.push({_id:targetId, username:targetUser.username||'user', avatar:targetUser.avatar||''}); }
-      else{ list=list.filter(x=>(x._id||x)!=targetId); }
-      localStorage.setItem('following_opt_'+getMyId(), JSON.stringify(list));
-    }catch{}
-    const myKey='profile_'+getMyId(); const myCache=getCache(myKey);
-    if(myCache){
-      if(!myCache.user.following) myCache.user.following=[];
-      const exists=myCache.user.following.some(f=>(f._id||f)==targetId);
-      if(follow && !exists) myCache.user.following.push({_id:targetId, username:targetUser.username||'user', avatar:targetUser.avatar||''});
-      else if(!follow && exists) myCache.user.following=myCache.user.following.filter(f=>(f._id||f)!=targetId);
-      myCache.followingCount=myCache.user.following.length;
-      setCache(myKey, myCache);
-    }
-    try{
-      let chats=getCache('chat_users')||[];
-      if(follow){ if(!chats.some(x=>(x._id||x)==targetId)) chats.push({_id:targetId, username:targetUser.username||'user', avatar:targetUser.avatar||''}); }
-      else{
-        const mc=getCache('profile_'+getMyId());
-        const isFollower=mc?.user?.followers?.some(f=>(f._id||f)==targetId);
-        if(!isFollower) chats=chats.filter(x=>(x._id||x)!=targetId);
-      }
-      setCache('chat_users', chats);
-    }catch{}
-  }
+
   function renderAvatar(user){
     const el=document.getElementById('letter');
     if(user.avatar){el.innerHTML='<img src="'+fixUrl(user.avatar)+'" loading="lazy">';}
@@ -177,16 +173,11 @@
       if((opt.state==='following')===serverFollowing){clearOptimistic(targetId);}
       else{followersCountToShow=opt.state==='following'?serverFollowersCount+1:Math.max(0,serverFollowersCount-1);}
     }
-    let followingCountToShow=data.followingCount||(u.following?u.following.length:0);
-    if(isOwnProfile){
-      const myCache=getCache('profile_'+getMyId());
-      if(myCache && myCache.user.following) followingCountToShow=myCache.user.following.length;
-    }
     document.getElementById("nameText").innerText=u.username;
     document.getElementById("topname").innerText=u.username;
     document.getElementById("pc").innerText=allPosts.length;
     document.getElementById("followersCount").innerText=followersCountToShow;
-    document.getElementById("followingCount").innerText=followingCountToShow;
+    document.getElementById("followingCount").innerText=data.followingCount||(u.following?u.following.length:0);
     document.getElementById('bioDisplayName').innerText=u.displayName||'';
     const bioEl=document.getElementById('bioText');
     if(u.bio && u.bio.trim()!==""){bioEl.innerText=u.bio;bioEl.style.display='block';bioEl.style.opacity='1';bioEl.onclick=null;}
@@ -198,21 +189,19 @@
     const fb=document.getElementById('followBtn');const own=document.getElementById('ownActions');const cam=document.getElementById('camIcon');
     if(isOwnProfile){fb.style.display='none';own.style.display='flex';cam.style.display='flex';document.getElementById('delBtn').style.display='block';}
     else{own.style.display='none';cam.style.display='none';fb.style.display='block';document.getElementById('delBtn').style.display='none';fb.innerText=isFollowing?'Following':'Follow';fb.className=isFollowing?'follow-btn following':'follow-btn follow';}
-    const grid=document.getElementById("grid");let h="";
-    for(let p of allPosts){const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");if(isVid){h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><video src="'+url+'#t=0.1" muted preload="metadata" playsinline></video><span class="vid-badge">🎬</span></div>';}else{h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><img src="'+url+'" loading="lazy" decoding="async"></div>';}}
-    grid.innerHTML=h||'<p style="grid-column:1/3;text-align:center;color:#777;padding:20px">No posts yet</p>';
+    const grid=document.getElementById("grid");let h="";for(let p of allPosts){const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");if(isVid){h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><video src="'+url+'#t=0.1" muted preload="metadata" playsinline></video><span class="vid-badge">🎬</span></div>';}else{h+='<div class="post-box" onclick="openWide(\''+p._id+'\')"><img src="'+url+'" loading="lazy" decoding="async"></div>';}}grid.innerHTML=h||'<p style="grid-column:1/3;text-align:center;color:#777;padding:20px">No posts yet</p>';
     const observer=new IntersectionObserver((entries)=>{entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');const vid=entry.target.querySelector('video');if(vid &&!vid.dataset.loaded){vid.load();vid.dataset.loaded='1';}}});},{threshold:0.1,rootMargin:'100px'});document.querySelectorAll('.post-box').forEach(b=>observer.observe(b));
   }
   async function loadProfile(){
     const vid=getParamId()||getMyId();isOwnProfile=vid===getMyId();const key='profile_'+vid;const cached=getCache(key);
-    if(cached){renderProfileUI(cached);} // INSTANT FROM CACHE
+    if(cached){renderProfileUI(cached);} // INSTANT FROM CACHE - NO FRESH
     try{
       let url=isOwnProfile?BASE+'/api/users/me/profile':BASE+'/api/users/'+vid+'/profile';
       let res=await fetch(url,{headers:{authorization:token}});
       if(!res.ok){const res2=await fetch(BASE+'/api/users/'+vid,{headers:{authorization:token}});if(res2.ok){res=res2;}else{throw new Error("Profile API 404");}}
       const data=await safeJson(res);let norm;if(data.user){norm=data;}else{norm={user:data,posts:data.posts||[],followersCount:(data.followers?data.followers.length:0),followingCount:(data.following?data.following.length:0)};}
       renderProfileUI(norm);
-      setCache(key,norm); // UPDATE CACHE IN BACKGROUND
+      setCache(key,norm); // UPDATE IN BACKGROUND
     }catch(e){console.log("loadProfile error",e);if(!getCache('profile_'+vid)){document.getElementById('skeletonProfile').innerHTML='<p style="text-align:center;color:#777;padding:40px">Failed to load user. Retrying...</p>';}setTimeout(loadProfile,2000);}
   }
   window.addEventListener('scroll',()=>{const y=window.scrollY;const head=document.getElementById('header');if(y>50)head.classList.add('shrink');else head.classList.remove('shrink');},{passive:true});
@@ -237,12 +226,10 @@
     let currentCount=parseInt(countEl.innerText||"0");
     const newCount=wasFollowing?Math.max(0,currentCount-1):currentCount+1;
     countEl.innerText=newCount;
-    localStorage.setItem('follow_opt_'+getMyId()+'_'+targetId, JSON.stringify({state: nextState, ts: Date.now()}));
     setOptimistic(targetId,nextState);
-    updateMyFollowingCache(profileData.user, nextState==='following');
     const cacheKey='profile_'+targetId; const cached=getCache(cacheKey);
     if(cached){try{const myId=getMyId();if(nextState==='following'){if(!cached.user.followers) cached.user.followers=[];if(!cached.user.followers.some(f=>(f._id||f)==myId)) cached.user.followers.push(myId);}else{if(cached.user.followers) cached.user.followers=cached.user.followers.filter(f=>(f._id||f)!=myId);}cached.followersCount=newCount;setCache(cacheKey,cached);}catch{}}
-    try{const res=await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});if(!res.ok)throw new Error('follow failed');localStorage.removeItem('profile_'+id);localStorage.removeItem('profile_'+getMyId());setTimeout(()=>{loadProfile();},300);}catch(e){btn.innerText=wasFollowing?'Following':'Follow';btn.className=wasFollowing?'follow-btn following':'follow-btn follow';countEl.innerText=currentCount;setOptimistic(targetId,wasFollowing?'following':'follow');updateMyFollowingCache(profileData.user, wasFollowing);localStorage.setItem('follow_opt_'+getMyId()+'_'+targetId, JSON.stringify({state: wasFollowing?'following':'follow', ts: Date.now()}));}
+    try{const res=await fetch(BASE+"/api/users/"+id+"/follow",{method:'POST',headers:{authorization:token}});if(!res.ok)throw new Error('follow failed');localStorage.removeItem('profile_'+id);setTimeout(()=>{loadProfile();},300);}catch(e){btn.innerText=wasFollowing?'Following':'Follow';btn.className=wasFollowing?'follow-btn following':'follow-btn follow';countEl.innerText=currentCount;setOptimistic(targetId,wasFollowing?'following':'follow');}
   }
   async function openWide(id){currentId=id;const cachedPost=allPosts.find(p=>p._id===id);const mediaDiv=document.getElementById("wideMedia");const userDiv=document.getElementById("wideUser");const listDiv=document.getElementById("commentList");const likesDiv=document.getElementById("likesCount");const likeBtn=document.getElementById("likeBtn");if(cachedPost){const url=fixUrl(cachedPost.mediaUrl||"");const isVid=cachedPost.type==='video'||isVideoFile(cachedPost.mediaUrl||"");if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>';}else{mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">';}userDiv.innerText='@'+(profileData.user.username||"");likesDiv.innerText=(cachedPost.likes?cachedPost.likes.length:0)+" likes";likeBtn.innerText=cachedPost.likes&&cachedPost.likes.includes(getMyId())?"❤️":"🤍";listDiv.innerHTML='<p style="color:#666">Loading...</p>';document.getElementById("wide").style.display="flex";}try{const r=await fetch(BASE+"/api/posts/"+id,{headers:{authorization:token}});if(!r.ok)throw new Error("Post API failed");const p=await safeJson(r);const url=fixUrl(p.mediaUrl||"");const isVid=p.type==='video'||isVideoFile(p.mediaUrl||"");if(!cachedPost){if(isVid){mediaDiv.innerHTML='<video id="activeVideo" src="'+url+'" controls autoplay playsinline style="width:100%;max-height:70vh;object-fit:contain"></video>';}else{mediaDiv.innerHTML='<img src="'+url+'" style="width:100%;max-height:70vh;object-fit:contain">';}document.getElementById("wide").style.display="flex";}userDiv.innerText='@'+p.user.username;likesDiv.innerText=p.likes.length+" likes";likeBtn.innerText=p.likes.includes(getMyId())?"❤️":"🤍";let c="";for(let x of p.comments){c+='<div class="cmt"><b>'+x.user.username+'</b> '+x.text+'</div>';}listDiv.innerHTML=c||"<p style='color:#777'>No comments</p>";}catch(e){console.log(e);}}
   function closeWide(){const v=document.getElementById("activeVideo");if(v){v.pause();v.src="";}document.getElementById("wideMedia").innerHTML="";document.getElementById("wide").style.display="none";}
@@ -250,24 +237,7 @@
   async function addComment(){const t=document.getElementById("cmtInput").value;if(!t)return;document.getElementById("cmtInput").value="";const listDiv=document.getElementById("commentList");listDiv.innerHTML+='<div class="cmt"><b>You</b> '+t+'</div>';await fetch(BASE+"/api/posts/"+currentId+"/comment",{method:"POST",headers:{"Content-Type":"application/json",authorization:token},body:JSON.stringify({text:t})});openWide(currentId);}
   async function deletePost(){if(!confirm("Delete this post?"))return;closeWide();document.getElementById("grid").innerHTML='<p style="grid-column:1/3;text-align:center;color:#777">Deleting...</p>';try{const res=await fetch(BASE+"/api/posts/"+currentId,{method:"DELETE",headers:{authorization:token}});const data=await safeJson(res);if(!res.ok)throw new Error(data.msg||'Delete failed');const vid=getParamId()||getMyId();const key='profile_'+vid;const cached=getCache(key);if(cached&&cached.posts){cached.posts=cached.posts.filter(p=>p._id!==currentId);setCache(key,cached);}allPosts=allPosts.filter(p=>p._id!==currentId);if(profileData&&profileData.posts){profileData.posts=profileData.posts.filter(p=>p._id!==currentId);}renderProfileUI({user:profileData.user,posts:allPosts,followersCount:profileData.followersCount,followingCount:profileData.followingCount});}catch(err){alert(err.message);loadProfile();}}
   function showFollowers(){if(!profileData)return;document.getElementById('listTitle').innerText='Followers';const list=profileData.user.followers||[];let html="";for(let u of list){const id=u._id||u;const name=u.username||id;const av=u.avatar?'<img src="'+fixUrl(u.avatar)+'">':(name[0]||'U').toUpperCase();html+='<div class="user-row" onclick="goToUser(\''+id+'\')"><div class="avatar-sm">'+av+'</div><b>'+name+'</b></div>';}document.getElementById('listBody').innerHTML=html||'<p style="padding:15px;color:#777">No followers</p>';document.getElementById('followModal').style.display='flex';}
-  function showFollowing(){
-    if(!profileData)return;
-    document.getElementById('listTitle').innerText='Following';
-    let list=profileData.user.following||[];
-    if(isOwnProfile || getParamId()===getMyId()){
-      const myCache=getCache('profile_'+getMyId());
-      if(myCache && myCache.user.following) list=myCache.user.following;
-      const optList=getFollowingOptList();
-      optList.forEach(o=>{if(!list.some(f=>(f._id||f)==(o._id||o))) list.push(o);});
-      list=list.filter(item=>{
-        const tid=item._id||item;
-        const opt=getOptimistic(tid);
-        return !(opt && opt.state==='follow');
-      });
-    }
-    let html="";for(let u of list){const id=u._id||u;const name=u.username||id;const av=u.avatar?'<img src="'+fixUrl(u.avatar)+'">':(name[0]||'U').toUpperCase();html+='<div class="user-row" onclick="goToUser(\''+id+'\')"><div class="avatar-sm">'+av+'</div><b>'+name+'</b></div>';}
-    document.getElementById('listBody').innerHTML=html||'<p style="padding:15px;color:#777">None</p>';document.getElementById('followModal').style.display='flex';
-  }
+  function showFollowing(){if(!profileData)return;document.getElementById('listTitle').innerText='Following';const list=profileData.user.following||[];let html="";for(let u of list){const id=u._id||u;const name=u.username||id;const av=u.avatar?'<img src="'+fixUrl(u.avatar)+'">':(name[0]||'U').toUpperCase();html+='<div class="user-row" onclick="goToUser(\''+id+'\')"><div class="avatar-sm">'+av+'</div><b>'+name+'</b></div>';}document.getElementById('listBody').innerHTML=html||'<p style="padding:15px;color:#777">None</p>';document.getElementById('followModal').style.display='flex';}
   function goToUser(id){closeList();location.href='profile.html?id='+id;}
   function closeList(){document.getElementById('followModal').style.display='none';}
   loadProfile();
