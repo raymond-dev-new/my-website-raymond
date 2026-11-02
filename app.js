@@ -45,12 +45,6 @@
    const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
    const SECRET = "secret123";
    
-   /*function authh(req, res, next) {
-     const tokenN = req.headers.authorization;
-     if (!tokenN) return res.status(401).json({ msg: "No token" });
-     try { req.userId = jwt.verify(tokenN, SECRET).id; next(); }
-     catch { return res.status(401).json({ msg: "Invalid" }); }
-   } */
    
      function authh(req, res, next) {
      const tokenN = req.headers.authorization;
@@ -74,8 +68,6 @@
        fileSize: 200 * 1024 * 1024
      }
    });
-   
-   //const uploadd = multer({ storage: multer.memoryStorage(), limits: { fileSize: 160 * 1024 * 1024 } });
    
    
    // ========== MODELS - FIXED ==========
@@ -286,6 +278,7 @@
      const token = jwt.sign({ id: user._id }, SECRET);
      res.json({ token, user });
    });
+
    app.post('/api/auth/login', async (req, res) => {
      const { email, password } = req.body;
      const user = await Userd.findOne({ email });
@@ -322,14 +315,17 @@
      if(!userDoc) return res.status(404).json({msg:"User not found"});
      if(!req.file) return res.status(400).json({msg:"No file"});
      const b64 = req.file.buffer.toString('base64');
-     userDoc.avatar = `data:${req.file.mimetype};base64,${b64}`;
+     userDoc.avatar = `data:${req.file.mimetype}; base64, ${b64}`;
      await userDoc.save();
      res.json(userDoc);
    });
+
    app.delete('/api/users/avatar', authh, async (req,res)=>{
      const user = await Userd.findById(req.userId);
      if(!user) return res.status(404).json({msg:"Not found"});
-     user.avatar = ""; await user.save(); res.json(user);
+     user.avatar = ""; 
+     await user.save();
+      res.json(user);
    });
    
      app.get('/api/users/me/profile', authh, async (req, res) => {
@@ -416,10 +412,7 @@
    });
    
    // FIXED: Same route /api/posts but now DIRECT upload - no file goes through Vercel
-   app.post(
-     '/api/posts',
-     authh,
-     async (req, res) => {
+   app.post('/api/posts', authh, async (req, res) => {
        try {
          // Now expects JSON from frontend after direct Cloudinary upload
          const { mediaUrl, publicId, type, caption, filename } = req.body;
@@ -439,10 +432,7 @@
          const captionText = String(caption || '');
          const fileNameText = String(filename || '');
    
-         if (
-           containsBanned(captionText) ||
-           containsBanned(fileNameText)
-         ) {
+         if ( containsBanned(captionText) || containsBanned(fileNameText) ) {
            // Delete from Cloudinary if banned
            await cloudinary.uploader.destroy(publicId, {
              resource_type: type || 'auto',
