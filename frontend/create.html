@@ -54,33 +54,57 @@ const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
 const status = document.getElementById('status');
 let previewUrl = null;
-function showStatus(m,e){status.textContent=m;status.style.color=e?'#ff5964':'#40dc8b';}
+function showStatus(m,e){
+  status.textContent=m;
+  status.style.color=e?'#ff5964':'#40dc8b';
+}
+
 fileInput.addEventListener('change',()=>{
   const f=fileInput.files[0];
   videoPreview.style.display='none';imagePreview.style.display='none';
   if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
   if(!f)return;
-  if(f.size>MAX_FILE_SIZE){showStatus('File exceeds 200 MB',true);fileInput.value='';return;}
+  if(f.size>MAX_FILE_SIZE){
+    showStatus('File exceeds 200 MB',true);
+    fileInput.value='';return;
+  }
   previewUrl=URL.createObjectURL(f);
-  if(f.type.startsWith('video/')){videoPreview.src=previewUrl;videoPreview.style.display='block';}
-  else{imagePreview.src=previewUrl;imagePreview.style.display='block';}
+  if(f.type.startsWith('video/')){
+    videoPreview.src=previewUrl;
+    videoPreview.style.display='block';
+  }
+  else{
+    imagePreview.src=previewUrl;
+    imagePreview.style.display='block';
+  }
   showStatus('Selected: '+f.name+' ('+(f.size/1024/1024).toFixed(2)+' MB)');
 });
 form.addEventListener('submit',async(e)=>{
   e.preventDefault();
   const file=fileInput.files[0];
-  if(!file){showStatus('Select file',true);return;}
+  if(!file){
+    showStatus('Select file',true);
+    return;
+  }
   const token=localStorage.getItem('token');
-  if(!token){showStatus('Login first - no token',true);return;}
+  if(!token){
+    showStatus('Login first - no token',true);
+    return;
+  }
   uploadButton.disabled=true;
   progressContainer.style.display='block';
   progressBar.value=0;
   try{
     showStatus('Getting signature...');
     progressText.textContent='Getting signature...';
-    const sigRes=await fetch(API_URL+'/api/cloudinary-signature',{headers:{Authorization:'Bearer '+token}});
-    if(!sigRes.ok){const er=await sigRes.json();throw new Error(er.msg||'Signature failed');}
-    const {timestamp,signature,cloudName,apiKey,folder}=await sigRes.json();
+    const sigRes=await fetch(API_URL+'/api/cloudinary-signature',{
+      headers:{Authorization:'Bearer '+token}
+    });
+    if(!sigRes.ok){
+      const er=await sigRes.json();
+      throw new Error(er.msg||'Signature failed');
+    }
+    const {timestamp,signature,cloudName,apiKey,folder} = await sigRes.json();
     const isVideo=file.type.startsWith('video/');
     const resourceType=isVideo?'video':'image';
     const cloudData=await new Promise((resolve,reject)=>{
@@ -92,6 +116,7 @@ form.addEventListener('submit',async(e)=>{
       fd.append('folder',folder);
       const xhr=new XMLHttpRequest();
       xhr.open('POST','https://api.cloudinary.com/v1_1/'+cloudName+'/'+resourceType+'/upload');
+
       xhr.upload.onprogress=(ev)=>{
         if(ev.lengthComputable){
           const p=Math.round(ev.loaded/ev.total*100);
@@ -115,8 +140,10 @@ form.addEventListener('submit',async(e)=>{
     const postRes=await fetch(API_URL+'/api/posts',{
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
-      body:JSON.stringify({mediaUrl:cloudData.secure_url,publicId:cloudData.public_id,type:resourceType,caption:captionInput.value.trim(),filename:file.name})
+      body:JSON.stringify({mediaUrl:cloudData.secure_url,publicId:cloudData.public_id,type:resourceType,caption:captionInput.value.trim(),filename:file.name
+      })
     });
+    
     const postData=await postRes.json();
     if(!postRes.ok)throw new Error(postData.msg||'Save failed');
     progressBar.value=100;

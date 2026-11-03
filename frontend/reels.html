@@ -49,14 +49,21 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 </div>
 
 <div class="bottom-nav">
-<a href="feed.html" onclick="saveState()">🏠</a><a href="explore.html" onclick="saveState()">🔍</a><a href="create.html" onclick="saveState()">➕</a>
-<a href="message.html" onclick="saveState()">💬<span id="msgCount" class="msg-badge hide">0</span></a>
-<a href="reels.html">🎬</a> <a href="notification.html" onclick="saveState()">🔔</a> <a href="profile.html" onclick="saveState()">👤</a>
+<a href="feed.html" onclick="saveState()">🏠</a>
+<a href="explore.html" onclick="saveState()">🔍</a>
+<a href="create.html" onclick="saveState()">➕</a>
+<a href="message.html" onclick="saveState()">💬 <span id="msgCount" class="msg-badge hide">0</span> </a>
+<a href="reels.html">🎬</a>
+<a href="notification.html" onclick="saveState()">🔔</a> 
+<a href="profile.html" onclick="saveState()">👤</a>
 </div>
 
 <div class="comment-modal" id="cmtModal" onclick="if(event.target===this) closeComments()">
 <div class="comment-box">
-<div class="cmt-head"><span id="cmtCount">Comments</span><span style="cursor:pointer" onclick="closeComments()">✕</span></div>
+<div class="cmt-head"> 
+  <span id="cmtCount">Comments</span>
+  <span style="cursor:pointer" onclick="closeComments()">✕</span>
+</div>
 <div class="cmt-list" id="cmtList"></div>
 <div class="cmt-input-area">
 <input id="cmtInput" placeholder="Add a comment..." onkeydown="if(event.key==='Enter') sendComment()">
@@ -70,8 +77,21 @@ body { margin:0; background:#000; color:#fff; font-family:Arial; overflow:hidden
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
-function fixUrl(u){ if(!u) return ""; if(u.startsWith('data:')) return u; if(u.startsWith('/api/')) return BASE+u; if(u.startsWith('/uploads')) return BASE+u; if(u.startsWith('http')) return u; return BASE+u; }
-function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
+
+function fixUrl(u){
+   if(!u) return "";
+   if(u.startsWith('data:')) return u;
+   if(u.startsWith('/api/')) return BASE+u;
+   if(u.startsWith('/uploads')) return BASE+u;
+   if(u.startsWith('http')) return u;
+   return BASE+u; 
+}
+
+function getMyId(){
+   try{
+    return JSON.parse(atob(token.split('.')[1])).id
+  }catch{return""} 
+}
 
 let reelsData=[], activeReelId="", currentPage=1, isLoadingMore=false, hasMore=true, observer=null;
 
@@ -143,12 +163,22 @@ function appendReels(reels){
  else container.insertAdjacentHTML('beforeend', html);
  observeViews();
 }
-function toggleMute(vid, id){ vid.muted=!vid.muted; addView(id); }
+
+function toggleMute(vid, id){
+   vid.muted=!vid.muted;
+    addView(id); 
+}
+
 async function addView(id){
  const el=document.getElementById('view-'+id);
  if(el) el.innerText=parseInt(el.innerText||0)+1;
- try{ await fetch(BASE+`/api/posts/${id}/view`,{method:'POST',headers:{authorization:token}}); }catch{}
+ try{
+   await fetch(BASE+`/api/posts/${id}/view`,{
+    method:'POST',headers:{authorization:token}
+  }); 
+  }catch{}
 }
+
 function observeViews(){
  if(observer) observer.disconnect();
  observer=new IntersectionObserver((entries)=>{
@@ -177,7 +207,9 @@ async function loadReels(isNext=false){
     currentPage=1; reelsData=[]; hasMore=true;
   }
   try{
-    const res=await fetch(`${BASE}/api/posts/reels?page=${currentPage}&limit=8`,{headers:{authorization:token}});
+    const res=await fetch(`${BASE}/api/posts/reels?page=${currentPage}&limit=8`,{
+      headers:{authorization:token}
+    });
     let reels=await res.json();
     if(!Array.isArray(reels)) reels=reels.posts||reels.data||[];
     if(reels.length<12) hasMore=false;
@@ -203,7 +235,18 @@ async function like(id){
  }
  try{ await fetch(BASE+`/api/posts/${id}/like`,{method:'POST',headers:{authorization:token}}); }catch{}
 }
-async function shareReel(id){ try{ await fetch(BASE+`/api/posts/${id}/share`,{method:'POST',headers:{authorization:token}}); }catch{} if(navigator.share){ navigator.share({url: location.origin+'/reels.html?id='+id}) } }
+async function shareReel(id){
+   try{
+     await fetch(BASE+`/api/posts/${id}/share`,{
+      method:'POST',
+      headers:{authorization:token}
+    }); 
+  }catch{} 
+  
+  if(navigator.share){ 
+    navigator.share({url: location.origin+'/reels.html?id='+id}) 
+  } 
+ }
 async function openComments(id){
  activeReelId=id;
  const v=document.querySelector(`.reel[data-id="${id}"] video`);
@@ -221,16 +264,52 @@ async function openComments(id){
   }).join('');
  }catch{}
 }
-function closeComments(){ document.getElementById('cmtModal').style.display='none'; if(activeReelId){ const v=document.querySelector(`.reel[data-id="${activeReelId}"] video`); if(v) v.play().catch(()=>{}); } activeReelId=""; }
-async function sendComment(){ const text=document.getElementById('cmtInput').value.trim(); if(!text||!activeReelId) return; document.getElementById('cmtInput').value=''; await fetch(BASE+`/api/posts/${activeReelId}/comment`,{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text})}); openComments(activeReelId); }
-async function loadMsgBadge(){ try{ let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}}); let map=await r.json(); let total=Object.values(map).reduce((a,b)=>a+b,0); let el=document.getElementById('msgCount'); if(total>0){el.innerText=total; el.classList.remove('hide');} else el.classList.add('hide'); }catch{} }
+function closeComments(){
+   document.getElementById('cmtModal').style.display='none';
+    if(activeReelId){
+       const v=document.querySelector(`.reel[data-id="${activeReelId}"] video`);
+        if(v) v.play().catch(()=>{}); 
+    } activeReelId=""; 
+ }
+
+async function sendComment(){ 
+  const text=document.getElementById('cmtInput').value.trim();
+   if(!text||!activeReelId) return;
+   document.getElementById('cmtInput').value='';
+   await fetch(BASE+`/api/posts/${activeReelId}/comment`,{
+   method:'POST',
+   headers:{'Content-Type':'application/json',authorization:token},
+   body:JSON.stringify({text})
+  }); 
+  openComments(activeReelId); 
+ }
+
+async function loadMsgBadge(){
+   try{
+     let r=await fetch(BASE+'/api/messages/unread/counts',{
+      headers:{authorization:token}
+    });
+    let map=await r.json();
+    let total=Object.values(map).reduce((a,b)=>a+b,0);
+    let el=document.getElementById('msgCount'); 
+    if(total>0){
+      el.innerText=total; el.classList.remove('hide');
+    } else el.classList.add('hide'); 
+    }catch{} 
+  }
 
 window.addEventListener('pagehide', saveState);
 window.addEventListener('beforeunload', saveState);
 document.getElementById('reels').addEventListener('scroll', ()=>{ clearTimeout(window._rt); window._rt=setTimeout(saveState,300); });
 
 const upData = localStorage.getItem('uploading');
-if(upData){ try{ const d=JSON.parse(upData); if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading...'); }catch{} }
+
+if(upData){
+   try{
+     const d=JSON.parse(upData);
+      if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading...'); 
+    }catch{} 
+  }
 
 loadReels(false); loadMsgBadge();
 </script>
