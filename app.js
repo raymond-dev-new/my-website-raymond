@@ -898,6 +898,109 @@ app.get('/api/fetch-now', (req,res)=> res.json({ok:true}));
    // country match end here kjhgcfghhgxuygfxyf
    
   
+
+
+
+
+
+   // ===== FORGOT PASSWORD + RESET PASSWORD =====
+// For: forgot.html / recover password page
+
+// In-memory fallback if User model has no reset fields (still works)
+const resetCodes = new Map(); // email -> {code, expiry}
+
+// STEP 1: Send code
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Enter email' });
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Find user - case insensitive
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) return res.status(404).json({ message: 'No account with this email' });
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Save to DB (if fields exist) + memory
+    try {
+      user.resetCode = code;
+      user.resetCodeExpiry = expiry;
+      await user.save();
+    } catch(e) { console.log("Save code error:", e.message); }
+
+    resetCodes.set(cleanEmail, { code, expiry });
+
+    console.log(`🔑 Reset code for ${cleanEmail} = ${code}`);
+
+    // For now we return code so your frontend can show it in the green box
+    // When you add email sending later, REMOVE "code" from here
+    return res.json({
+      message: 'Code sent to ' + cleanEmail,
+      code: code // <-- REMOVE THIS when you use real email
+    });
+
+  } catch(e) {
+    console.log("FORGOT ERROR:", e);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// STEP 2: Reset password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword, password } = req.body;
+    const newPass = newPassword || password; // your frontend sends both
+
+    if (!email || !code || !newPass) {
+      return res.status(400).json({ message: 'Fill all fields' });
+    }
+    if (newPass.length < 6) {
+      return res.status(400).json({ message: 'Password too short (min 6)' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanCode = String(code).trim();
+
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) return res.status(404).json({ message: 'No account with this email' });
+
+    // Check code from DB or memory
+    const stored = resetCodes.get(cleanEmail);
+    const dbCode = user.resetCode ? String(user.resetCode) : null;
+    const dbExpiry = user.resetCodeExpiry || (stored ? stored.expiry : null);
+
+    const validCode = dbCode || (stored ? stored.code : null);
+
+    if (!validCode || validCode !== cleanCode) {
+      return res.status(400).json({ message: 'Invalid code' });
+    }
+
+    if (dbExpiry && Date.now() > new Date(dbExpiry).getTime()) {
+      return res.status(400).json({ message: 'Code expired. Request a new one.' });
+    }
+
+    // Hash new password
+    const hashed = await bcrypt.hash(newPass, 10);
+    user.password = hashed;
+
+    // Clear code so it can't be used again
+    user.resetCode = "";
+    user.resetCodeExpiry = null;
+    await user.save();
+
+    resetCodes.delete(cleanEmail);
+
+    return res.json({ message: 'Password changed!' });
+
+  } catch(e) {
+    console.log("RESET ERROR:", e);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
    
 
     app.listen(port, () => console.log('server is running on port ' + port));
