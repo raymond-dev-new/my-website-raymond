@@ -1,12 +1,20 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Register - RAyMoNd</title>
-<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#0f0c29,#302b63,#24243e);color:#fff;font-family:Arial;display:flex;align-items:center;justify-content:center;padding:16px}.card{width:100%;max-width:380px;background:rgba(255,255,255,.08);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:28px}h1{text-align:center;font-family:cursive;font-size:32px;margin:0 0 4px}p{text-align:center;color:#c4b5fd;font-size:13px;margin:0 0 20px}label{font-size:12px;color:#ddd}input{width:100%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:14px;color:#fff;padding:14px;margin:6px 0 12px;outline:none}input::placeholder{color:#aaa}button{width:100%;padding:15px;border:none;border-radius:14px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:800;font-size:16px;cursor:pointer}.center{text-align:center;margin-top:16px}a{color:#c4b5fd;text-decoration:none;font-size:14px}</style>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Register</title>
+<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#0f0c29,#302b63,#24243e);color:#fff;font-family:Arial;display:flex;align-items:center;justify-content:center;padding:16px}.card{width:100%;max-width:380px;background:rgba(255,255,255,.08);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:28px}h1{text-align:center;font-family:cursive;font-size:32px;margin:0 0 4px}p{text-align:center;color:#c4b5fd;font-size:13px;margin:0 0 20px}label{font-size:12px;color:#ddd}input{width:100%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:14px;color:#fff;padding:14px;margin:6px 0 12px;outline:none}input::placeholder{color:#aaa}button{width:100%;padding:15px;border:none;border-radius:14px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:800;font-size:16px;cursor:pointer}.center{text-align:center;margin-top:16px}a{color:#c4b5fd;text-decoration:none;font-size:14px}
+/* ADDED ONLY - Loading spinner for Register button */
+#registerBtn{display:flex;align-items:center;justify-content:center;gap:10px}
+#registerBtn:disabled{opacity:.7;cursor:not-allowed}
+.spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top:3px solid #fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.spinner.show{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head><body>
 <div class="card"><h1>Join WildReaders ✨</h1><p>Create your account with email</p>
 <label>Username</label><input id="username" placeholder="e.g. raymond">
 <label>Email</label><input id="email" type="email" placeholder="you@gmail.com">
 <label>Password</label><input id="pass" type="password" placeholder="Create password">
-<button onclick="register()">Create Account 🎉</button>
+<!-- ADDED ONLY - Spinner inside Create Account button -->
+<button id="registerBtn" onclick="register()"><span id="registerText">Create Account 🎉</span><span id="registerSpinner" class="spinner"></span></button>
 </div>
 <script>
 const BASE="https://raymonddomain.dev";
@@ -15,10 +23,26 @@ async function register(){
   const email=document.getElementById('email').value.trim();
   const password=document.getElementById('pass').value;
   if(!username||!email||!password) return alert('Fill all');
-  const res=await fetch(BASE+'/api/users/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password})});
-  const d=await res.json();
-  if(!res.ok) return alert(d.msg||'Failed');
-  localStorage.setItem('token',d.token);
-  location.href='feed.html';
+  // ADDED ONLY - Show loading spinner, disable button while creating account
+  const btn=document.getElementById('registerBtn');
+  const btnText=document.getElementById('registerText');
+  const spinner=document.getElementById('registerSpinner');
+  btn.disabled=true;
+  btnText.innerText='Creating...';
+  spinner.classList.add('show');
+  try{
+    const res=await fetch(BASE+'/api/users/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password})});
+    const d=await res.json();
+    if(!res.ok){ alert(d.msg||'Failed'); return; }
+    localStorage.setItem('token',d.token);
+    location.href='feed.html';
+  }catch(e){
+    alert('Server error');
+  }finally{
+    // ADDED ONLY - Hide spinner again if register failed / error (if success we already left page)
+    btn.disabled=false;
+    btnText.innerText='Create Account 🎉';
+    spinner.classList.remove('show');
+  }
 }
 </script></body></html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login - RAyMoNd</title>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login</title>
   <link rel="manifest" href="manifest.json">
 <style>*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#0f0c29,#302b63,#24243e);color:#fff;font-family:Arial;display:flex;align-items:center;justify-content:center;padding:16px}.card{width:100%;max-width:380px;background:rgba(255,255,255,.08);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,.4)}h1{text-align:center;font-family:cursive;font-size:34px;margin:0 0 4px}p{ text-align:center;color:#c4b5fd;font-size:13px;margin:0 0 20px}label{font-size:12px;color:#ddd}input{width:100%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:14px;color:#fff;padding:14px;margin:6px 0 14px;outline:none;font-size:15px}input::placeholder{color:#aaa}button{width:100%;padding:15px;border:none;border-radius:14px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 8px 20px rgba(124,58,237,.4)}a{color:#c4b5fd;text-decoration:none;font-size:14px}.center{text-align:center;margin-top:16px}
   #pwaBanner { position:fixed; top:0; left:0; right:0; background:#111; border-bottom:1px solid #333; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; z-index:9999; font-size:13px; }
@@ -9,6 +9,12 @@
 #pwaBanner span{color:#aaa; font-size:12px; display:block; margin-top:2px}
 #pwaBanner button#installBtn { background:#fff; color:#000; width:auto; padding:6px 14px; border-radius:20px; font-size:12px; margin:0; }
 #pwaBanner #closeBanner { background:none; width:auto; padding:4px; margin:0; color:#666; }
+/* ADDED ONLY - Loading spinner for Login button */
+#loginBtn{display:flex;align-items:center;justify-content:center;gap:10px}
+#loginBtn:disabled{opacity:.7;cursor:not-allowed}
+.spinner{width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top:3px solid #fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.spinner.show{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head><body>
 
@@ -29,7 +35,8 @@
 <div class="card"><h1>WildReaders ✨</h1><p>Read novels. Write stories. Connect.</p>
 <label>Email</label><input id="email" type="email" placeholder="you@gmail.com">
 <label>Password</label><input id="pass" type="password" placeholder="••••••••">
-<button onclick="login()">Login 🚀</button>
+<!-- ADDED ONLY - Spinner inside Login button -->
+<button id="loginBtn" onclick="login()"><span id="loginText">Login 🚀</span><span id="loginSpinner" class="spinner"></span></button>
 <div class="center"><a href="register.html">No account? Create one →</a></div>
 </div>
 <script>
@@ -40,7 +47,6 @@ const banner = document.getElementById('pwaBanner');
 const installBtn = document.getElementById('installBtn');
 
 // Hide banner if already installed as app
-
 
 installBtn.addEventListener('click', async () => {
   if (deferredPrompt) {
@@ -53,15 +59,30 @@ installBtn.addEventListener('click', async () => {
   }
 });
 
-
 async function login(){
   const email=document.getElementById('email').value.trim();
   const password=document.getElementById('pass').value;
   if(!email||!password) return alert('Fill email and password');
-  const res=await fetch(BASE+'/api/users/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-  const d=await res.json();
-  if(!res.ok) return alert(d.msg||'Login failed');
-  localStorage.setItem('token',d.token);
-  location.href='feed.html';
+  // ADDED ONLY - Show loading spinner, disable button while logging in
+  const btn=document.getElementById('loginBtn');
+  const btnText=document.getElementById('loginText');
+  const spinner=document.getElementById('loginSpinner');
+  btn.disabled=true;
+  btnText.innerText='Logging in...';
+  spinner.classList.add('show');
+  try{
+    const res=await fetch(BASE+'/api/users/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await res.json();
+    if(!res.ok){ alert(d.msg||'Login failed'); return; }
+    localStorage.setItem('token',d.token);
+    location.href='feed.html';
+  }catch(e){
+    alert('Server error');
+  }finally{
+    // ADDED ONLY - Hide spinner again if login failed / error (if success we already left page)
+    btn.disabled=false;
+    btnText.innerText='Login 🚀';
+    spinner.classList.remove('show');
+  }
 }
 </script></body></html>
