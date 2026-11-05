@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feed</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+
+    body{background:#000;color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+
+    a{color:inherit;text-decoration:none}
+
+.top{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);
+border-bottom:1px solid #262626;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+
+.logo{font-family:cursive;font-size:24px}
+
+.wrap{max-width:470px;margin:0 auto;width:100%}
+
+.post{background:#000;border-bottom:1px solid #262626;padding-bottom:12px}
+
+.post-head{padding:12px;display:flex;align-items:center;gap:10px}
+
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);display:flex;align-items:center;justify-content:center;font-weight:bold;overflow:hidden;cursor:pointer}
+
+.avatar img{width:100%;height:100%;object-fit:cover}
+
+.media{width:100%;background:#111;min-height:380px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+
+.media img,.media video{width:100%;max-height:580px;object-fit:contain;display:block;background:#000}
+.cap{padding:8px 12px}
+
+.actions{display:flex;gap:16px;padding:8px 12px;font-size:24px}
+
+.likes{padding:0 12px;font-weight:600;font-size:14px}
+
+.comment{padding:4px 12px;font-size:14px}
+
+.input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #1a1a1a}
+
+.input-row input{flex:1;background:transparent;border:none;color:#fff;outline:none}
+
+.input-row button{color:#0095f6;background:none;border:none;font-weight:600;cursor:pointer}
+
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #262626;display:flex;justify-content:space-around;align-items:center;padding:10px 0;z-index:20}
+
+.bottom a{position:relative;font-size:22px}
+
+.msg-badge{position:absolute;top:-6px;right:-10px;background:#ff3040;color:#fff;min-width:18px;height:18px;border-radius:9px;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+.msg-badge.hide{display:none}
+
+.logout{cursor:pointer;font-size:14px;color:#fff;background:#262626;padding:6px 12px;border-radius:6px}
+.hamburger{font-size:26px;cursor:pointer;margin-right:12px}
+
+.sidebar{position:fixed;top:0;left:-100%;width:85%;max-width:340px;height:100vh;background:#121212;z-index:99;transition:left 0.35s;border-right:1px solid #262626;display:flex;flex-direction:column}
+
+.sidebar.open{left:0}
+
+.sidebar-top{padding:20px 16px;border-bottom:1px solid #262626;display:flex;justify-content:space-between;align-items:center}
+
+.close{font-size:28px;cursor:pointer}
+
+.sidebar-links{padding:12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+
+.side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;display:none}
+
+.overlay.show{display:block}
+
+.like-btn{font-size:28px}
+
+.like-btn.liked{color:#ff2d55}
+
+.big-heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:80px;color:#ff2d55;pointer-events:none;opacity:0}
+
+.big-heart.show{animation:bigHeart 0.8s ease-out forwards}
+
+@keyframes bigHeart{0%{transform:translate(-50%,-50%) scale(0);opacity:0}15%{transform:translate(-50%,-50%) scale(1.2);opacity:1}30%{transform:translate(-50%,-50%) scale(1);opacity:1}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(0);opacity:0}}
+
+.new-bar{position:sticky;top:50px;z-index:15;background:#0095f6;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;cursor:pointer;display:none}
+
+.new-bar.show{display:block}
+
+.skel{animation:pulse 1.5s infinite}
+
+@keyframes pulse{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
+
+.load-more{padding:20px;text-align:center;color:#555;font-size:13px}
+
+  </style>
+</head>
+<body>
+  <div class="overlay" id="overlay" onclick="closeAll()"></div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-top"><b>Menu</b><span class="close" onclick="closeAll()">×</span></div>
+    <div class="sidebar-links">
+      <div class="side-link ball"><span>🏆</span> League Match </div>
+      <div class="side-link Country"><span>🌍</span> Country Match </div>
+      <div class="side-link"><span>🖼️</span> <a href="media.html"> Saved Pictures </a></div>
+      <div class="side-link"><span>📝</span> <a href="note.html"> Saved Note </a></div>
+      <div class="side-link"><span>📊</span> <a href="info.html"> Contact us </a></div>
+      <div class="side-link"><span>📊</span> <a href="next.html"> Games </a></div>
+    </div>
+    <div style="margin-top:auto;padding:16px;border-top:1px solid #262626">
+      <div class="side-link" onclick="logout()"><span>🚪</span> Logout</div>
+    </div>
+  </div>
+  <div class="top">
+    <div class="wrap" style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center">
+        <span class="hamburger" onclick="openSidebar()">☰</span>
+        <span class="logo">RAyMoNd</span>
+      </div>
+      <div style="display:flex;gap:14px;align-items:center"> 
+        <a onclick="openSidebar()" style="font-size:22px">Live  <div style="margin-left: -15px; margin-top: -6px;">football</div> 
+      </a>
+      <span class="logout" onclick="logout()">Logout</span>
+    </div>
+    </div>
+  </div>
+  <div class="new-bar" id="newBar" onclick="applyNewPosts()">↑ New posts - Tap</div>
+  <div class="wrap" id="feed">
+    <div class="post skel">
+      <div style="padding:12px;display:flex;gap:10px">
+        <div style="width:32px;height:32px;border-radius:50%;background:#222"> </div>
+        <div style="width:100px;height:12px;background:#222;margin-top:10px;border-radius:6px"> </div>
+      </div>
+        <div style="width:100%;height:380px;background:#151515"></div>
+  </div>
+    <div class="post skel">
+      <div style="padding:12px;display:flex;gap:10px">
+        <div style="width:32px;height:32px;border-radius:50%;background:#222"></div>
+        <div style="width:100px;height:12px;background:#222;margin-top:10px;border-radius:6px"></div>
+    </div>
+    <div style="width:100%;height:380px;background:#151515"></div>
+  </div>
+  </div>
+  <div id="loadMore" class="load-more" style="display:none">Loading more...</div>
+  <div style="height:70px"></div>
+  <div class="bottom">
+    <a href="feed.html" onclick="if(sessionStorage.getItem('feed_html')){ event.preventDefault(); restorePageState(); }">🏠</a>
+    <a href="explore.html" onclick="savePageState()">🔍</a>
+    <a href="create.html" onclick="savePageState()">➕</a>
+    <a href="message.html" onclick="savePageState()">💬<span id="msgCount" class="msg-badge hide">0</span></a>
+    <a href="reels.html" onclick="savePageState()">🎬</a>
+    <a href="notification.html" onclick="savePageState()">🔔</a>
+    <a href="profile.html" onclick="savePageState()">👤</a>
+  </div>
+
+<script>
+  const BASE = "https://raymonddomain.dev";
+  const token = localStorage.getItem('token');
+  if(!token) location.href = "login.html";
+
+  let currentPage=1, isLoadingMore=false, hasMore=true, allPosts=[], pendingPosts=null;
+
+  function fixUrl(u){ 
+    if(!u) return "";
+    if(u.startsWith('data:')) return u;
+    if(u.startsWith('http')) return u;
+    if(u.startsWith('/api/')) return BASE+u; return u; 
+   };
+
+  function getMyId(){ 
+    try{
+      return JSON.parse(atob(token.split('.')[1])).id
+    }catch{return""} 
+  };
+
+  function openSidebar(){ 
+    document.getElementById('sidebar').classList.add('open');
+     document.getElementById('overlay').classList.add('show'); 
+  };
+
+  function closeAll(){ 
+    document.getElementById('sidebar').classList.remove('open');
+     document.getElementById('overlay').classList.remove('show'); 
+  }
+
+  function goToProfile(id){ 
+    savePageState(); if(id) location.href='profile.html?id='+id; 
+  }
+
+  function formatDate(d){
+     if(!d) return ""; 
+     const date=new Date(d); 
+     const diff=Math.floor((new Date()-date)/1000); if(diff<60) return diff+"s ago"; 
+     if(diff<3600) return Math.floor(diff/60)+"m ago";
+      if(diff<86400) return Math.floor(diff/3600)+"h ago"; 
+      return date.toLocaleDateString(); 
+  }
+
+  function savePageState(){
+    const feedEl=document.getElementById('feed');
+    if(feedEl && feedEl.innerHTML &&!feedEl.innerHTML.includes('skel') &&!feedEl.innerHTML.includes('Failed')){
+      sessionStorage.setItem('feed_html', feedEl.innerHTML);
+      sessionStorage.setItem('feed_scroll', window.scrollY.toString());
+      sessionStorage.setItem('feed_time', Date.now().toString());
+      sessionStorage.setItem('feed_page', currentPage.toString());
+      sessionStorage.setItem('feed_all', JSON.stringify(allPosts));
+    }
+  }
+  function restorePageState(){
+    const html=sessionStorage.getItem('feed_html');
+    const scroll=sessionStorage.getItem('feed_scroll');
+    const time=parseInt(sessionStorage.getItem('feed_time')||'0');
+    const page=parseInt(sessionStorage.getItem('feed_page')||'1');
+    const savedAll=sessionStorage.getItem('feed_all');
+    if(html && Date.now()-time < 10*60*1000){
+      document.getElementById('feed').innerHTML=html;
+      currentPage=page;
+      if(savedAll){ try{ allPosts=JSON.parse(savedAll); }catch{} }
+      requestAnimationFrame(()=>{ window.scrollTo(0, parseInt(scroll||'0')); });
+      return true;
+    }
+    return false;
+  }
+
+  window.addEventListener('pagehide', savePageState);
+  window.addEventListener('beforeunload', savePageState);
+
+  async function loadMsgBadge(){
+    try{
+      let r=await fetch(BASE+'/api/messages/unread/counts',{headers:{authorization:token}});
+      let map=await r.json();
+      let total=Object.values(map).reduce((a,b)=>a+b,0);
+      let el=document.getElementById('msgCount');
+      if(total>0){el.innerText=total; el.classList.remove('hide');} else el.classList.add('hide');
+    }catch{}
+  }
+
+  function renderPosts(posts, append=false){
+
+    const f=document.getElementById('feed');
+    if(!append) f.innerHTML="";
+
+    if(posts.length===0 &&!append){ 
+      f.innerHTML="<p style='text-align:center;padding:60px;color:#777'>No posts yet</p>"; return; 
+    }
+    const html=posts.map(p=>{
+      const raw=p.mediaUrl||""; const mediaUrl=fixUrl(raw);
+
+      const isVid=p.type==='video'||raw.includes('/api/media-file')||raw.includes('video');
+
+      const mediaHtml=isVid?`<video src="${mediaUrl}" controls playsinline preload="metadata"></video>`:`<img src="${mediaUrl}" loading="lazy" />`;
+
+      const userId=p.user?._id||p.user; const username=p.user?.username||'user';
+
+      const avatarUrl=fixUrl(p.user?.avatar); const avatarHtml=avatarUrl?`<img src="${avatarUrl}" loading="lazy">`:username[0].toUpperCase();
+
+      const likes=p.likes||[]; const isLiked=likes.includes(getMyId());
+
+      return `<div class="post" id="post-${p._id}">
+        <div class="post-head">
+          <div class="avatar" onclick="goToProfile('${userId}')">${avatarHtml}</div>
+          <div style="display:flex;flex-direction:column"> <b onclick="goToProfile('${userId}')">${username}</b>
+            <span style="font-size:11px;color:#8e8e8e"> ${formatDate(p.createdAt)}</span>
+            </div>
+            </div>
+            <div class="media" ondblclick="like('${p._id}',true)"> 
+              ${mediaHtml}
+            <div class="big-heart" id="big-heart-${p._id}">❤️</div>
+            </div>
+            <div class="actions">
+            <span class="like-btn ${isLiked?'liked':''}" id="like-btn-${p._id}" onclick="like('${p._id}',false)">
+             ${isLiked?'❤️':'🤍'}</span><span>💬
+            </span>
+            <span onclick="saveP('${p._id}')">🔖</span>
+            </div>
+            <div class="likes" id="likes-${p._id}">${likes.length} likes</div>
+            <div class="cap">
+            <b>${username}</b> ${p.caption||''} 
+            </div>
+            <div id="c-${p._id}"> 
+            ${(p.comments||[]).slice(-2).map(c=>` <div class="comment"> 
+              <b>${c.user?.username||'user'}</b> ${c.text}</div>`
+            ).join('')}
+            </div>
+            <div class="input-row">
+              <input id="i-${p._id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') comment('${p._id}')">
+              <button onclick="comment('${p._id}')">Post</button>
+          </div>
+          </div>`;
+    }).join('');
+
+    if(append) f.insertAdjacentHTML('beforeend', html);
+    else f.innerHTML=html;
+    savePageState();
+  }
+
+  function applyNewPosts(){
+     if(pendingPosts){ 
+      allPosts=pendingPosts; currentPage=1;
+      hasMore=true;
+      renderPosts(allPosts,false); pendingPosts=null;
+      document.getElementById('newBar').classList.remove('show');
+      window.scrollTo({top:0,behavior:'smooth'}); 
+    } 
+  }
+
+  async function load(isNext=false){
+    if(isNext){
+      if(isLoadingMore||!hasMore) return;
+      isLoadingMore=true;
+      currentPage++;
+      document.getElementById('loadMore').style.display='block';
+    }else{
+      if(restorePageState()){ loadMsgBadge(); return; }
+      currentPage=1; allPosts=[]; hasMore=true;
+    }
+    try{
+      const r=await fetch(`${BASE}/api/posts/feed?page=${currentPage}&limit=8`,{headers:{authorization:token}});
+      if(r.status===401){ localStorage.removeItem('token'); location.href='login.html'; return; }
+      if(!r.ok) throw new Error('feed '+r.status);
+      let posts=await r.json();
+      if(!Array.isArray(posts)) posts=posts.posts||posts.data||posts.items||[];
+
+      if(posts.length<12) hasMore=false;
+      if(posts.length===0 && isNext){ hasMore=false; document.getElementById('loadMore').innerText='No more posts'; return; }
+
+      if(isNext){
+        allPosts=[...allPosts,...posts];
+        renderPosts(posts,true);
+      }else{
+        allPosts=posts;
+        renderPosts(posts,false);
+        localStorage.setItem('feed_last_fetch', Date.now().toString());
+      }
+    }catch(e){
+      console.log('load error',e);
+      if(!isNext){
+        document.getElementById('feed').innerHTML="<p style='text-align:center;padding:60px;color:#777'> Failed <br><button onclick='location.reload()' style='background:#0095f6;color:#fff;border:none;padding:8px 16px;border-radius:8px'>Retry</button></p>";
+      }else{
+        currentPage--; // revert page
+      }
+    }
+    isLoadingMore=false;
+    document.getElementById('loadMore').style.display='none';
+  }
+
+  // TikTok infinite scroll
+  window.addEventListener('scroll', ()=>{
+    if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 900){
+      load(true);
+    }
+    // save scroll pos
+    clearTimeout(window._scrollTimer);
+    window._scrollTimer=setTimeout(()=>{ sessionStorage.setItem('feed_scroll', window.scrollY.toString()); },200);
+  });
+
+  async function like(id, showBig){ 
+    const btn=document.getElementById('like-btn-'+id);
+    const likesEl=document.getElementById('likes-'+id);
+    const big=document.getElementById('big-heart-'+id);
+       if(!btn) return; const was=btn.classList.contains('liked');
+       if(was){ btn.classList.remove('liked'); btn.innerText='🤍';
+       if(likesEl) likesEl.innerText=Math.max(0,parseInt(likesEl.innerText)-1)+' likes';
+       } else{ 
+        btn.classList.add('liked'); btn.innerText='❤️'; if(likesEl) likesEl.innerText=(parseInt(likesEl.innerText)+1)+' likes'; 
+        if(showBig&&big){ 
+          big.classList.remove('show');
+         void big.offsetWidth; 
+         big.classList.add('show'); 
+        } 
+      } 
+      savePageState(); 
+      fetch(BASE+'/api/posts/'+id+'/like',{
+        method:'POST',
+        headers:{authorization:token}
+      }); 
+    }
+
+  async function comment(id){ 
+    const input=document.getElementById('i-'+id); 
+    const t=input.value.trim(); 
+    if(!t) return;
+     input.value=''; 
+     document.getElementById('c-'+id).insertAdjacentHTML('beforeend', `<div class="comment"><b>You</b> ${t}</div>`); 
+     savePageState(); 
+     fetch(BASE+'/api/posts/'+id+'/comment',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',authorization:token},
+      body:JSON.stringify({text:t})
+    }); 
+  }
+
+  async function saveP(id){
+     fetch(BASE+'/api/posts/'+id+'/save',{
+      method:'POST',
+      headers:{authorization:token}
+    }); 
+    alert('Saved!'); 
+  }
+  
+  function logout(){ sessionStorage.clear(); localStorage.removeItem('token'); location.href='login.html'; }
+
+  load(false);
+  loadMsgBadge();
+  setInterval(loadMsgBadge,5000);
+
+  const ball=document.querySelector('.ball'); const Country=document.querySelector('.Country');
+
+  if(ball) ball.addEventListener('click', async () => { 
+    savePageState();
+      fetch(BASE+'/api/sync'); 
+     location.href="football.html"; 
+  });
+
+  if(Country) Country.addEventListener('click', async () => { 
+    savePageState(); 
+     fetch(BASE+'/api/fetch-now'); 
+    location.href="countrymatch.html"; 
+  });
+
+</script>
+
+<!-- upload-manager.js UNTOUCHED -->
+<script src="upload-manager.js"></script>
+<script>
+  const upData=localStorage.getItem('uploading');
+  if(upData){
+    const d=JSON.parse(upData);
+    if(window.UploadManager) UploadManager.showBar(d.progress||20, d.status||'Uploading in background...');
+    const check=setInterval(async()=>{
+      try{
+        const r=await fetch(BASE+'/api/posts/feed?page=1&limit=12',{headers:{authorization:token}});
+        if(r.ok){ if(window.UploadManager) UploadManager.hideBar(); clearInterval(check); load(false); }
+      }catch{}
+    },3000);
+    setTimeout(()=>{ if(window.UploadManager) UploadManager.hideBar(); clearInterval(check); },30000);
+  }
+</script>
+</body>
+</html>

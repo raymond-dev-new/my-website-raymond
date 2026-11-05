@@ -1,164 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Create Post</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif}
-.container{width:100%;max-width:480px;margin:auto;padding:18px}
-h2{text-align:center}
-label{display:block;margin:16px 0 8px}
-input[type="file"],textarea{width:100%;padding:12px;background:#151515;border:1px solid #333;border-radius:8px;color:#fff}
-textarea{min-height:90px;resize:vertical}
-.preview{width:100%;max-height:400px;margin-top:14px;background:#111;border-radius:10px;object-fit:contain}
-button{width:100%;margin-top:18px;padding:14px;background:#ff3040;border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
-button:disabled{opacity:0.5}
-.progress-container{display:none;margin-top:18px}
-progress{width:100%;height:18px}
-#status{margin-top:14px;overflow-wrap:anywhere;line-height:1.5}
-.note{color:#aaa;font-size:13px}
-</style>
-</head>
-<body>
-<div class="container">
-<h2>Create Post</h2>
-<form id="uploadForm">
-<label>Select an image or video</label>
-<input id="file" type="file" accept="image/*,video/*" required>
-<p class="note">Maximum file size: 200 MB.</p>
-<video id="videoPreview" class="preview" controls playsinline style="display:none"></video>
-<img id="imagePreview" class="preview" style="display:none">
-<label>Caption</label>
-<textarea id="caption" maxlength="2000" placeholder="Write a caption..."></textarea>
-<button id="uploadButton" type="submit">Upload Post</button>
-</form>
-<div id="progressContainer" class="progress-container">
-<p id="progressText">Preparing...</p>
-<progress id="progressBar" value="0" max="100"></progress>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Write Novel</title>
+<style>*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#0f0c29,#1a1a2e);color:#fff;font-family:Arial;padding-bottom:90px}.box{max-width:600px;margin:0 auto;padding:18px}.top{font-size:22px;font-weight:800;margin-bottom:14px}.cover{width:100%;height:240px;background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.25);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden}.cover img{width:100%;height:100%;object-fit:cover}.cover b{font-size:34px}.cover p{color:#bbb;font-size:13px}input,textarea{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#fff;padding:15px;margin-top:12px;outline:none;font-size:15px}
+/* FIXED - box now grows with your story, no more feeling full */
+textarea{min-height:500px;height:auto;line-height:1.7;resize:vertical;overflow-y:auto;field-sizing:content}
+.btn{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:800;font-size:16px;margin-top:16px;cursor:pointer;box-shadow:0 10px 25px rgba(124,58,237,.4)}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,20,.95);backdrop-filter:blur(10px);border-top:1px solid #222;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.2)}</style>
+</head><body>
+<div class="box">
+  <div class="top">✍️ Write Novel</div>
+  <div class="cover" onclick="document.getElementById('uploaddInput').click()" id="coverBox"><b>🖼️</b><p>Tap to add beautiful cover</p><p style="font-size:11px;color:#888">Saved in database</p></div>
+  <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewUploadd(this)">
+  <input id="titleInput" placeholder="Novel Title - e.g. Silently Falling ✨" maxlength="80">
+  <!-- NO maxlength = unlimited words. Browser can accept 100,000+ words -->
+  <textarea id="contentInput" placeholder="Start writing your story here...&#10;&#10;Once upon a time..."></textarea>
+  <p id="charCount" style="font-size:12px;color:#aaa;margin:6px 0 0;text-align:right">0 words • Minimum 100 • No maximum</p>
+  <button class="btn" id="publishBtn" onclick="publishNovel()">Publish Novel 📚</button>
 </div>
-<div id="status"></div>
-</div>
+<div class="nav"><a href="feed.html">🏠</a><a href="search.html">🔍</a><a href="create.html" class="active">✍️</a><a href="message.html">💬</a><a href="diary.html">📖</a><a href="profile.html">👤</a></div>
 <script>
-const API_URL = 'https://raymonddomain.dev';
-const MAX_FILE_SIZE = 200*1024*1024;
-const form = document.getElementById('uploadForm');
-const fileInput = document.getElementById('file');
-const captionInput = document.getElementById('caption');
-const uploadButton = document.getElementById('uploadButton');
-const videoPreview = document.getElementById('videoPreview');
-const imagePreview = document.getElementById('imagePreview');
-const progressContainer = document.getElementById('progressContainer');
-const progressBar = document.getElementById('progressBar');
-const progressText = document.getElementById('progressText');
-const status = document.getElementById('status');
-let previewUrl = null;
-function showStatus(m,e){
-  status.textContent=m;
-  status.style.color=e?'#ff5964':'#40dc8b';
+const BASE="https://raymonddomain.dev";
+const token=localStorage.getItem('token');
+if(!token) location.href="login.html";
+let uploaddFile=null; // renamed to uploadd with 2 d
+function previewUploadd(input){
+  if(input.files[0]){ uploaddFile=input.files[0]; document.getElementById('coverBox').innerHTML='<img src="'+URL.createObjectURL(uploaddFile)+'">'; }
 }
-
-fileInput.addEventListener('change',()=>{
-  const f=fileInput.files[0];
-  videoPreview.style.display='none';imagePreview.style.display='none';
-  if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
-  if(!f)return;
-  if(f.size>MAX_FILE_SIZE){
-    showStatus('File exceeds 200 MB',true);
-    fileInput.value='';return;
-  }
-  previewUrl=URL.createObjectURL(f);
-  if(f.type.startsWith('video/')){
-    videoPreview.src=previewUrl;
-    videoPreview.style.display='block';
-  }
-  else{
-    imagePreview.src=previewUrl;
-    imagePreview.style.display='block';
-  }
-  showStatus('Selected: '+f.name+' ('+(f.size/1024/1024).toFixed(2)+' MB)');
-});
-form.addEventListener('submit',async(e)=>{
-  e.preventDefault();
-  const file=fileInput.files[0];
-  if(!file){
-    showStatus('Select file',true);
-    return;
-  }
-  const token=localStorage.getItem('token');
-  if(!token){
-    showStatus('Login first - no token',true);
-    return;
-  }
-  uploadButton.disabled=true;
-  progressContainer.style.display='block';
-  progressBar.value=0;
+function countWords(text){ return text.trim().split(/\s+/).filter(Boolean).length; }
+// FIXED - box grows as you type, so 2000 words will never look stuck
+const ta = document.getElementById('contentInput');
+function autoGrow(){
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight + 20) + 'px';
+  const len = countWords(ta.value);
+  const el = document.getElementById('charCount');
+  el.innerText = len + ' words • Minimum 100 • No maximum';
+  el.style.color = len >= 100 ? '#4ade80' : '#aaa';
+}
+ta.addEventListener('input', autoGrow);
+async function publishNovel(){
+  const title=document.getElementById('titleInput').value.trim();
+  const content=document.getElementById('contentInput').value.trim();
+  if(!title) return alert('Add title');
+  if(!content) return alert('Write your story');
+  // Minimum 100 WORDS, no maximum - 100, 2000, 50000, any amount
+  const wordCount = countWords(content);
+  if(wordCount < 100) return alert('Story too short. Write at least 100 words. You have ' + wordCount + ' / 100 words');
+  const btn=document.getElementById('publishBtn'); btn.innerText='Publishing... ✨'; btn.disabled=true;
+  const fd=new FormData(); fd.append('title',title); fd.append('content',content);
+  if(uploaddFile) fd.append('file',uploaddFile);
   try{
-    showStatus('Getting signature...');
-    progressText.textContent='Getting signature...';
-    const sigRes=await fetch(API_URL+'/api/cloudinary-signature',{
-      headers:{Authorization:'Bearer '+token}
-    });
-    if(!sigRes.ok){
-      const er=await sigRes.json();
-      throw new Error(er.msg||'Signature failed');
-    }
-    const {timestamp,signature,cloudName,apiKey,folder} = await sigRes.json();
-    const isVideo=file.type.startsWith('video/');
-    const resourceType=isVideo?'video':'image';
-    const cloudData=await new Promise((resolve,reject)=>{
-      const fd=new FormData();
-      fd.append('file',file);
-      fd.append('api_key',apiKey);
-      fd.append('timestamp',timestamp);
-      fd.append('signature',signature);
-      fd.append('folder',folder);
-      const xhr=new XMLHttpRequest();
-      xhr.open('POST','https://api.cloudinary.com/v1_1/'+cloudName+'/'+resourceType+'/upload');
-
-      xhr.upload.onprogress=(ev)=>{
-        if(ev.lengthComputable){
-          const p=Math.round(ev.loaded/ev.total*100);
-          progressBar.value=p;
-          progressText.textContent='Uploading: '+p+'%';
-        }
-      };
-      xhr.onload=()=>{
-        if(xhr.status>=200&&xhr.status<300){
-          resolve(JSON.parse(xhr.responseText));
-        }else{
-          try{const er=JSON.parse(xhr.responseText);reject(new Error(er.error.message));}
-          catch{reject(new Error('Cloudinary failed '+xhr.status));}
-        }
-      };
-      xhr.onerror=()=>reject(new Error('Network error during Cloudinary upload - check CORS in Cloudinary Settings > Upload > Allow unsigned? Add signature allowed origins'));
-      xhr.send(fd);
-    });
-    progressText.textContent='Saving post...';
-    showStatus('Saving...');
-    const postRes=await fetch(API_URL+'/api/posts',{
-      method:'POST',
-      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
-      body:JSON.stringify({mediaUrl:cloudData.secure_url,publicId:cloudData.public_id,type:resourceType,caption:captionInput.value.trim(),filename:file.name
-      })
-    });
-    
-    const postData=await postRes.json();
-    if(!postRes.ok)throw new Error(postData.msg||'Save failed');
-    progressBar.value=100;
-    progressText.textContent='Upload complete!';
-    showStatus('Post uploaded successfully!');
-    form.reset();
-    videoPreview.style.display='none';
-    imagePreview.style.display='none';
-  }catch(err){
-    showStatus('Upload failed: '+err.message,true);
-    progressText.textContent='Failed';
-  }finally{
-    uploadButton.disabled=false;
-  }
-});
-</script>
-</body>
-</html>
+    const res=await fetch(BASE+'/api/posts',{method:'POST',headers:{authorization:token},body:fd});
+    if(!res.ok) throw new Error('Publish failed');
+    alert('Published! 🎉'); location.href='profile.html';
+  }catch(e){ alert(e.message); btn.innerText='Publish Novel 📚'; btn.disabled=false; }
+}
+</script></body></html>

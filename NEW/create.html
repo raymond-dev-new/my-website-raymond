@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Post</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif}
+.container{width:100%;max-width:480px;margin:auto;padding:18px}
+h2{text-align:center}
+label{display:block;margin:16px 0 8px}
+input[type="file"],textarea{width:100%;padding:12px;background:#151515;border:1px solid #333;border-radius:8px;color:#fff}
+textarea{min-height:90px;resize:vertical}
+.preview{width:100%;max-height:400px;margin-top:14px;background:#111;border-radius:10px;object-fit:contain}
+button{width:100%;margin-top:18px;padding:14px;background:#ff3040;border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:0.5}
+.progress-container{display:none;margin-top:18px}
+progress{width:100%;height:18px}
+#status{margin-top:14px;overflow-wrap:anywhere;line-height:1.5}
+.note{color:#aaa;font-size:13px}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Create Post</h2>
+<form id="uploadForm">
+<label>Select an image or video</label>
+<input id="file" type="file" accept="image/*,video/*" required>
+<p class="note">Maximum file size: 200 MB.</p>
+<video id="videoPreview" class="preview" controls playsinline style="display:none"></video>
+<img id="imagePreview" class="preview" style="display:none">
+<label>Caption</label>
+<textarea id="caption" maxlength="2000" placeholder="Write a caption..."></textarea>
+<button id="uploadButton" type="submit">Upload Post</button>
+</form>
+<div id="progressContainer" class="progress-container">
+<p id="progressText">Preparing...</p>
+<progress id="progressBar" value="0" max="100"></progress>
+</div>
+<div id="status"></div>
+</div>
+<script>
+const API_URL = 'https://raymonddomain.dev';
+const MAX_FILE_SIZE = 200*1024*1024;
+const form = document.getElementById('uploadForm');
+const fileInput = document.getElementById('file');
+const captionInput = document.getElementById('caption');
+const uploadButton = document.getElementById('uploadButton');
+const videoPreview = document.getElementById('videoPreview');
+const imagePreview = document.getElementById('imagePreview');
+const progressContainer = document.getElementById('progressContainer');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const status = document.getElementById('status');
+let previewUrl = null;
+function showStatus(m,e){
+  status.textContent=m;
+  status.style.color=e?'#ff5964':'#40dc8b';
+}
+
+fileInput.addEventListener('change',()=>{
+  const f=fileInput.files[0];
+  videoPreview.style.display='none';imagePreview.style.display='none';
+  if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
+  if(!f)return;
+  if(f.size>MAX_FILE_SIZE){
+    showStatus('File exceeds 200 MB',true);
+    fileInput.value='';return;
+  }
+  previewUrl=URL.createObjectURL(f);
+  if(f.type.startsWith('video/')){
+    videoPreview.src=previewUrl;
+    videoPreview.style.display='block';
+  }
+  else{
+    imagePreview.src=previewUrl;
+    imagePreview.style.display='block';
+  }
+  showStatus('Selected: '+f.name+' ('+(f.size/1024/1024).toFixed(2)+' MB)');
+});
+form.addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const file=fileInput.files[0];
+  if(!file){
+    showStatus('Select file',true);
+    return;
+  }
+  const token=localStorage.getItem('token');
+  if(!token){
+    showStatus('Login first - no token',true);
+    return;
+  }
+  uploadButton.disabled=true;
+  progressContainer.style.display='block';
+  progressBar.value=0;
+  try{
+    showStatus('Getting signature...');
+    progressText.textContent='Getting signature...';
+    const sigRes=await fetch(API_URL+'/api/cloudinary-signature',{
+      headers:{Authorization:'Bearer '+token}
+    });
+    if(!sigRes.ok){
+      const er=await sigRes.json();
+      throw new Error(er.msg||'Signature failed');
+    }
+    const {timestamp,signature,cloudName,apiKey,folder} = await sigRes.json();
+    const isVideo=file.type.startsWith('video/');
+    const resourceType=isVideo?'video':'image';
+    const cloudData=await new Promise((resolve,reject)=>{
+      const fd=new FormData();
+      fd.append('file',file);
+      fd.append('api_key',apiKey);
+      fd.append('timestamp',timestamp);
+      fd.append('signature',signature);
+      fd.append('folder',folder);
+      const xhr=new XMLHttpRequest();
+      xhr.open('POST','https://api.cloudinary.com/v1_1/'+cloudName+'/'+resourceType+'/upload');
+
+      xhr.upload.onprogress=(ev)=>{
+        if(ev.lengthComputable){
+          const p=Math.round(ev.loaded/ev.total*100);
+          progressBar.value=p;
+          progressText.textContent='Uploading: '+p+'%';
+        }
+      };
+      xhr.onload=()=>{
+        if(xhr.status>=200&&xhr.status<300){
+          resolve(JSON.parse(xhr.responseText));
+        }else{
+          try{const er=JSON.parse(xhr.responseText);reject(new Error(er.error.message));}
+          catch{reject(new Error('Cloudinary failed '+xhr.status));}
+        }
+      };
+      xhr.onerror=()=>reject(new Error('Network error during Cloudinary upload - check CORS in Cloudinary Settings > Upload > Allow unsigned? Add signature allowed origins'));
+      xhr.send(fd);
+    });
+    progressText.textContent='Saving post...';
+    showStatus('Saving...');
+    const postRes=await fetch(API_URL+'/api/posts',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+      body:JSON.stringify({mediaUrl:cloudData.secure_url,publicId:cloudData.public_id,type:resourceType,caption:captionInput.value.trim(),filename:file.name
+      })
+    });
+    
+    const postData=await postRes.json();
+    if(!postRes.ok)throw new Error(postData.msg||'Save failed');
+    progressBar.value=100;
+    progressText.textContent='Upload complete!';
+    showStatus('Post uploaded successfully!');
+    form.reset();
+    videoPreview.style.display='none';
+    imagePreview.style.display='none';
+  }catch(err){
+    showStatus('Upload failed: '+err.message,true);
+    progressText.textContent='Failed';
+  }finally{
+    uploadButton.disabled=false;
+  }
+});
+</script>
+</body>
+</html>

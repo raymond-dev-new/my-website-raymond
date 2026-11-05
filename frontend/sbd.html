@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Write Novel</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+   font-family:Arial;
+    color:#fff;
+     padding-bottom:90px; 
+     min-height:100vh;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+  /* YOUR UNIQUE SWEET BACKGROUND */
+  background:
+    radial-gradient(600px 420px at 50% 42%, rgba(255, 89, 89, 0.22), transparent 65%),
+    radial-gradient(500px 350px at 20% 85%, rgba(255, 168, 89, 0.13), transparent 60%),
+    radial-gradient(400px 300px at 85% 12%, rgba(168, 85, 247, 0.15), transparent 60%),
+    #120a0a;
+}
+.box{max-width:600px;margin:0 auto;padding:20px}
+/* Oops section */
+.oops{text-align:center;padding:38px 10px 10px}
+.oops h1{font-size:32px;margin:0;line-height:1.2}
+.oops h1 span{color:#ff5a5a;font-style:italic;font-weight:800}
+.oops p{color:#b8a8a8;font-size:14px;margin:12px 0 0}
+.clickBtn{
+  display:block; width:100%; margin:20px 0 8px; padding:16px; border:none; border-radius:16px;
+  background:linear-gradient(90deg,#0f2a3d,#143a4d); color:#fff; font-size:17px; font-weight:700; cursor:pointer;
+  border:1px solid rgba(96,165,250,.4); 
+  box-shadow:0 0 0 1px rgba(96,165,250,.2), 0 10px 25px rgba(0,0,0,.4);
+}
+.clickBtn:active{transform:scale(.98)}
+.hint{text-align:center;font-size:12px;color:#888;margin:0}
+/* Form - hidden until button clicked */
+#writeForm{display:none}
+.cover{width:100%;height:240px;background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.25);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;margin-top:18px}
+.cover img{width:100%;height:100%;object-fit:cover}
+.cover b{font-size:34px}.cover p{color:#bbb;font-size:13px;margin:4px}
+input,textarea{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#fff;padding:15px;margin-top:12px;outline:none;font-size:15px}
+textarea{height:300px;line-height:1.7;resize:vertical}
+.btn{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(90deg,#ff5a5a,#ff8a5a);color:#fff;font-weight:800;font-size:16px;margin-top:16px;cursor:pointer;box-shadow:0 10px 25px rgba(255,90,90,.35)}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(18,10,10,.95);backdrop-filter:blur(10px);border-top:1px solid #2a1a1a;display:flex;justify-content:space-around;padding:14px 0}
+.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.2)}
+</style></head><body>
+
+<div class="box">
+  <!-- NO HUMAN IMAGE HERE - REMOVED -->
+  <div class="oops">
+    <h1>Oops 😬 you are<br><span>here</span></h1>
+  </div>
+
+  <!-- Click button below it -->
+  <button class="clickBtn" id="startBtn" onclick="showForm()">✍️ Click</button>
+</div>
+
+<script>
+
+function showForm(){
+ // document.getElementById('writeForm').scrollIntoView({behavior:'smooth'});
+ location.href="dashboard.html"
+}
+
+</script></body></html>

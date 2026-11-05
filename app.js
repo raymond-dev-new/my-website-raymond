@@ -38,844 +38,378 @@
    app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); })
    
    mongoose.connect(url).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
-   app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'register.html')); })
-   
-   
-   let io;
-   const safeEmit = (room, event, data) => { try { if(io) io.to(room).emit(event, data); } catch(e){} }
-   const SECRET = "secret123";
-   
-   
-     function authh(req, res, next) {
-     const tokenN = req.headers.authorization;
-     if (!tokenN) return res.status(401).json({ msg: "No token" });
-     try { 
-       // ADD THIS LINE - strip Bearer
-       const realToken = tokenN.startsWith('Bearer ') ? tokenN.slice(7) : tokenN;
-       req.userId = jwt.verify(realToken, SECRET).id; 
-       next(); 
-     } catch { 
-       return res.status(401).json({ msg: "Invalid" }); 
-     }
-   }
-   
-   
-   
-   
-   const uploadd = multer({
-     storage: multer.memoryStorage(),
-     limits: {
-       fileSize: 200 * 1024 * 1024
-     }
-   });
-   
-   
-   // ========== MODELS - FIXED ==========
-   const UserSchema = new mongoose.Schema({
-     displayName: String,
-     bio: { type: String, default: "" },
-     link: { type: String, default: "" },
-     username: { type: String, required: true, unique: true },
-     email: { type: String, required: true, unique: true },
-     password: { type: String, required: true },
-     avatar: { type: String, default: "" },
-     bio: { type: String, default: "" },
-     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-     savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
-   
-     // ADD THESE 2 FOR PASSWORD RECOVERY
-     passwordResetCode: { type: String, default: "" },
-     passwordResetExpires: { type: Date, default: null },
-   
-   }, { timestamps: true });
-   
-   // FIX: model name is 'User' to match all ref:'User', but keep old collection 'raymondusers' so you don't lose data
-   const Userd = mongoose.model('User', UserSchema, 'raymondusers');
-   
-   
-     // ========== FORGOT PASSWORD & RESET ==========
-   
-   // 1. Send reset code to email
-   app.post('/api/auth/forgot-password', async (req, res) => {
-     try {
-       const { email } = req.body;
-       if(!email) return res.status(400).json({ message: "Email required" });
-       
-       const user = await Userd.findOne({ email: email.toLowerCase().trim() });
-       if(!user) return res.status(404).json({ message: "Email not found" });
-   
-       const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
-       
-       user.passwordResetCode = code;
-       user.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 mins
-       await user.save();
-   
-       // In production replace this with email sending (nodemailer)
-       console.log(`[PASSWORD RESET] ${email} -> CODE: ${code}`);
-   
-       // For now we return code in response so you can test
-       // REMOVE `code` in production
-       res.json({ message: "Reset code sent to email", code: code });
-   
-       // TODO PRODUCTION EMAIL EXAMPLE:
-       // await sendEmail(email, `Your reset code is ${code}`)
-   
-     } catch(e){ res.status(500).json({ message: e.message }); }
-   });
-   
-   // 2. Verify code and set new password
-   app.post('/api/auth/reset-password', async (req, res) => {
-     try {
-       const { email, code, newPassword, password } = req.body;
-       const finalPass = newPassword || password;
-   
-       if(!email || !code || !finalPass) return res.status(400).json({ message: "All fields required" });
-       if(finalPass.length < 6) return res.status(400).json({ message: "Password too short" });
-   
-       const user = await Userd.findOne({ email: email.toLowerCase().trim() });
-       if(!user) return res.status(404).json({ message: "User not found" });
-   
-       if(!user.passwordResetCode || user.passwordResetCode !== code.toString()){
-         return res.status(400).json({ message: "Invalid code" });
-       }
-       if(Date.now() > new Date(user.passwordResetExpires).getTime()){
-         return res.status(400).json({ message: "Code expired, request new one" });
-       }
-   
-       user.password = await bcrypt.hash(finalPass, 10);
-       user.passwordResetCode = "";
-       user.passwordResetExpires = null;
-       await user.save();
-   
-       res.json({ message: "Password reset successful" });
-   
-     } catch(e){ res.status(500).json({ message: e.message }); }
-   });
-   
-   
-   // ========== FORGOT PASSWORD & RESET ==========
-   
-   // 1. Send reset code to email
-   app.post('/api/auth/forgot-password', async (req, res) => {
-     try {
-       const { email } = req.body;
-       if(!email) return res.status(400).json({ message: "Email required" });
-       
-       const user = await Userd.findOne({ email: email.toLowerCase().trim() });
-       if(!user) return res.status(404).json({ message: "Email not found" });
-   
-       const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
-       
-       user.passwordResetCode = code;
-       user.passwordResetExpires = Date.now() + 15 * 60 * 1000; // 15 mins
-       await user.save();
-   
-       // In production replace this with email sending (nodemailer)
-       console.log(`[PASSWORD RESET] ${email} -> CODE: ${code}`);
-   
-       // For now we return code in response so you can test
-       // REMOVE `code` in production
-       res.json({ message: "Use the code above", code: code });
-   
-       // TODO PRODUCTION EMAIL EXAMPLE:
-       // await sendEmail(email, `Your reset code is ${code}`)
-   
-     } catch(e){ res.status(500).json({ message: e.message }); }
-   });
-   
-   // 2. Verify code and set new password
-   app.post('/api/auth/reset-password', async (req, res) => {
-     try {
-       const { email, code, newPassword, password } = req.body;
-       const finalPass = newPassword || password;
-   
-       if(!email || !code || !finalPass) return res.status(400).json({ message: "All fields required" });
-       if(finalPass.length < 6) return res.status(400).json({ message: "Password too short" });
-   
-       const user = await Userd.findOne({ email: email.toLowerCase().trim() });
-       if(!user) return res.status(404).json({ message: "User not found" });
-   
-       if(!user.passwordResetCode || user.passwordResetCode !== code.toString()){
-         return res.status(400).json({ message: "Invalid code" });
-       }
-       if(Date.now() > new Date(user.passwordResetExpires).getTime()){
-         return res.status(400).json({ message: "Code expired, request new one" });
-       }
-   
-       user.password = await bcrypt.hash(finalPass, 10);
-       user.passwordResetCode = "";
-       user.passwordResetExpires = null;
-       await user.save();
-   
-       res.json({ message: "Password reset successful" });
-   
-     } catch(e){ res.status(500).json({ message: e.message }); }
-   });
-   
-   app.put('/api/users/me', authh, async (req,res)=>{
-     const u = await Userd.findById(req.userId);
-     if(req.body.displayName!==undefined) u.displayName=req.body.displayName;
-     if(req.body.bio!==undefined) u.bio=req.body.bio;
-     if(req.body.link!==undefined) u.link=req.body.link;
-     if(req.body.avatar) u.avatar=req.body.avatar;
-     await u.save(); res.json({user:u});
-   });
-   
-   
-   const Post = mongoose.model('Post', new mongoose.Schema({
-     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-     type: { type: String, default: 'image' },
-     mediaUrl: String,
-     caption: String,
-     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-     comments: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, text: String, createdAt: { type: Date, default: Date.now } }],
-     views: { type: Number, default: 0 },
-     shares: { type: Number, default: 0 }
-   }, { timestamps: true }));
-   
-   const Message = mongoose.model('Message', new mongoose.Schema({
-     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-     receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-     text: String,
-     read: { type: Boolean, default: false },
-     edited: { type: Boolean, default: false }
-   }, { timestamps: true }));
-   
-   const Notification = mongoose.model('Notification', new mongoose.Schema({
-     receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-     type: { type: String, enum: ['like','comment','follow','message'] },
-     post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', default: null },
-     text: { type: String, default: "" },
-     read: { type: Boolean, default: false }
-   }, { timestamps: true }));
-   
-   const MediaSchema = new mongoose.Schema({
-     userId: String,
-     img: { data: Buffer, contentType: String },
-     createdAt: { type: Date, default: Date.now }
-   });
-   const Media = mongoose.model('Media', MediaSchema);
-   
-   async function createNotif(receiverId, senderId, type, postId=null, text=""){
-     if(receiverId.toString()===senderId.toString()) return;
-     if(type==='like'){
-       const exists = await Notification.findOne({ receiver:receiverId, sender:senderId, type:'like', post:postId });
-       if(exists){ await Notification.findByIdAndDelete(exists._id); return null; }
-     }
-     const n = await Notification.create({ receiver:receiverId, sender:senderId, type, post:postId, text });
-     const populated = await Notification.findById(n._id).populate('sender','username avatar').populate('post','mediaUrl caption');
-     safeEmit(receiverId.toString(), 'newNotification', populated);
-     return populated;
-   }
-   
-   // AUTH
-   app.post('/api/auth/register', async (req, res) => {
-     const { username, email, password } = req.body;
-     const hashed = await bcrypt.hash(password, 10);
-     const user = await Userd.create({ username, email, password: hashed });
-     const token = jwt.sign({ id: user._id }, SECRET);
-     res.json({ token, user });
-   });
+   app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'sbd.html')); })
 
-   app.post('/api/auth/login', async (req, res) => {
-     const { email, password } = req.body;
-     const user = await Userd.findOne({ email });
-     if (!user) return res.json({ msg: "Not found" });
-     const ok = await bcrypt.compare(password, user.password);
-     if (!ok) return res.json({ msg: "Wrong pass" });
-     const token = jwt.sign({ id: user._id }, SECRET);
-     res.json({ token, user });
-   });
-   
-   app.post('/api/messages', authh, async (req, res) => {
-     try{
-       const { receiver, text } = req.body;
-       if(!receiver || !text) return res.status(400).json({msg:"Missing fields"});
-       const m = await Message.create({ sender: req.userId, receiver, text, read: false });
-       const populated = await Message.findById(m._id).populate('sender','username avatar').populate('receiver','username avatar');
-       safeEmit(receiver, 'receiveMessage', populated);
-       safeEmit(req.userId, 'receiveMessage', populated);
-       // create notif
-       await createNotif(receiver, req.userId, 'message', null, text.slice(0,30));
-       res.json(populated);
-     }catch(e){ res.status(500).json({msg:e.message}); }
-   });
-   
-   app.post('/api/upload', authh, uploadd.single('file'), (req, res) => {
-     if(!req.file) return res.status(400).json({msg:"No file"});
-     const b64 = req.file.buffer.toString('base64');
-     const dataUrl = `data:${req.file.mimetype};base64,${b64}`;
-     res.json({ url: dataUrl });
-   });
-   
-   app.put('/api/users/avatar', authh, uploadd.single('file'), async (req, res) => {
-     const userDoc = await Userd.findById(req.userId);
-     if(!userDoc) return res.status(404).json({msg:"User not found"});
-     if(!req.file) return res.status(400).json({msg:"No file"});
-     const b64 = req.file.buffer.toString('base64');
-     userDoc.avatar = `data:${req.file.mimetype}; base64, ${b64}`;
-     await userDoc.save();
-     res.json(userDoc);
-   });
 
-   app.delete('/api/users/avatar', authh, async (req,res)=>{
-     const user = await Userd.findById(req.userId);
-     if(!user) return res.status(404).json({msg:"Not found"});
-     user.avatar = ""; 
-     await user.save();
-      res.json(user);
-   });
-   
-     app.get('/api/users/me/profile', authh, async (req, res) => {
-     const user = await Userd.findById(req.userId).populate('followers','username avatar bio displayName link').populate('following','username avatar bio displayName link');
-     const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
-     res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
-   });
-   
-   // THIS IS WHAT YOU ARE MISSING - FOR OTHER PEOPLE TO SEE YOUR BIO
-   app.get('/api/users/:id/profile', authh, async (req, res) => {
-     try{
-       const user = await Userd.findById(req.params.id).populate('followers','username avatar').populate('following','username avatar');
-       const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
-       res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
-     }catch(e){ res.status(500).json({msg:e.message}) }
-   });
-   
-   app.get('/api/users/:id', async (req,res)=>{
-     try{
-       const user = await Userd.findById(req.params.id);
-       const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
-       res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
-     }catch(e){ res.status(500).json({msg:e.message}) }
-   });
-   
-    // FIX 1: Check your upload variable name - you wrote uploadd
-   // FIX 2: Added detailed error log for 403
-   
-    // CLOUDINARY CONFIGURATION
-   
-   // Keep your Cloudinary configuration on the backend.
-   // Replace the exposed API secret with your newly generated secret.
-   
-   
-      cloudinary.config({
-       cloud_name: 'v8mwxmlb',
-       api_key: '967794739896149',
-       api_secret: 'ZtOZ1BdM7uyeki3wDRgtgueFRHk',
-       secure: true
-   });
-   
-   const BANNED_WORDS = [
-     'xxx', 'porn', 'sex', 'nude', 'naked', 'boobs', 'boob',
-     'ass', 'pussy', 'dick', 'cock', 'fuck', 'blowjob',
-     'handjob', 'cum', 'orgasm', 'erotic', 'nsfw', 'onlyfans',
-     '18+', 'hentai', 'brazzers', 'xnxx', 'xvideos',
-     'pornhub', 'strip', 'bikini', 'lingerie', 'sexy',
-     'seductive', 'horny', 'suck', 'tits', 'titty',
-     'vagina', 'penis', 'anal', 'escort', 'prostitute',
-     'sugar', 'mommy', 'incest', 'rape', 'bdsm', 'nudes',
-     'undress', 'masturb'
-   ];
-   
-   const containsBanned = (value) => {
-     if (!value) return false;
-     const text = String(value).toLowerCase();
-     return BANNED_WORDS.some(word => text.includes(word));
-   };
-   
-   const MAX_SIZE = 200 * 1024 * 1024;
-   
-   const VIDEO_EXTENSIONS = new Set([
-     '.mp4', '.mov', '.m4v', '.webm',
-     '.avi', '.mkv', '.3gp'
-   ]);
-   
-   const IMAGE_EXTENSIONS = new Set([
-     '.jpg', '.jpeg', '.png', '.webp',
-     '.gif', '.heic', '.heif'
-   ]);
-   
-   // NEW: Signature for direct upload - tiny request, bypasses Vercel limit
-   app.get('/api/cloudinary-signature', authh, (req, res) => {
-     const timestamp = Math.round((new Date).getTime() / 1000);
-     const params = { timestamp, folder: 'newpost' };
-     const signature = cloudinary.utils.api_sign_request(params, 'ZtOZ1BdM7uyeki3wDRgtgueFRHk');
-     return res.json({
-       timestamp,
-       signature,
-       cloudName: 'v8mwxmlb',
-       apiKey: '967794739896149',
-       folder: 'newpost'
-     });
-   });
-   
-   // FIXED: Same route /api/posts but now DIRECT upload - no file goes through Vercel
-   app.post('/api/posts', authh, async (req, res) => {
-       try {
-         // Now expects JSON from frontend after direct Cloudinary upload
-         const { mediaUrl, publicId, type, caption, filename } = req.body;
-   
-         if (!mediaUrl || !publicId) {
-           return res.status(400).json({
-             msg: 'No file received. Upload to Cloudinary first from frontend.'
-           });
-         }
-   
-         if (mongoose.connection.readyState !== 1) {
-           return res.status(503).json({
-             msg: 'Database is not connected. Check MongoDB.'
-           });
-         }
-   
-         const captionText = String(caption || '');
-         const fileNameText = String(filename || '');
-   
-         if ( containsBanned(captionText) || containsBanned(fileNameText) ) {
-           // Delete from Cloudinary if banned
-           await cloudinary.uploader.destroy(publicId, {
-             resource_type: type || 'auto',
-             invalidate: true
-           }).catch(()=>{});
-           return res.status(400).json({
-             msg: 'Blocked: banned word in caption or file name.'
-           });
-         }
-   
-         const resourceType = type === 'video' ? 'video' : 'image';
-   
-         console.log('Post saving direct from Cloudinary:', {
-           publicId,
-           resourceType
-         });
-   
-         const post = await Post.create({
-           user: req.userId,
-           caption: captionText,
-           mediaUrl: mediaUrl,
-           publicId: publicId,
-           type: resourceType
-         });
-   
-         console.log('Post uploaded successfully:', post._id);
-         return res.status(201).json(post);
-   
-       } catch (error) {
-         console.error('POST UPLOAD FAILED:', {
-           message: error.message,
-           name: error.name
-         });
-         return res.status(500).json({
-           msg: 'Upload failed. Check the backend terminal.',
-           error: error.message || 'Unknown upload error.'
-         });
-       }
-     }
-   );
-   
-   app.delete('/api/posts/:id', authh, async (req, res) => {
-     try {
-       const postId = req.params.id;
-       const post = await Post.findById(postId);
-       if (!post) return res.status(404).json({ msg: 'Post not found' });
-       
-       if (post.user.toString() !== req.userId) {
-         return res.status(403).json({ msg: 'Not authorized to delete this post' });
-       }
-   
-       // Delete from Cloudinary if publicId exists
-       if (post.publicId) {
-         await cloudinary.uploader.destroy(post.publicId, {
-           resource_type: post.type === 'video' ? 'video' : 'image',
-           invalidate: true
-         }).catch((e) => console.log('Cloudinary delete skip:', e.message));
-       }
-   
-       // Delete from DB
-       await Post.findByIdAndDelete(postId);
-       
-       return res.json({ msg: 'Post deleted from DB and Cloudinary' });
-     } catch (error) {
-       console.error('DELETE POST FAILED:', error);
-       return res.status(500).json({ msg: 'Delete failed', error: error.message });
-     }
-   });
-   
-   //EDIT NAME
-    app.put('/api/users/me', authh, async(req,res)=>{
-     const { username, displayName, bio, link } = req.body;
-     const update = {};
-     if(username) update.username = username;
-     if(displayName) update.displayName = displayName;
-     if(bio) update.bio = bio;
-     if(link) update.link = link;
-     const user = await User.findByIdAndUpdate(req.userId, update, {new:true});
-     res.json(user);
-   });
-   
-   // UPDATE POST CAPTION
-   // UPDATE POST CAPTION
-   app.put('/api/posts/:id', authh, async (req, res) => {
-     try {
-       if (containsBanned(req.body.caption)) {
-         return res.status(400).json({ msg: 'Caption has banned word.' });
-       }
-       const post = await Post.findById(req.params.id);
-       if (!post) {
-         return res.status(404).json({ msg: 'Post not found.' });
-       }
-       if (post.user.toString() !== req.userId.toString()) {
-         return res.status(403).json({ msg: 'You cannot edit this post.' });
-       }
-       post.caption = req.body.caption || '';
-       await post.save();
-       return res.json(post);
-     } catch (err) {
-       console.error('UPDATE POST ERROR:', err);
-       return res.status(500).json({ msg: 'Could not update post.', error: err.message });
-     }
-   });
-   
-     // POSTS FEED - Paginated Cloudinary posts (TikTok style)
-app.get('/api/posts/feed', authh, async (req, res) => {
-  try {
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.min(parseInt(req.query.limit) || 12, 20); // max 20 per page
-    const skip = (page - 1) * limit;
+const SECRET = process.env.SECRET || 'my-secret-key-123';
 
-    // Fast query - lean + only needed fields + limit
-    const posts = await Post.find()
-      .populate('user', 'username avatar') // only username+avatar, not full user
-      .populate({
-        path: 'comments.user',
-        select: 'username',
-        options: { perDocumentLimit: 2} // only last 2 comments for preview
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(); // lean = 3x faster
+// ===== USER TABLE - NO displayName, WITH email =====
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  bio: { type: String, default: "" },
+  link: { type: String, default: "" },
+  avatar: { type: String, default: "" },
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+  passwordResetCode: { type: String, default: "" },
+  passwordResetExpires: { type: Date, default: null },
+}, { timestamps: true });
+const User = mongoose.model('User', userSchema);
 
-    // Optional: trim comments to last 2 to make JSON smaller
-    const lightPosts = posts.map(p => ({
-      ...p,
-      comments: (p.comments || []).slice(-2)
-    }));
-
-    return res.json(lightPosts);
-
-  } catch (err) {
-    console.error('FEED ERROR:', err);
-    return res.status(500).json({ msg: 'Could not load feed.' });
-  }
+// ===== NOVEL TABLE - ALL IN DB =====
+const postSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  content: { type: String, required: true },
+  cover: { type: String, default: "" },
+  fileData: { type: String, default: "" },
+  fileName: { type: String, default: "" },
+  fileType: { type: String, default: "" },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  comments: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    text: String,
+    createdAt: { type: Date, default: Date.now }
+  }],
+  createdAt: { type: Date, default: Date.now }
 });
-   
-   // VIDEO REELS - Shows Cloudinary videos
-   /*
-   app.get('/api/posts/reels', async (req, res) => {
-     try {
-       const reels = await Post.find({ type: 'video' })
-         .populate('user')
-         .populate('comments.user')
-         .sort({ createdAt: -1 });
-       return res.json(reels);
-     } catch (err) {
-       console.error('REELS ERROR:', err);
-       return res.status(500).json({ msg: 'Could not load reels.' });
-     }
-   }); */
-   
-   // VIDEO REELS - PURE RANDOM EVERY REFRESH
+const Post = mongoose.model('Post', postSchema);
 
-     app.get('/api/posts/reels', authh, async (req, res) => {
-  try {
-    const limit = Math.min(parseInt(req.query.limit) || 12, 20);
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
+// ===== PRIVATE MESSAGE TABLE =====
+const messageSchema = new mongoose.Schema({
+  from: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  to: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  text: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const Message = mongoose.model('Message', messageSchema);
 
-    // Step 1: get random IDs (fast)
-    const randomIds = await Post.aggregate([
-      { $match: { type: 'video' } },
-      { $sample: { size: limit } },
-      { $project: { _id: 1 } }
-    ]);
+// ===== LOGIN CHECK =====
+function authh(req, res, next){
+  const token = req.headers.authorization;
+  if(!token) return res.status(401).json({msg:'No token'});
+  try{ 
+    req.user = { 
+      id: jwt.verify(token, SECRET).id 
+    }; 
+    next(); 
+  }
+  catch(e){ return res.status(401).json({msg:'Invalid token'}); }
+}
 
-    const ids = randomIds.map(r => r._id);
+// ===== UPLOADD - MEMORY ONLY, NO FOLDER =====
+// Renamed to uploadd with 2 d
+const uploadd = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 200 * 1024 * 1024 }
+});
 
-    // Step 2: populate correctly (this keeps username)
-    const reels = await Post.find({ _id: { $in: ids } })
-     .populate('user', 'username avatar _id')
-     .lean();
+// Helper: turn file buffer to base64 text for DB
+function toBase64(file){
+  if(!file) return "";
+  return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+}
 
-    // Optional: shuffle result again so page order is random
-    for (let i = reels.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [reels[i], reels[j]] = [reels[j], reels[i]];
+// =================================================
+// ===== USERS - WITH EMAIL =====
+// =================================================
+
+app.post('/api/users/register', async (req,res)=>{
+  try{
+    const { username, email, password } = req.body;
+    if(!username || !email || !password) return res.status(400).json({msg:'Fill username, email and password'});
+    if(await User.findOne({username})) return res.status(400).json({msg:'Username taken'});
+    if(await User.findOne({email})) return res.status(400).json({msg:'Email already used'});
+    const hash = await bcrypt.hash(password,10);
+    const user = new User({ username, email: email.toLowerCase().trim(), password: hash });
+    await user.save();
+    const token = jwt.sign({id:user._id}, SECRET);
+    res.json({ token, user:{ _id:user._id, username:user.username, email:user.email } });
+  }catch(e){ res.status(500).json({msg:'Server error'}); }
+});
+
+app.post('/api/users/login', async (req,res)=>{
+  try{
+    const { email, username, password } = req.body;
+    const findBy = email ? { email: email.toLowerCase().trim() } : { username };
+    const user = await User.findOne(findBy);
+    if(!user) return res.status(400).json({msg:'User not found'});
+    if(!await bcrypt.compare(password, user.password)) return res.status(400).json({msg:'Wrong password'});
+    const token = jwt.sign({id:user._id}, SECRET);
+    res.json({ token, user:{ _id:user._id, username:user.username, email:user.email } });
+  }catch(e){ res.status(500).json({msg:'Server error'}); }
+});
+
+// FIND USER BY EMAIL - exact - MUST be before /:id
+app.get('/api/users/search', authh, async (req,res)=>{
+  const email = (req.query.email || '').toLowerCase().trim();
+  if(!email) return res.status(400).json({msg:'Add ?email='});
+  const user = await User.findOne({ email }).select('-password').populate('followers','username email avatar').populate('following','username email avatar');
+  if(!user) return res.status(404).json({msg:'No user with this email'});
+  res.json({ user });
+});
+
+// FIND USERS BY EMAIL - partial - MUST be before /:id
+app.get('/api/users/find', authh, async (req,res)=>{
+  const q = (req.query.email || req.query.q || '').toLowerCase().trim();
+  if(!q) return res.json([]);
+  const users = await User.find({ email: { $regex: q, $options: 'i' } }).select('-password').limit(20);
+  res.json(users);
+});
+
+// GET ALL USERS - MUST be before /:id
+app.get('/api/users/all', authh, async (req,res)=>{
+  const users = await User.find({ _id: { $ne: req.user.id } }).select('-password').sort({username:1});
+  res.json(users);
+});
+
+// MY PROFILE - MUST be before /:id
+app.get('/api/users/me/profile', authh, async (req,res)=>{
+  const user = await User.findById(req.user.id).select('-password').populate('followers','username email avatar').populate('following','username email avatar');
+  if(!user) return res.status(404).json({msg:'Not found'});
+  const posts = await Post.find({user:req.user.id}).populate('user','username email avatar').sort({createdAt:-1});
+  res.json({ user, posts, followersCount:user.followers.length, followingCount:user.following.length });
+});
+
+// OTHER USER PROFILE - MUST be before /:id
+app.get('/api/users/:id/profile', authh, async (req,res)=>{
+  const user = await User.findById(req.params.id).select('-password').populate('followers','username email avatar').populate('following','username email avatar');
+  if(!user) return res.status(404).json({msg:'Not found'});
+  const posts = await Post.find({user:req.params.id}).populate('user','username email avatar').sort({createdAt:-1});
+  res.json({ user, posts, followersCount:user.followers.length, followingCount:user.following.length });
+});
+
+// GET ONE USER BY ID
+app.get('/api/users/:id', authh, async (req,res)=>{
+  if(req.params.id==='me'){
+    const me = await User.findById(req.user.id).select('-password').populate('followers','username email avatar').populate('following','username email avatar');
+    return res.json({ user: me });
+  }
+  const user = await User.findById(req.params.id).select('-password').populate('followers','username email avatar').populate('following','username email avatar');
+  if(!user) return res.status(404).json({msg:'Not found'});
+  res.json({ user });
+});
+
+// UPDATE - NO displayName
+app.put('/api/users/me', authh, async (req,res)=>{
+  const { username, email, bio, link } = req.body;
+  const update = {};
+  if(username) update.username = username;
+  if(email) update.email = email.toLowerCase().trim();
+  if(bio !== undefined) update.bio = bio;
+  if(link !== undefined) update.link = link;
+  const user = await User.findByIdAndUpdate(req.user.id, update, {new:true}).select('-password');
+  res.json({ user });
+});
+app.put('/api/users/update', authh, async (req,res)=>{
+  const { username, email, bio, link } = req.body;
+  const update = {};
+  if(username) update.username = username;
+  if(email) update.email = email.toLowerCase().trim();
+  if(bio !== undefined) update.bio = bio;
+  if(link !== undefined) update.link = link;
+  const user = await User.findByIdAndUpdate(req.user.id, update, {new:true}).select('-password');
+  res.json({ user });
+});
+
+// AVATAR - Saved in DB as base64, uses uploadd
+app.post('/api/users/avatar', authh, uploadd.single('file'), async (req,res)=>{
+  if(!req.file) return res.status(400).json({msg:'No file'});
+  const avatar = toBase64(req.file);
+  await User.findByIdAndUpdate(req.user.id, { avatar });
+  res.json({ avatar });
+});
+app.post('/api/users/me/avatar', authh, uploadd.single('file'), async (req,res)=>{
+  if(!req.file) return res.status(400).json({msg:'No file'});
+  const avatar = toBase64(req.file);
+  await User.findByIdAndUpdate(req.user.id, { avatar });
+  res.json({ avatar });
+});
+app.put('/api/users/avatar', authh, uploadd.single('file'), async (req,res)=>{
+  if(!req.file) return res.status(400).json({msg:'No file'});
+  const avatar = toBase64(req.file);
+  await User.findByIdAndUpdate(req.user.id, { avatar });
+  res.json({ avatar });
+});
+app.delete('/api/users/avatar', authh, async (req,res)=>{
+  await User.findByIdAndUpdate(req.user.id, { avatar: "" });
+  res.json({ ok:true });
+});
+
+// FOLLOW / UNFOLLOW
+app.post('/api/users/:id/follow', authh, async (req,res)=>{
+  const targetId = req.params.id; const myId = req.user.id;
+  if(targetId===myId) return res.status(400).json({msg:'Cannot follow yourself'});
+  const target = await User.findById(targetId);
+  const me = await User.findById(myId);
+  if(!target || !me) return res.status(404).json({msg:'User not found'});
+  if(target.followers.includes(myId)){
+    target.followers = target.followers.filter(id=> id.toString()!==myId);
+    me.following = me.following.filter(id=> id.toString()!==targetId);
+  } else {
+    target.followers.push(myId);
+    me.following.push(targetId);
+  }
+  await target.save(); await me.save();
+  res.json({ ok:true });
+});
+
+// =================================================
+// ===== NOVELS - ALL IN DATABASE =====
+// =================================================
+
+// CREATE NOVEL - uses uploadd
+app.post('/api/posts', authh, uploadd.fields([{name:'file', maxCount:1}, {name:'cover', maxCount:1}]), async (req,res)=>{
+  try{
+    const title = req.body.title || req.body.caption;
+    const content = req.body.content || req.body.text || "";
+    if(!title) return res.status(400).json({msg:'Title needed'});
+    let cover = req.body.cover || "";
+    let fileData = req.body.fileData || "";
+    let fileName = "";
+    let fileType = "";
+    if(req.files && req.files.file && req.files.file[0]){
+      const f = req.files.file[0];
+      if(f.mimetype.startsWith('image/')) cover = toBase64(f);
+      else { fileData = toBase64(f); fileName = f.originalname; fileType = f.mimetype; }
     }
-
-    // Light response
-    const light = reels.map(r => ({
-      _id: r._id,
-      caption: r.caption,
-      mediaUrl: r.mediaUrl,
-      type: r.type,
-      views: r.views || 0,
-      likes: r.likes || [],
-      shares: r.shares || 0,
-      createdAt: r.createdAt,
-      comments: (r.comments || []).slice(-2),
-      user: {
-        _id: r.user?._id,
-        username: r.user?.username || 'unknown',
-        avatar: r.user?.avatar || ''
-      }
-    }));
-
-    return res.json(light);
-
-  } catch (err) {
-    console.error('REELS ERROR:', err);
-    return res.status(500).json({ msg: 'Could not load reels.' });
-  }
+    if(req.files && req.files.cover && req.files.cover[0]) cover = toBase64(req.files.cover[0]);
+    const post = new Post({ title, content, cover, fileData, fileName, fileType, user: req.user.id });
+    await post.save(); res.json(post);
+  }catch(e){ res.status(500).json({msg:'Server error'}); }
 });
 
-   // GET SINGLE POST
-   app.get('/api/posts/:id', authh, async (req, res) => {
-     try {
-       const post = await Post.findById(req.params.id)
-         .populate('user')
-         .populate('comments.user');
-       if (!post) {
-         return res.status(404).json({ msg: 'Post not found.' });
-       }
-       return res.json(post);
-     } catch (err) {
-       console.error('GET POST ERROR:', err);
-       return res.status(500).json({ msg: 'Could not load post.' });
-     }
-   });
+app.post('/api/posts/create', authh, uploadd.fields([{name:'file', maxCount:1}, {name:'cover', maxCount:1}]), async (req,res)=>{
+  try{
+    const title = req.body.title || req.body.caption;
+    const content = req.body.content || req.body.text || "";
+    let cover = req.body.cover || "";
+    let fileData = req.body.fileData || "";
+    let fileName = ""; let fileType = "";
+    if(req.files && req.files.file && req.files.file[0]){
+      const f = req.files.file[0];
+      if(f.mimetype.startsWith('image/')) cover = toBase64(f);
+      else { fileData = toBase64(f); fileName = f.originalname; fileType = f.mimetype; }
+    }
+    if(req.files && req.files.cover && req.files.cover[0]) cover = toBase64(req.files.cover[0]);
+    const post = new Post({ title, content, cover, fileData, fileName, fileType, user: req.user.id });
+    await post.save(); res.json(post);
+  }catch(e){ res.status(500).json({msg:'Server error'}); }
+});
+
+// FEED - MUST be before /:id
+app.get('/api/posts/feed', async (req,res)=>{
+  const page = parseInt(req.query.page||1);
+  const limit = parseInt(req.query.limit||8);
+  const posts = await Post.find().populate('user','username email avatar').populate('comments.user','username email').sort({createdAt:-1}).skip((page-1)*limit).limit(limit);
+  res.json(posts);
+});
+
+// ADDED ONLY - Delete post - only owner can delete, must be logged in
+app.delete('/api/posts/:id', authh, async (req, res) => {
+  const post = await Post.findById(req.params.id);
+  if(!post) return res.status(404).json({msg:'Post not found'});
+  // Only the owner can delete
+  if(post.user.toString() !== req.user.id) return res.status(403).json({msg:'You can only delete your own post'});
+  await post.deleteOne();
+  res.json({msg:'Deleted'});
+});
+
+// MY SAVED - MUST be before /:id
+app.get('/api/posts/saved/mine', authh, async (req,res)=>{
+  const posts = await Post.find({ savedBy: req.user.id }).populate('user','username email avatar').populate('comments.user','username email').sort({createdAt:-1});
+  res.json(posts);
+});
+
+// ALL NOVELS
+app.get('/api/posts', authh, async (req,res)=>{
+  const posts = await Post.find().populate('user','username email avatar').populate('comments.user','username email').sort({createdAt:-1});
+  res.json(posts);
+});
+
+// ONE NOVEL
+app.get('/api/posts/:id', authh, async (req,res)=>{
+  const p = await Post.findById(req.params.id).populate('user','username email avatar').populate('comments.user','username email');
+  if(!p) return res.status(404).json({msg:'Not found'});
+  res.json(p);
+});
+
+// LIKE
+app.post('/api/posts/:id/like', authh, async (req,res)=>{
+  const p = await Post.findById(req.params.id);
+  if(!p) return res.status(404).json({msg:'Not found'});
+  const uid = req.user.id;
+  if(p.likes.includes(uid)) p.likes = p.likes.filter(id=> id.toString()!==uid);
+  else p.likes.push(uid);
+  await p.save(); res.json(p);
+});
+
+// COMMENT
+app.post('/api/posts/:id/comment', authh, async (req,res)=>{
+  const p = await Post.findById(req.params.id);
+  if(!p) return res.status(404).json({msg:'Not found'});
+  p.comments.push({ user: req.user.id, text: req.body.text });
+  await p.save(); res.json(p);
+});
+
+// SAVE / UNSAVE
+app.post('/api/posts/:id/save', authh, async (req,res)=>{
+  const p = await Post.findById(req.params.id);
+  if(!p) return res.status(404).json({msg:'Not found'});
+  const uid = req.user.id;
+  if(p.savedBy.includes(uid)) p.savedBy = p.savedBy.filter(id=> id.toString()!==uid);
+  else p.savedBy.push(uid);
+  await p.save(); res.json({ saved: p.savedBy.includes(uid) });
+});
+
+// DELETE NOVEL
+app.delete('/api/posts/:id', authh, async (req,res)=>{
+  await Post.findByIdAndDelete(req.params.id);
+  res.json({ ok:true });
+});
+
+// =================================================
+// ===== PRIVATE MESSAGES =====
+// =================================================
+
+// UNREAD COUNT - MUST be before /:otherId
+app.get('/api/messages/unread/counts', authh, async (req,res)=>{ res.json({}); });
+
+// GET CHAT
+app.get('/api/messages/:otherId', authh, async (req,res)=>{
+  const me = req.user.id; const other = req.params.otherId;
+  const msgs = await Message.find({ $or:[ {from:me,to:other}, {from:other,to:me} ] }).populate('from','username email').sort({createdAt:1});
+  res.json(msgs);
+});
+
+// SEND MESSAGE
+app.post('/api/messages/:otherId', authh, async (req,res)=>{
+  const msg = new Message({ from: req.user.id, to: req.params.otherId, text: req.body.text });
+  await msg.save(); res.json(msg);
+});
+
+// EXTRA
+app.get('/api/sync', (req,res)=> res.json({ok:true}));
+app.get('/api/fetch-now', (req,res)=> res.json({ok:true}));
+
+
    
-   // LIKE OR UNLIKE POST
-   app.post('/api/posts/:id/like', authh, async (req, res) => {
-     try {
-       const post = await Post.findById(req.params.id);
-       if (!post) {
-         return res.status(404).json({ msg: 'Post not found.' });
-       }
-       const isLiked = post.likes.some(
-         id => id.toString() === req.userId.toString()
-       );
-       if (isLiked) {
-         post.likes.pull(req.userId);
-       } else {
-         post.likes.push(req.userId);
-       }
-       await post.save();
-       if (!isLiked) {
-         await createNotif(post.user, req.userId, 'like', post._id);
-       } else {
-         await Notification.deleteMany({ 
-           receiver: post.user, 
-           sender: req.userId, 
-           type: 'like', 
-           post: post._id 
-         });
-       }
-       const updated = await Post.findById(req.params.id)
-         .populate('user')
-         .populate('comments.user');
-       return res.json(updated);
-     } catch (err) {
-       console.error('LIKE ERROR:', err);
-       return res.status(500).json({ msg: 'Could not update like.' });
-     }
-   });
+   // blog end here uytrewdrtgyhujkluytrrtyuiuytrevcdfgh
+   // ytrefghjkkjhgfdfghjklkjhgfdsfghjklkjhgfdsfiuyfdjhg
+   // uytrewuioiuytrertylkjhgfdghjhgfdfghjktretyiuytrjhg
    
-   // COMMENT ON POST
-   app.post('/api/posts/:id/comment', authh, async (req, res) => {
-     try {
-       const commentText = req.body.text || '';
-       if (!commentText.trim()) {
-         return res.status(400).json({ msg: 'Comment cannot be empty.' });
-       }
-       if (containsBanned(commentText)) {
-         return res.status(400).json({ msg: 'Comment has banned word.' });
-       }
-       const post = await Post.findById(req.params.id);
-       if (!post) {
-         return res.status(404).json({ msg: 'Post not found.' });
-       }
-       post.comments.push({ user: req.userId, text: commentText });
-       await post.save();
-       await createNotif(
-         post.user,
-         req.userId,
-         'comment',
-         post._id,
-         commentText
-       );
-       const updated = await Post.findById(req.params.id)
-         .populate('user')
-         .populate('comments.user');
-       return res.json(updated);
-     } catch (err) {
-       console.error('COMMENT ERROR:', err);
-       return res.status(500).json({ msg: 'Could not add comment.' });
-     }
-   });
-   
-   // SHARE POST
-   app.post('/api/posts/:id/share', authh, async (req, res) => {
-     try {
-       const post = await Post.findById(req.params.id);
-       if (!post) {
-         return res.status(404).json({ msg: 'Post not found.' });
-       }
-       post.shares += 1;
-       await post.save();
-       return res.json(post);
-     } catch (err) {
-       console.error('SHARE ERROR:', err);
-       return res.status(500).json({ msg: 'Could not share post.' });
-     }
-   });
-   
-   // SAVE OR UNSAVE POST
-   app.post('/api/posts/:id/save', authh, async (req, res) => {
-     try {
-       const me = await Userd.findById(req.userId);
-       if (!me) {
-         return res.status(404).json({ msg: 'User not found.' });
-       }
-       if (!me.savedPosts) {
-         me.savedPosts = [];
-       }
-       const alreadySaved = me.savedPosts.some(
-         id => id.toString() === req.params.id
-       );
-       if (alreadySaved) {
-         me.savedPosts.pull(req.params.id);
-       } else {
-         const postExists = await Post.exists({ _id: req.params.id });
-         if (!postExists) {
-           return res.status(404).json({ msg: 'Post not found.' });
-         }
-         me.savedPosts.push(req.params.id);
-       }
-       await me.save();
-       return res.json(me.savedPosts);
-     } catch (err) {
-       console.error('SAVE POST ERROR:', err);
-       return res.status(500).json({ msg: 'Could not save post.' });
-     }
-   });
-   
-   // COUNT POST VIEWS
-   app.post('/api/posts/:id/view', async (req, res) => {
-     try {
-       const p = await Post.findByIdAndUpdate(
-         req.params.id,
-         { $inc: { views: 1 } },
-         { new: true }
-       );
-       if (!p) {
-         return res.status(404).json({ msg: 'Post not found.' });
-       }
-       return res.json({ views: p.views });
-     } catch (err) {
-       console.error('VIEW ERROR:', err);
-       return res.status(500).json({ msg: 'Could not count view.' });
-     }
-   });
-   //end here hgfddfghj;kjhgfd
-   
-   app.get('/api/users/:id', async (req, res) => {
-     const user = await Userd.findById(req.params.id).populate('followers', 'username avatar').populate('following', 'username avatar');
-     if (!user) return res.status(404).json({ msg: "User not found" });
-     const posts = await Post.find({ user: user._id }).sort({ createdAt: -1 });
-     res.json({ user, posts, followersCount: user.followers.length, followingCount: user.following.length });
-   });
-   app.post('/api/users/:id/follow', authh, async (req, res) => {
-     if(req.params.id === req.userId) return res.status(400).json({ msg: "Can't follow yourself" });
-     const target = await Userd.findById(req.params.id);
-     const me = await Userd.findById(req.userId);
-     if (!target ||!me) return res.status(404).json({ msg: "User not found" });
-     const isFollowing = me.following.includes(target._id);
-     if (isFollowing) {
-       me.following.pull(target._id); target.followers.pull(me._id);
-       await Notification.deleteMany({ receiver:target._id, sender:me._id, type:'follow' });
-     } else {
-       me.following.push(target._id); target.followers.push(me._id);
-       await createNotif(target._id, me._id, 'follow');
-     }
-     await me.save(); await target.save();
-     const updatedTarget = await Userd.findById(target._id).populate('followers','username').populate('following','username');
-     res.json({ me, target: updatedTarget, isFollowing:!isFollowing });
-   });
-   app.get('/api/explore', async (req, res) => {
-     const q = req.query.q;
-     if (q) { const users = await Userd.find({ username: { $regex: q, $options: 'i' } }); return res.json(users); }
-     const posts = await Post.find().populate('user').sort({ likes: -1 }).limit(20);
-     res.json(posts);
-   });
-   app.get('/api/notifications', authh, async (req, res) => {
-     const notifs = await Notification.find({ receiver: req.userId }).populate('sender','username avatar').populate('post','mediaUrl').sort({ createdAt: -1 }).limit(50);
-     res.json(notifs);
-   });
-   app.get('/api/notifications/count', authh, async (req, res) => {
-     const count = await Notification.countDocuments({ receiver: req.userId, read: false });
-     res.json({ count });
-   });
-   app.post('/api/notifications/read', authh, async (req, res) => {
-     await Notification.updateMany({ receiver: req.userId, read: false }, { read: true });
-     res.json({ ok:true });
-   });
-   app.get('/api/messages/users', authh, async (req, res) => {
-     const me = await Userd.findById(req.userId).populate('followers','username avatar').populate('following','username avatar');
-     if(!me) return res.json([]);
-     const combined = [...me.followers,...me.following];
-     const unique = [...new Map(combined.map(u => [u._id.toString(), u])).values()];
-     res.json(unique);
-   });
-   app.get('/api/messages/unread/counts', authh, async (req, res) => {
-     const unread = await Message.aggregate([
-       { $match: { receiver: new mongoose.Types.ObjectId(req.userId), read: false } },
-       { $group: { _id: "$sender", count: { $sum: 1 } } }
-     ]);
-     const map = {}; unread.forEach(u => map[u._id.toString()] = u.count); res.json(map);
-   });
-   app.post('/api/messages/:id/read', authh, async (req, res) => {
-     await Message.updateMany({ sender: req.params.id, receiver: req.userId, read: false }, { read: true });
-     safeEmit(req.params.id, 'messagesSeen', { by: req.userId });
-     res.json({ ok: true });
-   });
-   app.get('/api/messages/:id', authh, async (req, res) => {
-     const msgs = await Message.find({ $or: [{ sender: req.userId, receiver: req.params.id }, { sender: req.params.id, receiver: req.userId }] }).sort({ createdAt: 1 }).populate('sender','username').populate('receiver','username');
-     res.json(msgs);
-   });
-   app.put('/api/messages/msg/:msgId', authh, async (req, res) => {
-     const m = await Message.findById(req.params.msgId);
-     if(!m) return res.status(404).json({msg:"Not found"});
-     if(m.sender.toString()!== req.userId) return res.status(403).json({msg:"Not yours"});
-     m.text = req.body.text; m.edited = true; await m.save();
-     const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
-     safeEmit(m.receiver.toString(), 'messageEdited', populated);
-     safeEmit(m.sender.toString(), 'messageEdited', populated);
-     res.json(populated);
-   });
-   app.delete('/api/messages/msg/:msgId', authh, async (req, res) => {
-     const m = await Message.findById(req.params.msgId);
-     if(!m) return res.status(404).json({msg:"Not found"});
-     const isSender = m.sender.toString() === req.userId;
-     const isReceiver = m.receiver.toString() === req.userId;
-     if(!isSender &&!isReceiver) return res.status(403).json({msg:"Not allowed"});
-     const data = { _id: m._id, sender: m.sender, receiver: m.receiver };
-     await Message.findByIdAndDelete(req.params.msgId);
-     safeEmit(data.receiver.toString(), 'messageDeleted', data);
-     safeEmit(data.sender.toString(), 'messageDeleted', data);
-     res.json({ok:true});
-   });
-   
+
+
+
+
+
+   // pictures post gfhoifghjokpiuyttuiyttyuijopkoiuyfyohiuf
+
+
    const storage = multer.memoryStorage();
    const upload = multer({ storage: storage, limits: { fileSize: 160 * 1024 * 1024 } });
    
@@ -905,204 +439,12 @@ app.get('/api/posts/feed', authh, async (req, res) => {
      await Media.findByIdAndDelete(req.params.id); res.json({ success: true });
    });
    
-   // blog end here uytrewdrtgyhujkluytrrtyuiuytrevcdfgh
-   // ytrefghjkkjhgfdfghjklkjhgfdsfghjklkjhgfdsfiuyfdjhg
-   // uytrewuioiuytrertylkjhgfdghjhgfdfghjktretyiuytrjhg
-   
-   
-   
-   
-   
-     let token = '';
-   
-    let User = '';
-   
-    app.post('/change', async (req, res) => {
-      
-      const { token, newPassword } = req.body
-       
-       if(!newPassword) {
-          return res.json({status: 'error', error: 'Invalid password'})
-   
-        }  else if(newPassword.length <= 5) {
-          return res.json({status: 'error', error: 'password should be at least 6 character'})
-       }  
-   
-      try{
-      const Userr = jwt.verify(token, JWT_SECRET)
-       //console.log(Userr)
-    
-       const password = await bcrypt.hash(newPassword, 10)
-      const email = Userr.email
-      await user.updateOne(
-       { email }, 
-             {
-                $set:  { password }
-             }
-      )
-   
-       res.json({status: 'ok'})
-   
-      }catch(err) {
-       console.log(err)
-       res.json({ status: 'error', error: 'failed' })
-      }
-    })
-     
-   
-    app.post('/login', async (req, res) => {
-     console.log(req.body)
-     const {name, email, password} = req.body
-   
-        User = await user.findOne({email}).lean()
-        //console.log(User)
-      
-      if(!User) {
-       return res.json({status: 'error', error: 'Invalid username/password'})
-      }
-       
-       const bcryptcheck = await bcrypt.compare(password, User.password)
-   
-      
-       if(!bcryptcheck) {  
-           return res.json({status: 'error', error: 'invalid password'})
-       } 
-   
-       token = jwt.sign({ 
-           email: User.email, 
-           userid: User.name
-           }, JWT_SECRET )
-      
-   
-      res.json({status:'ok', data: token, Name: name })
-   }) 
-   
-    
-   app.post('/register', async (req, res) => {
-      console.log(req.body)
-      const {name, email, passwords} = req.body
-   
-       if(!name || typeof name !== 'string') {
-          return res.send({status: 'error', error: 'Invalid username'})
-   
-       } else if(!email) {
-          return res.send({status: 'error', error: 'Invalid email'})
-       }
-   
-        if(!passwords) {
-          return res.send({status: 'error', error: 'Invalid password'})
-        } 
-        if(passwords.length <= 4) {
-          return res.send('password should be at least 6 character')
-       }
-   
-   
-      const password = await bcrypt.hash(passwords, 10)
-   
-      try {
-      const response = await user.create({
-         name,
-         email,
-         password
-       })
-   
-       console.log('users created successfully', response)
-   
-      } catch(err) {
-        if(err.code === 11000) {
-          return res.send({status: 'error', error: 'Username already in use'})
-        }
-        throw err  
-      }
-   
-      res.json({status:'ok'})
-   })
-   
-     
-   
-   app.get('/get', (req, res) => {
-   
-     res.json({status: 'ok', data: 'Selection', input: 'input'})
-   })
-   
-     
-   app.post('/create', (req, res) => {
-     console.log(req.body)
-     const {select} = req.body
-   
-     res.json({status: 'ok', data: select, input: 'input'})
-   })
-   
-   
-       
-   
-   app.post('/payment', async (req, res) => {
-     console.log(req.body)
-     const { price, email} = req.body
-   
-     try{
-   
-      const url = 'https://api.paystack.co/transaction/initialize';
-     
-         const response = await axios.post(url, {
-           email, 
-           amount: price * 100,
-           currency: 'NGN',
-           Callback_url: 'https://my-website-raymond.vercel.app/callback'
-           },
-          
-         {
-           headers: {
-             Authorization: `Bearer ${process.env.PAYSTACK_KEY}`,
-           },
-         }
-       )
-       res.status(200).json(response.data)
-   
-     }catch(err) {
-      
-       console.log(err)
-     }   
-   })
-   
-   
-    app.post('webhook', express.json(), (req, res) => {
-      const event = req.body;
-    
-      if(event.event === 'Charge.success') {
-        console.log(event.data)
-    
-        const payment = event.data
-      }
-    
-      res.status(200).json({success: true})
-    }) 
-    
-     app.post('/recover', async (req, res) => {
-       console.log(req.body)
-       const {email, passwords} = req.body
-   
-      const Uuser = await user.findOne({email}).lean()
-        console.log(Uuser)
-      
-      if(!Uuser) {
-       return res.json({status: 'error', error: 'Incorrect email / please provide a register email'})
-      }  
-       
-   const password = await bcrypt.hash(passwords, 10)
-   
-     const emailuser = await user.updateOne(
-       { email }, 
-             {
-                $set:  { password }
-             }
-      )
-      
-      res.json({status: 'ok'})
-     })
-   
-     // start here kjhgfdsdfghioiuytdsdfghjklkjhgfdsdfgh
-   
+   //end here 0tdfghgifuytyoifuyogiuciohihguiohikh
+
+
+
+
+     // start here note kjhgfdsdfghioiuytdsdfghjklkjhgfdsdfgh
    
    // 2. SCHEMA - note belongs to userId
    const NoteSchema = new mongoose.Schema({
@@ -1157,7 +499,12 @@ app.get('/api/posts/feed', authh, async (req, res) => {
    
      // end here tretyuiouytryuiouytrtyuiouytryuiuytfgiu
    
-   
+
+     
+
+
+
+
    
    // new oiufdfgyuiopoiuytrertyuiopoiuytfdfghjk
    
@@ -1369,6 +716,12 @@ app.get('/api/posts/feed', authh, async (req, res) => {
    
    // matach end here kjhgfdghjkjhgfcghjkjhgf
    
+
+
+
+
+
+
    
    // CONFIG
    const API = process.env.API_FOOTBALL_KEY || '19ff9a571eb3c1a7bf5dc828fe578ffb';
@@ -1543,280 +896,7 @@ app.get('/api/posts/feed', authh, async (req, res) => {
    
    // country match end here kjhgcfghhgxuygfxyf
    
-   //new ytresrtyuioiuytrertyuioiuytrertyu
+  
    
-   
-   // 1. SCHEMA: SAVE IMAGE AS BUFFER
-   const oldMediaSchema = new mongoose.Schema({
-     userId: String,
-     img: { data: Buffer, contentType: String }, // THIS SAVES THE FILE
-     createdAt: { type: Date, default: Date.now }
-   });
-   const oldMedia = mongoose.model('oldMedia', oldMediaSchema);
-   
-   // 2. MULTER: SAVE TO MEMORY
-   const storagedd = multer.memoryStorage();
-   const uploaddd = multer({ storage: storagedd, limits: { fileSize: 100 * 1024 * 1024 } });
-   
-   // 3. UPLOAD ROUTE
-   app.post('/api/save-media', uploaddd.single('file'), async (req, res) => {
-     try {
-       const { userId } = req.body;
-       const newMedia = new oldMedia({
-         userId,
-         img: {
-           data: req.file.buffer, // raw bytes
-           contentType: req.file.mimetype
-         }
-       });
-       await newMedia.save();
-       res.json({ success: true, id: newMedia._id });
-     } catch(err) {
-       res.status(500).json({ error: err.message });
-     }
-   });
-   
-   // 4. GET ROUTE - SEND AS BASE64
-   app.get('/api/get-media', async (req, res) => {
-     const { userId } = req.query;
-     const media = await oldMedia.find({ userId }).sort({ createdAt: -1 });
-     
-     // Convert buffer to base64 so frontend can display
-     const result = media.map(m => ({
-       _id: m._id,
-       src: `data:${m.img.contentType};base64,${m.img.data.toString('base64')}`
-     }));
-     res.json(result);
-   });
-   
-   // 5. DELETE
-   app.delete('/api/delete-media/:id', async (req, res) => {
-     await oldMedia.findByIdAndDelete(req.params.id);
-     res.json({ success: true });
-   });  
-   
-   
-   //online banking iugfghdjhgcghsuhgcgdhsuhg
-    
-    
-    const NEWJWT_SECRET = "ihfghjkdjhvhjdhvbnfkerufyhijihekjdfenechvbejy";
-    const ADMIN_PASSWORD = "123456";
-    
-    // --- MODELS ---
-    const newUserSchema = new mongoose.Schema({
-      email: String,
-      password: String,
-      referenceCode: String,
-      ngnBalance: { type: Number, default: 0 },
-      usdBalance: { type: Number, default: 0 },
-    });
-    const NewUser = mongoose.model('NewUser', newUserSchema);
-    
-    const PendingSchema = new mongoose.Schema({
-      referenceCode: String,
-      email: String,
-      amount: Number,
-      type: String,
-      status: { type: String, default: 'pending' },
-      createdAt: { type: Date, default: Date.now }
-    });
-    const Pending = mongoose.model('Pending', PendingSchema);
-    
-    const WithdrawSchema = new mongoose.Schema({
-      referenceCode: String,
-      email: String,
-      amount: Number,
-      bankName: String,
-      accountNumber: String,
-      accountName: String,
-      type: String,
-      status: { type: String, default: 'pending' },
-      createdAt: { type: Date, default: Date.now }
-    });
-    const Withdraw = mongoose.model('Withdraw', WithdrawSchema);
-    
-    // NEW: Transaction history
-    const TransactionSchema = new mongoose.Schema({
-      referenceCode: String,
-      type: String,
-      amount: Number,
-      status: String,
-      details: String,
-      createdAt: { type: Date, default: Date.now }
-    });
-    const Transaction = mongoose.model('Transaction', TransactionSchema);
-    
-    // --- AUTH ---
-    app.post('/api/signup', async (req,res)=>{
-      const { email, password } = req.body;
-      const exists = await NewUser.findOne({email});
-      if(exists) return res.json({error: "Email exists"});
-      
-      const count = await NewUser.countDocuments();
-      const ref = `USER${String(count + 1).padStart(4,'0')}`;
-      
-      const hashed = await bcrypt.hash(password, 10);
-      const user = await NewUser.create({ email, password: hashed, referenceCode: ref });
-      
-      const token = jwt.sign({ id: user._id }, NEWJWT_SECRET);
-      res.json({ token, referenceCode: ref, email });
-    });
-    
-    app.post('/api/login', async (req,res)=>{
-      const { email, password } = req.body;
-      const user = await NewUser.findOne({email});
-      if(!user) return res.json({error: "No user"});
-      const ok = await bcrypt.compare(password, user.password);
-      if(!ok) return res.json({error: "Wrong password"});
-      const token = jwt.sign({ id: user._id }, NEWJWT_SECRET);
-      res.json({ token, referenceCode: user.referenceCode, email });
-    });
-    
-    function authMiddleware(req,res,next){
-      const token = req.headers.authorization?.split(' ')[1];
-      if(!token) return res.json({error: "No token"});
-      try{
-        const decoded = jwt.verify(token, NEWJWT_SECRET);
-        req.userId = decoded.id;
-        next();
-      }catch{ 
-        return res.json({error: "Invalid token"}) 
-      }
-    }
-    
-    app.get('/api/me', authMiddleware, async (req,res)=>{
-      const user = await NewUser.findById(req.userId);
-      if(!user) return res.json({error: "User not found"});
-      res.json({ email: user.email, referenceCode: user.referenceCode, ngnBalance: user.ngnBalance, usdBalance: user.usdBalance });
-    });
-    
-    // --- DEPOSITS ---
-    app.post('/api/deposit/claim-ngn', authMiddleware, async (req,res)=>{
-      const { amount } = req.body;
-      const user = await NewUser.findById(req.userId);
-      await Pending.create({ referenceCode: user.referenceCode, email: user.email, amount: Number(amount), type: 'ngn' });
-      await Transaction.create({ referenceCode: user.referenceCode, type: 'deposit-ngn', amount: Number(amount), status: 'pending', details: 'PalmPay deposit' });
-      res.json({ success: true });
-    });
-    
-    app.post('/api/deposit/claim-usd', authMiddleware, async (req,res)=>{
-      const { amount } = req.body;
-      const user = await NewUser.findById(req.userId);
-      await Pending.create({ referenceCode: user.referenceCode, email: user.email, amount: Number(amount), type: 'usd' });
-      await Transaction.create({ referenceCode: user.referenceCode, type: 'deposit-usd', amount: Number(amount), status: 'pending', details: 'GeegPay deposit' });
-      res.json({ success: true });
-    });
-    
-    // --- WITHDRAWAL - FIXED ---
-    app.post('/api/withdraw/request', authMiddleware, async (req,res)=>{
-      try{
-        const { amount, bankName, accountNumber, accountName, type } = req.body;
-        const user = await NewUser.findById(req.userId);
-        if(!user) return res.json({error: "User not found"});
-        
-        if(type==='ngn' && user.ngnBalance < Number(amount)) return res.json({error: `Insufficient NGN. You have ₦${user.ngnBalance}`});
-        if(type==='usd' && user.usdBalance < Number(amount)) return res.json({error: `Insufficient USD. You have $${user.usdBalance}`});
-    
-        if(type==='ngn') user.ngnBalance -= Number(amount);
-        if(type==='usd') user.usdBalance -= Number(amount);
-        await user.save();
-    
-        const w = await Withdraw.create({ 
-          referenceCode: user.referenceCode,
-          email: user.email,
-          amount: Number(amount), 
-          bankName, accountNumber, accountName, type 
-        });
-        await Transaction.create({ 
-          referenceCode: user.referenceCode, 
-          type: `withdraw-${type}`, 
-          amount: Number(amount), 
-          status: 'pending', 
-          details: `${bankName} ${accountNumber}` 
-        });
-        console.log(`NEW WITHDRAWAL: ${w.referenceCode} ${type} ${amount}`);
-        res.json({success: true});
-      }catch(e){ console.log(e); res.json({error: "Server error"}) }
-    });
-    
-    app.get('/api/transactions', authMiddleware, async (req,res)=>{
-      const user = await NewUser.findById(req.userId);
-      const tx = await Transaction.find({ referenceCode: user.referenceCode }).sort({ createdAt: -1 }).limit(50);
-      res.json(tx);
-    });
-    
-    // --- ADMIN ---
-    app.post('/api/admin/login', (req,res)=>{
-      if(req.body.password === ADMIN_PASSWORD) res.json({ success: true });
-      else res.json({ error: "Wrong admin password" });
-    });
-    
-    app.get('/api/admin/pending-deposits', async (req,res)=>{
-      const pendings = await Pending.find({ status: 'pending' }).sort({ createdAt: -1 });
-      res.json(pendings);
-    });
-    
-    app.post('/api/admin/credit-ngn', async (req,res)=>{
-      const { referenceCode, amount } = req.body;
-      await NewUser.findOneAndUpdate({ referenceCode }, { $inc: { ngnBalance: Number(amount) } });
-      await Pending.findOneAndDelete({ referenceCode, amount: Number(amount), type: 'ngn' });
-      await Transaction.findOneAndUpdate({ referenceCode, amount: Number(amount), type: 'deposit-ngn', status: 'pending' }, { status: 'approved' });
-      res.json({ success: true });
-    });
-    
-    app.post('/api/admin/credit-usd', async (req,res)=>{
-      const { referenceCode, amount } = req.body;
-      await NewUser.findOneAndUpdate({ referenceCode }, { $inc: { usdBalance: Number(amount) } });
-      await Pending.findOneAndDelete({ referenceCode, amount: Number(amount), type: 'usd' });
-      await Transaction.findOneAndUpdate({ referenceCode, amount: Number(amount), type: 'deposit-usd', status: 'pending' }, { status: 'approved' });
-      res.json({ success: true });
-    });
-    
-    app.get('/api/admin/withdrawals', async (req,res)=>{
-      const list = await Withdraw.find({ status: 'pending' }).sort({ createdAt: -1 });
-      res.json(list);
-    });
-    
-    app.post('/api/admin/approve-withdraw', async (req,res)=>{
-      const { id } = req.body;
-      await Withdraw.findByIdAndUpdate(id, { status: 'approved' });
-      const w = await Withdraw.findById(id);
-      if(w) await Transaction.findOneAndUpdate({ referenceCode: w.referenceCode, amount: w.amount, type: `withdraw-${w.type}`, status: 'pending' }, { status: 'approved' });
-      res.json({success: true});
-    });
-    
-    app.post('/api/admin/reject-withdraw', async (req,res)=>{
-      const { id } = req.body;
-      const w = await Withdraw.findById(id);
-      if(w){
-        const user = await NewUser.findOne({ referenceCode: w.referenceCode });
-        if(user){
-          if(w.type==='ngn') user.ngnBalance += w.amount;
-          else user.usdBalance += w.amount;
-          await user.save();
-        }
-        await Withdraw.findByIdAndDelete(id);
-        await Transaction.findOneAndDelete({ referenceCode: w.referenceCode, amount: w.amount, type: `withdraw-${w.type}`, status: 'pending' });
-      }
-      res.json({success: true});
-    });
-    
-    // online banking end here tdsdtyuiuytrdfuiuyt
-   
-   
-   if (process.env.NODE_ENV!== 'production') {
-     const server = http.createServer(app);
-     io = new Server(server, { cors: { origin: "*" } });
-     io.on('connection', (socket) => {
-       socket.on('join', (id) => socket.join(id));
-       socket.on('sendMessage', async (d) => {
-         const m = await Message.create({ sender: d.sender, receiver: d.receiver, text: d.text, read: false });
-         const populated = await Message.findById(m._id).populate('sender','username').populate('receiver','username');
-         safeEmit(d.receiver, 'receiveMessage', populated);
-         safeEmit(d.sender, 'receiveMessage', populated);
-       });
-     });
-     server.listen(port, () => console.log('server is running on port ' + port));
-   }
-   
-   export default app;
+
+    app.listen(port, () => console.log('server is running on port ' + port));
