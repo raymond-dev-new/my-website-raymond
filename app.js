@@ -141,9 +141,10 @@ app.post('/api/users/login', async (req,res)=>{
     if(!await bcrypt.compare(password, user.password)) return res.status(400).json({msg:'Wrong password'});
     const token = jwt.sign({id:user._id}, SECRET);
     res.json({ token, user:{ _id:user._id, username:user.username, email:user.email } });
-  }catch(e){ res.status(500).json({msg:'Server error'}); }
+  }catch(e){ res.status(500).json({msg:'Server error', }); }
 });
 
+//res.status(500).json({msg:'Server error', });
 // FIND USER BY EMAIL - exact - MUST be before /:id
 app.get('/api/users/search', authh, async (req,res)=>{
   const email = (req.query.email || '').toLowerCase().trim();
@@ -332,7 +333,7 @@ app.get('/api/posts', authh, async (req,res)=>{
 });
 
 // ONE NOVEL
-app.get('/api/posts/:id', authh, async (req,res)=>{
+app.get('/api/posts/:id', async (req,res)=>{
   const p = await Post.findById(req.params.id).populate('user','username email avatar').populate('comments.user','username email');
   if(!p) return res.status(404).json({msg:'Not found'});
   res.json(p);
