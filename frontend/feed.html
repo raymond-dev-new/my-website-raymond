@@ -49,14 +49,22 @@ button{
 }
 /* ADDED ONLY - Sidebar with 5 links */
 .sidebar{position:fixed;top:0;left:-260px;width:250px;height:100%;background:#14141d;border-right:1px solid #262626;z-index:100;transition:left .3s;padding:20px}
+
 .sidebar.open{left:0}
+
 .sidebar a{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;padding:13px 12px;border-radius:12px;font-size:15px;font-weight:700;margin-top:6px}
+
 .sidebar a:hover,.sidebar a.active{background:#26262f}
+
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99}
+
 .sidebar-overlay.open{display:block}
+
 .side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
+
 /* FIXED - menu button must NOT look / act like Logout button */
 .menuBtn{background:none!important;border:none!important;color:#fff!important;font-size:22px!important;padding:0 8px 0 0!important;cursor:pointer}
+
 </style>
 </head><body>
 <!-- ADDED ONLY - Sidebar overlay + sidebar with 5 links only -->
