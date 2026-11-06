@@ -1,7 +1,45 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}.top{max-width:935px;margin:0 auto;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);z-index:10}.logo{font-family:cursive;font-size:26px;background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.section{max-width:935px;margin:0 auto;padding:14px 16px 4px}.section h3{margin:0}.section p{color:#888;font-size:12px;margin:4px 0}.grid{max-width:935px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:10px 16px}.card{background:#16161f;border:1px solid #26262f;border-radius:18px;overflow:hidden;cursor:pointer;transition:.2s}.card:active{transform:scale(.97)}.cover{position:relative;width:100%;height:220px;background:#222}.cover img{width:100%;height:100%;object-fit:cover}.noimg{width:100%;height:100%;background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:56px}.pin{position:absolute;top:10px;left:10px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,.4)}.body{padding:12px}.title{font-size:14px;font-weight:800;line-height:1.3;min-height:36px}.meta{font-size:12px;color:#999;margin-top:8px;display:flex;gap:10px}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.25)}
+*{box-sizing:border-box}
+body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}
+
+.top{max-width:935px;margin:0 auto;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);z-index:10}
+
+.logo{font-family:cursive;font-size:26px;background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+.section{max-width:935px;margin:0 auto;padding:14px 16px 4px}
+
+.section h3{margin:0}
+
+.section p{color:#888;font-size:12px;margin:4px 0}
+
+.grid{max-width:935px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:10px 16px}
+
+.card{background:#16161f;border:1px solid #26262f;border-radius:18px;overflow:hidden;cursor:pointer;transition:.2s}
+
+.card:active{transform:scale(.97)}
+
+.cover{position:relative;width:100%;height:220px;background:#222}
+
+.cover img{width:100%;height:100%;object-fit:cover}
+
+.noimg{width:100%;height:100%;background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:56px}
+
+.pin{position:absolute;top:10px;left:10px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+
+.body{padding:12px}
+
+.title{font-size:14px;font-weight:800;line-height:1.3;min-height:36px}
+
+.meta{font-size:12px;color:#999;margin-top:8px;display:flex;gap:10px}
+
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}
+
+.nav a{color:#fff;text-decoration:none;font-size:22px}
+
+.nav a.active{transform:scale(1.25)}
+
 button{
   color: #ec4899;
   padding: 10px 20px;
@@ -24,7 +62,10 @@ button{
 <!-- ADDED ONLY - Sidebar overlay + sidebar with 5 links only -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="sidebar" id="sidebar">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><b style="font-size:20px">WildReaders ✨</b><span onclick="toggleSidebar()" style="cursor:pointer;font-size:20px">✕</span></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <b style="font-size:20px">WildReaders ✨</b>
+    <span onclick="toggleSidebar()" style="cursor:pointer;font-size:20px">✕</span>
+  </div>
 
   <div class="side-link ball"><span>🏆</span> League Match </div>
       <div class="side-link Country"><span>🌍</span> Country Match </div>
@@ -37,14 +78,38 @@ button{
 
 <div class="top">
   <!-- FIXED - type="button" + id, so it only opens sidebar, never logs out -->
-  <div style="display:flex;align-items:center;gap:6px"><button type="button" class="menuBtn" id="menuBtn" onclick="toggleSidebar()">☰</button><b class="logo">WildReaders ✨</b></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <button type="button" class="menuBtn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+    <b class="logo">WildReaders ✨</b>
+  </div>
+
   <button id="logoutBtn"> Logout</button>
 </div>
-<div class="section" id="pinSec" style="display:none"><h3>📌 Pinned For You</h3><p>3 random novels stay here for 3 days</p></div>
+
+<div class="section" id="pinSec" style="display:none">
+  <h3>📌 Pinned For You</h3>
+  <p>3 random novels stay here for 3 days</p>
+</div>
+
 <div class="grid" id="pinnedGrid"></div>
-<div class="section"><h3>📚 Discover Stories</h3><p>Tap any cover to read</p></div>
-<div class="grid" id="feedGrid"><p style="grid-column:1/3;text-align:center;color:#777">Loading stories...</p></div>
-<div class="nav"><a href="feed.html" class="active">🏠</a><a href="search.html">🔍</a><a href="create.html">✍️</a><a href="message.html">💬</a><a href="diary.html">📖</a><a href="profile.html">👤</a></div>
+
+<div class="section">
+  <h3>📚 Discover Stories</h3>
+  <p>Tap any cover to read</p>
+</div>
+
+<div class="grid" id="feedGrid">
+  <p style="grid-column:1/3;text-align:center;color:#777">Loading stories...</p>
+</div>
+
+<div class="nav">
+  <a href="feed.html" class="active">🏠</a>
+  <a href="search.html">🔍</a>
+  <a href="create.html">✍️</a>
+  <a href="message.html">💬</a>
+  <a href="diary.html">📖</a>
+  <a href="profile.html">👤</a>
+</div>
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
@@ -54,34 +119,67 @@ function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');
 }
+
 // NEW: cover is already full image from DB, use directly - no BASE +
-function shuffle(a){ let arr=[...a]; for(let i=arr.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+function shuffle(a){ 
+  let arr = [...a];
+   for(let i = arr.length-1; i > 0 ; i--){ 
+    let j = Math.floor(Math.random()*(i+1));
+     [arr[i],arr[j]] = [arr[j],arr[i]]; 
+  } 
+  return arr; 
+}
+
 function getPinned(all){
   const THREE=3*24*60*60*1000;
-  let saved=null; try{ saved=JSON.parse(localStorage.getItem('pinned_novels')||'null'); }catch{}
+  let saved=null; 
+  try{
+     saved = JSON.parse(localStorage.getItem('pinned_novels')||'null'); 
+  }catch{}
+
   if(saved && saved.time && Date.now()-saved.time < THREE && saved.ids.length===3){
-    let p=all.filter(x=> saved.ids.includes(x._id));
-    if(p.length===3) return p;
+    let p = all.filter(x => saved.ids.includes(x._id));
+    if(p.length===3) 
+    
+    return p;
   }
-  let np=shuffle(all).slice(0,3);
-  localStorage.setItem('pinned_novels', JSON.stringify({ids: np.map(x=>x._id), time: Date.now()}));
+
+  let np = shuffle(all).slice(0,3);
+
+  localStorage.setItem('pinned_novels', JSON.stringify({ids: np.map(x => x._id), time: Date.now()}));
+
   return np;
 }
-function card(p, isPin){
-  let cover=p.cover ? '<img src="'+p.cover+'">' : '<div class="noimg">📖</div>';
-  return '<div class="card" onclick="location.href=\'read.html?id='+p._id+'\'"><div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>';
+
+
+function card(p, isPin) {
+  let cover = p.cover ? '<img src="'+p.cover+'">' : '<div class="noimg">📖</div>';
+
+ return '<div class="card" onclick="location.href=\'read.html?id='+p._id+'\'"> <div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+' </div> <div class="body"> <div class="title">'+p.title+'</div> <div class="meta"> <span>@'+(p.user?.username||'author')+'</span> <span>❤️ '+(p.likes?.length||0)+'</span> <span>💬 '+(p.comments?.length||0)+'</span> </div> </div> </div>';
 }
+
 async function load(){
-  const res=await fetch(BASE+'/api/posts/feed?page=1&limit=20',{headers:{authorization:token}});
-  let posts=await res.json();
-  if(!posts.length){ document.getElementById('feedGrid').innerHTML='<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; return; }
-  let pinned=getPinned(posts);
-  let pinnedIds=pinned.map(p=>p._id);
-  let rest=shuffle(posts.filter(p=> !pinnedIds.includes(p._id)));
-  document.getElementById('pinnedGrid').innerHTML=pinned.map(p=>card(p,true)).join('');
+  const res = await fetch(BASE+'/api/posts/feed?page=1&limit=20',{
+    headers:{authorization:token}
+});
+
+  let posts = await res.json();
+
+  if(!posts.length){ 
+    document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; 
+   
+    return; 
+ }
+
+  let pinned = getPinned(posts);
+
+  let pinnedIds = pinned.map(p => p._id );
+  let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
+  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
   document.getElementById('pinSec').style.display='block';
-  document.getElementById('feedGrid').innerHTML=rest.map(p=>card(p,false)).join('');
+  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
+
 load();
 
 // FIXED - Was document.querySelector('button') which picked the ☰ button. Now picks Logout by ID only.
@@ -104,4 +202,6 @@ load();
      fetch(BASE+'/api/fetch-now'); 
       location.href="countrymatch.html"; 
   });
-</script></body></html>
+</script>
+</body>
+</html>
