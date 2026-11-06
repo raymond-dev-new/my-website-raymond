@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Play Games - Home</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#080812;
+    --card:rgba(255,255,255,.06);
+    --border:rgba(255,255,255,.10);
+    --muted:#a1a1b8;
+  }
+  body{
+    background:
+      radial-gradient(700px 320px at 5% -5%, rgba(124,58,237,.55), transparent 60%),
+      radial-gradient(700px 320px at 95% 0%, rgba(236,72,153,.40), transparent 60%),
+      radial-gradient(600px 300px at 50% 110%, rgba(0,212,255,.20), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+    color:#fff;
+    font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+    min-height:100vh;
+    padding:18px 16px 40px;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .wrap{width:100%;max-width:720px}
+
+  /* HEADER */
+  .header{text-align:center;padding:28px 10px 22px}
+  .logo{
+    width:78px;height:78px;margin:0 auto 16px;
+    border-radius:26px;
+    background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b);
+    display:flex;align-items:center;justify-content:center;
+    font-size:40px;
+    box-shadow:0 14px 32px rgba(236,72,153,.45);
+    transform:rotate(-4deg);
+  }
+  h1{font-size:32px;font-weight:900;letter-spacing:-.8px;line-height:1.15}
+  h1 span{
+    background:linear-gradient(90deg,#a78bfa,#f472b6,#fbbf24,#38bdf8);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .subtitle{color:var(--muted);font-size:14px;margin-top:10px;line-height:1.6;font-weight:600}
+  .badge{
+    display:inline-flex;gap:6px;align-items:center;
+    background:rgba(255,255,255,.08);border:1px solid var(--border);
+    padding:7px 14px;border-radius:999px;font-size:12px;font-weight:800;color:#e9d5ff;margin-top:14px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.25);animation:blink 1.6s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* 3 LINK CARDS */
+  .grid{display:grid;gap:16px;margin-top:8px}
+  .card{
+    display:flex;align-items:center;gap:16px;
+    text-decoration:none;color:#fff;
+    background:var(--card);border:1px solid var(--border);
+    backdrop-filter:blur(18px);
+    padding:20px;border-radius:26px;
+    box-shadow:0 16px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.07);
+    transition:.22s;
+    position:relative;overflow:hidden;
+  }
+  .card::after{
+    content:"→";position:absolute;right:18px;top:50%;transform:translateY(-50%);
+    font-size:22px;color:#a1a1b8;transition:.22s;
+  }
+  .card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.25);box-shadow:0 22px 50px rgba(0,0,0,.5)}
+  .card:hover::after{transform:translate(4px,-50%);color:#fff}
+  .icon{
+    width:64px;height:64px;flex-shrink:0;border-radius:20px;
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+  }
+  .card:nth-child(1) .icon{background:linear-gradient(135deg,#7c3aed,#ec4899);box-shadow:0 10px 22px rgba(236,72,153,.4)}
+  .card:nth-child(2) .icon{background:linear-gradient(135deg,#f59e0b,#f97316);box-shadow:0 10px 22px rgba(245,158,11,.4)}
+  .card:nth-child(3) .icon{background:linear-gradient(135deg,#06b6d4,#3b82f6);box-shadow:0 10px 22px rgba(6,182,212,.4)}
+  .card h2{font-size:19px;font-weight:900;letter-spacing:-.3px}
+  .card p{font-size:13px;color:var(--muted);margin-top:5px;line-height:1.5;font-weight:600}
+  .pill{
+    display:inline-block;margin-top:10px;
+    font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+    padding:5px 10px;border-radius:999px;
+  }
+  .card:nth-child(1) .pill{background:rgba(236,72,153,.15);color:#f9a8d4;border:1px solid rgba(236,72,153,.25)}
+  .card:nth-child(2) .pill{background:rgba(245,158,11,.15);color:#fcd34d;border:1px solid rgba(245,158,11,.25)}
+  .card:nth-child(3) .pill{background:rgba(6,182,212,.15);color:#67e8f9;border:1px solid rgba(6,182,212,.25)}
+
+  /* BUTTONS BELOW CARDS */
+  .btn-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px}
+  @media(max-width:520px){.btn-row{grid-template-columns:1fr}}
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    text-decoration:none;color:#fff;text-align:center;
+    padding:14px 10px;border-radius:16px;font-weight:800;font-size:14px;
+    transition:.2s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn1{background:linear-gradient(90deg,#7c3aed,#ec4899);box-shadow:0 8px 22px rgba(124,58,237,.35)}
+  .btn2{background:linear-gradient(90deg,#f59e0b,#f97316);box-shadow:0 8px 22px rgba(245,158,11,.30)}
+  .btn3{background:linear-gradient(90deg,#06b6d4,#3b82f6);box-shadow:0 8px 22px rgba(6,182,212,.30)}
+
+  .footer{text-align:center;color:#6b6b80;font-size:12px;margin-top:26px;line-height:1.6}
+  .footer b{color:#a1a1b8}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="logo">🎮</div>
+    <h1>Choose Your<br><span>Game</span></h1>
+    <p class="subtitle">Pick a game and start playing instantly.<br>No download. No waiting. Just play.</p>
+    <div class="badge"><span class="dot"></span> 3 Games • Play Now • Free</div>
+  </div>
+
+  <!-- 3 LINK CARDS -->
+  <div class="grid">
+    <!-- LINK 1 - WHOT -->
+    <a href="whot.html" class="card">
+      <div class="icon">🃏</div>
+      <div>
+        <h2>Whot</h2>
+        <p>Classic Nigerian card game. Play your cards, call Whot, and beat your opponent!</p>
+        <span class="pill">🃏 Cards • Fun • Fast</span>
+      </div>
+    </a>
+
+    <!-- LINK 2 - CHESS -->
+    <a href="chess.html" class="card">
+      <div class="icon">♟️</div>
+      <div>
+        <h2>Chess</h2>
+        <p>Test your brain. Strategy, tactics and checkmate. Play smart and win like a master.</p>
+        <span class="pill">♟️ Strategy • Brain Game</span>
+      </div>
+    </a>
+
+    <!-- LINK 3 - DRAUGHT -->
+    <a href="drat.html" class="card">
+      <div class="icon">⚫</div>
+      <div>
+        <h2>Draught</h2>
+        <p>Jump, capture and crown your king. Classic draughts / checkers, made for you.</p>
+        <span class="pill">⚫ Draught • Checkers</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- 3 LINK BUTTONS -->
+  <div class="btn-row">
+    <a href="whot.html" class="btn btn1">🃏 Play Whot</a>
+    <a href="chess.html" class="btn btn2">♟️ Play Chess</a>
+    <a href="drat.html" class="btn btn3">⚫ Play Draught</a>
+  </div>
+
+ 
+</div>
+
+</body>
+</html>
