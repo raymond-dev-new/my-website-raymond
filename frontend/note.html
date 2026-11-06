@@ -1,83 +1,227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- 
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Private Notes</title>
 <style>
-  body {
-    background: #0f172a;
-    color: #e5e7eb;
-    font-family: system-ui, sans-serif;
-    padding: 20px;
-    max-width: 700px;
-    margin: auto;
+  /* ========== UNIQUE UI ONLY - NO LOGIC CHANGED ========== */
+  *{box-sizing:border-box}
+  :root{
+    --bg:#080812;
+    --card:rgba(255,255,255,.06);
+    --border:rgba(255,255,255,.10);
+    --text:#fff;
+    --muted:#a1a1b8;
+    --purple:#7c3aed;
+    --pink:#ec4899;
+    --amber:#f59e0b;
+    --paper:#fffbeb;
   }
-  h1 { text-align: center; color: #8b5cf6; }
-.login-box,.notes-box { background: #1e293b; padding: 20px; border-radius: 12px; margin-top: 20px; }
-  input, textarea {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 8px;
-    border: 1px solid #334155;
-    background: #0f172a;
-    color: white;
-    font-size: 16px;
+  body{
+    background:
+      radial-gradient(700px 320px at 5% -5%, rgba(124,58,237,.50), transparent 60%),
+      radial-gradient(700px 320px at 95% 0%, rgba(245,158,11,.28), transparent 60%),
+      radial-gradient(600px 300px at 50% 110%, rgba(236,72,153,.20), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+    padding:16px;
+    margin:0;
+    min-height:100vh;
   }
-  button {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: none;
-    background: #6366f1;
-    color: white;
-    font-weight: 700;
-    font-size: 16px;
-    cursor: pointer;
+  /* WIDER LAYOUT */
+  .wrap{max-width:1080px;margin:0 auto}
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    background:var(--card);border:1px solid var(--border);
+    backdrop-filter:blur(16px);
+    padding:16px 20px;border-radius:24px;
+    box-shadow:0 16px 40px rgba(0,0,0,.35);
+    margin-bottom:18px;
   }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  button.danger { background: #ef4444; }
-.note {
-    background: #0f172a;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 10px;
-    border: 1px solid #334155;
-    white-space: pre-wrap;
+  .logo{
+    width:56px;height:56px;flex-shrink:0;border-radius:18px;
+    background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;box-shadow:0 10px 24px rgba(236,72,153,.4);
+    transform:rotate(-3deg);
   }
-.note small { color: #9ca3af; }
-  #status { text-align: center; color: #22c55e; margin: 8px 0; height: 20px; }
-  #error { text-align: center; color: #ef4444; margin: 8px 0; }
-  
-  .noteText{
-    width: 90%;
+  h1{margin:0;font-size:24px;font-weight:900;letter-spacing:-.5px;line-height:1.2}
+  h1 span{background:linear-gradient(90deg,#a78bfa,#f472b6,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .topbar p{margin:4px 0 0;color:var(--muted);font-size:13px;font-weight:600}
+  .count-badge{
+    margin-left:auto;flex-shrink:0;
+    background:rgba(255,255,255,.10);border:1px solid var(--border);
+    padding:8px 14px;border-radius:999px;font-size:12px;font-weight:800;color:#e9d5ff;
   }
 
+  /* LOGIN */
+  .login-box{
+    max-width:520px;margin:28px auto 0;
+    background:var(--card);border:1px solid var(--border);
+    backdrop-filter:blur(18px);
+    padding:28px 24px;border-radius:28px;
+    box-shadow:0 20px 50px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+    text-align:center;
+  }
+  .login-box h3{margin:6px 0 4px;font-size:20px}
+  .login-box p{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.5}
+  .login-icon{width:72px;height:72px;margin:0 auto 10px;border-radius:22px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 12px 26px rgba(124,58,237,.5)}
+
+  /* MAIN LAYOUT - WIDER, 2 COLUMNS ON DESKTOP */
+  .notes-box{
+    display:none;
+    background:transparent;
+    padding:0;
+  }
+  .layout{
+    display:grid;grid-template-columns: 1fr 1.15fr;gap:18px;align-items:start;
+  }
+  @media(max-width:820px){ .layout{grid-template-columns:1fr} }
+
+  .editor-card, .list-card{
+    background:var(--card);border:1px solid var(--border);
+    backdrop-filter:blur(18px);
+    padding:20px;border-radius:26px;
+    box-shadow:0 16px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  .editor-card{position:sticky;top:16px}
+  @media(max-width:820px){ .editor-card{position:static} }
+  .editor-card h3, .list-card h3{margin:0 0 6px;font-size:17px}
+  .editor-card > p, .list-card > p{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+
+  /* NOTEPAD PAPER */
+  .paper{
+    background:
+      linear-gradient(to bottom, transparent 31px, rgba(124,58,237,.14) 32px),
+      linear-gradient(90deg, transparent 0, transparent 42px, rgba(236,72,153,.25) 42px, transparent 43px),
+      #fffdf5;
+    border-radius:18px;
+    padding:10px 14px 10px 52px;
+    box-shadow:0 10px 24px rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.06);
+    position:relative;overflow:hidden;
+  }
+  .paper::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(#ec4899,#f59e0b);
+  }
+  .paper textarea{
+    background:transparent;border:none;outline:none;resize:vertical;
+    width:100%;min-height:260px;
+    font-family:'Segoe UI',Georgia,serif;
+    font-size:17px;line-height:32px;color:#1f2937;
+    padding:0;margin:0;
+  }
+  .paper textarea::placeholder{color:#9ca3af}
+
+  input, textarea{
+    width:100%;padding:14px 16px;margin:8px 0;border-radius:14px;
+    border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.35);
+    color:white;font-size:15px;outline:none;transition:.2s;
+  }
+  input:focus{border-color:#a78bfa;box-shadow:0 0 0 4px rgba(124,58,237,.25)}
+  input::placeholder{color:#7a7a8f}
+
+  /* BUTTONS */
+  button{
+    width:100%;padding:14px;border-radius:14px;border:none;
+    background:linear-gradient(90deg,#7c3aed,#ec4899);
+    color:white;font-weight:800;font-size:16px;cursor:pointer;
+    box-shadow:0 8px 22px rgba(124,58,237,.35);transition:.2s;
+  }
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.danger{
+    background:rgba(255,59,92,.14)!important;color:#ff8fa3!important;
+    border:1px solid rgba(255,59,92,.25)!important;box-shadow:none!important;
+    padding:8px!important;font-size:13px!important;width:auto!important;min-width:78px;
+  }
+  .logout-btn{
+    background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.14)!important;
+    box-shadow:none!important;color:#e5e5e5!important;margin-top:10px!important;
+  }
+
+  /* NOTE CARDS - READ MODE LIKE STICKY NOTES */
+  .note{
+    background:#fffdf5;
+    color:#1f2937;
+    padding:16px 16px 12px;
+    border-radius:16px;
+    margin-top:14px;
+    border:none;
+    white-space:pre-wrap;
+    box-shadow:0 8px 20px rgba(0,0,0,.20);
+    position:relative;overflow:hidden;
+    font-family:Georgia,'Segoe UI',serif;
+    font-size:15.5px;line-height:1.65;
+    word-break:break-word;
+  }
+  .note:nth-child(3n){background:#fef3c7}
+  .note:nth-child(3n+1){background:#ecfdf5}
+  .note:nth-child(3n+2){background:#eff6ff}
+  .note::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(#7c3aed,#ec4899)}
+  .note small{color:#6b7280;font-family:'Segoe UI',sans-serif;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+  .note p{margin:8px 0 10px;color:#111827}
+  .note-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px dashed rgba(0,0,0,.12);padding-top:10px}
+
+  #status{text-align:center;color:#4ade80;margin:10px 0;height:20px;font-weight:700;font-size:13px}
+  #error{text-align:center;color:#f87171;margin:10px 0;font-weight:700;font-size:13px;min-height:18px}
+  .empty-notes{
+    text-align:center;color:var(--muted);padding:34px 10px;
+    border:1px dashed rgba(255,255,255,.18);border-radius:18px;margin-top:14px;font-size:14px;line-height:1.6;
+  }
+  .hint{font-size:11px;color:var(--muted);text-align:center;margin-top:10px}
 </style>
 </head>
 <body>
 
-<h1>📝 My Private Notes</h1>
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">📝</div>
+    <div>
+      <h1>My Private <span>Notes</span></h1>
+      <p>Your thoughts, safe & private • Write • Save • Read anytime</p>
+    </div>
+    <div class="count-badge">✦ Private</div>
+  </div>
 
-<div id="login" class="login-box">
-  <h3>Login to access your notes</h3>
-  <input type="email" id="email" class="noteText" placeholder="Enter any email">
-  <button id="loginBtn" onclick="login()">Login</button>
-  <div id="error"></div>
-</div>
+  <!-- LOGIN -->
+  <div id="login" class="login-box">
+    <div class="login-icon">🔐</div>
+    <h3>Welcome back</h3>
+    <p>Login to access your notes.<br>Your notes are tied to your email, only you can see them.</p>
+    <input type="email" id="email" class="noteText" placeholder="Enter any email">
+    <button id="loginBtn" onclick="login()">Login to My Notes →</button>
+    <div id="error"></div>
+    <p class="hint">No password needed • Just use your email</p>
+  </div>
 
-<div id="app" class="notes-box" style="display:none;">
-  <h3>Write your note</h3>
-  <textarea id="noteText" class="noteText" rows="8" placeholder="Start typing..."></textarea>
-  <button id="saveBtn" onclick="saveNote()">Save Note</button>
-  <div id="status"></div>
-  <button class="danger" onclick="logout()">Logout</button>
+  <!-- APP -->
+  <div id="app" class="notes-box">
+    <div class="layout">
+      <!-- LEFT: WRITE -->
+      <div class="editor-card">
+        <h3>✍️ Write your note</h3>
+        <p>Like writing on real paper. Take your time.</p>
+        <div class="paper">
+          <textarea id="noteText" class="noteText" rows="8" placeholder="Start typing...&#10;&#10;• Your idea&#10;• Your reminder&#10;• Your secret..."></textarea>
+        </div>
+        <div style="height:12px"></div>
+        <button id="saveBtn" onclick="saveNote()">💾 Save Note</button>
+        <div id="status"></div>
+        <button class="danger logout-btn" style="width:100%!important;padding:13px!important;font-size:15px!important;color:#e5e5e5!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.14)!important" onclick="logout()">Logout</button>
+        <p class="hint">Tip: Your notes are saved to the cloud, not just this phone.</p>
+      </div>
 
-  <h3 style="margin-top:20px;">Your Saved Notes</h3>
-  <div id="notesList">Loading...</div>
+      <!-- RIGHT: READ -->
+      <div class="list-card">
+        <h3>📚 Your Saved Notes</h3>
+        <p>Newest first • Tap Delete to remove a note</p>
+        <div id="notesList">Loading...</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -150,11 +294,11 @@ async function loadNotes(){
     const notes = await res.json();
     document.getElementById('notesList').innerHTML = notes.length? notes.map(n => `
       <div class="note">
-        <small>${new Date(n.createdAt).toLocaleString()}</small>
+        <small>🕒 ${new Date(n.createdAt).toLocaleString()}</small>
         <p>${n.text}</p>
-        <button class="danger" onclick="deleteNote('${n._id}')">Delete</button>
+        <div class="note-foot"><span style="font-size:12px;color:#6b7280">📌 Private Note</span><button class="danger" onclick="deleteNote('${n._id}')">Delete</button></div>
       </div>
-    `).join('') : '<p>No notes yet</p>';
+    `).join('') : '<div class="empty-notes">📭 No notes yet<br>Write your first note on the left →<br>It will appear here instantly.</div>';
   } catch(e){
     document.getElementById('notesList').innerText = 'Failed to load. Check server/API_URL';
   }
@@ -178,7 +322,7 @@ async function saveNote(){
     });
     if(!res.ok) throw new Error('Save failed');
     document.getElementById('noteText').value = '';
-    document.getElementById('status').innerText = 'Saved!';
+    document.getElementById('status').innerText = 'Saved! ✓';
     setTimeout(() => document.getElementById('status').innerText = '', 2000);
     loadNotes();
   } catch(e){

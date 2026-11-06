@@ -155,10 +155,24 @@ app.get('/api/users/search', authh, async (req,res)=>{
 });
 
 // FIND USERS BY EMAIL - partial - MUST be before /:id
+// CHANGED: Endpoint now searches by NAME / USERNAME, not by EMAIL
+// OLD: app.get('/api/users/find', authh, async (req,res)=>{ const q = req.query.email ... User.find({ email: ... }) })
+// NEW: uses req.query.name and searches username + name fields
+
 app.get('/api/users/find', authh, async (req,res)=>{
-  const q = (req.query.email || req.query.q || '').toLowerCase().trim();
+  // CHANGED: Read ?name= instead of ?email=
+  const q = (req.query.name || '').trim();
   if(!q) return res.json([]);
-  const users = await User.find({ email: { $regex: q, $options: 'i' } }).select('-password').limit(20);
+
+  // CHANGED: Search in username AND name fields, not email
+  // $or = match if name appears in username OR in name
+  const users = await User.find({
+    $or: [
+      { username: { $regex: q, $options: 'i' } },
+      { name: { $regex: q, $options: 'i' } }
+    ]
+  }).select('-password -email').limit(20); // CHANGED: Also hide email from result
+
   res.json(users);
 });
 
@@ -393,10 +407,104 @@ app.post('/api/messages/:otherId', authh, async (req,res)=>{
   await msg.save(); res.json(msg);
 });
 
-// EXTRA
-app.get('/api/sync', (req,res)=> res.json({ok:true}));
-app.get('/api/fetch-now', (req,res)=> res.json({ok:true}));
+ // ===== FORGOT PASSWORD + RESET PASSWORD =====
+// For: forgot.html / recover password page
 
+// In-memory fallback if User model has no reset fields (still works)
+const resetCodes = new Map(); // email -> {code, expiry}
+
+// STEP 1: Send code
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Enter email' });
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Find user - case insensitive
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) return res.status(404).json({ message: 'No account with this email' });
+
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Save to DB (if fields exist) + memory
+    try {
+      user.resetCode = code;
+      user.resetCodeExpiry = expiry;
+      await user.save();
+    } catch(e) { console.log("Save code error:", e.message); }
+
+    resetCodes.set(cleanEmail, { code, expiry });
+
+    console.log(`🔑 Reset code for ${cleanEmail} = ${code}`);
+
+    // For now we return code so your frontend can show it in the green box
+    // When you add email sending later, REMOVE "code" from here
+    return res.json({
+      message: 'Code sent to ' + cleanEmail,
+      code: code // <-- REMOVE THIS when you use real email
+    });
+
+  } catch(e) {
+    console.log("FORGOT ERROR:", e);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// STEP 2: Reset password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword, password } = req.body;
+    const newPass = newPassword || password; // your frontend sends both
+
+    if (!email || !code || !newPass) {
+      return res.status(400).json({ message: 'Fill all fields' });
+    }
+    if (newPass.length < 6) {
+      return res.status(400).json({ message: 'Password too short (min 6)' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanCode = String(code).trim();
+
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) return res.status(404).json({ message: 'No account with this email' });
+
+    // Check code from DB or memory
+    const stored = resetCodes.get(cleanEmail);
+    const dbCode = user.resetCode ? String(user.resetCode) : null;
+    const dbExpiry = user.resetCodeExpiry || (stored ? stored.expiry : null);
+
+    const validCode = dbCode || (stored ? stored.code : null);
+
+    if (!validCode || validCode !== cleanCode) {
+      return res.status(400).json({ message: 'Invalid code' });
+    }
+
+    if (dbExpiry && Date.now() > new Date(dbExpiry).getTime()) {
+      return res.status(400).json({ message: 'Code expired. Request a new one.' });
+    }
+
+    // Hash new password
+    const hashed = await bcrypt.hash(newPass, 10);
+    user.password = hashed;
+
+    // Clear code so it can't be used again
+    user.resetCode = "";
+    user.resetCodeExpiry = null;
+    await user.save();
+
+    resetCodes.delete(cleanEmail);
+
+    return res.json({ message: 'Password changed!' });
+
+  } catch(e) {
+    console.log("RESET ERROR:", e);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
 
    
    // blog end here uytrewdrtgyhujkluytrrtyuiuytrevcdfgh
@@ -411,34 +519,110 @@ app.get('/api/fetch-now', (req,res)=> res.json({ok:true}));
    // pictures post gfhoifghjokpiuyttuiyttyuijopkoiuyfyohiuf
 
 
-   const storage = multer.memoryStorage();
-   const upload = multer({ storage: storage, limits: { fileSize: 160 * 1024 * 1024 } });
-   
-   app.post('/api/save-media', upload.single('file'), async (req, res) => {
-     try {
-       const { userId } = req.body;
-       const newMedia = new Media({ userId, img: { data: req.file.buffer, contentType: req.file.mimetype } });
-       await newMedia.save(); res.json({ success: true, id: newMedia._id });
-     } catch(err) { res.status(500).json({ error: err.message }); }
-   });
-   app.get('/api/get-media', async (req, res) => {
-     const { userId } = req.query;
-     const media = await Media.find({ userId }).sort({ createdAt: -1 });
-     const result = media.map(m => ({ _id: m._id, src: `data:${m.img.contentType};base64,${m.img.data.toString('base64')}` }));
-     res.json(result);
-   });
-   app.get('/api/media-file/:id', async (req, res) => {
-     try{
-       const media = await Media.findById(req.params.id);
-       if(!media) return res.status(404).send('Not found');
-       res.set('Content-Type', media.img.contentType);
-       res.set('Cache-Control', 'public, max-age=31536000');
-       res.send(media.img.data);
-     }catch(e){ res.status(500).send(e.message); }
-   });
-   app.delete('/api/delete-media/:id', async (req, res) => {
-     await Media.findByIdAndDelete(req.params.id); res.json({ success: true });
-   });
+// --- SCHEMA - Name is Media ---
+const mediaSchema = new mongoose.Schema({
+  userId: { type: String, required: true, index: true },
+  img: {
+    data: Buffer,
+    contentType: String
+  },
+  fileName: String,
+  size: Number,
+  createdAt: { type: Date, default: Date.now, index: true }
+});
+
+// Fast pagination for one user
+mediaSchema.index({ userId: 1, createdAt: -1 });
+const Media = mongoose.model('Media', mediaSchema);
+
+// --- YOUR OLD UPLOAD - KEPT ---
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage, limits: { fileSize: 160 * 1024 * 1024 } });
+
+// --- SAVE MEDIA - YOUR OLD CODE + FIX ---
+app.post('/api/save-media', upload.single('file'), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if(!req.file) return res.status(400).json({ error: 'No file' });
+    if(!userId) return res.status(400).json({ error: 'No userId' });
+
+    const newMedia = new Media({
+      userId,
+      img: { data: req.file.buffer, contentType: req.file.mimetype },
+      fileName: req.file.originalname,
+      size: req.file.size
+    });
+    await newMedia.save();
+    res.json({ success: true, id: newMedia._id });
+  } catch(err) {
+    console.log(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- GET MEDIA - FIXED: 15 AT A TIME, NO BASE64 ---
+app.get('/api/get-media', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 15;
+    const skip = (page - 1) * limit;
+
+    if(!userId) return res.json({ items: [], hasMore: false, page });
+
+    // .select() = DO NOT load img.data here. That's the fix.
+    const [media, total] = await Promise.all([
+      Media.find({ userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('_id fileName size createdAt img.contentType') // no buffer!
+        .lean(),
+      Media.countDocuments({ userId })
+    ]);
+
+    // src now points to fast file endpoint, NOT base64
+    const items = media.map(m => ({
+      _id: m._id,
+      fileName: m.fileName,
+      createdAt: m.createdAt,
+      src: `/api/media-file/${m._id}`
+    }));
+
+    res.json({
+      items,
+      hasMore: skip + items.length < total,
+      total,
+      page
+    });
+  } catch(e) {
+    console.log(e);
+    res.status(500).json({ error: e.message, items: [], hasMore: false });
+  }
+});
+
+// --- SINGLE FILE - YOUR OLD CODE + FIX ---
+app.get('/api/media-file/:id', async (req, res) => {
+  try{
+    const media = await Media.findById(req.params.id).select('img');
+    if(!media || !media.img) return res.status(404).send('Not found');
+    res.set('Content-Type', media.img.contentType);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(media.img.data);
+  }catch(e){ res.status(500).send(e.message); }
+});
+
+// --- DELETE - YOUR OLD CODE ---
+app.delete('/api/delete-media/:id', async (req, res) => {
+  try {
+    await Media.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
    
    //end here 0tdfghgifuytyoifuyogiuciohihguiohikh
 
@@ -896,111 +1080,6 @@ app.get('/api/fetch-now', (req,res)=> res.json({ok:true}));
    });
    
    // country match end here kjhgcfghhgxuygfxyf
-   
-  
-
-
-
-
-
-   // ===== FORGOT PASSWORD + RESET PASSWORD =====
-// For: forgot.html / recover password page
-
-// In-memory fallback if User model has no reset fields (still works)
-const resetCodes = new Map(); // email -> {code, expiry}
-
-// STEP 1: Send code
-app.post('/api/auth/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Enter email' });
-
-    const cleanEmail = email.toLowerCase().trim();
-
-    // Find user - case insensitive
-    const user = await User.findOne({ email: cleanEmail });
-    if (!user) return res.status(404).json({ message: 'No account with this email' });
-
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Save to DB (if fields exist) + memory
-    try {
-      user.resetCode = code;
-      user.resetCodeExpiry = expiry;
-      await user.save();
-    } catch(e) { console.log("Save code error:", e.message); }
-
-    resetCodes.set(cleanEmail, { code, expiry });
-
-    console.log(`🔑 Reset code for ${cleanEmail} = ${code}`);
-
-    // For now we return code so your frontend can show it in the green box
-    // When you add email sending later, REMOVE "code" from here
-    return res.json({
-      message: 'Code sent to ' + cleanEmail,
-      code: code // <-- REMOVE THIS when you use real email
-    });
-
-  } catch(e) {
-    console.log("FORGOT ERROR:", e);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// STEP 2: Reset password
-app.post('/api/auth/reset-password', async (req, res) => {
-  try {
-    const { email, code, newPassword, password } = req.body;
-    const newPass = newPassword || password; // your frontend sends both
-
-    if (!email || !code || !newPass) {
-      return res.status(400).json({ message: 'Fill all fields' });
-    }
-    if (newPass.length < 6) {
-      return res.status(400).json({ message: 'Password too short (min 6)' });
-    }
-
-    const cleanEmail = email.toLowerCase().trim();
-    const cleanCode = String(code).trim();
-
-    const user = await User.findOne({ email: cleanEmail });
-    if (!user) return res.status(404).json({ message: 'No account with this email' });
-
-    // Check code from DB or memory
-    const stored = resetCodes.get(cleanEmail);
-    const dbCode = user.resetCode ? String(user.resetCode) : null;
-    const dbExpiry = user.resetCodeExpiry || (stored ? stored.expiry : null);
-
-    const validCode = dbCode || (stored ? stored.code : null);
-
-    if (!validCode || validCode !== cleanCode) {
-      return res.status(400).json({ message: 'Invalid code' });
-    }
-
-    if (dbExpiry && Date.now() > new Date(dbExpiry).getTime()) {
-      return res.status(400).json({ message: 'Code expired. Request a new one.' });
-    }
-
-    // Hash new password
-    const hashed = await bcrypt.hash(newPass, 10);
-    user.password = hashed;
-
-    // Clear code so it can't be used again
-    user.resetCode = "";
-    user.resetCodeExpiry = null;
-    await user.save();
-
-    resetCodes.delete(cleanEmail);
-
-    return res.json({ message: 'Password changed!' });
-
-  } catch(e) {
-    console.log("RESET ERROR:", e);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
    
 
     app.listen(port, () => console.log('server is running on port ' + port));

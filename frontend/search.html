@@ -3,7 +3,8 @@
 <style>*{box-sizing:border-box}body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}.top{max-width:935px;margin:0 auto;padding:20px 16px}.tabs{display:flex;gap:8px;margin-top:14px}.tab{padding:9px 18px;border-radius:20px;background:#1e1e2a;border:1px solid #333;color:#fff;cursor:pointer;font-size:13px}.tab.active{background:linear-gradient(90deg,#7c3aed,#ec4899);border:none}.search{display:flex;gap:8px;background:#1e1e2a;border:1px solid #333;border-radius:30px;padding:13px 16px;margin-top:14px}.search input{flex:1;background:transparent;border:none;color:#fff;outline:none;font-size:15px}.grid{max-width:935px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 16px}.card{background:#16161f;border:1px solid #26262f;border-radius:18px;overflow:hidden;cursor:pointer}.cover{width:100%;height:200px}.cover img{width:100%;height:100%;object-fit:cover}.noimg{width:100%;height:100%;background:linear-gradient(135deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-size:45px}.body{padding:12px}.title{font-size:14px;font-weight:800}.userRow{display:flex;gap:12px;padding:14px;background:#16161f;border:1px solid #26262f;border-radius:16px;cursor:pointer;align-items:center}.avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(45deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}</style>
 </head><body>
 <div class="top"><h2 style="margin:0">Search ✨</h2>
-<div class="tabs"><button class="tab active" id="tabNovel" onclick="setMode('novel')">📚 Novels</button><button class="tab" id="tabUser" onclick="setMode('user')">👤 Users by Email</button></div>
+<!-- CHANGED: Tab text from "Users by Email" to "Users by Name" -->
+<div class="tabs"><button class="tab active" id="tabNovel" onclick="setMode('novel')">📚 Novels</button><button class="tab" id="tabUser" onclick="setMode('user')">👤 Users by Name</button></div>
 <div class="search">🔍 <input id="q" placeholder="Search by title..." oninput="doSearch()"></div>
 </div>
 <div class="grid" id="grid"><p style="grid-column:1/3;text-align:center;color:#777">Type to search...</p></div>
@@ -13,7 +14,9 @@ const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
 let all=[], mode='novel';
-function setMode(m){ mode=m; document.getElementById('tabNovel').className='tab'+(m==='novel'?' active':''); document.getElementById('tabUser').className='tab'+(m==='user'?' active':''); document.getElementById('q').placeholder=m==='novel'?'Search by title...':'Search user by email...'; doSearch(); }
+function setMode(m){ mode=m; document.getElementById('tabNovel').className='tab'+(m==='novel'?' active':''); document.getElementById('tabUser').className='tab'+(m==='user'?' active':''); 
+  // CHANGED: Placeholder from "Search user by email..." to "Search user by name..."
+  document.getElementById('q').placeholder=m==='novel'?'Search by title...':'Search user by name...'; doSearch(); }
 async function load(){ const res=await fetch(BASE+'/api/posts',{headers:{authorization:token}}); all=await res.json(); }
 async function doSearch(){
   const q=document.getElementById('q').value.toLowerCase().trim();
@@ -27,13 +30,16 @@ async function doSearch(){
       return '<div class="card" onclick="location.href=\'read.html?id='+p._id+'\'"><div class="cover">'+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div style="font-size:12px;color:#888">@'+(p.user?.username||'author')+'</div></div></div>';
     }).join('');
   } else {
-    // Search user by email - uses backend /api/users/find
-    const res=await fetch(BASE+'/api/users/find?email='+encodeURIComponent(q),{headers:{authorization:token}});
+    // CHANGED: Search user by NAME not email - now uses ?name= instead of ?email=
+    // CHANGED: Backend endpoint now expects "name" query param
+    const res=await fetch(BASE+'/api/users/find?name='+encodeURIComponent(q),{headers:{authorization:token}});
     const users=await res.json();
-    if(!users.length){ grid.innerHTML='<p style="grid-column:1/3;text-align:center">No user with that email</p>'; return; }
+    // CHANGED: Message from "No user with that email" to "No user with that name"
+    if(!users.length){ grid.innerHTML='<p style="grid-column:1/3;text-align:center">No user with that name</p>'; return; }
     grid.innerHTML=users.map(u=>{
       const av=u.avatar?'<img src="'+u.avatar+'">':(u.username||'U')[0].toUpperCase();
-      return '<div class="userRow" style="grid-column:1/3" onclick="location.href=\'profile.html?id='+u._id+'\'"><div class="avatar">'+av+'</div><div><b>'+u.username+'</b><div style="font-size:12px;color:#a78bfa">'+u.email+'</div></div></div>';
+      // CHANGED: Now shows username + name clearly, no email shown
+      return '<div class="userRow" style="grid-column:1/3" onclick="location.href=\'profile.html?id='+u._id+'\'"><div class="avatar">'+av+'</div><div><b>'+u.username+'</b><div style="font-size:12px;color:#a78bfa">@'+u.username+'</div></div></div>';
     }).join('');
   }
 }

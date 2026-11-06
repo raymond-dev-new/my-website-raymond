@@ -92,17 +92,16 @@ load();
   location.href="dashboard.html"
  })
 
- const ball=document.querySelector('.ball'); const Country=document.querySelector('.Country');
+ const ball=document.querySelector('.ball'); 
+ const Country=document.querySelector('.Country');
 
   if(ball) ball.addEventListener('click', async () => { 
-    savePageState();
       fetch(BASE+'/api/sync'); 
-     location.href="football.html"; 
+       location.href="football.html"; 
   });
 
   if(Country) Country.addEventListener('click', async () => { 
-    savePageState(); 
      fetch(BASE+'/api/fetch-now'); 
-    location.href="countrymatch.html"; 
+      location.href="countrymatch.html"; 
   });
 </script></body></html>

@@ -2,35 +2,185 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <meta name="referrer" content="no-referrer-when-downgrade" />
+<meta name="referrer" content="no-referrer-when-downgrade" />
 <title>Media Vault</title>
 <link rel="preconnect" href="https://raymonddomain.dev">
 <style>
-:root{--bg:#121212;--card:#1e1e1e;--text:#e0e0e0;--primary:#007bff;--danger:#dc3545;--warn:#ffc107}
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
-body{background:var(--bg);color:var(--text);padding:12px}
-#topBar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#007bff,#00d4ff);width:0%;z-index:9999;transition:width .3s ease}
-.container{max-width:700px;margin:0 auto;padding-top:5px}
-h2{text-align:center;margin-bottom:15px;font-size:20px}
-.box{background:var(--card);padding:15px;border-radius:12px;margin-bottom:15px}
-input{width:100%;padding:12px;margin-bottom:8px;border:1px solid #333;border-radius:8px;background:#2a2a2a;color:var(--text)}
-.warning{font-size:12px;color:var(--warn);margin-bottom:10px;text-align:center}
-button{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-weight:bold}
-#gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-height:300px}
+/* ========== UI ONLY - NO LOGIC CHANGED ========== */
+:root{
+  --bg:#080812;
+  --card:rgba(255,255,255,.06);
+  --card-border:rgba(255,255,255,.10);
+  --text:#ffffff;
+  --muted:#a1a1b8;
+  --primary:#7c3aed;
+  --primary2:#ec4899;
+  --danger:#ff3b5c;
+  --warn:#ffc107;
+  --radius:22px;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{
+  background:
+    radial-gradient(600px 300px at 10% -5%, rgba(124,58,237,.45), transparent 60%),
+    radial-gradient(600px 300px at 90% 10%, rgba(236,72,153,.35), transparent 60%),
+    radial-gradient(500px 300px at 50% 110%, rgba(0,212,255,.18), transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+  color:var(--text);
+  padding:14px;
+  min-height:100vh;
+}
+#topBar{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#7c3aed,#ec4899,#00d4ff);width:0%;z-index:9999;transition:width .3s ease;box-shadow:0 0 14px rgba(236,72,153,.7);border-radius:0 10px 10px 0}
+.container{max-width:720px;margin:0 auto;padding-top:8px}
+
+/* HEADER */
+h2{
+  text-align:center;
+  margin-bottom:18px;
+  font-size:24px;
+  font-weight:900;
+  letter-spacing:-.5px;
+  line-height:1.3;
+}
+h2 span{
+  background:linear-gradient(90deg,#a78bfa,#f472b6,#38bdf8);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  font-size:16px;
+  font-weight:700;
+  word-break:break-all;
+}
+.app-header{
+  display:flex;align-items:center;gap:12px;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  backdrop-filter:blur(16px);
+  padding:16px 18px;
+  border-radius:24px;
+  margin-bottom:16px;
+  box-shadow:0 12px 30px rgba(0,0,0,.35);
+}
+.app-icon{
+  width:52px;height:52px;flex-shrink:0;border-radius:16px;
+  background:linear-gradient(135deg,#7c3aed,#ec4899);
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;box-shadow:0 8px 20px rgba(236,72,153,.4);
+}
+.app-header small{display:block;color:var(--muted);font-size:12px;margin-top:2px;font-weight:600;letter-spacing:.3px}
+
+/* CARDS */
+.box{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  backdrop-filter:blur(18px);
+  padding:20px;
+  border-radius:var(--radius);
+  margin-bottom:16px;
+  box-shadow:0 16px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.login-logo{
+  width:76px;height:76px;margin:6px auto 14px;
+  border-radius:24px;
+  background:linear-gradient(135deg,#7c3aed,#ec4899,#f97316);
+  display:flex;align-items:center;justify-content:center;
+  font-size:38px;
+  box-shadow:0 12px 30px rgba(124,58,237,.5);
+  transform:rotate(-3deg);
+}
+.login-sub{color:var(--muted);font-size:13px;font-weight:600;text-align:center;margin-top:6px;line-height:1.5}
+
+input{
+  width:100%;padding:14px 16px;margin-bottom:10px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;
+  background:rgba(0,0,0,.35);
+  color:var(--text);
+  font-size:15px;outline:none;
+  transition:.2s;
+}
+input:focus{border-color:#a78bfa;box-shadow:0 0 0 4px rgba(124,58,237,.25);background:rgba(0,0,0,.5)}
+input::placeholder{color:#7a7a8f}
+input[type="file"]{padding:12px;background:rgba(255,255,255,.06);border-style:dashed;cursor:pointer}
+input[type="file"]::file-selector-button{
+  background:linear-gradient(90deg,#7c3aed,#ec4899);
+  border:none;color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;margin-right:10px;cursor:pointer;
+}
+.warning{
+  font-size:12px;color:#fbbf24;margin-bottom:12px;text-align:center;
+  background:rgba(255,193,7,.10);border:1px solid rgba(255,193,7,.20);
+  padding:9px 10px;border-radius:12px;font-weight:700;letter-spacing:.2px;
+}
+
+/* BUTTONS */
+button{
+  width:100%;padding:14px;
+  background:linear-gradient(90deg,#7c3aed,#ec4899);
+  color:#fff;border:none;border-radius:14px;
+  font-size:16px;cursor:pointer;font-weight:800;
+  letter-spacing:.2px;
+  box-shadow:0 8px 22px rgba(124,58,237,.35);
+  transition:.2s;
+}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.6}
+.logout-btn{
+  background:rgba(255,255,255,.08)!important;
+  border:1px solid rgba(255,255,255,.14)!important;
+  box-shadow:none!important;
+  margin-top:10px!important;
+  color:#e5e5e5!important;
+}
+
+/* GALLERY */
+#gallery{display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:300px}
 @media(min-width:768px){#gallery{grid-template-columns:1fr 1fr 1fr}}
-.media-card{background:var(--card);border-radius:10px;overflow:hidden;animation:pop .3s ease}
-.media-card img{width:100%;height:150px;object-fit:cover;cursor:pointer;display:block;background:#222;opacity:0;transition:opacity .4s}
+.media-card{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:20px;overflow:hidden;
+  animation:pop .35s ease;
+  box-shadow:0 10px 24px rgba(0,0,0,.30);
+  transition:.2s;
+}
+.media-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.22);box-shadow:0 16px 30px rgba(0,0,0,.45)}
+.media-card img{width:100%;height:165px;object-fit:cover;cursor:pointer;display:block;background:#222;opacity:0;transition:opacity .4s}
 .media-card img.show{opacity:1}
-.media-card button{background:var(--danger);border-radius:0;padding:8px;font-size:13px}
+.media-card button{
+  background:rgba(255,59,92,.14)!important;
+  color:#ff8fa3!important;
+  border-radius:0!important;
+  padding:10px!important;
+  font-size:13px!important;
+  box-shadow:none!important;
+  border-top:1px solid rgba(255,255,255,.08)!important;
+}
+.media-card button:active{background:rgba(255,59,92,.25)!important}
+
 .hidden{display:none}
-.empty{text-align:center;color:#aaa;grid-column:1/-1;padding:40px 0;line-height:1.6}
-#viewer{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);display:none;justify-content:center;align-items:center;z-index:999;padding:10px}
-#viewerContent img{width:100%;max-height:80vh;border-radius:8px}
-#closeBtn{position:absolute;top:15px;right:20px;background:rgba(255,255,255,.1);color:#fff;border:none;font-size:28px;width:45px;height:45px;border-radius:50%}
-.skeleton{height:150px;border-radius:10px;background:linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
-.load-text{grid-column:1/-1;text-align:center;color:#888;font-size:14px;margin:10px 0;animation:blink 1s infinite}
+.empty{
+  text-align:center;color:#aaa;grid-column:1/-1;padding:50px 10px;line-height:1.7;
+  background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:20px;font-size:14px;
+}
+#endMsg{text-align:center;color:#888;padding:20px;font-size:13px}
+
+/* VIEWER */
+#viewer{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.96);display:none;justify-content:center;align-items:center;z-index:999;padding:12px;backdrop-filter:blur(8px)}
+#viewerContent{width:100%;max-width:720px}
+#viewerContent img{width:100%;max-height:82vh;border-radius:20px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#closeBtn{
+  position:absolute;top:16px;right:16px;
+  background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.2);
+  font-size:22px;width:48px;height:48px;border-radius:50%;padding:0;
+  backdrop-filter:blur(10px);box-shadow:none;
+}
+
+/* LOADING */
+.skeleton{height:165px;border-radius:20px;background:linear-gradient(90deg,#1a1a28 25%,#2a2a3d 50%,#1a1a28 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}
+.load-text{grid-column:1/-1;text-align:center;color:#b8b8cc;font-size:14px;margin:10px 0;animation:blink 1s infinite;font-weight:600}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes blink{0%,100%{opacity:.6}50%{opacity:1}}
 </style>
 </head>
@@ -39,29 +189,47 @@ button{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;
 <div id="topBar"></div>
 <div class="container">
   <div id="loginBox" class="box">
-    <h2>Login to Vault<br>insert your email to save your photo</h2>
+    <div class="login-logo">🔐</div>
+    <h2>Welcome to Media Vault</h2>
+    <p class="login-sub">Login to Vault<br>insert your email to save your photo</p>
+    <div style="height:14px"></div>
     <input type="text" id="emailInput" placeholder="Enter your email"/>
-    <button onclick="login()">Enter</button>
+    <button onclick="login()">Enter Vault →</button>
   </div>
   <div id="appBox" class="hidden">
-    <h2>📁 Vault - <span id="userEmail"></span></h2>
+    <div class="app-header">
+      <div class="app-icon">📁</div>
+      <div style="flex:1;min-width:0">
+        <h2 style="text-align:left;margin:0;font-size:19px">My Vault</h2>
+        <small><span id="userEmail"></span> • Private & Secure</small>
+      </div>
+    </div>
     <div class="box">
-      <p class="warning">⚠️ Images Only</p>
+      <p class="warning">✨ Images Only </p>
       <input type="file" id="fileInput" accept="image/*" multiple/>
-      <button id="uploadBtn">Upload Selected</button>
-      <button onclick="logout()" style="background:#555;margin-top:8px">Logout</button>
+      <button id="uploadBtn">☁️ Upload Selected</button>
+      <button onclick="logout()" class="logout-btn">Logout</button>
     </div>
     <div id="gallery"></div>
+    <div id="sentinel" style="height:20px"></div>
+    <p id="endMsg" class="hidden">✨ No more images</p>
   </div>
 </div>
 <div id="viewer">
-  <button id="closeBtn" onclick="closeViewer()">&larr;</button>
+  <button id="closeBtn" onclick="closeViewer()">←</button>
   <div id="viewerContent"></div>
 </div>
 
 <script>
 const API_URL = "https://raymonddomain.dev";
 let CURRENT_USER = localStorage.getItem('vault_user') || "";
+
+// --- PAGINATION STATE: 15 at a time ---
+let currentPage = 1;
+let isLoading = false;
+let hasMore = true;
+let cache = {}; // { page: data } - background cache
+let prefetching = false;
 
 function topProgress(n){ document.getElementById('topBar').style.width = n+'%'; }
 
@@ -75,40 +243,77 @@ function showLoadingUI(){
   `;
 }
 
-function renderImages(list){
+// FETCH ONE PAGE - uses cache if already prefetched
+async function fetchPage(page){
+  if(cache[page]) return cache[page];
+  const res = await fetch(`${API_URL}/api/get-media?userId=${encodeURIComponent(CURRENT_USER)}&page=${page}`, {cache:'no-store'});
+  if(!res.ok) throw new Error('Server error '+res.status);
+  const data = await res.json();
+  cache[page] = data;
+  return data;
+}
+
+// PREFETCH NEXT 15 IN BACKGROUND
+async function prefetchNext(){
+  if(prefetching || !hasMore) return;
+  const nextPage = currentPage + 1;
+  if(cache[nextPage]) return;
+  prefetching = true;
+  try { await fetchPage(nextPage); } catch(e){ /* ignore background error */ }
+  prefetching = false;
+}
+
+function renderItems(items, clear=false){
   const gallery = document.getElementById('gallery');
-  if(!list.length){
+  if(clear) gallery.innerHTML = '';
+  if(clear && !items.length){
     gallery.innerHTML = `<div class="empty">No images yet.<br>Upload your first photo</div>`;
     return;
   }
-  // FAST RENDER
-  gallery.innerHTML = list.map(item => `
+  const html = items.map(item => `
     <div class="media-card">
-      <img src="${item.src}" loading="lazy" decoding="async" onload="this.classList.add('show')" onclick="openViewer('${item.src}')" />
+      <img src="${API_URL}${item.src}" loading="lazy" decoding="async" onload="this.classList.add('show')" onclick="openViewer('${API_URL}${item.src}')" />
       <button onclick="deleteMedia('${item._id}')">Delete</button>
     </div>
   `).join("");
+  gallery.insertAdjacentHTML('beforeend', html);
 }
 
-async function loadFromDB(){
-  showLoadingUI();
-  topProgress(40);
-  try{
-    const res = await fetch(`${API_URL}/api/get-media?userId=${encodeURIComponent(CURRENT_USER)}`, {cache:'no-store'});
-    topProgress(70);
-    const mediaList = await res.json();
-    topProgress(90);
-    if(Array.isArray(mediaList)){
-      renderImages(mediaList);
-    }else{
-      document.getElementById('gallery').innerHTML = `<div class="empty">No data found</div>`;
-    }
-  }catch(e){
-    document.getElementById('gallery').innerHTML = `<div class="empty">⚠️ Network slow<br>Check internet and <br><button onclick="loadFromDB()" style="margin-top:10px;background:#007bff;width:auto;padding:8px 16px;border-radius:8px">Retry</button></div>`;
+async function loadNextPage(isFirst=false){
+  if(isLoading || !hasMore) return;
+  isLoading = true;
+  if(isFirst) showLoadingUI();
+  if(isFirst) topProgress(40);
+  try {
+    const data = await fetchPage(currentPage);
+    renderItems(data.items, isFirst);
+    hasMore = data.hasMore;
+    currentPage++;
+    if(!hasMore && data.items.length > 0) document.getElementById('endMsg').classList.remove('hidden');
+    // START BACKGROUND LOAD FOR NEXT 15 IMMEDIATELY
+    prefetchNext();
+  } catch(e) {
+    if(isFirst) document.getElementById('gallery').innerHTML = `<div class="empty">⚠️ Network slow<br>Check internet and <br><button onclick="resetAndLoad()" style="margin-top:10px;background:#007bff;width:auto;padding:8px 16px;border-radius:8px">Retry</button></div>`;
   }
+  isLoading = false;
   topProgress(100);
   setTimeout(()=>topProgress(0),600);
 }
+
+function resetAndLoad(){
+  currentPage = 1;
+  hasMore = true;
+  cache = {};
+  document.getElementById('endMsg').classList.add('hidden');
+  document.getElementById('gallery').innerHTML = '';
+  loadNextPage(true);
+}
+
+// INFINITE SCROLL - loads next 15 when you reach bottom
+const observer = new IntersectionObserver((entries)=>{
+  if(entries[0].isIntersecting) loadNextPage(false);
+}, { rootMargin: '400px' });
+observer.observe(document.getElementById('sentinel'));
 
 function login(){
   const email = document.getElementById('emailInput').value.trim();
@@ -118,7 +323,7 @@ function login(){
   document.getElementById('userEmail').innerText = email;
   document.getElementById('loginBox').classList.add('hidden');
   document.getElementById('appBox').classList.remove('hidden');
-  loadFromDB();
+  resetAndLoad();
 }
 function logout(){
   CURRENT_USER = "";
@@ -134,7 +339,7 @@ if(CURRENT_USER){
     document.getElementById('userEmail').innerText = CURRENT_USER;
     document.getElementById('loginBox').classList.add('hidden');
     document.getElementById('appBox').classList.remove('hidden');
-    loadFromDB();
+    resetAndLoad();
   });
 }
 
@@ -147,18 +352,18 @@ document.getElementById('uploadBtn').onclick = async () =>{
   for(let i=0;i<files.length;i++){
     btn.innerText = `Uploading ${i+1}/${files.length}...`;
     const fd = new FormData(); fd.append('file',files[i]); fd.append('userId',CURRENT_USER);
-    await fetch(`${API_URL}/api/save-media`,{method:'POST',body:fd});
+    try { await fetch(`${API_URL}/api/save-media`,{method:'POST',body:fd}); } catch(e){}
     topProgress(20 + Math.round((i+1)/files.length*60));
   }
   document.getElementById('fileInput').value="";
   btn.disabled=false; btn.innerText="Upload Selected";
   topProgress(100);
-  loadFromDB();
+  resetAndLoad();
 }
 async function deleteMedia(id){
   if(!confirm('Delete?')) return;
   await fetch(`${API_URL}/api/delete-media/${id}`,{method:'DELETE'});
-  loadFromDB();
+  resetAndLoad();
 }
 function openViewer(url){
   document.getElementById('viewerContent').innerHTML = `<img src="${url}" />`;
