@@ -1099,14 +1099,27 @@
     }
 
     // Load group messages from server + save to cache
+    // FIXED: If server says 0 messages, show 0. Don't keep old cache.
     async function loadGroupMessages(silent) {
       if (!isGroupChat) return;
 
       const msgs = await getGroupMessages();
       if (!msgs) return;
 
-      const cached = loadMessagesFromStorage(GROUP_ID);
-      if (msgs.length === 0 && cached.length > 0) return;
+      // FIXED: If server has 0, clear cache too - don't keep old cached messages
+      if (msgs.length === 0) {
+        saveMessagesToStorage(GROUP_ID, []);
+        chatMeta[GROUP_ID] = {
+          lastText: 'No announcements yet',
+          lastTime: Date.now(),
+          unread: 0,
+          lastMsgId: ''
+        };
+        saveMetaToStorage();
+        updateBadge();
+        renderGroupMessages([]);
+        return;
+      }
 
       saveMessagesToStorage(GROUP_ID, msgs);
 
@@ -1126,22 +1139,43 @@
     }
 
     // Delete one group announcement - admin only
+    // FIXED: Delete from SERVER first, then from screen.
+    // Old bug: Deleted from screen first, so if server failed it looked deleted for admin only.
     async function deleteGroupMsg(e, msgId) {
       e.stopPropagation();
       if (!confirm('Delete this announcement for everyone?')) return;
 
+      // Don't delete temp messages that are not on server yet
+      if (String(msgId).startsWith('temp_')) {
+        alert('Wait a second, message is still sending...');
+        return;
+      }
+
+      // STEP 1: Delete from SERVER FIRST - this deletes for EVERYONE
+      try {
+        const res = await fetch(BASE + '/api/group-messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
+
+        // If server says NO, STOP - do not delete from screen
+        if (!res.ok) {
+          alert('Could not delete from server. Message still exists for users. Try again.');
+          return;
+        }
+      } catch {
+        alert('No connection. Could not delete from server.');
+        return;
+      }
+
+      // STEP 2: Only if server delete worked, delete from MY screen
       const wrap = e.target.closest('.msgWrap');
       if (wrap) wrap.remove();
       lastRenderedChatHtml = '';
 
+      // STEP 3: Delete from MY localStorage cache
       const cached = loadMessagesFromStorage(GROUP_ID);
       const filtered = cached.filter(m => m._id !== msgId);
       saveMessagesToStorage(GROUP_ID, filtered);
 
-      try {
-        await fetch(BASE + '/api/group-messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
-      } catch {}
-
+      // STEP 4: Refresh from server to confirm
       await loadGroupMessages(true);
       await refreshGroupMeta(true);
     }
