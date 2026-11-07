@@ -1,41 +1,252 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Read Novel</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#0f0f17;color:#fff;font-family:Arial;padding-bottom:90px}.box{max-width:650px;margin:0 auto;padding:16px}.cover{width:100%;height:320px;border-radius:20px;object-fit:cover;background:#222;box-shadow:0 15px 30px rgba(0,0,0,.5)}.title{font-size:26px;font-weight:800;margin-top:16px;line-height:1.2}.author{color:#c4b5fd;font-size:14px;margin-top:6px}.row{display:flex;gap:18px;margin-top:16px;padding:16px 0;border-top:1px solid #262626;border-bottom:1px solid #262626}.row span{cursor:pointer;font-size:14px}.text{font-size:16px;line-height:1.9;white-space:pre-wrap;margin-top:18px;color:#e8e8e8}.cmt{padding:12px 0;border-bottom:1px solid #1f1f1f;font-size:14px}.inputRow{display:flex;gap:8px;margin-top:14px}.inputRow input{flex:1;background:#1e1e2a;border:1px solid #333;border-radius:20px;color:#fff;padding:13px;outline:none}.inputRow button{background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;border:none;border-radius:20px;padding:0 20px;font-weight:700}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}</style>
-</head><body>
-<div class="box" id="box"><p style="text-align:center;color:#888;padding:50px">Loading novel... 📖</p></div>
-<div class="nav"><a href="feed.html">🏠</a><a href="search.html">🔍</a><a href="create.html">✍️</a><a href="message.html">💬</a><a href="diary.html">📖</a><a href="profile.html">👤</a></div>
-<script>
-const BASE="https://raymonddomain.dev";
-const token=localStorage.getItem('token');
-if(!token) location.href="login.html";
-const id=new URLSearchParams(location.search).get('id');
-let post=null;
-function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
-async function load(){
-  const res=await fetch(BASE+'/api/posts/'+id,{headers:{authorization:token}});
-  post=await res.json();
-  const liked=post.likes.includes(getMyId());
-  const saved=post.savedBy && post.savedBy.includes(getMyId());
-  let comments=post.comments.map(c=>'<div class="cmt"><b>@'+(c.user?.username||'user')+'</b> '+c.text+'</div>').join('') || '<p style="color:#777">No comments yet - be the first 💬</p>';
-  // NEW: use post.cover directly, no BASE +
-  document.getElementById('box').innerHTML=`
-    ${post.cover?'<img class="cover" src="'+post.cover+'">':''}
-    <div class="title"> Title > ${post.title}</div><div class="author" onclick="location.href='profile.html?id=${post.user?._id}'" style="cursor:pointer">by @${post.user?.username||'author'} • ${''}</div>
-    <div class="row">
-      <span onclick="doLike()">${liked?'❤️':'🤍'} ${post.likes.length} Likes</span>
-      <span onclick="doSave()">${saved?'🔖 Saved':'🔖 Save'}</span>
-      <span>💬 ${post.comments.length}</span>
-    </div>
-    <div class="text">${post.content}</div>
-    <h3 style="margin-top:26px">Comments 💬</h3><div>${comments}</div>
-    <div class="inputRow"><input id="cInput" placeholder="Add a beautiful comment..."><button onclick="doComment()">Post</button></div>`;
-}
-async function doLike(){ await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); load(); }
-async function doSave(){ await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); load(); alert('Saved to Diary! 📖'); }
-async function doComment(){
-  const t=document.getElementById('cInput').value.trim(); if(!t) return;
-  await fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
-  load();
-}
-load();
-</script></body></html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Read Novel</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0f0f17; color: #fff; font-family: Arial; padding-bottom: 90px; }
+    .box { max-width: 650px; margin: 0 auto; padding: 16px; }
+    .cover { width: 100%; height: 320px; border-radius: 20px; object-fit: cover; background: #222; box-shadow: 0 15px 30px rgba(0, 0, 0, .5); }
+    .title { font-size: 26px; font-weight: 800; margin-top: 16px; line-height: 1.2; }
+    .author { color: #c4b5fd; font-size: 14px; margin-top: 6px; }
+    .row { display: flex; gap: 18px; margin-top: 16px; padding: 16px 0; border-top: 1px solid #262626; border-bottom: 1px solid #262626; }
+    .row span { cursor: pointer; font-size: 14px; }
+    .text { font-size: 16px; line-height: 1.9; white-space: pre-wrap; margin-top: 18px; color: #e8e8e8; }
+    .cmt { padding: 12px 0; border-bottom: 1px solid #1f1f1f; font-size: 14px; }
+    .inputRow { display: flex; gap: 8px; margin-top: 14px; }
+    .inputRow input { flex: 1; background: #1e1e2a; border: 1px solid #333; border-radius: 20px; color: #fff; padding: 13px; outline: none; }
+    .inputRow button { background: linear-gradient(90deg, #7c3aed, #ec4899); color: #fff; border: none; border-radius: 20px; padding: 0 20px; font-weight: 700; }
+    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10, 10, 18, .95); border-top: 1px solid #262626; display: flex; justify-content: space-around; padding: 14px 0; }
+    .nav a { color: #fff; text-decoration: none; font-size: 22px; }
+
+    /* ============================================================ */
+    /* ADDED ONLY - MESSAGE NOTIFICATION BADGE STYLES               */
+    /* Copy this whole block to any other page you want badge on    */
+    /* ============================================================ */
+    /* Makes the 💬 link able to hold a badge on top of it */
+    .navMsg { position: relative; }
+    /* The red circle with number, e.g. 1, 2, 99+ */
+    .msgBadge {
+      position: absolute;
+      top: -8px;
+      right: -10px;
+      background: #ff3b30;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display: none; /* hidden when 0 unread, JS will show it */
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Novel content loads here -->
+  <div class="box" id="box"><p style="text-align:center;color:#888;padding:50px">Loading novel... 📖</p></div>
+
+  <!-- Bottom navigation -->
+  <div class="nav">
+    <a href="feed.html">🏠</a>
+    <a href="search.html">🔍</a>
+    <a href="create.html">✍️</a>
+    <!-- ADDED ONLY - Added class="navMsg" + <span id="msgBadge"> so badge can show on 💬 -->
+    <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
+    <a href="diary.html">📖</a>
+    <a href="profile.html">👤</a>
+  </div>
+
+  <script>
+    // ============================================================
+    // ORIGINAL CODE - Do not touch, everything below is your old code
+    // ============================================================
+    const BASE = "https://raymonddomain.dev";
+    const token = localStorage.getItem('token');
+    if (!token) location.href = "login.html";
+
+    // Get novel ID from URL, e.g. read.html?id=123
+    const id = new URLSearchParams(location.search).get('id');
+    let post = null;
+
+    // Get my own ID from token
+    function getMyId() {
+      try {
+        return JSON.parse(atob(token.split('.')[1])).id;
+      } catch {
+        return "";
+      }
+    }
+
+    // Load one novel + its comments
+    async function load() {
+      const res = await fetch(BASE + '/api/posts/' + id, { headers: { authorization: token } });
+      post = await res.json();
+
+      const liked = post.likes.includes(getMyId());
+      const saved = post.savedBy && post.savedBy.includes(getMyId());
+
+      let comments = post.comments.map(c => '<div class="cmt"><b>@' + (c.user?.username || 'user') + '</b> ' + c.text + '</div>').join('') || '<p style="color:#777">No comments yet - be the first 💬</p>';
+
+      // NEW: use post.cover directly, no BASE +
+      document.getElementById('box').innerHTML = `
+        ${post.cover ? '<img class="cover" src="' + post.cover + '">' : ''}
+        <div class="title"> Title > ${post.title}</div><div class="author" onclick="location.href='profile.html?id=${post.user?._id}'" style="cursor:pointer">by @${post.user?.username || 'author'} • ${''}</div>
+        <div class="row">
+          <span onclick="doLike()">${liked ? '❤️' : '🤍'} ${post.likes.length} Likes</span>
+          <span onclick="doSave()">${saved ? '🔖 Saved' : '🔖 Save'}</span>
+          <span>💬 ${post.comments.length}</span>
+        </div>
+        <div class="text">${post.content}</div>
+        <h3 style="margin-top:26px">Comments 💬</h3><div>${comments}</div>
+        <div class="inputRow"><input id="cInput" placeholder="Add a beautiful comment..."><button onclick="doComment()">Post</button></div>`;
+    }
+
+    // Like / Unlike this novel
+    async function doLike() {
+      await fetch(BASE + '/api/posts/' + id + '/like', { method: 'POST', headers: { authorization: token } });
+      load();
+    }
+
+    // Save / Unsave to Diary
+    async function doSave() {
+      await fetch(BASE + '/api/posts/' + id + '/save', { method: 'POST', headers: { authorization: token } });
+      load();
+      alert('Saved to Diary! 📖');
+    }
+
+    // Post a comment
+    async function doComment() {
+      const t = document.getElementById('cInput').value.trim();
+      if (!t) return;
+      await fetch(BASE + '/api/posts/' + id + '/comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', authorization: token },
+        body: JSON.stringify({ text: t })
+      });
+      load();
+    }
+
+    load();
+
+    // ====================================================================
+    // ADDED ONLY - MESSAGE NOTIFICATION FOR THIS PAGE (READ NOVEL)
+    // Copy this WHOLE block to any other page to get same badge there.
+    // It uses the SAME localStorage keys as message.html, so they stay in sync.
+    // ====================================================================
+
+    // --- STEP 1: Get my own ID from token ---
+    // We need my ID to build the "read_" key and to know if a message is from me or from them
+    // We use a different name (getMyIdForBadge) so it does NOT clash with your existing getMyId() above
+    function getMyIdForBadge() {
+      try {
+        // Token is like xxx.YYY.zzz, the middle part holds my id
+        return JSON.parse(atob(token.split('.')[1])).id;
+      } catch {
+        return "";
+      }
+    }
+
+    // --- STEP 2: Helpers to remember what I have already read ---
+    // We save: read_MYID_OTHERID = ID of last message I saw from that person
+    // Example: read_123_456 = "msg789"
+    // If server has a newer message ID after that one, and it's from THEM, it's unread.
+    function getReadKeyForBadge(otherId) {
+      return 'read_' + getMyIdForBadge() + '_' + otherId;
+    }
+    function getLastReadIdForBadge(otherId) {
+      return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
+    }
+
+    // --- STEP 3: Show / hide the red badge on 💬 button ---
+    function updateMsgBadge(count) {
+      // Find the badge span in the bottom nav
+      const badge = document.getElementById('msgBadge');
+      if (!badge) return; // If this page has no badge, do nothing
+      if (count > 0) {
+        badge.style.display = 'flex'; // Show badge
+        badge.innerText = count > 99 ? '99+' : count; // 99+ if too many
+      } else {
+        badge.style.display = 'none'; // Hide badge when 0 unread
+      }
+    }
+
+    // --- STEP 4: Check server for new messages ---
+    async function checkMsgNotifications() {
+      try {
+        // 4a. Get my profile to know who I follow / who follows me = people who can message me
+        const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
+        const meData = await meRes.json();
+        const me = meData.user || meData;
+        let people = [...(me.followers || []), ...(me.following || [])];
+
+        // 4b. Remove duplicates + remove myself
+        let seen = {};
+        people = people.filter(p => {
+          let id = p._id || p;
+          if (seen[id]) return false;
+          seen[id] = true;
+          return id !== getMyIdForBadge();
+        });
+
+        let totalUnread = 0; // Total unread across all chats
+
+        // 4c. For each person, fetch our chat and count unread
+        for (const p of people) {
+          const otherId = p._id || p;
+          const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
+          const msgs = await res.json();
+          if (!Array.isArray(msgs) || !msgs.length) continue; // No messages with this person
+
+          const lastReadId = getLastReadIdForBadge(otherId);
+
+          // If I have NEVER opened this chat before, treat all old messages as already read
+          // (so old chats don't suddenly show as unread on first load)
+          // We save the last message as "read" and continue
+          if (!lastReadId) {
+            localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
+            continue;
+          }
+
+          // Find where I stopped reading
+          const idx = msgs.findIndex(m => m._id === lastReadId);
+
+          if (idx === -1) {
+            // My last read message was deleted, so check last message:
+            // If last message is new AND from them, count it as 1 unread
+            const lastMsg = msgs[msgs.length - 1];
+            const fromId = lastMsg.from?._id || lastMsg.from;
+            if (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) {
+              totalUnread += 1;
+            }
+          } else {
+            // Count messages AFTER my last read one that are FROM THEM (not from me)
+            const after = msgs.slice(idx + 1);
+            for (const m of after) {
+              const fromId = m.from?._id || m.from;
+              if (fromId !== getMyIdForBadge()) totalUnread++;
+            }
+          }
+        }
+
+        // 4d. Update the badge on screen
+        updateMsgBadge(totalUnread);
+
+      } catch (e) {
+        // If internet fails, just ignore, will try again in 3 seconds
+      }
+    }
+
+    // --- STEP 5: Start checking ---
+    // Check immediately when page loads
+    checkMsgNotifications();
+    // Then check every 3 seconds, so new message shows fast while you are reading
+    setInterval(checkMsgNotifications, 3000);
+  </script>
+</body>
+</html>

@@ -1,131 +1,283 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Write Novel</title>
-<style>
-*{box-sizing:border-box}
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write Novel</title>
+  <style>
+    * { box-sizing: border-box; }
 
-body{margin:0;background:linear-gradient(180deg,#0f0c29,#1a1a2e);color:#fff;font-family:Arial;padding-bottom:90px}
+    body { margin: 0; background: linear-gradient(180deg, #0f0c29, #1a1a2e); color: #fff; font-family: Arial; padding-bottom: 90px; }
 
-.box{max-width:600px;margin:0 auto;padding:18px}
+    .box { max-width: 600px; margin: 0 auto; padding: 18px; }
 
-.top{font-size:22px;font-weight:800;margin-bottom:14px}
+    .top { font-size: 22px; font-weight: 800; margin-bottom: 14px; }
 
-.cover{width:100%;height:240px;background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.25);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden}
+    .cover { width: 100%; height: 240px; background: rgba(255, 255, 255, .06); border: 2px dashed rgba(255, 255, 255, .25); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
 
-.cover img{width:100%;height:100%;object-fit:cover}
+    .cover img { width: 100%; height: 100%; object-fit: cover; }
 
-.cover b{font-size:34px}
+    .cover b { font-size: 34px; }
 
-.cover p{color:#bbb;font-size:13px}
+    .cover p { color: #bbb; font-size: 13px; }
 
-input,textarea{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#fff;padding:15px;margin-top:12px;outline:none;font-size:15px}
+    input, textarea { width: 100%; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-radius: 16px; color: #fff; padding: 15px; margin-top: 12px; outline: none; font-size: 15px; }
 
-/* FIXED - box now grows with your story, no more feeling full */
-textarea{min-height:500px;height:auto;line-height:1.7;resize:vertical;overflow-y:auto;field-sizing:content}
+    /* FIXED - box now grows with your story, no more feeling full */
+    textarea { min-height: 500px; height: auto; line-height: 1.7; resize: vertical; overflow-y: auto; field-sizing: content; }
 
-.btn{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:800;font-size:16px;margin-top:16px;cursor:pointer;box-shadow:0 10px 25px rgba(124,58,237,.4)}
+    .btn { width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(90deg, #7c3aed, #ec4899); color: #fff; font-weight: 800; font-size: 16px; margin-top: 16px; cursor: pointer; box-shadow: 0 10px 25px rgba(124, 58, 237, .4); }
 
-.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,20,.95);backdrop-filter:blur(10px);border-top:1px solid #222;display:flex;justify-content:space-around;padding:14px 0}
+    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10, 10, 20, .95); backdrop-filter: blur(10px); border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 14px 0; }
 
-.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.2)}
+    .nav a { color: #fff; text-decoration: none; font-size: 22px; }
+    .nav a.active { transform: scale(1.2); }
 
-</style>
+    /* ============================================================ */
+    /* ADDED ONLY - MESSAGE NOTIFICATION BADGE STYLES               */
+    /* Copy this whole block to any other page you want badge on    */
+    /* ============================================================ */
+    /* Makes the 💬 link able to hold a badge on top of it */
+    .navMsg { position: relative; }
+    /* The red circle with number, e.g. 1, 2, 99+ */
+    .msgBadge {
+      position: absolute;
+      top: -8px;
+      right: -10px;
+      background: #ff3b30;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display: none; /* hidden when 0 unread, JS will show it */
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+  </style>
 </head>
 <body>
-<div class="box">
-  <div class="top">✍️ Write Novel</div>
 
-  <div class="cover" onclick="document.getElementById('uploaddInput').click()" id="coverBox">
-    <b>🖼️</b>
-    <p>Tap to add beautiful cover</p>
-    <p style="font-size:11px;color:#888">Saved in database</p>
+  <!-- Write novel form -->
+  <div class="box">
+    <div class="top">✍️ Write Novel</div>
+
+    <div class="cover" onclick="document.getElementById('uploaddInput').click()" id="coverBox">
+      <b>🖼️</b>
+      <p>Tap to add beautiful cover</p>
+      <p style="font-size:11px;color:#888">Saved in database</p>
+    </div>
+
+    <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewUploadd(this)">
+    <input id="titleInput" placeholder="Novel Title - e.g. Silently Winning ✨" maxlength="80">
+    <!-- NO maxlength = unlimited words. Browser can accept 100,000+ words -->
+    <textarea id="contentInput" placeholder="Start writing your story here...&#10;&#10;Once upon a time..."></textarea>
+    <p id="charCount" style="font-size:12px;color:#aaa;margin:6px 0 0;text-align:right">0 words • Minimum 100 • No maximum</p>
+
+    <button class="btn" id="publishBtn" onclick="publishNovel()">Publish Novel 📚</button>
   </div>
 
-  <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewUploadd(this)">
-  <input id="titleInput" placeholder="Novel Title - e.g. Silently Winning ✨" maxlength="80">
-  <!-- NO maxlength = unlimited words. Browser can accept 100,000+ words -->
-  <textarea id="contentInput" placeholder="Start writing your story here...&#10;&#10;Once upon a time...">
-  </textarea>
-  <p id="charCount" style="font-size:12px;color:#aaa;margin:6px 0 0;text-align:right">0 words • Minimum 100 • No maximum</p>
+  <!-- Bottom navigation -->
+  <div class="nav">
+    <a href="feed.html">🏠</a>
+    <a href="search.html">🔍</a>
+    <a href="create.html" class="active">✍️</a>
+    <!-- ADDED ONLY - Added class="navMsg" + <span id="msgBadge"> so badge can show on 💬 -->
+    <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
+    <a href="diary.html">📖</a>
+    <a href="profile.html">👤</a>
+  </div>
 
-  <button class="btn" id="publishBtn" onclick="publishNovel()">Publish Novel 📚</button>
-</div>
+  <script>
+    // ============================================================
+    // ORIGINAL CODE - Do not touch, everything below is your old code
+    // ============================================================
+    const BASE = "https://raymonddomain.dev";
+    const token = localStorage.getItem('token');
+    if (!token) location.href = "login.html";
 
-<div class="nav">
-  <a href="feed.html">🏠</a>
-  <a href="search.html">🔍</a>
-  <a href="create.html" class="active">✍️</a>
-  <a href="message.html">💬</a>
-  <a href="diary.html">📖</a>
-  <a href="profile.html">👤</a>
-</div>
+    let uploaddFile = null;
 
-<script>
-const BASE="https://raymonddomain.dev";
-const token=localStorage.getItem('token');
-if(!token) location.href="login.html";
-let uploaddFile = null; 
+    // Preview cover image when user picks a file
+    function previewUploadd(input) {
+      if (input.files[0]) {
+        uploaddFile = input.files[0];
+        document.getElementById('coverBox').innerHTML = '<img src="' + URL.createObjectURL(uploaddFile) + '">';
+      }
+    }
 
-function previewUploadd(input){
-  if(input.files[0]){
-     uploaddFile = input.files[0];
-      document.getElementById('coverBox').innerHTML = '<img src="'+URL.createObjectURL(uploaddFile)+'">'; 
- }
-}
+    // Count words: split by spaces, remove empty pieces
+    function countWords(text) {
+      return text.trim().split(/\s+/).filter(Boolean).length;
+    }
 
-function countWords(text){ 
-  return text.trim().split(/\s+/).filter(Boolean).length; 
-}
+    // FIXED - box grows as you type, so 2000 words will never look stuck
+    const ta = document.getElementById('contentInput');
 
-// FIXED - box grows as you type, so 2000 words will never look stuck
-const ta = document.getElementById('contentInput');
+    function autoGrow() {
+      ta.style.height = 'auto';
+      ta.style.height = (ta.scrollHeight + 20) + 'px';
+      const len = countWords(ta.value);
+      const el = document.getElementById('charCount');
+      el.innerText = len + ' words • Minimum 100 • No maximum';
+      el.style.color = len >= 100 ? '#4ade80' : '#aaa';
+    }
 
-function autoGrow(){
-  ta.style.height = 'auto';
-  ta.style.height = (ta.scrollHeight + 20) + 'px';
-  const len = countWords(ta.value);
-  const el = document.getElementById('charCount');
-  el.innerText = len + ' words • Minimum 100 • No maximum';
-  el.style.color = len >= 100 ? '#4ade80' : '#aaa';
-}
+    ta.addEventListener('input', autoGrow);
 
-ta.addEventListener('input', autoGrow);
+    // Publish novel to server
+    async function publishNovel() {
+      const title = document.getElementById('titleInput').value.trim();
+      const content = document.getElementById('contentInput').value.trim();
+      if (!title) return alert('Add title');
+      if (!content) return alert('Write your story');
 
-async function publishNovel(){
-  const title = document.getElementById('titleInput').value.trim();
-  const content = document.getElementById('contentInput').value.trim();
-  if(!title) return alert('Add title');
-  if(!content) return alert('Write your story');
-  // Minimum 100 WORDS, no maximum - 100, 2000, 50000, any amount
-  const wordCount = countWords(content);
+      // Minimum 100 WORDS, no maximum - 100, 2000, 50000, any amount
+      const wordCount = countWords(content);
+      if (wordCount < 100) return alert('Story too short. Write at least 100 words. You have ' + wordCount + ' / 100 words');
 
-  if(wordCount < 100) return alert('Story too short. Write at least 100 words. You have ' + wordCount + ' / 100 words');
+      const btn = document.getElementById('publishBtn');
+      btn.innerText = 'Publishing... ✨';
+      btn.disabled = true;
 
-  const btn = document.getElementById('publishBtn');
-  btn.innerText = 'Publishing... ✨';
-  btn.disabled = true;
-  const fd = new FormData();
-  fd.append('title',title); 
-  fd.append('content',content);
-  if(uploaddFile) fd.append('file',uploaddFile);
+      const fd = new FormData();
+      fd.append('title', title);
+      fd.append('content', content);
+      if (uploaddFile) fd.append('file', uploaddFile);
 
-  try{
-    const res = await fetch(BASE+'/api/posts',{
-      method:'POST',
-      headers:{authorization:token},
-      body:fd
-    });
+      try {
+        const res = await fetch(BASE + '/api/posts', {
+          method: 'POST',
+          headers: { authorization: token },
+          body: fd
+        });
 
-    if(!res.ok) throw new Error('Publish failed');
+        if (!res.ok) throw new Error('Publish failed');
 
-    alert('Published! 🎉');
-    location.href='profile.html';
+        alert('Published! 🎉');
+        location.href = 'profile.html';
 
-  }catch(e){ 
-    alert(e.message);
-    btn.innerText = 'Publish Novel 📚';
-    btn.disabled = false; 
-  }
-}
-</script>
+      } catch (e) {
+        alert(e.message);
+        btn.innerText = 'Publish Novel 📚';
+        btn.disabled = false;
+      }
+    }
+
+    // ====================================================================
+    // ADDED ONLY - MESSAGE NOTIFICATION FOR THIS PAGE (CREATE / WRITE NOVEL)
+    // Copy this WHOLE block to any other page to get same badge there.
+    // It uses the SAME localStorage keys as message.html, so they stay in sync.
+    // ====================================================================
+
+    // --- STEP 1: Get my own ID from token ---
+    // We need my ID to build the "read_" key and to know if a message is from me or from them
+    function getMyIdForBadge() {
+      try {
+        // Token is like xxx.YYY.zzz, the middle part holds my id
+        return JSON.parse(atob(token.split('.')[1])).id;
+      } catch {
+        return "";
+      }
+    }
+
+    // --- STEP 2: Helpers to remember what I have already read ---
+    // We save: read_MYID_OTHERID = ID of last message I saw from that person
+    // Example: read_123_456 = "msg789"
+    // If server has a newer message ID after that one, and it's from THEM, it's unread.
+    function getReadKeyForBadge(otherId) {
+      return 'read_' + getMyIdForBadge() + '_' + otherId;
+    }
+    function getLastReadIdForBadge(otherId) {
+      return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
+    }
+
+    // --- STEP 3: Show / hide the red badge on 💬 button ---
+    function updateMsgBadge(count) {
+      // Find the badge span in the bottom nav
+      const badge = document.getElementById('msgBadge');
+      if (!badge) return; // If this page has no badge, do nothing
+      if (count > 0) {
+        badge.style.display = 'flex'; // Show badge
+        badge.innerText = count > 99 ? '99+' : count; // 99+ if too many
+      } else {
+        badge.style.display = 'none'; // Hide badge when 0 unread
+      }
+    }
+
+    // --- STEP 4: Check server for new messages ---
+    async function checkMsgNotifications() {
+      try {
+        // 4a. Get my profile to know who I follow / who follows me = people who can message me
+        const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
+        const meData = await meRes.json();
+        const me = meData.user || meData;
+        let people = [...(me.followers || []), ...(me.following || [])];
+
+        // 4b. Remove duplicates + remove myself
+        let seen = {};
+        people = people.filter(p => {
+          let id = p._id || p;
+          if (seen[id]) return false;
+          seen[id] = true;
+          return id !== getMyIdForBadge();
+        });
+
+        let totalUnread = 0; // Total unread across all chats
+
+        // 4c. For each person, fetch our chat and count unread
+        for (const p of people) {
+          const otherId = p._id || p;
+          const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
+          const msgs = await res.json();
+          if (!Array.isArray(msgs) || !msgs.length) continue; // No messages with this person
+
+          const lastReadId = getLastReadIdForBadge(otherId);
+
+          // If I have NEVER opened this chat before, treat all old messages as already read
+          // (so old chats don't suddenly show as unread on first load)
+          // We save the last message as "read" and continue
+          if (!lastReadId) {
+            localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
+            continue;
+          }
+
+          // Find where I stopped reading
+          const idx = msgs.findIndex(m => m._id === lastReadId);
+
+          if (idx === -1) {
+            // My last read message was deleted, so check last message:
+            // If last message is new AND from them, count it as 1 unread
+            const lastMsg = msgs[msgs.length - 1];
+            const fromId = lastMsg.from?._id || lastMsg.from;
+            if (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) {
+              totalUnread += 1;
+            }
+          } else {
+            // Count messages AFTER my last read one that are FROM THEM (not from me)
+            const after = msgs.slice(idx + 1);
+            for (const m of after) {
+              const fromId = m.from?._id || m.from;
+              if (fromId !== getMyIdForBadge()) totalUnread++;
+            }
+          }
+        }
+
+        // 4d. Update the badge on screen
+        updateMsgBadge(totalUnread);
+
+      } catch (e) {
+        // If internet fails, just ignore, will try again in 3 seconds
+      }
+    }
+
+    // --- STEP 5: Start checking ---
+    // Check immediately when page loads
+    checkMsgNotifications();
+    // Then check every 3 seconds, so new message shows fast while you are writing
+    setInterval(checkMsgNotifications, 3000);
+  </script>
 </body>
 </html>
