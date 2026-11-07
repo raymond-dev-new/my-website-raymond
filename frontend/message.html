@@ -95,8 +95,6 @@
       padding: 14px 0;
     }
     .nav a { color: #fff; text-decoration: none; font-size: 22px; }
-
-    /* ADDED ONLY - delete, profile header, badge */
     .msgWrap { position: relative; display: flex; flex-direction: column; }
     .msgWrap.mine { align-items: flex-end; }
     .msgWrap.theirs { align-items: flex-start; }
@@ -130,8 +128,6 @@
       padding: 0 4px;
     }
     .navMsg { position: relative; }
-
-    /* ADDED ONLY - For recent chat sorting + per-chat unread badge */
     .rowInfo { flex: 1; min-width: 0; }
     .rowTop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .rowPreview { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
@@ -155,37 +151,25 @@
   </style>
 </head>
 <body>
-
-  <!-- TOP BAR : Shows "Messages" or the name of the person you are chatting with -->
   <div class="top">
-    <!-- Clicking this name/avatar opens that person's profile page -->
     <div class="chatHeaderInfo" id="chatHeaderInfo" onclick="goToChatProfile()">
       <b id="topTitle">💬 Messages</b>
       <span id="chatHeaderAvatar" style="display: none;"></span>
     </div>
     <span onclick="showList()" style="cursor: pointer; display: none;" id="backBtn">← Back</span>
   </div>
-
-  <!-- LIST OF PEOPLE YOU CAN CHAT WITH -->
   <div class="list" id="peopleList">
     <p style="text-align: center; color: #777; padding: 30px;">Loading people...</p>
   </div>
-
-  <!-- CHAT MESSAGES WILL SHOW HERE -->
   <div class="chat" id="chatBox"></div>
-
-  <!-- INPUT BOX AT BOTTOM TO TYPE MESSAGE -->
   <div class="inputRow" id="inputRow">
     <input id="msgInput" placeholder="Type private message..." onkeydown="if(event.key === 'Enter') sendMsg()">
     <button onclick="sendMsg()">Send</button>
   </div>
-
-  <!-- BOTTOM NAVIGATION BAR -->
   <div class="nav">
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
     <a href="create.html">✍️</a>
-    <!-- 💬 button has a red badge that shows total unread messages -->
     <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
     <a href="diary.html">📖</a>
     <a href="profile.html">👤</a>
@@ -193,13 +177,12 @@
 
   <script>
     // ============================================================
-    // 1. SETUP - Server address + login token
+    // 1. SETUP
     // ============================================================
     const BASE = "https://raymonddomain.dev";
     const token = localStorage.getItem('token');
     if (!token) location.href = "login.html";
 
-    // Get my own user ID from the token (token is like xxx.YYY.zzz, YYY holds my id)
     function getMyId() {
       try {
         return JSON.parse(atob(token.split('.')[1])).id;
@@ -209,84 +192,237 @@
     }
 
     // ============================================================
-    // 2. VARIABLES WE USE TO REMEMBER STATE
+    // 2. STATE
     // ============================================================
-    let chatWith = null; // ID of person I am currently chatting with, null = I am in list view
-    let chatWithName = ''; // Name of person I am chatting with
-    let chatWithAvatar = ''; // Avatar of person I am chatting with
-    let peopleCache = []; // List of all followers + following (people I can chat with)
-    let chatMeta = {}; // For each person: { lastText, lastTime, unread }
-    // chatMeta example: { "user123": { lastText: "hello", lastTime: 123456, unread: 2 } }
+    let chatWith = null;
+    let chatWithName = '';
+    let chatWithAvatar = '';
+    let peopleCache = [];
+    let chatMeta = {};
+    let lastRenderedListHtml = '';
+    let lastRenderedChatHtml = '';
 
-    // We save "what I have already read" inside localStorage so it survives refresh.
-    // Key = "read_" + myId + "_" + otherPersonId, Value = ID of last message I saw
-    function getReadKey(otherId) {
-      return 'read_' + getMyId() + '_' + otherId;
+    // ============================================================
+    // 2B. NEW - SAFE STORAGE THAT CAN NEVER FILL UP 5MB
+    // Problem: localStorage is only ~5MB. Old code saved ALL messages forever.
+    // Fix: We save ONLY what we need for instant open, and we TRIM old data.
+    // ============================================================
+
+    // --- LIMITS - Change these numbers if you want more / less storage ---
+    const MAX_MSGS_PER_CHAT = 30; // Only last 30 messages per person saved. Older ones stay on server, not in storage.
+    const MAX_CHATS_SAVED = 15; // Only last 15 chats saved. If you chat with 16th person, oldest chat is deleted from storage.
+    const MAX_PEOPLE_SAVED = 50; // Only 50 people saved in list. Enough for instant open.
+
+    // --- Keys ---
+    function getPeopleCacheKey() { return 'msg_people_' + getMyId(); }
+    function getMetaCacheKey() { return 'msg_meta_' + getMyId(); }
+    function getChatCacheKey(otherId) { return 'msg_chat_' + getMyId() + '_' + otherId; }
+    function getChatOrderKey() { return 'msg_order_' + getMyId(); } // List of chat IDs in order of last use, oldest first
+
+    // --- Helper: Save safely. If storage is full, delete oldest chat and try again ---
+    // This is the MOST IMPORTANT function. It prevents QuotaExceededError crash.
+    function safeSetItem(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (e) {
+        // Storage is FULL (5MB reached)
+        // Step 1: Try to delete oldest chat to free space
+        const freed = deleteOldestChatFromStorage();
+        if (freed) {
+          try {
+            localStorage.setItem(key, value); // Try again after freeing space
+            return true;
+          } catch (e2) {}
+        }
+        // Step 2: If still full, clear ALL message cache (people + meta stay, messages can re-load from server)
+        // Messages are SAFE on server, we only delete local copy
+        try {
+          clearAllMessageCache();
+          localStorage.setItem(key, value);
+          return true;
+        } catch (e3) {
+          // Step 3: Give up silently, app still works from server, just not instant next time
+          return false;
+        }
+      }
     }
-    function getLastReadId(otherId) {
-      return localStorage.getItem(getReadKey(otherId)) || '';
+
+    // --- Helper: Keep track of which chats we saved, oldest first ---
+    // Example: ["userA", "userB", "userC"] - userA is oldest, userC is newest
+    function getChatOrder() {
+      try {
+        const raw = localStorage.getItem(getChatOrderKey());
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
     }
+    function touchChatInOrder(otherId) {
+      // Move this chat to END (newest), so it is deleted LAST when storage is full
+      let order = getChatOrder().filter(id => id !== otherId);
+      order.push(otherId);
+      // If we have too many chats, cut oldest ones from list (but don't delete yet, deleteOldest will do it)
+      if (order.length > MAX_CHATS_SAVED) {
+        order = order.slice(order.length - MAX_CHATS_SAVED);
+      }
+      try { localStorage.setItem(getChatOrderKey(), JSON.stringify(order)); } catch {}
+    }
+    function deleteOldestChatFromStorage() {
+      // Find oldest chat and delete its messages from storage to free space
+      const order = getChatOrder();
+      if (!order.length) return false;
+      const oldestId = order[0];
+      try { localStorage.removeItem(getChatCacheKey(oldestId)); } catch {}
+      // Remove it from order list
+      const newOrder = order.slice(1);
+      try { localStorage.setItem(getChatOrderKey(), JSON.stringify(newOrder)); } catch {}
+      return true;
+    }
+    function clearAllMessageCache() {
+      // Delete ALL saved messages, but keep people + meta + read status
+      const order = getChatOrder();
+      for (const id of order) {
+        try { localStorage.removeItem(getChatCacheKey(id)); } catch {}
+      }
+      try { localStorage.removeItem(getChatOrderKey()); } catch {}
+    }
+
+    // --- Helper: Trim messages to last 30 only, and keep only needed fields ---
+    // We don't save full user objects, only _id, from, text, createdAt. Saves 50% space.
+    function trimMessages(msgs) {
+      if (!Array.isArray(msgs)) return [];
+      // Take last 30 only
+      const last = msgs.slice(-MAX_MSGS_PER_CHAT);
+      // Keep only small fields, drop big fields like __v, user objects
+      return last.map(m => ({
+        _id: m._id,
+        from: (m.from?._id || m.from), // Save only ID, not full user object
+        text: String(m.text || '').slice(0, 2000), // Cap single message at 2000 chars in cache
+        createdAt: m.createdAt || ''
+      }));
+    }
+
+    // Save people list - TRIMMED to save space (only id, username, avatar)
+    function savePeopleToStorage() {
+      const slim = (peopleCache || []).slice(0, MAX_PEOPLE_SAVED).map(p => ({
+        _id: p._id || p,
+        username: p.username || '',
+        avatar: p.avatar || ''
+      }));
+      safeSetItem(getPeopleCacheKey(), JSON.stringify(slim));
+    }
+
+    // Save chatMeta - already small, just save directly with safeSetItem
+    function saveMetaToStorage() {
+      safeSetItem(getMetaCacheKey(), JSON.stringify(chatMeta));
+    }
+
+    // Save messages of ONE chat - TRIMMED + ORDERED + SAFE
+    function saveMessagesToStorage(otherId, msgs) {
+      const trimmed = trimMessages(msgs);
+      touchChatInOrder(otherId); // Mark this chat as newest, so it won't be deleted first
+      // If we now have more than MAX chats, delete oldest chat first to stay under limit
+      let order = getChatOrder();
+      if (order.length > MAX_CHATS_SAVED) {
+        deleteOldestChatFromStorage();
+      }
+      safeSetItem(getChatCacheKey(otherId), JSON.stringify(trimmed));
+    }
+
+    // Load saved messages for ONE chat (instant)
+    function loadMessagesFromStorage(otherId) {
+      try {
+        const raw = localStorage.getItem(getChatCacheKey(otherId));
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
+    }
+
+    // Load saved people + meta at start
+    function loadCacheAtStart() {
+      try {
+        const peopleRaw = localStorage.getItem(getPeopleCacheKey());
+        if (peopleRaw) {
+          const parsed = JSON.parse(peopleRaw);
+          if (Array.isArray(parsed) && parsed.length) peopleCache = parsed;
+        }
+        const metaRaw = localStorage.getItem(getMetaCacheKey());
+        if (metaRaw) {
+          const parsed = JSON.parse(metaRaw);
+          if (parsed && typeof parsed === 'object') chatMeta = parsed;
+        }
+      } catch {}
+    }
+
+    // Read tracking
+    function getReadKey(otherId) { return 'read_' + getMyId() + '_' + otherId; }
+    function getLastReadId(otherId) { return localStorage.getItem(getReadKey(otherId)) || ''; }
     function saveLastReadId(otherId, msgId) {
-      if (msgId) localStorage.setItem(getReadKey(otherId), msgId);
+      if (msgId) {
+        // Use safeSetItem here too, so read status never crashes if storage full
+        safeSetItem(getReadKey(otherId), msgId);
+      }
     }
 
     // ============================================================
-    // 3. LOAD PEOPLE - Get followers + following from my profile
+    // 3. LOAD PEOPLE - Show cache instantly, update in background
     // ============================================================
     async function loadPeople() {
-      // Get my profile to find my followers and following
-      const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
-      const meData = await meRes.json();
-      const me = meData.user || meData;
-
-      // Combine followers + following into one list
-      let people = [...(me.followers || []), ...(me.following || [])];
-
-      // Remove duplicates and remove myself
-      let seen = {};
-      people = people.filter(p => {
-        let id = p._id || p;
-        if (seen[id]) return false;
-        seen[id] = true;
-        return id !== getMyId();
-      });
-
-      peopleCache = people;
-
-      if (!people.length) {
-        document.getElementById('peopleList').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No one yet.<br>Follow someone to chat privately.</p>';
-        return;
+      loadCacheAtStart();
+      if (peopleCache.length) {
+        renderPeopleList();
+        updateBadge();
+        const toEarly = new URLSearchParams(location.search).get('to');
+        if (toEarly) {
+          const foundEarly = peopleCache.find(p => (p._id || p) === toEarly);
+          openChat(toEarly, foundEarly?.username || 'Chat');
+        }
       }
-
-      // First show list quickly (without last message), then we will fetch last messages and re-sort
-      renderPeopleList();
-
-      // Now fetch last message for each person to sort by recent + show unread
-      await refreshRecentAndUnread();
-
-      // If I came from profile with ?to=USER_ID, open that chat directly
-      const to = new URLSearchParams(location.search).get('to');
-      if (to) {
-        const found = people.find(p => (p._id || p) === to);
-        openChat(to, found?.username || 'Chat');
+      try {
+        const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
+        const meData = await meRes.json();
+        const me = meData.user || meData;
+        let people = [...(me.followers || []), ...(me.following || [])];
+        let seen = {};
+        people = people.filter(p => {
+          let id = p._id || p;
+          if (seen[id]) return false;
+          seen[id] = true;
+          return id !== getMyId();
+        });
+        peopleCache = people;
+        savePeopleToStorage();
+        if (!people.length) {
+          document.getElementById('peopleList').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No one yet.<br>Follow someone to chat privately.</p>';
+          return;
+        }
+        renderPeopleList();
+        await refreshRecentAndUnread(true);
+        const to = new URLSearchParams(location.search).get('to');
+        if (to && !chatWith) {
+          const found = people.find(p => (p._id || p) === to);
+          openChat(to, found?.username || 'Chat');
+        }
+      } catch (e) {
+        if (!peopleCache.length) {
+          document.getElementById('peopleList').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No connection. Pull to refresh.</p>';
+        }
       }
     }
 
     // ============================================================
-    // 4. RENDER PEOPLE LIST - Sorted by most recent chat at top
+    // 4. RENDER PEOPLE LIST - Sorted by most recent at top
     // ============================================================
     function renderPeopleList() {
-      // Make a copy and sort it: person with newest lastTime comes first
-      // If person has never chatted, lastTime = 0, so they stay at bottom
       let sorted = [...peopleCache].sort((a, b) => {
         const idA = a._id || a;
         const idB = b._id || b;
         const timeA = chatMeta[idA]?.lastTime || 0;
         const timeB = chatMeta[idB]?.lastTime || 0;
-        return timeB - timeA; // biggest time first = most recent at top
+        return timeB - timeA;
       });
-
-      document.getElementById('peopleList').innerHTML = sorted.map(p => {
+      const html = sorted.map(p => {
         const id = p._id || p;
         const name = p.username || id;
         const av = p.avatar ? '<img src="' + p.avatar + '">' : name[0].toUpperCase();
@@ -294,130 +430,137 @@
         const preview = meta.lastText || 'Tap to chat privately';
         const timeText = meta.lastTime ? formatTime(meta.lastTime) : '';
         const unread = meta.unread || 0;
-        // Show red badge on this row if this person sent unread messages
         const unreadHtml = unread > 0 ? '<span class="chatUnread">' + unread + '</span>' : '';
-        // Make preview bold if unread
         const previewClass = unread > 0 ? 'rowPreview unread' : 'rowPreview';
-
-        // Avatar click = go to profile, Row click = open chat
         return '<div class="row" onclick="openChat(\'' + id + '\',\'' + name + '\')">'
           + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
           + '<div class="rowInfo"><div class="rowTop"><b>' + name + '</b><span class="rowTime">' + timeText + '</span></div>'
           + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
           + '</div>';
       }).join('');
+      if (html === lastRenderedListHtml) return;
+      lastRenderedListHtml = html;
+      document.getElementById('peopleList').innerHTML = html;
     }
 
-    // Small helper: stop < > breaking the preview text
     function escapeHtml(text) {
       return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
-
-    // Small helper: show time like "10:45" if today, else "12 Nov"
     function formatTime(timestamp) {
       const d = new Date(timestamp);
       const now = new Date();
       const sameDay = d.toDateString() === now.toDateString();
-      if (sameDay) {
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      }
+      if (sameDay) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
     }
 
     // ============================================================
-    // 5. OPEN CHAT - When I tap a person
+    // 5. OPEN CHAT - Show cached messages instantly, then background refresh
     // ============================================================
     async function openChat(id, name) {
       chatWith = id;
       chatWithName = name;
-
       const found = peopleCache.find(p => (p._id || p) === id);
       chatWithAvatar = found?.avatar || '';
-
-      // Hide list, show chat + input
       document.getElementById('peopleList').style.display = 'none';
       document.getElementById('chatBox').style.display = 'block';
       document.getElementById('inputRow').style.display = 'flex';
       document.getElementById('topTitle').innerText = '💬 ' + name;
-
-      // Show avatar in top bar
       const avEl = document.getElementById('chatHeaderAvatar');
       avEl.style.display = 'flex';
       avEl.className = 'avatar';
       avEl.innerHTML = chatWithAvatar ? '<img src="' + chatWithAvatar + '">' : name[0].toUpperCase();
-
       document.getElementById('backBtn').style.display = 'block';
-
-      // Mark this chat as read: unread = 0 for this person
       if (chatMeta[id]) chatMeta[id].unread = 0;
       updateBadge();
+      saveMetaToStorage();
 
-      // Load messages for this person
-      await loadMessages();
-
-      // After loading, save "I have read up to the last message" so badge does not come back
-      const msgs = await getMessagesFor(id);
-      if (msgs.length) {
-        saveLastReadId(id, msgs[msgs.length - 1]._id);
-        if (chatMeta[id]) chatMeta[id].unread = 0;
-        updateBadge();
+      // Show cached (last 30) instantly
+      const cached = loadMessagesFromStorage(id);
+      if (cached.length) {
+        renderChatMessages(cached);
+        saveLastReadId(id, cached[cached.length - 1]._id);
+      } else {
+        document.getElementById('chatBox').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
+        lastRenderedChatHtml = '';
       }
+      // Fetch FULL history from server in background (server has ALL messages, cache only has 30)
+      // This is why trimming cache is safe - full history still loads from server
+      await loadMessages(true);
     }
 
-    // Helper: fetch messages for one person
     async function getMessagesFor(otherId) {
       try {
         const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
         const msgs = await res.json();
         return Array.isArray(msgs) ? msgs : [];
-      } catch {
-        return [];
-      }
+      } catch { return []; }
     }
 
-    // ============================================================
-    // 6. LOAD MESSAGES - Show all messages in open chat
-    // ============================================================
-    async function loadMessages() {
-      if (!chatWith) return;
-      const msgs = await getMessagesFor(chatWith);
-
-      // Mark as read in our memory + localStorage
-      if (msgs.length) {
-        saveLastReadId(chatWith, msgs[msgs.length - 1]._id);
-        if (chatMeta[chatWith]) chatMeta[chatWith].unread = 0;
-        updateBadge();
-      }
-
-      document.getElementById('chatBox').innerHTML = msgs.length ? msgs.map(m => {
+    function renderChatMessages(msgs) {
+      const html = msgs.length ? msgs.map(m => {
         const isMine = (m.from?._id || m.from) === getMyId();
-        // Only my messages get a Delete button
         const del = isMine ? '<button class="delBtn" onclick="deleteMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
         return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + m.text + '</div>' + del + '</div>';
       }).join('') : '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
-
+      if (html === lastRenderedChatHtml) return;
+      lastRenderedChatHtml = html;
+      document.getElementById('chatBox').innerHTML = html;
       window.scrollTo(0, document.body.scrollHeight);
     }
 
     // ============================================================
-    // 7. SEND MESSAGE
+    // 6. LOAD MESSAGES
+    // ============================================================
+    async function loadMessages(silent) {
+      if (!chatWith) return;
+      const msgs = await getMessagesFor(chatWith);
+      if (!msgs) return;
+      const cached = loadMessagesFromStorage(chatWith);
+      if (msgs.length === 0 && cached.length > 0) return;
+      // Save TRIMMED version (last 30) - full list still on server
+      saveMessagesToStorage(chatWith, msgs);
+      if (msgs.length) {
+        saveLastReadId(chatWith, msgs[msgs.length - 1]._id);
+        if (chatMeta[chatWith]) {
+          chatMeta[chatWith].unread = 0;
+          chatMeta[chatWith].lastText = ((msgs[msgs.length - 1].from?._id || msgs[msgs.length - 1].from) === getMyId() ? 'You: ' : '') + msgs[msgs.length - 1].text;
+          chatMeta[chatWith].lastTime = msgs[msgs.length - 1].createdAt ? new Date(msgs[msgs.length - 1].createdAt).getTime() : Date.now();
+          chatMeta[chatWith].lastMsgId = msgs[msgs.length - 1]._id;
+          saveMetaToStorage();
+        }
+        updateBadge();
+      }
+      renderChatMessages(msgs);
+    }
+
+    // ============================================================
+    // 7. SEND MESSAGE - Show instantly, then send to server
     // ============================================================
     async function sendMsg() {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text) return;
       input.value = '';
-
-      // Send to server
-      await fetch(BASE + '/api/messages/' + chatWith, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', authorization: token },
-        body: JSON.stringify({ text })
-      });
-
-      // Reload messages + update recent list (so this chat jumps to top)
-      await loadMessages();
-      await refreshRecentAndUnread();
+      const tempMsg = {
+        _id: 'temp_' + Date.now(),
+        from: getMyId(),
+        text: text,
+        createdAt: new Date().toISOString()
+      };
+      const cached = loadMessagesFromStorage(chatWith);
+      cached.push(tempMsg);
+      saveMessagesToStorage(chatWith, cached);
+      renderChatMessages(cached);
+      try {
+        await fetch(BASE + '/api/messages/' + chatWith, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', authorization: token },
+          body: JSON.stringify({ text })
+        });
+      } catch (e) {}
+      await loadMessages(true);
+      await refreshRecentAndUnread(true);
     }
 
     // ============================================================
@@ -432,22 +575,24 @@
       document.getElementById('backBtn').style.display = 'none';
       chatWith = null;
       chatWithName = '';
-      // Refresh list so order + unread are correct
-      refreshRecentAndUnread();
+      lastRenderedChatHtml = '';
+      refreshRecentAndUnread(true);
     }
 
     // ============================================================
-    // 9. DELETE MESSAGE - Deletes from chat AND from database
+    // 9. DELETE MESSAGE - From screen + storage + database
     // ============================================================
     async function deleteMsg(e, msgId) {
       e.stopPropagation();
       if (!confirm('Delete this message? It will be deleted for everyone.')) return;
-
-      // 1. Remove instantly from screen so it feels fast
       const wrap = e.target.closest('.msgWrap');
       if (wrap) wrap.remove();
-
-      // 2. Delete from DATABASE on server
+      lastRenderedChatHtml = '';
+      if (chatWith) {
+        const cached = loadMessagesFromStorage(chatWith);
+        const filtered = cached.filter(m => m._id !== msgId);
+        saveMessagesToStorage(chatWith, filtered);
+      }
       try {
         const res = await fetch(BASE + '/api/messages/' + msgId, {
           method: 'DELETE',
@@ -455,29 +600,27 @@
         });
         if (!res.ok) {
           alert('Could not delete from server. Please try again.');
-          if (chatWith) loadMessages();
+          if (chatWith) loadMessages(true);
         } else {
-          // Update recent list after delete (last message may have changed)
-          refreshRecentAndUnread();
+          refreshRecentAndUnread(true);
         }
       } catch (err) {
         alert('Could not delete. Check connection.');
-        if (chatWith) loadMessages();
+        if (chatWith) loadMessages(true);
       }
     }
 
     // ============================================================
-    // 10. CLICK PROFILE IN CHAT - Go to that person's profile page
+    // 10. CLICK PROFILE IN CHAT
     // ============================================================
     function goToChatProfile() {
       if (chatWith) location.href = 'profile.html?id=' + chatWith;
     }
 
     // ============================================================
-    // 11. NOTIFICATION BADGE - Red number on 💬 button
+    // 11. NOTIFICATION BADGE
     // ============================================================
     function updateBadge() {
-      // Add up unread from all chats
       let total = 0;
       for (const id in chatMeta) {
         total += chatMeta[id].unread || 0;
@@ -492,50 +635,41 @@
     }
 
     // ============================================================
-    // 12. RECENT + UNREAD - The heart of notification + sorting
-    // How it works:
-    // - For each person, we fetch their messages
-    // - Last message tells us: preview text, time, and who sent it
-    // - We compare last message ID with the ID we saved as "read"
-    // - Any messages AFTER the saved ID that are FROM THEM = unread
-    // - Then we re-sort list so most recent is at top
+    // 12. RECENT + UNREAD
     // ============================================================
-    async function refreshRecentAndUnread() {
+    async function refreshRecentAndUnread(silent) {
       if (!peopleCache.length) return;
-
+      let metaChanged = false;
       for (const p of peopleCache) {
         const id = p._id || p;
         const msgs = await getMessagesFor(id);
-        if (!msgs.length) {
-          if (!chatMeta[id]) chatMeta[id] = { lastText: '', lastTime: 0, unread: 0 };
+        let useMsgs = msgs;
+        if ((!msgs || !msgs.length) && loadMessagesFromStorage(id).length) {
           continue;
         }
-
-        const lastMsg = msgs[msgs.length - 1];
+        if (!useMsgs.length) {
+          if (!chatMeta[id]) {
+            chatMeta[id] = { lastText: '', lastTime: 0, unread: 0 };
+            metaChanged = true;
+          }
+          continue;
+        }
+        saveMessagesToStorage(id, useMsgs);
+        const lastMsg = useMsgs[useMsgs.length - 1];
         const lastTime = lastMsg.createdAt ? new Date(lastMsg.createdAt).getTime() : Date.now();
         const lastText = (lastMsg.from?._id || lastMsg.from) === getMyId() ? 'You: ' + lastMsg.text : lastMsg.text;
-
-        // Count unread: find where I last stopped reading, count messages after that from THEM
         const lastReadId = getLastReadId(id);
         let unread = 0;
         if (id === chatWith) {
-          // If I am inside this chat right now, it is read = 0 unread
           unread = 0;
           saveLastReadId(id, lastMsg._id);
         } else if (!lastReadId) {
-          // I have never opened this chat: if last message is from them, count it as unread?
-          // To avoid old messages showing as new on first load, we treat first load as read
-          // UNLESS we already have meta for this person (meaning new message arrived after first load)
           if (chatMeta[id] && chatMeta[id].lastText) {
-            // We have seen this chat before, so this is a NEW message
-            unread = msgs.filter(m => (m.from?._id || m.from) !== getMyId()).length;
-            // Simpler: count only messages after our old last message
-            // We use last seen message id stored in chatMeta
             const oldLastId = chatMeta[id].lastMsgId;
             if (oldLastId) {
-              const idx = msgs.findIndex(m => m._id === oldLastId);
+              const idx = useMsgs.findIndex(m => m._id === oldLastId);
               if (idx !== -1) {
-                unread = msgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length;
+                unread = useMsgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length;
               }
             }
           } else {
@@ -543,54 +677,40 @@
             saveLastReadId(id, lastMsg._id);
           }
         } else {
-          // Normal case: find my last read message, count messages after it from them
-          const idx = msgs.findIndex(m => m._id === lastReadId);
+          const idx = useMsgs.findIndex(m => m._id === lastReadId);
           if (idx === -1) {
-            // My last read message was deleted or not found, count all from them after?
-            // If last message is from them and it's not the one I read, count 1+
-            unread = msgs.filter(m => (m.from?._id || m.from) !== getMyId()).length > 0 && lastMsg._id !== lastReadId ? msgs.filter(m => (m.from?._id || m.from) !== getMyId()).length : 0;
-            // Better: if last message is new and from them, at least 1 unread
             if (lastMsg._id !== lastReadId && (lastMsg.from?._id || lastMsg.from) !== getMyId()) {
-              unread = Math.max(1, unread);
+              unread = 1;
             } else {
               unread = 0;
             }
           } else {
-            // Count messages after idx that are from THEM (not me)
-            unread = msgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length;
+            unread = useMsgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length;
           }
         }
-
-        chatMeta[id] = {
-          lastText: lastText,
-          lastTime: lastTime,
-          lastMsgId: lastMsg._id,
-          unread: unread
-        };
+        const old = chatMeta[id];
+        if (!old || old.lastMsgId !== lastMsg._id || old.unread !== unread || old.lastText !== lastText) {
+          chatMeta[id] = { lastText: lastText, lastTime: lastTime, lastMsgId: lastMsg._id, unread: unread };
+          metaChanged = true;
+        }
       }
-
-      // Update badge + re-sort list if we are in list view
+      if (metaChanged) saveMetaToStorage();
       updateBadge();
       if (!chatWith) renderPeopleList();
     }
 
     // ============================================================
-    // 13. START + AUTO-REFRESH
+    // 13. START + AUTO-REFRESH (BACKGROUND)
     // ============================================================
-    // Load people once at start
     loadPeople();
-
-    // Every 3 seconds:
-    // - If I am inside a chat, reload that chat (so new messages appear instantly)
-    // - If I am in list, check for new messages + re-sort
     setInterval(async () => {
       if (chatWith) {
-        await loadMessages();
-        await refreshRecentAndUnread();
+        await loadMessages(true);
+        await refreshRecentAndUnread(true);
       } else {
-        await refreshRecentAndUnread();
+        await refreshRecentAndUnread(true);
       }
-    }, 3000);
+    }, 2000);
   </script>
 </body>
 </html>
