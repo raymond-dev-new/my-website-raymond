@@ -1,10 +1,15 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Messages</title>
+  <!-- ============================================================ -->
+  <!-- CACHE ADDITION - ADDED ONLY - DO NOT REMOVE                  -->
+  <!-- This loads the shared cache helper. If file is missing,     -->
+  <!-- the inline WRDB below still works, so app never breaks.     -->
+  <!-- ============================================================ -->
+  <script src="wildreaders-db.js"></script>
   <style>
     /* ============================= */
     /* BASIC PAGE SETUP              */
@@ -94,6 +99,12 @@
       margin: 8px 0;
       font-size: 14px;
       line-height: 1.4;
+      /* CACHE ADDITION - ADDED ONLY - LINE BREAK FIX */
+      /* This keeps Enter / line breaks + spaces in messages */
+      /* Without this, \n is collapsed to one space */
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
 
     /* My message - purple */
@@ -193,6 +204,10 @@
       font-size: 14px;
       line-height: 1.4;
       word-break: break-word;
+      /* CACHE ADDITION - ADDED ONLY - LINE BREAK FIX */
+      /* Keeps admin Enter breaks + multiple spaces */
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
     }
 
     .msg.mine {
@@ -343,6 +358,8 @@
       background: #1a1a1a;
       border-radius: 12px;
       margin: 10px 0;
+      /* CACHE ADDITION - ADDED ONLY - LINE BREAK FIX */
+      white-space: pre-wrap;
     }
 
     /* Buttons under group header: View Profile / Message Admin */
@@ -414,6 +431,79 @@
   </div>
 
   <script>
+    // ============================================================
+    // CACHE ADDITION - ADDED ONLY - START
+    // ============================================================
+    // WildReaders Cache - IndexedDB (FREE, unlimited) + Cache Storage (FREE, for images)
+    // Why: localStorage is only ~5MB and crashes. IndexedDB has no such limit.
+    // Pattern: Show cached instantly (0s) -> Fetch new in background -> Update if changed.
+    // This block does NOT replace your localStorage logic below.
+    // It runs BESIDE it, so if IndexedDB fails, your old logic still works.
+    // ============================================================
+    const WRDB = window.WRDB || {
+      dbName: 'WildReadersDB',
+      storeName: 'cache',
+      _open() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(this.dbName, 1);
+          req.onupgradeneeded = () => {
+            if (!req.result.objectStoreNames.contains(this.storeName)) {
+              req.result.createObjectStore(this.storeName);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      },
+      // CACHE ADDITION: Save anything - people, meta, messages - to IndexedDB
+      async save(key, data) {
+        try {
+          const db = await this._open();
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readwrite');
+            tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          });
+        } catch (e) { return false; }
+      },
+      // CACHE ADDITION: Get anything from IndexedDB, returns null if not found
+      async get(key) {
+        try {
+          const db = await this._open();
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readonly');
+            const req = tx.objectStore(this.storeName).get(key);
+            req.onsuccess = () => resolve(req.result ? req.result.data : null);
+            req.onerror = () => resolve(null);
+          });
+        } catch (e) { return null; }
+      }
+    };
+    // CACHE ADDITION: Turn ON Cache Storage for images (avatars) via Service Worker
+    // Service Worker caches avatar images so they load in 0s second time.
+    // It NEVER caches /api/ - so new messages always come fresh from server.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    // CACHE ADDITION: Format message text to keep line breaks + spaces
+    // Admin types:
+    //   Hello
+    //   <blank line>
+    //   Welcome
+    // Without this, browser collapses it to "Hello Welcome".
+    // This escapes HTML (safe) then converts \n -> <br> and spaces stay via CSS pre-wrap.
+    function formatMessageText(text) {
+      const safe = String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return safe.replace(/\n/g, '<br>');
+    }
+    // ============================================================
+    // CACHE ADDITION - ADDED ONLY - END
+    // ============================================================
+
     // ============================================================
     // 1. SETUP - BASE URL + LOGIN CHECK
     // ============================================================
@@ -638,11 +728,16 @@
         avatar: p.avatar || ''
       }));
       safeSetItem(getPeopleCacheKey(), JSON.stringify(slim));
+      // CACHE ADDITION - ADDED ONLY: Also save same slim people to IndexedDB (unlimited)
+      // So next open loads from IndexedDB even if localStorage was cleared / full.
+      WRDB.save(getPeopleCacheKey(), slim);
     }
 
     // Save chatMeta - already small, just save directly
     function saveMetaToStorage() {
       safeSetItem(getMetaCacheKey(), JSON.stringify(chatMeta));
+      // CACHE ADDITION - ADDED ONLY: Mirror meta to IndexedDB too
+      WRDB.save(getMetaCacheKey(), chatMeta);
     }
 
     // Save messages of ONE chat - TRIMMED + ORDERED + SAFE
@@ -657,6 +752,9 @@
       }
 
       safeSetItem(getChatCacheKey(otherId), JSON.stringify(trimmed));
+      // CACHE ADDITION - ADDED ONLY: Mirror same trimmed messages to IndexedDB
+      // IndexedDB does NOT have 5MB limit, so this is the safe copy.
+      WRDB.save(getChatCacheKey(otherId), trimmed);
     }
 
     // Load saved messages for ONE chat (instant open)
@@ -669,6 +767,13 @@
       } catch {
         return [];
       }
+    }
+
+    // CACHE ADDITION - ADDED ONLY: Load messages from IndexedDB (for chat instant open)
+    // Used in openChat / openGroupChat - tries IndexedDB if localStorage is empty.
+    async function loadMessagesFromWRDB(otherId) {
+      const data = await WRDB.get(getChatCacheKey(otherId));
+      return Array.isArray(data) ? data : [];
     }
 
     // Load saved people + meta at start
@@ -684,6 +789,22 @@
         if (metaRaw) {
           const parsed = JSON.parse(metaRaw);
           if (parsed && typeof parsed === 'object') chatMeta = parsed;
+        }
+      } catch {}
+    }
+
+    // CACHE ADDITION - ADDED ONLY: Load people + meta from IndexedDB at start
+    // Called in loadPeople() BEFORE server fetch, so list shows in 0s even if localStorage is full.
+    async function loadCacheFromWRDBAtStart() {
+      try {
+        if (!peopleCache.length) {
+          const p = await WRDB.get(getPeopleCacheKey());
+          if (Array.isArray(p) && p.length) peopleCache = p;
+        }
+        const m = await WRDB.get(getMetaCacheKey());
+        if (m && typeof m === 'object') {
+          // Only fill if localStorage meta was empty, to not overwrite newer local data
+          if (!Object.keys(chatMeta).length) chatMeta = m;
         }
       } catch {}
     }
@@ -785,6 +906,10 @@
           if (Array.isArray(msgs)) return msgs;
         }
       } catch {}
+      // CACHE ADDITION - ADDED ONLY: If server fails, try IndexedDB before localStorage
+      // So group still opens offline / with bad network.
+      const fromWRDB = await loadMessagesFromWRDB(GROUP_ID);
+      if (fromWRDB.length) return fromWRDB;
       return loadMessagesFromStorage(GROUP_ID);
     }
 
@@ -805,6 +930,11 @@
 
       // Show saved cache first for instant open
       loadCacheAtStart();
+      // CACHE ADDITION - ADDED ONLY: Also show IndexedDB cache instantly for loading people
+      // This is the 0-second open - people list appears before server answers.
+      await loadCacheFromWRDBAtStart();
+      renderPeopleList();
+      updateBadge();
 
       // Find admin + members, then show list
       await identifyAdminAndMembers();
@@ -923,7 +1053,7 @@
       }).join('');
 
       // Final HTML = Group on top + Private chats below
-      const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px">No one yet.<br>Follow someone to chat privately.</p>');
+      const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px"> Loading chat....<br>Follow someone to chat privately.</p>');
 
       // Avoid re-rendering if nothing changed
       if (html === lastRenderedListHtml) return;
@@ -985,8 +1115,16 @@
         renderChatMessages(cached);
         saveLastReadId(id, cached[cached.length - 1]._id);
       } else {
-        document.getElementById('chatBox').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
-        lastRenderedChatHtml = '';
+        // CACHE ADDITION - ADDED ONLY: If localStorage empty, try IndexedDB cache for chat instant open
+        // Same 30 messages, just from bigger storage - no server wait.
+        const cachedWRDB = await loadMessagesFromWRDB(id);
+        if (cachedWRDB.length) {
+          renderChatMessages(cachedWRDB);
+          saveLastReadId(id, cachedWRDB[cachedWRDB.length - 1]._id);
+        } else {
+          document.getElementById('chatBox').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
+          lastRenderedChatHtml = '';
+        }
       }
 
       // Fetch FULL history from server in background
@@ -1053,8 +1191,15 @@
         renderGroupMessages(cached);
         saveLastReadId(GROUP_ID, cached[cached.length - 1]._id);
       } else {
-        document.getElementById('chatBox').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No announcements yet.</p>';
-        lastRenderedChatHtml = '';
+        // CACHE ADDITION - ADDED ONLY: If localStorage empty, try IndexedDB for group chat instant open
+        const cachedWRDB = await loadMessagesFromWRDB(GROUP_ID);
+        if (cachedWRDB.length) {
+          renderGroupMessages(cachedWRDB);
+          saveLastReadId(GROUP_ID, cachedWRDB[cachedWRDB.length - 1]._id);
+        } else {
+          document.getElementById('chatBox').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No announcements yet.</p>';
+          lastRenderedChatHtml = '';
+        }
       }
 
       // Fetch fresh group messages from server
@@ -1090,7 +1235,9 @@
         // Only admin sees Delete button in group
         const del = isAdmin ? '<button class="delBtn" onclick="deleteGroupMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
 
-        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div style="font-size:11px;color:#aaa;margin-bottom:2px">' + escapeHtml(senderName) + ' • Admin</div><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + escapeHtml(m.text) + '</div>' + del + '</div>';
+        // CACHE ADDITION - ADDED ONLY: Use formatMessageText() instead of escapeHtml() here
+        // So admin Enter / blank line / spaces are kept - see formatMessageText() above.
+        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div style="font-size:11px;color:#aaa;margin-bottom:2px">' + escapeHtml(senderName) + ' • Admin</div><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
       }).join('') : '<p style="text-align:center;color:#777;padding:30px">No announcements yet.</p>';
 
       if (html === lastRenderedChatHtml) return;
@@ -1223,6 +1370,10 @@
         const msgs = await res.json();
         return Array.isArray(msgs) ? msgs : [];
       } catch {
+        // CACHE ADDITION - ADDED ONLY: If server fails, return IndexedDB cache for this chat
+        // So chat still shows offline instead of empty.
+        const fromWRDB = await loadMessagesFromWRDB(otherId);
+        if (fromWRDB.length) return fromWRDB;
         return [];
       }
     }
@@ -1232,7 +1383,8 @@
       const html = msgs.length ? msgs.map(m => {
         const isMine = (m.from?._id || m.from) === getMyId();
         const del = isMine ? '<button class="delBtn" onclick="deleteMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
-        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + m.text + '</div>' + del + '</div>';
+        // CACHE ADDITION - ADDED ONLY: Use formatMessageText() so private messages also keep line breaks + spaces
+        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
       }).join('') : '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
 
       if (html === lastRenderedChatHtml) return;

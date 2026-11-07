@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Diary</title>
+  <!-- ============================================================ -->
+  <!-- CACHE ADDITION - ADDED ONLY - DO NOT REMOVE                  -->
+  <!-- Loads shared cache helper. If file is missing, inline WRDB  -->
+  <!-- below still works, so app never breaks.                     -->
+  <!-- ============================================================ -->
+  <script src="wildreaders-db.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; background: #0a0a12; color: #fff; font-family: Arial; padding-bottom: 90px; }
@@ -70,6 +76,77 @@
 
   <script>
     // ============================================================
+    // CACHE ADDITION - ADDED ONLY - START
+    // ============================================================
+    // WildReaders Cache - IndexedDB (FREE, unlimited) + Cache Storage (FREE, for images)
+    // Why: Diary has many covers. localStorage is only ~5MB and would crash. IndexedDB has no such limit.
+    // Pattern: Show cached diary instantly (0s) -> Fetch new in background -> Update if changed.
+    // This block does NOT replace your logic below. It runs BESIDE it.
+    // ============================================================
+    const WRDB = window.WRDB || {
+      dbName: 'WildReadersDB',
+      storeName: 'cache',
+      _open() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(this.dbName, 1);
+          req.onupgradeneeded = () => {
+            if (!req.result.objectStoreNames.contains(this.storeName)) {
+              req.result.createObjectStore(this.storeName);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      },
+      // CACHE ADDITION: Save anything - saved novels - to IndexedDB
+      async save(key, data) {
+        try {
+          const db = await this._open();
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readwrite');
+            tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          });
+        } catch (e) { return false; }
+      },
+      // CACHE ADDITION: Get anything from IndexedDB, returns null if not found
+      async get(key) {
+        try {
+          const db = await this._open();
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readonly');
+            const req = tx.objectStore(this.storeName).get(key);
+            req.onsuccess = () => resolve(req.result ? req.result.data : null);
+            req.onerror = () => resolve(null);
+          });
+        } catch (e) { return null; }
+      }
+    };
+    // CACHE ADDITION: Turn ON Cache Storage for images (covers) via Service Worker
+    // Service Worker caches cover images so they load in 0s second time.
+    // It NEVER caches /api/ - so new saved novels always come fresh from server.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    // CACHE ADDITION: Helper - paint diary grid from posts using your SAME HTML as load() below
+    // This is only for instant cached render. Your original load() still does the fresh fetch below.
+    function renderDiaryFromCache(posts) {
+      if (!Array.isArray(posts)) return;
+      if (!posts.length) {
+        document.getElementById('grid').innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No saved novels yet.<br>Tap 🔖 on any novel to save it here.</p>';
+        return;
+      }
+      document.getElementById('grid').innerHTML = posts.map(p => {
+        let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
+        return '<div class="card" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">@' + (p.user?.username || 'author') + '</div></div></div>';
+      }).join('');
+    }
+    // ============================================================
+    // CACHE ADDITION - ADDED ONLY - END
+    // ============================================================
+
+    // ============================================================
     // ORIGINAL CODE - Do not touch, everything below is your old code
     // ============================================================
     const BASE = "https://raymonddomain.dev";
@@ -78,11 +155,24 @@
 
     // Load my saved novels from server
     async function load() {
+      // CACHE ADDITION - ADDED ONLY: Show cached diary instantly (0s) BEFORE server fetch
+      // User sees old saved novels immediately while we fetch fresh data below.
+      // If no cache, this does nothing and normal fetch below runs.
+      try {
+        const cachedPosts = await WRDB.get('diary_saved');
+        if (cachedPosts && cachedPosts.length) {
+          renderDiaryFromCache(cachedPosts);
+        }
+      } catch (e) {}
+
       const res = await fetch(BASE + '/api/posts/saved/mine', { headers: { authorization: token } });
       const posts = await res.json();
 
       if (!posts.length) {
         document.getElementById('grid').innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No saved novels yet.<br>Tap 🔖 on any novel to save it here.</p>';
+        // CACHE ADDITION - ADDED ONLY: Save empty list too, so unsaved novels disappear from cache next open
+        // Without this, old cached novels would keep showing even after you unsave them.
+        WRDB.save('diary_saved', []);
         return;
       }
 
@@ -90,6 +180,11 @@
         let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
         return '<div class="card" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">@' + (p.user?.username || 'author') + '</div></div></div>';
       }).join('');
+
+      // CACHE ADDITION - ADDED ONLY: Save fresh saved novels to IndexedDB for next instant open
+      // This runs AFTER your original fetch, so it never changes what user sees now.
+      // Next time user opens diary, it will show in 0s from this cache.
+      WRDB.save('diary_saved', posts);
     }
 
     load();

@@ -1,5 +1,12 @@
+
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed</title>
+<!-- ============================================================ -->
+<!-- CACHE ADDITION - ADDED ONLY - DO NOT REMOVE                  -->
+<!-- Loads shared cache helper. If file is missing, inline WRDB  -->
+<!-- below still works, so app never breaks.                     -->
+<!-- ============================================================ -->
+<script src="wildreaders-db.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}
@@ -144,6 +151,74 @@ button{
   <a href="profile.html">👤</a>
 </div>
 <script>
+// ============================================================
+// CACHE ADDITION - ADDED ONLY - START
+// ============================================================
+// WildReaders Cache - IndexedDB (FREE, unlimited) + Cache Storage (FREE, for images)
+// Why: Feed has many covers. localStorage is only ~5MB and would crash. IndexedDB has no such limit.
+// Pattern: Show cached feed instantly (0s) -> Fetch new in background -> Update if changed.
+// This block does NOT replace your logic below. It runs BESIDE it.
+// ============================================================
+const WRDB = window.WRDB || {
+  dbName: 'WildReadersDB',
+  storeName: 'cache',
+  _open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.dbName, 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains(this.storeName)) {
+          req.result.createObjectStore(this.storeName);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  },
+  // CACHE ADDITION: Save anything - feed posts - to IndexedDB
+  async save(key, data) {
+    try {
+      const db = await this._open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    } catch (e) { return false; }
+  },
+  // CACHE ADDITION: Get anything from IndexedDB, returns null if not found
+  async get(key) {
+    try {
+      const db = await this._open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.storeName, 'readonly');
+        const req = tx.objectStore(this.storeName).get(key);
+        req.onsuccess = () => resolve(req.result ? req.result.data : null);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) { return null; }
+  }
+};
+// CACHE ADDITION: Turn ON Cache Storage for images (covers) via Service Worker
+// Service Worker caches cover images so they load in 0s second time.
+// It NEVER caches /api/ - so new novels always come fresh from server.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+// CACHE ADDITION: Helper - paint feed from posts using your SAME card() + getPinned() below
+// This is only for instant cached render. Your original load() still does the fresh fetch below.
+function renderFeedFromCache(posts) {
+  if (!Array.isArray(posts) || !posts.length) return;
+  let pinned = getPinned(posts);
+  let pinnedIds = pinned.map(p => p._id);
+  let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
+  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+  document.getElementById('pinSec').style.display='block';
+  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+}
+// ============================================================
+// CACHE ADDITION - ADDED ONLY - END
+// ============================================================
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
@@ -191,6 +266,16 @@ function card(p, isPin) {
 }
 
 async function load(){
+  // CACHE ADDITION - ADDED ONLY: Show cached feed instantly (0s) BEFORE server fetch
+  // User sees old feed immediately while we fetch fresh data below.
+  // If no cache, this does nothing and normal fetch below runs.
+  try {
+    const cachedPosts = await WRDB.get('feed_posts');
+    if (cachedPosts && cachedPosts.length) {
+      renderFeedFromCache(cachedPosts);
+    }
+  } catch (e) {}
+
   const res = await fetch(BASE+'/api/posts/feed?page=1&limit=20',{
     headers:{authorization:token}
 });
@@ -210,6 +295,11 @@ async function load(){
   document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
   document.getElementById('pinSec').style.display='block';
   document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+
+  // CACHE ADDITION - ADDED ONLY: Save fresh feed to IndexedDB for next instant open
+  // This runs AFTER your original fetch, so it never changes what user sees now.
+  // Next time user opens feed, it will show in 0s from this cache.
+  WRDB.save('feed_posts', posts);
 }
 
 load();
