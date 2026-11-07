@@ -98,9 +98,9 @@ function authh(req, res, next){
     }; 
     next(); 
   }
-  catch(e){ return res.status(401).json({msg:'Invalid token'}); }
+  catch(e){ console.log(e) }
 }
-
+//return res.status(401).json({msg:'Invalid token'});
 // ===== UPLOADD - MEMORY ONLY, NO FOLDER =====
 // Renamed to uploadd with 2 d
 const uploadd = multer({
@@ -255,6 +255,7 @@ app.delete('/api/users/avatar', authh, async (req,res)=>{
   res.json({ ok:true });
 });
 
+/*
 // FOLLOW / UNFOLLOW
 app.post('/api/users/:id/follow', authh, async (req,res)=>{
   const targetId = req.params.id; const myId = req.user.id;
@@ -272,6 +273,192 @@ app.post('/api/users/:id/follow', authh, async (req,res)=>{
   await target.save(); await me.save();
   res.json({ ok:true });
 });
+*/
+
+
+// ============================================================
+// BACKEND - TIKTOK WAY - FOLLOW / UNFOLLOW / DELETE
+// ============================================================
+// RULES:
+// 1. Server is boss - frontend never trusts cache for counts.
+// 2. Separate /follow and /unfollow, never toggle.
+// 3. $addToSet / $pull = idempotent, no duplicates, safe to retry.
+// 4. Return real DB state after save, never fake true.
+// ============================================================
+
+// ============================================================
+// HELPER - Get my ID from token
+// WHY: Frontend sends authorization: token (no Bearer).
+// Old auth expected Bearer, so myId was undefined,
+// backend returned true but saved nothing. This fixes it.
+// Handles BOTH "token" and "Bearer token".
+// ============================================================
+function getAuthId(req) {
+  try {
+    // Get header, default empty
+    const h = req.headers.authorization || '';
+
+    // Remove "Bearer " if present, trim spaces
+    const raw = h.replace('Bearer ', '').trim();
+
+    // Token is xxx.YYY.zzz, middle part holds id
+    // Decode base64 middle part to JSON, get id
+    return JSON.parse(Buffer.from(raw.split('.')[1], 'base64').toString()).id;
+  } catch (e) {
+    // If token bad, return null
+    return null;
+  }
+}
+
+// ============================================================
+// FOLLOW - POST /api/users/:id/follow
+// WHAT IT DOES:
+// 1. Adds me to target's followers
+// 2. Adds target to my following
+// 3. Both in same request, so both sides always match
+// 4. $addToSet = if already following, does nothing, no duplicate
+// ============================================================
+app.post('/api/users/:id/follow', async (req, res) => {
+  try {
+    // Get target ID from URL
+    const targetId = req.params.id;
+
+    // Get my ID from token
+    const myId = getAuthId(req);
+
+    // If no myId, auth failed - do NOT return fake true
+    if (!myId) {
+      return res.status(401).json({ ok: false, error: 'Auth failed - no myId' });
+    }
+
+    // Cannot follow yourself
+    if (targetId === myId) {
+      return res.status(400).json({ ok: false, error: 'Cannot follow yourself' });
+    }
+
+    // Check both users exist
+    const target = await User.findById(targetId);
+    const me = await User.findById(myId);
+    if (!target || !me) {
+      return res.status(404).json({ ok: false, error: 'User not found' });
+    }
+
+    // TIKTOK WAY: Update BOTH sides
+    // Side 1: Target gets new follower = me
+    await User.findByIdAndUpdate(targetId, { $addToSet: { followers: myId } });
+
+    // Side 2: I get new following = target
+    await User.findByIdAndUpdate(myId, { $addToSet: { following: targetId } });
+
+    // VERIFY: Re-read from DB, return real state, not fake true
+    const targetAfter = await User.findById(targetId);
+    const meAfter = await User.findById(myId);
+
+    // Return success + real lists
+    res.json({
+      ok: true,
+      following: true,
+      targetFollowers: targetAfter.followers,
+      myFollowing: meAfter.following
+    });
+
+  } catch (e) {
+    // If anything fails, return error, NOT true
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// UNFOLLOW - POST /api/users/:id/unfollow
+// WHAT IT DOES:
+// 1. Removes me from target's followers
+// 2. Removes target from my following
+// 3. $pull = if already unfollowed, does nothing, safe to retry
+// ============================================================
+app.post('/api/users/:id/unfollow', async (req, res) => {
+  try {
+    // Get target ID from URL
+    const targetId = req.params.id;
+
+    // Get my ID from token
+    const myId = getAuthId(req);
+
+    // If no myId, auth failed
+    if (!myId) {
+      return res.status(401).json({ ok: false, error: 'Auth failed' });
+    }
+
+    // TIKTOK WAY: Remove from BOTH sides
+    // Side 1: Remove me from target's followers
+    await User.findByIdAndUpdate(targetId, { $pull: { followers: myId } });
+
+    // Side 2: Remove target from my following
+    await User.findByIdAndUpdate(myId, { $pull: { following: targetId } });
+
+    // VERIFY: Re-read from DB
+    const targetAfter = await User.findById(targetId);
+    const meAfter = await User.findById(myId);
+
+    // Return success + real lists
+    res.json({
+      ok: true,
+      following: false,
+      targetFollowers: targetAfter ? targetAfter.followers : [],
+      myFollowing: meAfter ? meAfter.following : []
+    });
+
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ============================================================
+// DELETE POST - DELETE /api/posts/:id
+// WHAT IT DOES:
+// 1. Checks post exists
+// 2. Checks you are owner - only owner can delete
+// 3. Deletes from DB
+// 4. Returns real deleted flag
+// ============================================================
+/*app.delete('/api/posts/:id', async (req, res) => {
+  try {
+    // Get my ID from token
+    const myId = getAuthId(req);
+
+    // Find post
+    const post = await Post.findById(req.params.id);
+
+    // If post not found, return error
+    if (!post) {
+      return res.status(404).json({ ok: false, error: 'Post not found' });
+    }
+
+    // Check owner - post.user can be ObjectId or populated object
+    const ownerId = String(post.user?._id || post.user);
+    if (ownerId !== String(myId)) {
+      return res.status(403).json({ ok: false, error: 'Not your post' });
+    }
+
+    // Delete from DB
+    await Post.findByIdAndDelete(req.params.id);
+
+    // Return success + deleted ID
+    res.json({ ok: true, deleted: true, postId: req.params.id });
+
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+}); */
+
+// ============================================================
+// USER SCHEMA - MUST HAVE THESE FIELDS
+// WHY: If schema has no followers / following,
+// Mongoose silently drops them, backend returns true
+// but nothing is saved. This is the hidden bug.
+// ============================================================
+// Paste this inside your User schema:
+ // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+ // following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 
 // =================================================
 // ===== NOVELS - ALL IN DATABASE =====
@@ -332,7 +519,7 @@ app.delete('/api/posts/:id', authh, async (req, res) => {
   if(post.user.toString() !== req.user.id) return res.status(403).json({msg:'You can only delete your own post'});
   await post.deleteOne();
   res.json({msg:'Deleted'});
-});
+}); 
 
 // MY SAVED - MUST be before /:id
 app.get('/api/posts/saved/mine', authh, async (req,res)=>{
