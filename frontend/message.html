@@ -95,9 +95,48 @@
       padding: 14px 0;
     }
     .nav a { color: #fff; text-decoration: none; font-size: 22px; }
-    .msgWrap { position: relative; display: flex; flex-direction: column; }
-    .msgWrap.mine { align-items: flex-end; }
-    .msgWrap.theirs { align-items: flex-start; }
+    /* FIXED - WhatsApp style: bubble hugs text, not full width */
+.msgWrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.msgWrap.mine {
+  align-items: flex-end;
+}
+.msgWrap.theirs {
+  align-items: flex-start;
+}
+
+/* FIXED - This is the main fix */
+.msg {
+  width: fit-content; /* <-- bubble only as wide as text */
+  max-width: 75%;
+  padding: 11px 15px;
+  border-radius: 18px;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word; /* long word won't stretch bubble */
+}
+.msgWrap.mine .msg {
+  align-self: flex-end; /* stay right */
+  background: linear-gradient(90deg, #7c3aed, #ec4899);
+  border-bottom-right-radius: 4px; /* WhatsApp sharp corner */
+}
+.msgWrap.theirs .msg {
+  align-self: flex-start; /* stay left */
+  background: #26262f;
+  border-bottom-left-radius: 4px;
+}
+
+/* Delete button should also stay under bubble, not full width */
+.msgWrap.mine .delBtn {
+  align-self: flex-end;
+}
+.msgWrap.theirs .delBtn {
+  align-self: flex-start;
+}
     .delBtn {
       background: rgba(0, 0, 0, .25);
       color: #fff;
@@ -109,7 +148,7 @@
       margin-top: 3px;
       opacity: .7;
     }
-    
+
     .chatHeaderInfo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
     .chatHeaderInfo .avatar { width: 36px; height: 36px; font-size: 14px; }
     .msgBadge {
