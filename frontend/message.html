@@ -95,11 +95,13 @@
       padding: 14px 0;
     }
     .nav a { color: #fff; text-decoration: none; font-size: 22px; }
-    /* FIXED - WhatsApp style: bubble hugs text, not full width */
-.msgWrap {
+   .msgWrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
+  background: transparent !important; /* FIX: wrapper has NO color */
+  margin: 2px 0; /* FIX: space so Yoo and Man stay separate */
 }
 .msgWrap.mine {
   align-items: flex-end;
@@ -108,33 +110,25 @@
   align-items: flex-start;
 }
 
-/* FIXED - This is the main fix */
+/* FIX: Only the bubble gets color, NOT the wrapper */
+/* Your old .mine / .theirs was painting the wrapper full-width */
 .msg {
-  width: fit-content; /* <-- bubble only as wide as text */
+  width: fit-content;
   max-width: 75%;
-  padding: 11px 15px;
-  border-radius: 18px;
-  margin: 8px 0;
+  padding: 10px 14px;
+  border-radius: 16px;
   font-size: 14px;
   line-height: 1.4;
-  word-break: break-word; /* long word won't stretch bubble */
+  word-break: break-word;
 }
-.msgWrap.mine .msg {
-  align-self: flex-end; /* stay right */
+.msg.mine {
   background: linear-gradient(90deg, #7c3aed, #ec4899);
-  border-bottom-right-radius: 4px; /* WhatsApp sharp corner */
-}
-.msgWrap.theirs .msg {
-  align-self: flex-start; /* stay left */
-  background: #26262f;
-  border-bottom-left-radius: 4px;
-}
-
-/* Delete button should also stay under bubble, not full width */
-.msgWrap.mine .delBtn {
+  border-bottom-right-radius: 4px;
   align-self: flex-end;
 }
-.msgWrap.theirs .delBtn {
+.msg.theirs {
+  background: #26262f;
+  border-bottom-left-radius: 4px;
   align-self: flex-start;
 }
     .delBtn {
