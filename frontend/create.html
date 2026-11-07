@@ -1,32 +1,84 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Write Novel</title>
-<style>*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#0f0c29,#1a1a2e);color:#fff;font-family:Arial;padding-bottom:90px}.box{max-width:600px;margin:0 auto;padding:18px}.top{font-size:22px;font-weight:800;margin-bottom:14px}.cover{width:100%;height:240px;background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.25);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden}.cover img{width:100%;height:100%;object-fit:cover}.cover b{font-size:34px}.cover p{color:#bbb;font-size:13px}input,textarea{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#fff;padding:15px;margin-top:12px;outline:none;font-size:15px}
+<style>
+*{box-sizing:border-box}
+
+body{margin:0;background:linear-gradient(180deg,#0f0c29,#1a1a2e);color:#fff;font-family:Arial;padding-bottom:90px}
+
+.box{max-width:600px;margin:0 auto;padding:18px}
+
+.top{font-size:22px;font-weight:800;margin-bottom:14px}
+
+.cover{width:100%;height:240px;background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.25);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden}
+
+.cover img{width:100%;height:100%;object-fit:cover}
+
+.cover b{font-size:34px}
+
+.cover p{color:#bbb;font-size:13px}
+
+input,textarea{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#fff;padding:15px;margin-top:12px;outline:none;font-size:15px}
+
 /* FIXED - box now grows with your story, no more feeling full */
 textarea{min-height:500px;height:auto;line-height:1.7;resize:vertical;overflow-y:auto;field-sizing:content}
-.btn{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:800;font-size:16px;margin-top:16px;cursor:pointer;box-shadow:0 10px 25px rgba(124,58,237,.4)}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,20,.95);backdrop-filter:blur(10px);border-top:1px solid #222;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.2)}</style>
-</head><body>
+
+.btn{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;font-weight:800;font-size:16px;margin-top:16px;cursor:pointer;box-shadow:0 10px 25px rgba(124,58,237,.4)}
+
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,20,.95);backdrop-filter:blur(10px);border-top:1px solid #222;display:flex;justify-content:space-around;padding:14px 0}
+
+.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.2)}
+
+</style>
+</head>
+<body>
 <div class="box">
   <div class="top">✍️ Write Novel</div>
-  <div class="cover" onclick="document.getElementById('uploaddInput').click()" id="coverBox"><b>🖼️</b><p>Tap to add beautiful cover</p><p style="font-size:11px;color:#888">Saved in database</p></div>
+
+  <div class="cover" onclick="document.getElementById('uploaddInput').click()" id="coverBox">
+    <b>🖼️</b>
+    <p>Tap to add beautiful cover</p>
+    <p style="font-size:11px;color:#888">Saved in database</p>
+  </div>
+
   <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewUploadd(this)">
-  <input id="titleInput" placeholder="Novel Title - e.g. Silently Falling ✨" maxlength="80">
+  <input id="titleInput" placeholder="Novel Title - e.g. Silently Winning ✨" maxlength="80">
   <!-- NO maxlength = unlimited words. Browser can accept 100,000+ words -->
-  <textarea id="contentInput" placeholder="Start writing your story here...&#10;&#10;Once upon a time..."></textarea>
+  <textarea id="contentInput" placeholder="Start writing your story here...&#10;&#10;Once upon a time...">
+  </textarea>
   <p id="charCount" style="font-size:12px;color:#aaa;margin:6px 0 0;text-align:right">0 words • Minimum 100 • No maximum</p>
+
   <button class="btn" id="publishBtn" onclick="publishNovel()">Publish Novel 📚</button>
 </div>
-<div class="nav"><a href="feed.html">🏠</a><a href="search.html">🔍</a><a href="create.html" class="active">✍️</a><a href="message.html">💬</a><a href="diary.html">📖</a><a href="profile.html">👤</a></div>
+
+<div class="nav">
+  <a href="feed.html">🏠</a>
+  <a href="search.html">🔍</a>
+  <a href="create.html" class="active">✍️</a>
+  <a href="message.html">💬</a>
+  <a href="diary.html">📖</a>
+  <a href="profile.html">👤</a>
+</div>
+
 <script>
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
-let uploaddFile=null; // renamed to uploadd with 2 d
+let uploaddFile = null; 
+
 function previewUploadd(input){
-  if(input.files[0]){ uploaddFile=input.files[0]; document.getElementById('coverBox').innerHTML='<img src="'+URL.createObjectURL(uploaddFile)+'">'; }
+  if(input.files[0]){
+     uploaddFile = input.files[0];
+      document.getElementById('coverBox').innerHTML = '<img src="'+URL.createObjectURL(uploaddFile)+'">'; 
+ }
 }
-function countWords(text){ return text.trim().split(/\s+/).filter(Boolean).length; }
+
+function countWords(text){ 
+  return text.trim().split(/\s+/).filter(Boolean).length; 
+}
+
 // FIXED - box grows as you type, so 2000 words will never look stuck
 const ta = document.getElementById('contentInput');
+
 function autoGrow(){
   ta.style.height = 'auto';
   ta.style.height = (ta.scrollHeight + 20) + 'px';
@@ -35,22 +87,45 @@ function autoGrow(){
   el.innerText = len + ' words • Minimum 100 • No maximum';
   el.style.color = len >= 100 ? '#4ade80' : '#aaa';
 }
+
 ta.addEventListener('input', autoGrow);
+
 async function publishNovel(){
-  const title=document.getElementById('titleInput').value.trim();
-  const content=document.getElementById('contentInput').value.trim();
+  const title = document.getElementById('titleInput').value.trim();
+  const content = document.getElementById('contentInput').value.trim();
   if(!title) return alert('Add title');
   if(!content) return alert('Write your story');
   // Minimum 100 WORDS, no maximum - 100, 2000, 50000, any amount
   const wordCount = countWords(content);
+
   if(wordCount < 100) return alert('Story too short. Write at least 100 words. You have ' + wordCount + ' / 100 words');
-  const btn=document.getElementById('publishBtn'); btn.innerText='Publishing... ✨'; btn.disabled=true;
-  const fd=new FormData(); fd.append('title',title); fd.append('content',content);
+
+  const btn = document.getElementById('publishBtn');
+  btn.innerText = 'Publishing... ✨';
+  btn.disabled = true;
+  const fd = new FormData();
+  fd.append('title',title); 
+  fd.append('content',content);
   if(uploaddFile) fd.append('file',uploaddFile);
+
   try{
-    const res=await fetch(BASE+'/api/posts',{method:'POST',headers:{authorization:token},body:fd});
+    const res = await fetch(BASE+'/api/posts',{
+      method:'POST',
+      headers:{authorization:token},
+      body:fd
+    });
+
     if(!res.ok) throw new Error('Publish failed');
-    alert('Published! 🎉'); location.href='profile.html';
-  }catch(e){ alert(e.message); btn.innerText='Publish Novel 📚'; btn.disabled=false; }
+
+    alert('Published! 🎉');
+    location.href='profile.html';
+
+  }catch(e){ 
+    alert(e.message);
+    btn.innerText = 'Publish Novel 📚';
+    btn.disabled = false; 
+  }
 }
-</script></body></html>
+</script>
+</body>
+</html>
