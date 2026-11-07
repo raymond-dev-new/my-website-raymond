@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Messages</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}.top{max-width:600px;margin:0 auto;padding:16px;display:flex;justify-content:space-between;align-items:center}.list{max-width:600px;margin:0 auto}.row{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid #1a1a1a;cursor:pointer;align-items:center}.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(45deg,#7c3aed,#ec4899);display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;flex-shrink:0}.avatar img{width:100%;height:100%;object-fit:cover}.chat{max-width:600px;margin:0 auto;padding:0 16px;display:none}.msg{max-width:75%;padding:11px 15px;border-radius:18px;margin:8px 0;font-size:14px;line-height:1.4}.mine{background:linear-gradient(90deg,#7c3aed,#ec4899);margin-left:auto}.theirs{background:#26262f}.inputRow{position:fixed;bottom:72px;left:0;right:0;max-width:600px;margin:0 auto;display:none;gap:8px;padding:10px;background:#0a0a12}.inputRow input{flex:1;background:#1e1e2a;border:1px solid #333;border-radius:24px;color:#fff;padding:13px;outline:none}.inputRow button{background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;border:none;border-radius:24px;padding:0 20px;font-weight:700}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}</style>
+</head><body>
+<div class="top"><b id="topTitle">💬 Messages</b><span onclick="showList()" style="cursor:pointer;display:none" id="backBtn">← Back</span></div>
+<div class="list" id="peopleList"><p style="text-align:center;color:#777;padding:30px">Loading people...</p></div>
+<div class="chat" id="chatBox"></div>
+<div class="inputRow" id="inputRow"><input id="msgInput" placeholder="Type private message..." onkeydown="if(event.key==='Enter') sendMsg()"><button onclick="sendMsg()">Send</button></div>
+<div class="nav"><a href="feed.html">🏠</a><a href="search.html">🔍</a><a href="create.html">✍️</a><a href="message.html">💬</a><a href="diary.html">📖</a><a href="profile.html">👤</a></div>
+<script>
+const BASE="https://raymonddomain.dev";
+const token=localStorage.getItem('token');
+if(!token) location.href="login.html";
+function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
+let chatWith=null;
+async function loadPeople(){
+  const meRes=await fetch(BASE+'/api/users/'+getMyId(),{headers:{authorization:token}});
+  const meData=await meRes.json();
+  const me=meData.user||meData;
+  let people=[...(me.followers||[]), ...(me.following||[])];
+  let seen={}; people=people.filter(p=>{ let id=p._id||p; if(seen[id]) return false; seen[id]=true; return id!==getMyId(); });
+  if(!people.length){ document.getElementById('peopleList').innerHTML='<p style="text-align:center;color:#777;padding:30px">No one yet.<br>Follow someone to chat privately.</p>'; return; }
+  document.getElementById('peopleList').innerHTML=people.map(p=>{
+    const id=p._id||p; const name=p.username||id;
+    const av=p.avatar?'<img src="'+p.avatar+'">':name[0].toUpperCase();
+    return '<div class="row" onclick="openChat(\''+id+'\',\''+name+'\')"><div class="avatar">'+av+'</div><div><b>'+name+'</b><div style="font-size:12px;color:#888">'+('Tap to chat privately')+'</div></div></div>';
+  }).join('');
+  const to=new URLSearchParams(location.search).get('to');
+  if(to){ const found=people.find(p=> (p._id||p)===to); openChat(to, found?.username||'Chat'); }
+}
+async function openChat(id, name){
+  chatWith=id;
+  document.getElementById('peopleList').style.display='none';
+  document.getElementById('chatBox').style.display='block';
+  document.getElementById('inputRow').style.display='flex';
+  document.getElementById('topTitle').innerText='💬 '+name;
+  document.getElementById('backBtn').style.display='block';
+  loadMessages();
+}
+async function loadMessages(){
+  const res=await fetch(BASE+'/api/messages/'+chatWith,{headers:{authorization:token}});
+  const msgs=await res.json();
+  document.getElementById('chatBox').innerHTML=msgs.length?msgs.map(m=>{
+    const isMine=(m.from?._id||m.from)===getMyId();
+    return '<div class="msg '+(isMine?'mine':'theirs')+'">'+m.text+'</div>';
+  }).join(''):'<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
+  window.scrollTo(0, document.body.scrollHeight);
+}
+async function sendMsg(){
+  const input=document.getElementById('msgInput');
+  const text=input.value.trim(); if(!text) return;
+  input.value='';
+  await fetch(BASE+'/api/messages/'+chatWith,{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text})});
+  loadMessages();
+}
+function showList(){
+  document.getElementById('peopleList').style.display='block';
+  document.getElementById('chatBox').style.display='none';
+  document.getElementById('inputRow').style.display='none';
+  document.getElementById('topTitle').innerText='💬 Messages';
+  document.getElementById('backBtn').style.display='none';
+  chatWith=null;
+}
+loadPeople();
+setInterval(()=>{ if(chatWith) loadMessages(); }, 3000);
+</script></body></html>

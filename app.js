@@ -407,6 +407,41 @@ app.post('/api/messages/:otherId', authh, async (req,res)=>{
   await msg.save(); res.json(msg);
 });
 
+// ============================================
+// DELETE ONE MESSAGE - From Database
+// DELETE /api/messages/:id
+// Only the sender can delete their own message
+// ============================================
+app.delete('/api/messages/:id', authh, async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const myId = req.user.id; // your auth middleware sets req.user
+
+    // 1. Find the message in database
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // 2. Only the person who sent it can delete it
+    // message.from is the sender id
+    if (message.from.toString() !== myId.toString()) {
+      return res.status(403).json({ error: 'You can only delete your own message' });
+    }
+
+    // 3. Delete that ONE message from database
+    await Message.findByIdAndDelete(messageId);
+
+    // 4. Success - frontend will already have removed it from screen
+    res.json({ success: true, message: 'Message deleted' });
+
+  } catch (err) {
+    console.log('Delete message error:', err);
+    res.status(500).json({ error: 'Could not delete message' });
+  }
+});
+
  // ===== FORGOT PASSWORD + RESET PASSWORD =====
 // For: forgot.html / recover password page
 

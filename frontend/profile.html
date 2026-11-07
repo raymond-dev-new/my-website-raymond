@@ -112,8 +112,51 @@ async function load(){
   }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
 }
 async function toggleFollow(){
-  await fetch(BASE+'/api/users/'+profileId+'/follow',{method:'POST',headers:{authorization:token}});
-  load();
+  const fb=document.getElementById('followBtn');
+  const fCountEl=document.getElementById('fCount');
+  const wasFollowing = fb.innerText === 'Following';
+  const myId = getMyId();
+
+  // 1. UPDATE UI IMMEDIATELY - before fetch
+  fb.disabled = true;
+  if(wasFollowing){
+    fb.innerText='Follow';
+    fb.className='btn btn-follow';
+    fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText)||0) - 1);
+    // remove me from local followers list so showList is correct
+    if(profileUser && profileUser.followers) profileUser.followers = profileUser.followers.filter(f => (f._id||f) !== myId);
+  } else {
+    fb.innerText='Following';
+    fb.className='btn btn-following';
+    fCountEl.innerText = (parseInt(fCountEl.innerText)||0) + 1;
+    // add me to local followers list
+    if(profileUser){ if(!profileUser.followers) profileUser.followers=[]; profileUser.followers.push(myId); }
+  }
+
+  // 2. NOW do the real fetch in background
+  try{
+    const res = await fetch(BASE+'/api/users/'+profileId+'/follow',{method:'POST',headers:{authorization:token}});
+    if(!res.ok) throw new Error('failed');
+    // 3. Sync with server silently - no reload flash, just update counts if needed
+    // We don't call full load() here to avoid flicker. Optional: re-fetch user only to confirm count
+    // If you want 100% server truth, uncomment next 2 lines:
+    // const r=await fetch(BASE+'/api/users/'+profileId,{headers:{authorization:token}});
+    // const d=await r.json(); const u=d.user||d; document.getElementById('fCount').innerText=(u.followers||[]).length; profileUser=u;
+  }catch(e){
+    // 4. If it failed, revert UI back
+    if(wasFollowing){
+      fb.innerText='Following';
+      fb.className='btn btn-following';
+      fCountEl.innerText = (parseInt(fCountEl.innerText)||0) + 1;
+      if(profileUser){ if(!profileUser.followers) profileUser.followers=[]; profileUser.followers.push(myId); }
+    } else {
+      fb.innerText='Follow';
+      fb.className='btn btn-follow';
+      fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText)||0) - 1);
+      if(profileUser && profileUser.followers) profileUser.followers = profileUser.followers.filter(f => (f._id||f) !== myId);
+    }
+  }
+  fb.disabled = false;
 }
 function showList(type){
   document.getElementById('listTitle').innerText= type==='followers'?'Followers':'Following';
