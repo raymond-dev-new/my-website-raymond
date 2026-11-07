@@ -442,6 +442,79 @@ app.delete('/api/messages/:id', authh, async (req, res) => {
   }
 });
 
+
+// ============================================================
+// GROUP ONLY - ADDED BELOW - DOES NOT TOUCH Message ABOVE
+// ============================================================
+const ADMIN_EMAIL = "letswintrade@gmail.com";
+
+// Group uses SAME shape as your Message, but no 'to' - because it's for ALL users
+const groupMessageSchema = new mongoose.Schema({
+  from: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  // no 'to' - every user on website is in group
+  text: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const GroupMessage = mongoose.models.GroupMessage || mongoose.model('GroupMessage', groupMessageSchema);
+
+// Helper: check if logged-in user is admin
+async function isGroupAdmin(req) {
+  const user = await User.findById(req.user.id);
+  if (!user) return null;
+  if (String(user.email).toLowerCase() !== ADMIN_EMAIL) return null;
+  return user;
+}
+
+// 1. GET GROUP MESSAGES - All users can READ (all users are in group automatically)
+app.get('/api/group-messages', authh, async (req, res) => {
+  try {
+    const msgs = await GroupMessage.find().populate('from', 'username avatar email').sort({ createdAt: 1 }).limit(200);
+    res.json(msgs);
+  } catch (e) { res.status(500).json({ error: 'Could not load group' }); }
+});
+
+// 2. SEND GROUP MESSAGE - ONLY ADMIN
+app.post('/api/group-messages', authh, async (req, res) => {
+  try {
+    const admin = await isGroupAdmin(req);
+    if (!admin) return res.status(403).json({ error: 'Only admin can send in group' });
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ error: 'Empty message' });
+    const msg = await GroupMessage.create({ from: admin._id, text: text.trim() });
+    const full = await GroupMessage.findById(msg._id).populate('from', 'username avatar email');
+    res.json(full);
+  } catch (e) { res.status(500).json({ error: 'Could not send' }); }
+});
+
+// 3. DELETE GROUP MESSAGE - ONLY ADMIN
+app.delete('/api/group-messages/:id', authh, async (req, res) => {
+  try {
+    const admin = await isGroupAdmin(req);
+    if (!admin) return res.status(403).json({ error: 'Only admin can delete' });
+    await GroupMessage.findByIdAndDelete(req.params.id);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: 'Could not delete' }); }
+});
+
+// 4. MEMBER COUNT - ONLY ADMIN CAN SEE
+app.get('/api/group-members-count', authh, async (req, res) => {
+  try {
+    const admin = await isGroupAdmin(req);
+    if (!admin) return res.status(403).json({ error: 'Admin only' });
+    const count = await User.countDocuments(); // all users = all group members
+    res.json({ count });
+  } catch (e) { res.status(500).json({ error: 'Could not count' }); }
+});
+
+// 5. ADMIN USER - So users can View Profile / Follow / Message Admin
+app.get('/api/admin-user', authh, async (req, res) => {
+  try {
+    const admin = await User.findOne({ email: ADMIN_EMAIL }).select('_id username avatar email followers following bio');
+    if (!admin) return res.status(404).json({ error: 'Admin not found' });
+    res.json({ user: admin });
+  } catch (e) { res.status(500).json({ error: 'Could not load admin' }); }
+});
+
  // ===== FORGOT PASSWORD + RESET PASSWORD =====
 // For: forgot.html / recover password page
 
