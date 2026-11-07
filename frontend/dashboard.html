@@ -1,11 +1,5 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed - RAyMoNd</title>
-<!-- ============================================================ -->
-<!-- CACHE ADDITION - ADDED ONLY - DO NOT REMOVE                  -->
-<!-- Loads shared cache helper. If file is missing, inline WRDB  -->
-<!-- below still works, so app never breaks.                     -->
-<!-- ============================================================ -->
-<script src="wildreaders-db.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}.top{max-width:935px;margin:0 auto;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);z-index:10}.logo{font-family:cursive;font-size:26px;background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.section{max-width:935px;margin:0 auto;padding:14px 16px 4px}.section h3{margin:0}.section p{color:#888;font-size:12px;margin:4px 0}.grid{max-width:935px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:10px 16px}.card{background:#16161f;border:1px solid #26262f;border-radius:18px;overflow:hidden;cursor:pointer;transition:.2s}.card:active{transform:scale(.97)}.cover{position:relative;width:100%;height:220px;background:#222}.cover img{width:100%;height:100%;object-fit:cover}.noimg{width:100%;height:100%;background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:56px}.pin{position:absolute;top:10px;left:10px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,.4)}.body{padding:12px}.title{font-size:14px;font-weight:800;line-height:1.3;min-height:36px}.meta{font-size:12px;color:#999;margin-top:8px;display:flex;gap:10px}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.25)}
 button{
@@ -63,16 +57,13 @@ button{
 </div>
 <script>
 // ============================================================
-// CACHE ADDITION - ADDED ONLY - START
+// CACHE ADDITION - ADDED ONLY - FIXED
+// FIX: Removed <script src="wildreaders-db.js"> from <head>
+// Reason: That file + this inline block both declared const WRDB
+// -> "Identifier 'WRDB' has already been declared" -> load() never ran
+// Now WRDB exists ONLY here, so no clash, fetch always runs.
 // ============================================================
-// WildReaders Cache - IndexedDB (FREE, unlimited) + Cache Storage (FREE, for images)
-// Why: Public feed has many covers. localStorage is only ~5MB and would crash. IndexedDB has no such limit.
-// Pattern: Show cached feed instantly (0s) -> Fetch new in background -> Update if changed.
-// This block does NOT replace your logic below. It runs BESIDE it.
-// Note: This is the PUBLIC feed - no login needed, so cache key is 'feed_posts_public'
-// to not clash with logged-in feed.html which uses 'feed_posts'.
-// ============================================================
-const WRDB = window.WRDB || {
+const WRDB = {
   dbName: 'WildReadersDB',
   storeName: 'cache',
   _open() {
@@ -87,7 +78,6 @@ const WRDB = window.WRDB || {
       req.onerror = () => reject(req.error);
     });
   },
-  // CACHE ADDITION: Save anything - feed posts - to IndexedDB
   async save(key, data) {
     try {
       const db = await this._open();
@@ -99,7 +89,6 @@ const WRDB = window.WRDB || {
       });
     } catch (e) { return false; }
   },
-  // CACHE ADDITION: Get anything from IndexedDB, returns null if not found
   async get(key) {
     try {
       const db = await this._open();
@@ -113,13 +102,9 @@ const WRDB = window.WRDB || {
   }
 };
 // CACHE ADDITION: Turn ON Cache Storage for images (covers) via Service Worker
-// Service Worker caches cover images so they load in 0s second time.
-// It NEVER caches /api/ - so new novels always come fresh from server.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-// CACHE ADDITION: Helper - paint feed from posts using your SAME card() + getPinned() below
-// This is only for instant cached render. Your original load() still does the fresh fetch below.
 function renderFeedFromCache(posts) {
   if (!Array.isArray(posts) || !posts.length) return;
   let pinned = getPinned(posts);
@@ -129,9 +114,6 @@ function renderFeedFromCache(posts) {
   document.getElementById('pinSec').style.display='block';
   document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
-// ============================================================
-// CACHE ADDITION - ADDED ONLY - END
-// ============================================================
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 //if(!token) location.href="login.html";
@@ -153,29 +135,36 @@ function card(p, isPin){
   return '<div class="card" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>';
 }
 async function load(){
-  // CACHE ADDITION - ADDED ONLY: Show cached public feed instantly (0s) BEFORE server fetch
-  // Visitor sees old feed immediately while we fetch fresh data below.
-  // If no cache, this does nothing and normal fetch below runs.
-  // Uses 'feed_posts_public' so it never mixes with logged-in feed.html cache.
+  // CACHE ADDITION - FIXED: Cache read has 500ms timeout, never blocks fetch
+  // Before: await WRDB.get() could hang -> fetch never started -> stuck on Loading
+  // Now: if cache takes >500ms, we skip it and go straight to fetch
   try {
-    const cachedPosts = await WRDB.get('feed_posts_public');
+    const cachedPosts = await Promise.race([
+      WRDB.get('feed_posts_public'),
+      new Promise(r => setTimeout(() => r(null), 500))
+    ]);
     if (cachedPosts && cachedPosts.length) {
       renderFeedFromCache(cachedPosts);
     }
   } catch (e) {}
-  const res=await fetch(BASE+'/api/posts/feed?page=1&limit=20',{headers:{authorization:token}});
-  let posts=await res.json();
-  if(!posts.length){ document.getElementById('feedGrid').innerHTML='<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; return; }
-  let pinned=getPinned(posts);
-  let pinnedIds=pinned.map(p=>p._id);
-  let rest=shuffle(posts.filter(p=> !pinnedIds.includes(p._id)));
-  document.getElementById('pinnedGrid').innerHTML=pinned.map(p=>card(p,true)).join('');
-  document.getElementById('pinSec').style.display='block';
-  document.getElementById('feedGrid').innerHTML=rest.map(p=>card(p,false)).join('');
-  // CACHE ADDITION - ADDED ONLY: Save fresh public feed to IndexedDB for next instant open
-  // This runs AFTER your original fetch, so it never changes what visitor sees now.
-  // Next time visitor opens this page, it will show in 0s from this cache.
-  WRDB.save('feed_posts_public', posts);
+  try {
+    const res=await fetch(BASE+'/api/posts/feed?page=1&limit=20',{headers:{authorization:token}});
+    let posts=await res.json();
+    if(!posts.length){ document.getElementById('feedGrid').innerHTML='<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; return; }
+    let pinned=getPinned(posts);
+    let pinnedIds=pinned.map(p=>p._id);
+    let rest=shuffle(posts.filter(p=> !pinnedIds.includes(p._id)));
+    document.getElementById('pinnedGrid').innerHTML=pinned.map(p=>card(p,true)).join('');
+    document.getElementById('pinSec').style.display='block';
+    document.getElementById('feedGrid').innerHTML=rest.map(p=>card(p,false)).join('');
+    WRDB.save('feed_posts_public', posts);
+  } catch (e) {
+    // CACHE ADDITION: If fetch fails AND we had no cache, show error instead of infinite Loading
+    const grid = document.getElementById('feedGrid');
+    if (grid && grid.innerHTML.includes('Loading stories')) {
+      grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
+    }
+  }
 }
 load();
 

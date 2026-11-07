@@ -5,12 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile</title>
-  <!-- ============================================================ -->
-  <!-- CACHE ADDITION - ADDED ONLY - DO NOT REMOVE                  -->
-  <!-- Loads shared cache helper. If file is missing, inline WRDB  -->
-  <!-- below still works, so app never breaks.                     -->
-  <!-- ============================================================ -->
-  <script src="wildreaders-db.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; background: #0a0a12; color: #fff; font-family: Arial; padding-bottom: 90px; }
@@ -160,14 +154,15 @@
 
   <script>
     // ============================================================
-    // CACHE ADDITION - ADDED ONLY - START
+    // CACHE ADDITION - ADDED ONLY - FIXED
+    // FIX 1: Removed <script src="wildreaders-db.js"> from <head>
+    // Reason: That file + this inline block both declared const WRDB
+    // -> "Identifier 'WRDB' has already been declared" -> load() never ran
+    // Now WRDB exists ONLY here, so no clash.
+    // FIX 2: Changed const WRDB = window.WRDB || {...} to const WRDB = {...}
+    // FIX 3: Cache read has 500ms timeout, never blocks fetch.
     // ============================================================
-    // WildReaders Cache - IndexedDB (FREE, unlimited) + Cache Storage (FREE, for images)
-    // Why: localStorage is only ~5MB. IndexedDB has no such limit.
-    // Pattern: Show cached profile instantly (0s) -> Fetch new in background -> Update if changed.
-    // This block does NOT replace your logic below. It runs BESIDE it.
-    // ============================================================
-    const WRDB = window.WRDB || {
+    const WRDB = {
       dbName: 'WildReadersDB',
       storeName: 'cache',
       _open() {
@@ -182,7 +177,6 @@
           req.onerror = () => reject(req.error);
         });
       },
-      // CACHE ADDITION: Save anything - profile, novels - to IndexedDB
       async save(key, data) {
         try {
           const db = await this._open();
@@ -194,7 +188,6 @@
           });
         } catch (e) { return false; }
       },
-      // CACHE ADDITION: Get anything from IndexedDB, returns null if not found
       async get(key) {
         try {
           const db = await this._open();
@@ -207,19 +200,19 @@
         } catch (e) { return null; }
       }
     };
-    // CACHE ADDITION: Turn ON Cache Storage for images (avatar + covers) via Service Worker
-    // Service Worker caches images so they load in 0s second time.
-    // It NEVER caches /api/ - so new profile data always comes fresh from server.
+    // CACHE ADDITION: Helper - 500ms timeout so cache never blocks fetch
+    function getCacheFast(key) {
+      return Promise.race([
+        WRDB.get(key),
+        new Promise(r => setTimeout(() => r(null), 500))
+      ]);
+    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
-    // CACHE ADDITION: Helper - paint profile UI from cached data
-    // This uses the SAME DOM ids as your original load() below, so no logic is changed.
-    // It only shows old data fast while load() fetches fresh data in background.
     function renderProfileFromCache(cachedUser, cachedMine) {
       try {
         if (!cachedUser) return;
-        // Same fields as your original load() - name, bio, link, avatar, counts
         document.getElementById('name').innerText = cachedUser.username || 'User';
         document.getElementById('bio').innerText = cachedUser.bio || '';
         const linkEl = document.getElementById('linkLine');
@@ -233,7 +226,6 @@
         }
         document.getElementById('fCount').innerText = (cachedUser.followers || []).length;
         document.getElementById('fgCount').innerText = (cachedUser.following || []).length;
-        // Same grid as your original load() - novels from cache
         if (Array.isArray(cachedMine)) {
           document.getElementById('postCount').innerText = cachedMine.length;
           document.getElementById('grid').innerHTML = cachedMine.length ? cachedMine.map(p => {
@@ -244,9 +236,6 @@
         }
       } catch (e) {}
     }
-    // ============================================================
-    // CACHE ADDITION - ADDED ONLY - END
-    // ============================================================
 
     // ============================================================
     // ORIGINAL CODE - Do not touch, everything below is your old code
@@ -274,17 +263,13 @@
       profileId = new URLSearchParams(location.search).get('id') || getMyId();
       isOwn = profileId === getMyId();
 
-      // CACHE ADDITION - ADDED ONLY: Show cached profile instantly (0s) BEFORE server fetch
-      // User sees old profile immediately while we fetch fresh data below.
-      // If no cache, this does nothing and normal fetch below runs.
+      // CACHE ADDITION - FIXED: 500ms timeout, never blocks fetch
       try {
-        const cachedUser = await WRDB.get('profile_' + profileId);
-        const cachedMine = await WRDB.get('profile_posts_' + profileId);
+        const cachedUser = await getCacheFast('profile_' + profileId);
+        const cachedMine = await getCacheFast('profile_posts_' + profileId);
         if (cachedUser) {
-          // Set profileUser so follow button / showList also work from cache
           profileUser = cachedUser;
           renderProfileFromCache(cachedUser, cachedMine);
-          // Also show own buttons from cache, same logic as below
           if (isOwn) {
             document.getElementById('writeBtn').style.display = 'inline-block';
             document.getElementById('editBtn').style.display = 'inline-block';
@@ -299,64 +284,68 @@
         }
       } catch (e) {}
 
-      const r1 = await fetch(BASE + '/api/users/' + profileId, { headers: { authorization: token } });
-      const data = await r1.json();
-      profileUser = data.user || data;
+      try {
+        const r1 = await fetch(BASE + '/api/users/' + profileId, { headers: { authorization: token } });
+        const data = await r1.json();
+        profileUser = data.user || data;
 
-      document.getElementById('name').innerText = profileUser.username || 'User';
-      document.getElementById('emailLine').innerText = '';
-      document.getElementById('bio').innerText = profileUser.bio || '';
+        document.getElementById('name').innerText = profileUser.username || 'User';
+        document.getElementById('emailLine').innerText = '';
+        document.getElementById('bio').innerText = profileUser.bio || '';
 
-      // ADDED ONLY - Show link
-      const linkEl = document.getElementById('linkLine');
-      if (profileUser.link) {
-        linkEl.style.display = 'block';
-        linkEl.innerText = profileUser.link;
-        linkEl.href = profileUser.link.startsWith('http') ? profileUser.link : 'https://' + profileUser.link;
-      } else {
-        linkEl.style.display = 'none';
+        // ADDED ONLY - Show link
+        const linkEl = document.getElementById('linkLine');
+        if (profileUser.link) {
+          linkEl.style.display = 'block';
+          linkEl.innerText = profileUser.link;
+          linkEl.href = profileUser.link.startsWith('http') ? profileUser.link : 'https://' + profileUser.link;
+        } else {
+          linkEl.style.display = 'none';
+        }
+
+        if (profileUser.avatar) {
+          document.getElementById('avatar').innerHTML = '<img src="' + profileUser.avatar + '">';
+        } else {
+          document.getElementById('avatar').innerText = (profileUser.username || 'U')[0].toUpperCase();
+        }
+
+        const followers = profileUser.followers || [];
+        const following = profileUser.following || [];
+        document.getElementById('fCount').innerText = followers.length;
+        document.getElementById('fgCount').innerText = following.length;
+
+        if (isOwn) {
+          document.getElementById('writeBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').style.display = 'inline-block';
+        } else {
+          const fb = document.getElementById('followBtn');
+          fb.style.display = 'block';
+          document.getElementById('msgBtn').style.display = 'block';
+          const amIFollowing = followers.some(f => (f._id || f) === getMyId());
+          fb.innerText = amIFollowing ? 'Following' : 'Follow';
+          fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
+        }
+
+        const r2 = await fetch(BASE + '/api/posts', { headers: { authorization: token } });
+        const all = await r2.json();
+        const mine = all.filter(p => (p.user?._id || p.user) === profileId);
+        document.getElementById('postCount').innerText = mine.length;
+
+        document.getElementById('grid').innerHTML = mine.length ? mine.map(p => {
+          let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
+          // ADDED ONLY - Delete button shows only if this is YOUR profile (isOwn) and you are logged in
+          let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
+          return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
+        }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+
+        WRDB.save('profile_' + profileId, profileUser);
+        WRDB.save('profile_posts_' + profileId, mine);
+      } catch (e) {
+        const grid = document.getElementById('grid');
+        if (grid && grid.innerHTML.includes('Loading...')) {
+          grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
+        }
       }
-
-      if (profileUser.avatar) {
-        document.getElementById('avatar').innerHTML = '<img src="' + profileUser.avatar + '">';
-      } else {
-        document.getElementById('avatar').innerText = (profileUser.username || 'U')[0].toUpperCase();
-      }
-
-      const followers = profileUser.followers || [];
-      const following = profileUser.following || [];
-      document.getElementById('fCount').innerText = followers.length;
-      document.getElementById('fgCount').innerText = following.length;
-
-      if (isOwn) {
-        document.getElementById('writeBtn').style.display = 'inline-block';
-        document.getElementById('editBtn').style.display = 'inline-block';
-      } else {
-        const fb = document.getElementById('followBtn');
-        fb.style.display = 'block';
-        document.getElementById('msgBtn').style.display = 'block';
-        const amIFollowing = followers.some(f => (f._id || f) === getMyId());
-        fb.innerText = amIFollowing ? 'Following' : 'Follow';
-        fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
-      }
-
-      const r2 = await fetch(BASE + '/api/posts', { headers: { authorization: token } });
-      const all = await r2.json();
-      const mine = all.filter(p => (p.user?._id || p.user) === profileId);
-      document.getElementById('postCount').innerText = mine.length;
-
-      document.getElementById('grid').innerHTML = mine.length ? mine.map(p => {
-        let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
-        // ADDED ONLY - Delete button shows only if this is YOUR profile (isOwn) and you are logged in
-        let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
-        return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
-      }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
-
-      // CACHE ADDITION - ADDED ONLY: Save fresh profile + novels to IndexedDB for next instant open
-      // This runs AFTER your original fetch, so it never changes what user sees now.
-      // Next time user opens profile, it will show in 0s from this cache.
-      WRDB.save('profile_' + profileId, profileUser);
-      WRDB.save('profile_posts_' + profileId, mine);
     }
 
     // Follow / Unfollow - updates button IMMEDIATELY before fetch returns

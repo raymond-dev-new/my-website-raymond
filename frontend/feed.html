@@ -1,12 +1,6 @@
 
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed</title>
-<!-- ============================================================ -->
-<!-- CACHE ADDITION - ADDED ONLY - DO NOT REMOVE                  -->
-<!-- Loads shared cache helper. If file is missing, inline WRDB  -->
-<!-- below still works, so app never breaks.                     -->
-<!-- ============================================================ -->
-<script src="wildreaders-db.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}
@@ -152,14 +146,16 @@ button{
 </div>
 <script>
 // ============================================================
-// CACHE ADDITION - ADDED ONLY - START
+// CACHE ADDITION - ADDED ONLY - FIXED
+// FIX 1: Removed <script src="wildreaders-db.js"> from <head>
+// Reason: That file + this inline block both declared const WRDB
+// -> "Identifier 'WRDB' has already been declared" -> load() never ran
+// Now WRDB exists ONLY here, so no clash.
+// FIX 2: Changed const WRDB = window.WRDB || {...} to const WRDB = {...}
+// Reason: No need to look at window anymore, this is the only WRDB.
+// FIX 3: Cache read has 500ms timeout, never blocks fetch.
 // ============================================================
-// WildReaders Cache - IndexedDB (FREE, unlimited) + Cache Storage (FREE, for images)
-// Why: Feed has many covers. localStorage is only ~5MB and would crash. IndexedDB has no such limit.
-// Pattern: Show cached feed instantly (0s) -> Fetch new in background -> Update if changed.
-// This block does NOT replace your logic below. It runs BESIDE it.
-// ============================================================
-const WRDB = window.WRDB || {
+const WRDB = {
   dbName: 'WildReadersDB',
   storeName: 'cache',
   _open() {
@@ -174,7 +170,6 @@ const WRDB = window.WRDB || {
       req.onerror = () => reject(req.error);
     });
   },
-  // CACHE ADDITION: Save anything - feed posts - to IndexedDB
   async save(key, data) {
     try {
       const db = await this._open();
@@ -186,7 +181,6 @@ const WRDB = window.WRDB || {
       });
     } catch (e) { return false; }
   },
-  // CACHE ADDITION: Get anything from IndexedDB, returns null if not found
   async get(key) {
     try {
       const db = await this._open();
@@ -200,13 +194,9 @@ const WRDB = window.WRDB || {
   }
 };
 // CACHE ADDITION: Turn ON Cache Storage for images (covers) via Service Worker
-// Service Worker caches cover images so they load in 0s second time.
-// It NEVER caches /api/ - so new novels always come fresh from server.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-// CACHE ADDITION: Helper - paint feed from posts using your SAME card() + getPinned() below
-// This is only for instant cached render. Your original load() still does the fresh fetch below.
 function renderFeedFromCache(posts) {
   if (!Array.isArray(posts) || !posts.length) return;
   let pinned = getPinned(posts);
@@ -216,9 +206,6 @@ function renderFeedFromCache(posts) {
   document.getElementById('pinSec').style.display='block';
   document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
-// ============================================================
-// CACHE ADDITION - ADDED ONLY - END
-// ============================================================
 const BASE="https://raymonddomain.dev";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
@@ -266,40 +253,39 @@ function card(p, isPin) {
 }
 
 async function load(){
-  // CACHE ADDITION - ADDED ONLY: Show cached feed instantly (0s) BEFORE server fetch
-  // User sees old feed immediately while we fetch fresh data below.
-  // If no cache, this does nothing and normal fetch below runs.
+  // CACHE ADDITION - FIXED: 500ms timeout, never blocks fetch
   try {
-    const cachedPosts = await WRDB.get('feed_posts');
+    const cachedPosts = await Promise.race([
+      WRDB.get('feed_posts'),
+      new Promise(r => setTimeout(() => r(null), 500))
+    ]);
     if (cachedPosts && cachedPosts.length) {
       renderFeedFromCache(cachedPosts);
     }
   } catch (e) {}
 
-  const res = await fetch(BASE+'/api/posts/feed?page=1&limit=20',{
-    headers:{authorization:token}
-});
-
-  let posts = await res.json();
-
-  if(!posts.length){ 
-    document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; 
-   
-    return; 
- }
-
-  let pinned = getPinned(posts);
-
-  let pinnedIds = pinned.map(p => p._id );
-  let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
-  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
-  document.getElementById('pinSec').style.display='block';
-  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
-
-  // CACHE ADDITION - ADDED ONLY: Save fresh feed to IndexedDB for next instant open
-  // This runs AFTER your original fetch, so it never changes what user sees now.
-  // Next time user opens feed, it will show in 0s from this cache.
-  WRDB.save('feed_posts', posts);
+  try {
+    const res = await fetch(BASE+'/api/posts/feed?page=1&limit=20',{
+      headers:{authorization:token}
+    });
+    let posts = await res.json();
+    if(!posts.length){ 
+      document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; 
+      return; 
+    }
+    let pinned = getPinned(posts);
+    let pinnedIds = pinned.map(p => p._id );
+    let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
+    document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+    document.getElementById('pinSec').style.display='block';
+    document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+    WRDB.save('feed_posts', posts);
+  } catch (e) {
+    const grid = document.getElementById('feedGrid');
+    if (grid && grid.innerHTML.includes('Loading stories')) {
+      grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
+    }
+  }
 }
 
 load();

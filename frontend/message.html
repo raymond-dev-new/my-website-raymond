@@ -1,15 +1,10 @@
+
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Messages</title>
-  <!-- ============================================================ -->
-  <!-- CACHE ADDITION - ADDED ONLY - DO NOT REMOVE                  -->
-  <!-- This loads the shared cache helper. If file is missing,     -->
-  <!-- the inline WRDB below still works, so app never breaks.     -->
-  <!-- ============================================================ -->
-  <script src="wildreaders-db.js"></script>
   <style>
     /* ============================= */
     /* BASIC PAGE SETUP              */
@@ -432,15 +427,17 @@
 
   <script>
     // ============================================================
-    // CACHE ADDITION - ADDED ONLY - START
+    // CACHE ADDITION - ADDED ONLY - FIXED
+    // FIX 1: Removed <script src="wildreaders-db.js"> from <head>
+    // Reason: That file + this inline block both declared const WRDB
+    // -> "Identifier 'WRDB' has already been declared" -> loadPeople() never ran
+    // Now WRDB exists ONLY here, so no clash.
+    // FIX 2: Changed const WRDB = window.WRDB || {...} to const WRDB = {...}
+    // FIX 3: WRDB.get() now has built-in 500ms timeout, so it can never
+    // hang the chat list / chat open. If IndexedDB is slow, it returns null
+    // and fetch from server continues.
     // ============================================================
-    // WildReaders Cache - IndexedDB (FREE, unlimited) + Cache Storage (FREE, for images)
-    // Why: localStorage is only ~5MB and crashes. IndexedDB has no such limit.
-    // Pattern: Show cached instantly (0s) -> Fetch new in background -> Update if changed.
-    // This block does NOT replace your localStorage logic below.
-    // It runs BESIDE it, so if IndexedDB fails, your old logic still works.
-    // ============================================================
-    const WRDB = window.WRDB || {
+    const WRDB = {
       dbName: 'WildReadersDB',
       storeName: 'cache',
       _open() {
@@ -455,7 +452,6 @@
           req.onerror = () => reject(req.error);
         });
       },
-      // CACHE ADDITION: Save anything - people, meta, messages - to IndexedDB
       async save(key, data) {
         try {
           const db = await this._open();
@@ -467,32 +463,26 @@
           });
         } catch (e) { return false; }
       },
-      // CACHE ADDITION: Get anything from IndexedDB, returns null if not found
       async get(key) {
-        try {
-          const db = await this._open();
-          return new Promise((resolve) => {
-            const tx = db.transaction(this.storeName, 'readonly');
-            const req = tx.objectStore(this.storeName).get(key);
-            req.onsuccess = () => resolve(req.result ? req.result.data : null);
-            req.onerror = () => resolve(null);
-          });
-        } catch (e) { return null; }
+        // CACHE FIX: Race real get vs 500ms timeout
+        const realGet = (async () => {
+          try {
+            const db = await this._open();
+            return new Promise((resolve) => {
+              const tx = db.transaction(this.storeName, 'readonly');
+              const req = tx.objectStore(this.storeName).get(key);
+              req.onsuccess = () => resolve(req.result ? req.result.data : null);
+              req.onerror = () => resolve(null);
+            });
+          } catch (e) { return null; }
+        })();
+        const timeout = new Promise(r => setTimeout(() => r(null), 500));
+        return Promise.race([realGet, timeout]);
       }
     };
-    // CACHE ADDITION: Turn ON Cache Storage for images (avatars) via Service Worker
-    // Service Worker caches avatar images so they load in 0s second time.
-    // It NEVER caches /api/ - so new messages always come fresh from server.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
-    // CACHE ADDITION: Format message text to keep line breaks + spaces
-    // Admin types:
-    //   Hello
-    //   <blank line>
-    //   Welcome
-    // Without this, browser collapses it to "Hello Welcome".
-    // This escapes HTML (safe) then converts \n -> <br> and spaces stay via CSS pre-wrap.
     function formatMessageText(text) {
       const safe = String(text || '')
         .replace(/&/g, '&amp;')
@@ -500,25 +490,13 @@
         .replace(/>/g, '&gt;');
       return safe.replace(/\n/g, '<br>');
     }
-    // ============================================================
-    // CACHE ADDITION - ADDED ONLY - END
-    // ============================================================
 
     // ============================================================
     // 1. SETUP - BASE URL + LOGIN CHECK
     // ============================================================
-
-    // Your backend domain
     const BASE = "https://raymonddomain.dev";
-
-    // Get token saved at login
     const token = localStorage.getItem('token');
-
-    // If no token, user is not logged in - send to login page
     if (!token) location.href = "login.html";
-
-    // Get my user ID from the token
-    // Token is JWT: header.payload.signature - payload has id
     function getMyId() {
       try {
         return JSON.parse(atob(token.split('.')[1])).id;
@@ -526,8 +504,6 @@
         return "";
       }
     }
-
-    // Get my email from token - used to check if I am admin
     function getMyEmailFromToken() {
       try {
         return (JSON.parse(atob(token.split('.')[1])).email || "").toLowerCase();
@@ -535,103 +511,43 @@
         return "";
       }
     }
-
-    // ============================================================
-    // 1B. GROUP CONFIG - ADDED ONLY - DO NOT CHANGE EMAIL
-    // ============================================================
-
-    // The admin email - only this email can send in group
     const ADMIN_EMAIL = "letswintrade@gmail.com";
-
-    // Virtual ID for group - not a real user, just to identify group in code
     const GROUP_ID = "ADMIN_GROUP";
-
-    // Name shown in list
     const GROUP_NAME = "📢 WildReaders";
-
-    // Am I admin? Check my email vs admin email
     let isAdmin = (getMyEmailFromToken() === ADMIN_EMAIL);
-
-    // My email (lowercase)
     let myEmail = getMyEmailFromToken();
-
-    // Admin's real user ID - found from server later
-    // Needed so users can click "View Admin Profile" and "Message Admin"
     let adminUserId = "";
-
-    // Admin's username + avatar
     let adminUserName = "LetsWin";
     let adminUserAvatar = "";
-
-    // Total number of users in group - ONLY admin will see this
     let totalGroupMembers = 0;
-
-    // Are we currently inside the group chat? true = group, false = private chat
     let isGroupChat = false;
-
-    // ============================================================
-    // 2. STATE - VARIABLES THAT HOLD CURRENT DATA
-    // ============================================================
-
-    // Who am I chatting with right now? (user ID or GROUP_ID)
     let chatWith = null;
-
-    // Name of person I am chatting with
     let chatWithName = '';
-
-    // Avatar of person I am chatting with
     let chatWithAvatar = '';
-
-    // List of people (followers + following)
     let peopleCache = [];
-
-    // Last message + unread count for each chat
-    // Example: chatMeta[userId] = { lastText, lastTime, unread }
     let chatMeta = {};
-
-    // Last HTML we rendered - used to avoid re-rendering same list again
     let lastRenderedListHtml = '';
     let lastRenderedChatHtml = '';
-
-    // ============================================================
-    // 2B. SAFE STORAGE - NEVER FILL UP 5MB
-    // Problem: localStorage is only ~5MB. Old code saved ALL messages forever.
-    // Fix: Save ONLY last 30 messages per chat, and TRIM old data.
-    // ============================================================
-
-    // --- LIMITS ---
-    const MAX_MSGS_PER_CHAT = 30; // Only last 30 messages per person saved
-    const MAX_CHATS_SAVED = 15;   // Only last 15 chats saved
-    const MAX_PEOPLE_SAVED = 50;  // Only 50 people saved in list
-
-    // --- KEYS - Names for localStorage ---
+    const MAX_MSGS_PER_CHAT = 30;
+    const MAX_CHATS_SAVED = 15;
+    const MAX_PEOPLE_SAVED = 50;
     function getPeopleCacheKey() {
       return 'msg_people_' + getMyId();
     }
-
     function getMetaCacheKey() {
       return 'msg_meta_' + getMyId();
     }
-
     function getChatCacheKey(otherId) {
       return 'msg_chat_' + getMyId() + '_' + otherId;
     }
-
-    // List of chat IDs in order, oldest first
     function getChatOrderKey() {
       return 'msg_order_' + getMyId();
     }
-
-    // --- Helper: Save safely ---
-    // If storage is full, delete oldest chat and try again
-    // This prevents QuotaExceededError crash
     function safeSetItem(key, value) {
       try {
         localStorage.setItem(key, value);
         return true;
       } catch (e) {
-        // Storage is FULL
-        // Step 1: Try to delete oldest chat to free space
         const freed = deleteOldestChatFromStorage();
         if (freed) {
           try {
@@ -639,22 +555,15 @@
             return true;
           } catch (e2) {}
         }
-
-        // Step 2: If still full, clear ALL message cache
-        // Messages are SAFE on server, we only delete local copy
         try {
           clearAllMessageCache();
           localStorage.setItem(key, value);
           return true;
         } catch (e3) {
-          // Step 3: Give up silently, app still works from server
           return false;
         }
       }
     }
-
-    // --- Helper: Keep track of which chats we saved, oldest first ---
-    // Example: ["userA", "userB", "userC"] - userA is oldest, userC is newest
     function getChatOrder() {
       try {
         const raw = localStorage.getItem(getChatOrderKey());
@@ -664,37 +573,25 @@
         return [];
       }
     }
-
-    // Move this chat to END (newest), so it is deleted LAST when storage is full
     function touchChatInOrder(otherId) {
       let order = getChatOrder().filter(id => id !== otherId);
       order.push(otherId);
-
-      // If we have too many chats, cut oldest ones
       if (order.length > MAX_CHATS_SAVED) {
         order = order.slice(order.length - MAX_CHATS_SAVED);
       }
-
       try {
         localStorage.setItem(getChatOrderKey(), JSON.stringify(order));
       } catch {}
     }
-
-    // Delete oldest chat from storage to free space
     function deleteOldestChatFromStorage() {
       const order = getChatOrder();
       if (!order.length) return false;
-
       const oldestId = order[0];
       try { localStorage.removeItem(getChatCacheKey(oldestId)); } catch {}
-
-      // Remove it from order list
       const newOrder = order.slice(1);
       try { localStorage.setItem(getChatOrderKey(), JSON.stringify(newOrder)); } catch {}
       return true;
     }
-
-    // Delete ALL saved messages, but keep people + meta
     function clearAllMessageCache() {
       const order = getChatOrder();
       for (const id of order) {
@@ -702,25 +599,16 @@
       }
       try { localStorage.removeItem(getChatOrderKey()); } catch {}
     }
-
-    // --- Helper: Trim messages to last 30 only ---
-    // We don't save full user objects, only _id, from, text, createdAt. Saves 50% space.
     function trimMessages(msgs) {
       if (!Array.isArray(msgs)) return [];
-
-      // Take last 30 only
       const last = msgs.slice(-MAX_MSGS_PER_CHAT);
-
-      // Keep only small fields
       return last.map(m => ({
         _id: m._id,
-        from: (m.from?._id || m.from), // Save only ID, not full user object
-        text: String(m.text || '').slice(0, 2000), // Cap single message at 2000 chars in cache
+        from: (m.from?._id || m.from),
+        text: String(m.text || '').slice(0, 2000),
         createdAt: m.createdAt || ''
       }));
     }
-
-    // Save people list - TRIMMED to save space (only id, username, avatar)
     function savePeopleToStorage() {
       const slim = (peopleCache || []).slice(0, MAX_PEOPLE_SAVED).map(p => ({
         _id: p._id || p,
@@ -728,36 +616,22 @@
         avatar: p.avatar || ''
       }));
       safeSetItem(getPeopleCacheKey(), JSON.stringify(slim));
-      // CACHE ADDITION - ADDED ONLY: Also save same slim people to IndexedDB (unlimited)
-      // So next open loads from IndexedDB even if localStorage was cleared / full.
       WRDB.save(getPeopleCacheKey(), slim);
     }
-
-    // Save chatMeta - already small, just save directly
     function saveMetaToStorage() {
       safeSetItem(getMetaCacheKey(), JSON.stringify(chatMeta));
-      // CACHE ADDITION - ADDED ONLY: Mirror meta to IndexedDB too
       WRDB.save(getMetaCacheKey(), chatMeta);
     }
-
-    // Save messages of ONE chat - TRIMMED + ORDERED + SAFE
     function saveMessagesToStorage(otherId, msgs) {
       const trimmed = trimMessages(msgs);
-      touchChatInOrder(otherId); // Mark this chat as newest
-
-      // If we now have more than MAX chats, delete oldest first
+      touchChatInOrder(otherId);
       let order = getChatOrder();
       if (order.length > MAX_CHATS_SAVED) {
         deleteOldestChatFromStorage();
       }
-
       safeSetItem(getChatCacheKey(otherId), JSON.stringify(trimmed));
-      // CACHE ADDITION - ADDED ONLY: Mirror same trimmed messages to IndexedDB
-      // IndexedDB does NOT have 5MB limit, so this is the safe copy.
       WRDB.save(getChatCacheKey(otherId), trimmed);
     }
-
-    // Load saved messages for ONE chat (instant open)
     function loadMessagesFromStorage(otherId) {
       try {
         const raw = localStorage.getItem(getChatCacheKey(otherId));
@@ -768,15 +642,10 @@
         return [];
       }
     }
-
-    // CACHE ADDITION - ADDED ONLY: Load messages from IndexedDB (for chat instant open)
-    // Used in openChat / openGroupChat - tries IndexedDB if localStorage is empty.
     async function loadMessagesFromWRDB(otherId) {
       const data = await WRDB.get(getChatCacheKey(otherId));
       return Array.isArray(data) ? data : [];
     }
-
-    // Load saved people + meta at start
     function loadCacheAtStart() {
       try {
         const peopleRaw = localStorage.getItem(getPeopleCacheKey());
@@ -784,7 +653,6 @@
           const parsed = JSON.parse(peopleRaw);
           if (Array.isArray(parsed) && parsed.length) peopleCache = parsed;
         }
-
         const metaRaw = localStorage.getItem(getMetaCacheKey());
         if (metaRaw) {
           const parsed = JSON.parse(metaRaw);
@@ -792,9 +660,6 @@
         }
       } catch {}
     }
-
-    // CACHE ADDITION - ADDED ONLY: Load people + meta from IndexedDB at start
-    // Called in loadPeople() BEFORE server fetch, so list shows in 0s even if localStorage is full.
     async function loadCacheFromWRDBAtStart() {
       try {
         if (!peopleCache.length) {
@@ -803,45 +668,28 @@
         }
         const m = await WRDB.get(getMetaCacheKey());
         if (m && typeof m === 'object') {
-          // Only fill if localStorage meta was empty, to not overwrite newer local data
           if (!Object.keys(chatMeta).length) chatMeta = m;
         }
       } catch {}
     }
-
-    // --- Read tracking ---
-    // We save last message ID we have read, to calculate unread count
     function getReadKey(otherId) {
       return 'read_' + getMyId() + '_' + otherId;
     }
-
     function getLastReadId(otherId) {
       return localStorage.getItem(getReadKey(otherId)) || '';
     }
-
     function saveLastReadId(otherId, msgId) {
       if (msgId) {
         safeSetItem(getReadKey(otherId), msgId);
       }
     }
-
-    // ============================================================
-    // 2C. GROUP HELPERS - ADDED ONLY
-    // ============================================================
-
-    // Find who is admin + how many members in group
     async function identifyAdminAndMembers() {
-
-      // Step 1: Get my own profile to check my email again from server (more reliable than token)
       try {
         const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
         const meData = await meRes.json();
         const me = meData.user || meData;
-
         if (me) {
           if (me.email) myEmail = String(me.email).toLowerCase();
-
-          // If my email is admin email, I am admin
           if (myEmail === ADMIN_EMAIL) {
             isAdmin = true;
             adminUserId = getMyId();
@@ -850,9 +698,6 @@
           }
         }
       } catch {}
-
-      // Step 2: If I am NOT admin, find admin user from server
-      // So users can click "View Admin Profile"
       if (!isAdmin) {
         try {
           const r = await fetch(BASE + '/api/admin-user', { headers: { authorization: token } });
@@ -867,9 +712,6 @@
           }
         } catch {}
       }
-
-      // Step 3: If I AM admin, get total member count
-      // Normal users NEVER call this - so they never see count
       if (isAdmin) {
         try {
           const r = await fetch(BASE + '/api/group-members-count', { headers: { authorization: token } });
@@ -883,8 +725,6 @@
           totalGroupMembers = (peopleCache ? peopleCache.length : 0) + 1;
         }
       }
-
-      // Step 4: Make sure group meta exists, so group always shows even with no message yet
       if (!chatMeta[GROUP_ID]) {
         chatMeta[GROUP_ID] = {
           lastText: 'Tap to view announcements',
@@ -895,9 +735,6 @@
         saveMetaToStorage();
       }
     }
-
-    // Get group messages from server
-    // If server fails, fall back to local cache
     async function getGroupMessages() {
       try {
         const res = await fetch(BASE + '/api/group-messages', { headers: { authorization: token } });
@@ -906,14 +743,10 @@
           if (Array.isArray(msgs)) return msgs;
         }
       } catch {}
-      // CACHE ADDITION - ADDED ONLY: If server fails, try IndexedDB before localStorage
-      // So group still opens offline / with bad network.
       const fromWRDB = await loadMessagesFromWRDB(GROUP_ID);
       if (fromWRDB.length) return fromWRDB;
       return loadMessagesFromStorage(GROUP_ID);
     }
-
-    // Send group message to server - only admin should call this
     async function sendGroupMessage(text) {
       const res = await fetch(BASE + '/api/group-messages', {
         method: 'POST',
@@ -922,27 +755,14 @@
       });
       return res.ok;
     }
-
-    // ============================================================
-    // 3. LOAD PEOPLE - Show cache instantly, update in background
-    // ============================================================
     async function loadPeople() {
-
-      // Show saved cache first for instant open
       loadCacheAtStart();
-      // CACHE ADDITION - ADDED ONLY: Also show IndexedDB cache instantly for loading people
-      // This is the 0-second open - people list appears before server answers.
       await loadCacheFromWRDBAtStart();
       renderPeopleList();
       updateBadge();
-
-      // Find admin + members, then show list
       await identifyAdminAndMembers();
       renderPeopleList();
       updateBadge();
-
-      // If link has ?to=GROUP_ID, open group directly
-      // If link has ?to=userId, open that private chat
       const toEarly = new URLSearchParams(location.search).get('to');
       if (toEarly) {
         if (toEarly === GROUP_ID) {
@@ -952,20 +772,14 @@
           openChat(toEarly, foundEarly?.username || 'Chat');
         }
       }
-
-      // Now fetch fresh data from server in background
       try {
         const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
         const meData = await meRes.json();
         const me = meData.user || meData;
-
-        // Double check admin from server email
         if (me && me.email && String(me.email).toLowerCase() === ADMIN_EMAIL) {
           isAdmin = true;
           adminUserId = getMyId();
         }
-
-        // People = followers + following, remove duplicates, remove myself
         let people = [...(me.followers || []), ...(me.following || [])];
         let seen = {};
         people = people.filter(p => {
@@ -974,17 +788,12 @@
           seen[id] = true;
           return id !== getMyId();
         });
-
         peopleCache = people;
         savePeopleToStorage();
-
         await identifyAdminAndMembers();
         renderPeopleList();
-
         await refreshRecentAndUnread(true);
         await refreshGroupMeta(true);
-
-        // If URL has ?to=..., open it after fresh load
         const to = new URLSearchParams(location.search).get('to');
         if (to && !chatWith) {
           if (to === GROUP_ID) {
@@ -994,19 +803,11 @@
             openChat(to, found?.username || 'Chat');
           }
         }
-
       } catch (e) {
-        // If server fails, still show cached list + group
         renderPeopleList();
       }
     }
-
-    // ============================================================
-    // 4. RENDER PEOPLE LIST - GROUP ALWAYS AT TOP
-    // ============================================================
     function renderPeopleList() {
-
-      // Sort private chats by most recent message at top
       let sorted = [...peopleCache].sort((a, b) => {
         const idA = a._id || a;
         const idB = b._id || b;
@@ -1014,26 +815,18 @@
         const timeB = chatMeta[idB]?.lastTime || 0;
         return timeB - timeA;
       });
-
-      // --- GROUP ROW - ALWAYS FIRST, EVEN IF NO NEW MESSAGE ---
       const gMeta = chatMeta[GROUP_ID] || { lastText: 'Tap to view announcements', lastTime: 0, unread: 0 };
       const gPreview = gMeta.lastText || 'Tap to view announcements';
       const gTime = gMeta.lastTime ? formatTime(gMeta.lastTime) : '';
       const gUnread = gMeta.unread || 0;
       const gUnreadHtml = gUnread > 0 ? '<span class="chatUnread">' + gUnread + '</span>' : '';
       const gPreviewClass = gUnread > 0 ? 'rowPreview unread' : 'rowPreview';
-
-      // Member count text - ONLY for admin, users see nothing
       const memberText = isAdmin ? ' • ' + totalGroupMembers + ' members' : '';
-
-      // Group row HTML - yellow background so it stands out
       const groupRow = '<div class="row" onclick="openGroupChat()" style="background:#1a1405;border-bottom:1px solid #2a2200">'
         + '<div class="avatar groupAvatar">📢</div>'
         + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b><span class="rowTime">' + gTime + '</span></div>'
         + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + gPreviewClass + '">' + escapeHtml(gPreview) + (isAdmin ? ' (' + totalGroupMembers + ' members)' : '') + '</span>' + gUnreadHtml + '</div>'
         + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
-
-      // --- PRIVATE CHATS ROWS ---
       const htmlPeople = sorted.map(p => {
         const id = p._id || p;
         const name = p.username || id;
@@ -1044,29 +837,20 @@
         const unread = meta.unread || 0;
         const unreadHtml = unread > 0 ? '<span class="chatUnread">' + unread + '</span>' : '';
         const previewClass = unread > 0 ? 'rowPreview unread' : 'rowPreview';
-
         return '<div class="row" onclick="openChat(\'' + id + '\',\'' + name + '\')">'
           + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
           + '<div class="rowInfo"><div class="rowTop"><b>' + name + '</b><span class="rowTime">' + timeText + '</span></div>'
           + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
           + '</div>';
       }).join('');
-
-      // Final HTML = Group on top + Private chats below
       const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px"> Loading chat....<br>Follow someone to chat privately.</p>');
-
-      // Avoid re-rendering if nothing changed
       if (html === lastRenderedListHtml) return;
       lastRenderedListHtml = html;
       document.getElementById('peopleList').innerHTML = html;
     }
-
-    // Prevent XSS - escape < > &
     function escapeHtml(text) {
       return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
-
-    // Format time: today = "14:32", other day = "12 Nov"
     function formatTime(timestamp) {
       const d = new Date(timestamp);
       const now = new Date();
@@ -1074,49 +858,31 @@
       if (sameDay) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
     }
-
-    // ============================================================
-    // 5. OPEN PRIVATE CHAT - Show cached instantly, then refresh
-    // ============================================================
     async function openChat(id, name) {
-      // We are NOT in group now
       isGroupChat = false;
       document.getElementById('groupActions').style.display = 'none';
-
       chatWith = id;
       chatWithName = name;
-
       const found = peopleCache.find(p => (p._id || p) === id);
       chatWithAvatar = found?.avatar || '';
-
-      // Show chat, hide list, show input
       document.getElementById('peopleList').style.display = 'none';
       document.getElementById('chatBox').style.display = 'block';
       document.getElementById('inputRow').style.display = 'flex';
       document.getElementById('msgInput').placeholder = "Type private message...";
       document.getElementById('topTitle').innerText = '💬 ' + name;
-
-      // Show avatar in header
       const avEl = document.getElementById('chatHeaderAvatar');
       avEl.style.display = 'flex';
       avEl.className = 'avatar';
       avEl.innerHTML = chatWithAvatar ? '<img src="' + chatWithAvatar + '">' : name[0].toUpperCase();
-
       document.getElementById('backBtn').style.display = 'block';
-
-      // Mark as read
       if (chatMeta[id]) chatMeta[id].unread = 0;
       updateBadge();
       saveMetaToStorage();
-
-      // Show cached (last 30) instantly
       const cached = loadMessagesFromStorage(id);
       if (cached.length) {
         renderChatMessages(cached);
         saveLastReadId(id, cached[cached.length - 1]._id);
       } else {
-        // CACHE ADDITION - ADDED ONLY: If localStorage empty, try IndexedDB cache for chat instant open
-        // Same 30 messages, just from bigger storage - no server wait.
         const cachedWRDB = await loadMessagesFromWRDB(id);
         if (cachedWRDB.length) {
           renderChatMessages(cachedWRDB);
@@ -1126,72 +892,47 @@
           lastRenderedChatHtml = '';
         }
       }
-
-      // Fetch FULL history from server in background
       await loadMessages(true);
     }
-
-    // ============================================================
-    // 5B. OPEN GROUP CHAT - ADDED ONLY
-    // ============================================================
     async function openGroupChat() {
-      // We ARE in group now
       isGroupChat = true;
       chatWith = GROUP_ID;
       chatWithName = GROUP_NAME;
-
-      // Show chat, hide list
       document.getElementById('peopleList').style.display = 'none';
       document.getElementById('chatBox').style.display = 'block';
       document.getElementById('backBtn').style.display = 'block';
       document.getElementById('topTitle').innerText = GROUP_NAME;
-
-      // Show group avatar in header
       const avEl = document.getElementById('chatHeaderAvatar');
       avEl.style.display = 'flex';
       avEl.className = 'avatar groupAvatar';
       avEl.innerHTML = '📢';
-
-      // ADMIN CAN SEND, USERS CANNOT SEND
-      // Admin sees input box, users see NO input box
       if (isAdmin) {
         document.getElementById('inputRow').style.display = 'flex';
         document.getElementById('msgInput').placeholder = "Send announcement to all users...";
       } else {
         document.getElementById('inputRow').style.display = 'none';
       }
-
-      // Show group actions: View Admin / Message Admin
       const ga = document.getElementById('groupActions');
       ga.style.display = 'block';
-
-      // Member count line - ONLY admin sees it
       let memberLine = '';
       if (isAdmin) {
         memberLine = '<div style="text-align:center;color:#f59e0b;font-size:12px;padding:6px">👥 ' + totalGroupMembers + ' members in this group (only you can see this)</div>';
       } else {
         memberLine = '<div style="text-align:center;color:#888;font-size:12px;padding:6px">Only admin can send messages here</div>';
       }
-
-      // Buttons: View Profile + Message Admin (or You are Admin)
       ga.innerHTML = memberLine + '<div class="groupAdminBar">'
         + '<button onclick="viewAdminProfile()">👤 View Admin Profile</button>'
         + (isAdmin ? '<button onclick="alert(\'This is your group\')">⚙️ You are Admin</button>' : '<button class="primary" onclick="messageAdmin()">💬 Message Admin</button>')
         + '</div>'
         + '<div class="groupNotice"> </div>';
-
-      // Mark group as read
       if (chatMeta[GROUP_ID]) chatMeta[GROUP_ID].unread = 0;
       updateBadge();
       saveMetaToStorage();
-
-      // Show cached group messages instantly
       const cached = loadMessagesFromStorage(GROUP_ID);
       if (cached.length) {
         renderGroupMessages(cached);
         saveLastReadId(GROUP_ID, cached[cached.length - 1]._id);
       } else {
-        // CACHE ADDITION - ADDED ONLY: If localStorage empty, try IndexedDB for group chat instant open
         const cachedWRDB = await loadMessagesFromWRDB(GROUP_ID);
         if (cachedWRDB.length) {
           renderGroupMessages(cachedWRDB);
@@ -1201,12 +942,8 @@
           lastRenderedChatHtml = '';
         }
       }
-
-      // Fetch fresh group messages from server
       await loadGroupMessages(true);
     }
-
-    // Go to admin profile page
     function viewAdminProfile() {
       if (adminUserId) {
         location.href = 'profile.html?id=' + adminUserId;
@@ -1216,8 +953,6 @@
         alert('Admin profile loading... tap again');
       }
     }
-
-    // Open private chat with admin
     function messageAdmin() {
       if (adminUserId) {
         location.href = 'message.html?to=' + adminUserId;
@@ -1225,36 +960,22 @@
         alert('Admin loading... try again');
       }
     }
-
-    // Show group messages on screen
     function renderGroupMessages(msgs) {
       const html = msgs.length ? msgs.map(m => {
         const isMine = isAdmin && ((m.from?._id || m.from) === getMyId());
         const senderName = isAdmin ? 'You (Admin)' : (m.from?.username || adminUserName || 'Admin');
-
-        // Only admin sees Delete button in group
         const del = isAdmin ? '<button class="delBtn" onclick="deleteGroupMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
-
-        // CACHE ADDITION - ADDED ONLY: Use formatMessageText() instead of escapeHtml() here
-        // So admin Enter / blank line / spaces are kept - see formatMessageText() above.
         return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div style="font-size:11px;color:#aaa;margin-bottom:2px">' + escapeHtml(senderName) + ' • Admin</div><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
       }).join('') : '<p style="text-align:center;color:#777;padding:30px">No announcements yet.</p>';
-
       if (html === lastRenderedChatHtml) return;
       lastRenderedChatHtml = html;
       document.getElementById('chatBox').innerHTML = html;
       window.scrollTo(0, document.body.scrollHeight);
     }
-
-    // Load group messages from server + save to cache
-    // FIXED: If server says 0 messages, show 0. Don't keep old cache.
     async function loadGroupMessages(silent) {
       if (!isGroupChat) return;
-
       const msgs = await getGroupMessages();
       if (!msgs) return;
-
-      // FIXED: If server has 0, clear cache too - don't keep old cached messages
       if (msgs.length === 0) {
         saveMessagesToStorage(GROUP_ID, []);
         chatMeta[GROUP_ID] = {
@@ -1268,9 +989,7 @@
         renderGroupMessages([]);
         return;
       }
-
       saveMessagesToStorage(GROUP_ID, msgs);
-
       if (msgs.length) {
         saveLastReadId(GROUP_ID, msgs[msgs.length - 1]._id);
         chatMeta[GROUP_ID] = {
@@ -1282,28 +1001,17 @@
         saveMetaToStorage();
         updateBadge();
       }
-
       renderGroupMessages(msgs);
     }
-
-    // Delete one group announcement - admin only
-    // FIXED: Delete from SERVER first, then from screen.
-    // Old bug: Deleted from screen first, so if server failed it looked deleted for admin only.
     async function deleteGroupMsg(e, msgId) {
       e.stopPropagation();
       if (!confirm('Delete this announcement for everyone?')) return;
-
-      // Don't delete temp messages that are not on server yet
       if (String(msgId).startsWith('temp_')) {
         alert('Wait a second, message is still sending...');
         return;
       }
-
-      // STEP 1: Delete from SERVER FIRST - this deletes for EVERYONE
       try {
         const res = await fetch(BASE + '/api/group-messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
-
-        // If server says NO, STOP - do not delete from screen
         if (!res.ok) {
           alert('Could not delete from server. Message still exists for users. Try again.');
           return;
@@ -1312,31 +1020,21 @@
         alert('No connection. Could not delete from server.');
         return;
       }
-
-      // STEP 2: Only if server delete worked, delete from MY screen
       const wrap = e.target.closest('.msgWrap');
       if (wrap) wrap.remove();
       lastRenderedChatHtml = '';
-
-      // STEP 3: Delete from MY localStorage cache
       const cached = loadMessagesFromStorage(GROUP_ID);
       const filtered = cached.filter(m => m._id !== msgId);
       saveMessagesToStorage(GROUP_ID, filtered);
-
-      // STEP 4: Refresh from server to confirm
       await loadGroupMessages(true);
       await refreshGroupMeta(true);
     }
-
-    // Refresh group preview + unread + make group jump to top when new message arrives
     async function refreshGroupMeta(silent) {
       const msgs = await getGroupMessages();
       if (!msgs || !msgs.length) return;
-
       const lastMsg = msgs[msgs.length - 1];
       const lastTime = lastMsg.createdAt ? new Date(lastMsg.createdAt).getTime() : Date.now();
       const lastReadId = getLastReadId(GROUP_ID);
-
       let unread = 0;
       if (isGroupChat) {
         unread = 0;
@@ -1351,7 +1049,6 @@
           unread = msgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length;
         }
       }
-
       const old = chatMeta[GROUP_ID] || {};
       if (old.lastMsgId !== lastMsg._id || old.unread !== unread) {
         chatMeta[GROUP_ID] = { lastText: lastMsg.text, lastTime: lastTime, lastMsgId: lastMsg._id, unread: unread };
@@ -1360,57 +1057,37 @@
         if (!chatWith) renderPeopleList();
       }
     }
-
-    // ============================================================
-    // 5C. GET PRIVATE MESSAGES FROM SERVER
-    // ============================================================
     async function getMessagesFor(otherId) {
       try {
         const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
         const msgs = await res.json();
         return Array.isArray(msgs) ? msgs : [];
       } catch {
-        // CACHE ADDITION - ADDED ONLY: If server fails, return IndexedDB cache for this chat
-        // So chat still shows offline instead of empty.
         const fromWRDB = await loadMessagesFromWRDB(otherId);
         if (fromWRDB.length) return fromWRDB;
         return [];
       }
     }
-
-    // Show private messages on screen
     function renderChatMessages(msgs) {
       const html = msgs.length ? msgs.map(m => {
         const isMine = (m.from?._id || m.from) === getMyId();
         const del = isMine ? '<button class="delBtn" onclick="deleteMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
-        // CACHE ADDITION - ADDED ONLY: Use formatMessageText() so private messages also keep line breaks + spaces
         return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
       }).join('') : '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
-
       if (html === lastRenderedChatHtml) return;
       lastRenderedChatHtml = html;
       document.getElementById('chatBox').innerHTML = html;
       window.scrollTo(0, document.body.scrollHeight);
     }
-
-    // ============================================================
-    // 6. LOAD PRIVATE MESSAGES
-    // ============================================================
     async function loadMessages(silent) {
       if (!chatWith || isGroupChat) return;
-
       const msgs = await getMessagesFor(chatWith);
       if (!msgs) return;
-
       const cached = loadMessagesFromStorage(chatWith);
       if (msgs.length === 0 && cached.length > 0) return;
-
-      // Save TRIMMED version (last 30) - full list still on server
       saveMessagesToStorage(chatWith, msgs);
-
       if (msgs.length) {
         saveLastReadId(chatWith, msgs[msgs.length - 1]._id);
-
         if (chatMeta[chatWith]) {
           chatMeta[chatWith].unread = 0;
           chatMeta[chatWith].lastText = ((msgs[msgs.length - 1].from?._id || msgs[msgs.length - 1].from) === getMyId() ? 'You: ' : '') + msgs[msgs.length - 1].text;
@@ -1420,67 +1097,46 @@
         }
         updateBadge();
       }
-
       renderChatMessages(msgs);
     }
-
-    // ============================================================
-    // 7. SEND MESSAGE - PRIVATE + GROUP
-    // ============================================================
     async function sendMsg() {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text) return;
-
-      // --- GROUP SEND ---
-      // Only admin can send here. Users are blocked.
       if (isGroupChat) {
         if (!isAdmin) {
           alert('Only admin can send in this group');
           return;
         }
-
         input.value = '';
-
-        // Show instantly with temp ID
         const tempMsg = {
           _id: 'temp_' + Date.now(),
           from: getMyId(),
           text: text,
           createdAt: new Date().toISOString()
         };
-
         const cached = loadMessagesFromStorage(GROUP_ID);
         cached.push(tempMsg);
         saveMessagesToStorage(GROUP_ID, cached);
         renderGroupMessages(cached);
-
-        // Make group jump to TOP instantly for admin
         chatMeta[GROUP_ID] = { lastText: text, lastTime: Date.now(), lastMsgId: tempMsg._id, unread: 0 };
         saveMetaToStorage();
-
-        // Send to server
         await sendGroupMessage(text);
         await loadGroupMessages(true);
         await refreshGroupMeta(true);
         return;
       }
-
-      // --- PRIVATE SEND - YOUR ORIGINAL LOGIC UNTOUCHED ---
       input.value = '';
-
       const tempMsg = {
         _id: 'temp_' + Date.now(),
         from: getMyId(),
         text: text,
         createdAt: new Date().toISOString()
       };
-
       const cached = loadMessagesFromStorage(chatWith);
       cached.push(tempMsg);
       saveMessagesToStorage(chatWith, cached);
       renderChatMessages(cached);
-
       try {
         await fetch(BASE + '/api/messages/' + chatWith, {
           method: 'POST',
@@ -1488,14 +1144,9 @@
           body: JSON.stringify({ text })
         });
       } catch (e) {}
-
       await loadMessages(true);
       await refreshRecentAndUnread(true);
     }
-
-    // ============================================================
-    // 8. BACK TO LIST
-    // ============================================================
     function showList() {
       document.getElementById('peopleList').style.display = 'block';
       document.getElementById('chatBox').style.display = 'none';
@@ -1504,33 +1155,24 @@
       document.getElementById('topTitle').innerText = '💬 Messages';
       document.getElementById('chatHeaderAvatar').style.display = 'none';
       document.getElementById('backBtn').style.display = 'none';
-
       chatWith = null;
       chatWithName = '';
       isGroupChat = false;
       lastRenderedChatHtml = '';
-
       refreshRecentAndUnread(true);
       refreshGroupMeta(true);
     }
-
-    // ============================================================
-    // 9. DELETE PRIVATE MESSAGE - From screen + storage + database
-    // ============================================================
     async function deleteMsg(e, msgId) {
       e.stopPropagation();
       if (!confirm('Delete this message? It will be deleted for everyone.')) return;
-
       const wrap = e.target.closest('.msgWrap');
       if (wrap) wrap.remove();
       lastRenderedChatHtml = '';
-
       if (chatWith) {
         const cached = loadMessagesFromStorage(chatWith);
         const filtered = cached.filter(m => m._id !== msgId);
         saveMessagesToStorage(chatWith, filtered);
       }
-
       try {
         const res = await fetch(BASE + '/api/messages/' + msgId, {
           method: 'DELETE',
@@ -1547,29 +1189,18 @@
         if (chatWith) loadMessages(true);
       }
     }
-
-    // ============================================================
-    // 10. CLICK PROFILE IN CHAT
-    // ============================================================
     function goToChatProfile() {
-      // If in group, go to ADMIN profile
       if (isGroupChat) {
         viewAdminProfile();
         return;
       }
-      // If in private chat, go to that person's profile
       if (chatWith) location.href = 'profile.html?id=' + chatWith;
     }
-
-    // ============================================================
-    // 11. NOTIFICATION BADGE - Total unread (private + group)
-    // ============================================================
     function updateBadge() {
       let total = 0;
       for (const id in chatMeta) {
         total += chatMeta[id].unread || 0;
       }
-
       const badge = document.getElementById('msgBadge');
       if (total > 0) {
         badge.style.display = 'flex';
@@ -1578,24 +1209,16 @@
         badge.style.display = 'none';
       }
     }
-
-    // ============================================================
-    // 12. RECENT + UNREAD - For private chats
-    // ============================================================
     async function refreshRecentAndUnread(silent) {
       if (!peopleCache.length) return;
-
       let metaChanged = false;
-
       for (const p of peopleCache) {
         const id = p._id || p;
         const msgs = await getMessagesFor(id);
         let useMsgs = msgs;
-
         if ((!msgs || !msgs.length) && loadMessagesFromStorage(id).length) {
           continue;
         }
-
         if (!useMsgs.length) {
           if (!chatMeta[id]) {
             chatMeta[id] = { lastText: '', lastTime: 0, unread: 0 };
@@ -1603,16 +1226,12 @@
           }
           continue;
         }
-
         saveMessagesToStorage(id, useMsgs);
-
         const lastMsg = useMsgs[useMsgs.length - 1];
         const lastTime = lastMsg.createdAt ? new Date(lastMsg.createdAt).getTime() : Date.now();
         const lastText = (lastMsg.from?._id || lastMsg.from) === getMyId() ? 'You: ' + lastMsg.text : lastMsg.text;
         const lastReadId = getLastReadId(id);
-
         let unread = 0;
-
         if (id === chatWith && !isGroupChat) {
           unread = 0;
           saveLastReadId(id, lastMsg._id);
@@ -1641,37 +1260,27 @@
             unread = useMsgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length;
           }
         }
-
         const old = chatMeta[id];
         if (!old || old.lastMsgId !== lastMsg._id || old.unread !== unread || old.lastText !== lastText) {
           chatMeta[id] = { lastText: lastText, lastTime: lastTime, lastMsgId: lastMsg._id, unread: unread };
           metaChanged = true;
         }
       }
-
       if (metaChanged) saveMetaToStorage();
       updateBadge();
       if (!chatWith) renderPeopleList();
     }
-
-    // ============================================================
-    // 13. START + AUTO-REFRESH (POLLING EVERY 2 SECONDS)
-    // ============================================================
     loadPeople();
-
     setInterval(async () => {
       if (chatWith) {
         if (isGroupChat) {
-          // Inside group - refresh group only
           await loadGroupMessages(true);
           await refreshGroupMeta(true);
         } else {
-          // Inside private chat - refresh private
           await loadMessages(true);
           await refreshRecentAndUnread(true);
         }
       } else {
-        // In list - refresh both private + group
         await refreshRecentAndUnread(true);
         await refreshGroupMeta(true);
       }
