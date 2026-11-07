@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -38,7 +37,6 @@
     .row { display: flex; gap: 10px; padding: 12px; border-bottom: 1px solid #222; align-items: center; cursor: pointer; }
     .mini { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(45deg, #7c3aed, #ec4899); display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .mini img { width: 100%; height: 100%; object-fit: cover; }
-
     /* ADDED ONLY - Edit popup */
     .editBox { background: #1a1a24; width: 90%; max-width: 400px; border-radius: 18px; max-height: 85vh; overflow-y: auto; padding: 20px; }
     .editAvatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(45deg, #7c3aed, #ec4899); display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; overflow: hidden; margin: 0 auto; cursor: pointer; }
@@ -47,17 +45,14 @@
     .editLabel { font-size: 12px; color: #aaa; margin-top: 14px; display: block; }
     .btn-save { width: 100%; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(90deg, #7c3aed, #ec4899); color: #fff; font-weight: 800; margin-top: 16px; cursor: pointer; }
     .btn-remove { background: #262626; color: #fff; border: 1px solid #444; width: 100%; padding: 11px; border-radius: 12px; margin-top: 8px; cursor: pointer; }
-
     /* ADDED ONLY - Delete button, only on your own posts */
     .btn-delete { background: #ff3b30; color: #fff; border: none; padding: 7px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 8px; }
-
+    /* ADDED ONLY - Unfollow button inside Following list */
+    .btn-mini-unfollow { background: #262626; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: auto; flex-shrink: 0; }
     /* ============================================================ */
     /* ADDED ONLY - MESSAGE NOTIFICATION BADGE STYLES               */
-    /* Copy this whole block to any other page you want badge on    */
     /* ============================================================ */
-    /* Makes the 💬 link able to hold a badge on top of it */
     .navMsg { position: relative; }
-    /* The red circle with number, e.g. 1, 2, 99+ */
     .msgBadge {
       position: absolute;
       top: -8px;
@@ -69,7 +64,7 @@
       min-width: 18px;
       height: 18px;
       border-radius: 999px;
-      display: none; /* hidden when 0 unread, JS will show it */
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 0 4px;
@@ -77,18 +72,13 @@
   </style>
 </head>
 <body>
-
-  <!-- Top banner -->
   <div class="banner"></div>
-
-  <!-- Profile card -->
   <div class="top">
     <div class="card">
       <div class="avatar" id="avatar" onclick="if(isOwn) openEdit()">U</div>
       <h3 id="name" style="margin:12px 0 2px">...</h3>
       <p id="emailLine" style="color:#a78bfa;font-size:13px;margin:0"></p>
       <p id="bio" style="color:#aaa;font-size:14px;margin:8px 0"></p>
-      <!-- ADDED ONLY - Link shows here -->
       <a id="linkLine" href="#" target="_blank" style="color:#7dd3fc;font-size:13px;display:none"></a>
       <div class="stats">
         <div class="stat"><b id="postCount">0</b><span>novels</span></div>
@@ -98,67 +88,44 @@
       <button id="followBtn" class="btn btn-follow" style="display:none" onclick="toggleFollow()">Follow</button>
       <a href="create.html" id="writeBtn" class="btn-write" style="display:none">+ Write Novel ✍️</a>
       <button id="msgBtn" class="btn" style="display:none;background:#262626;color:#fff" onclick="goMessage()">💬 Message</button>
-      <!-- ADDED ONLY - Edit button, shows only on your own profile -->
       <button id="editBtn" class="btn" style="display:none;background:#262626;color:#fff;border:1px solid #555" onclick="openEdit()">✏️ Edit Profile</button>
     </div>
   </div>
-
-  <!-- Novels grid -->
   <div class="grid" id="grid"><p style="grid-column:1/3;text-align:center;color:#777">Loading...</p></div>
-
-  <!-- Followers / Following popup -->
   <div class="modal" id="listModal" onclick="if(event.target===this) closeList()">
     <div class="mbox">
       <div class="head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div>
       <div class="list" id="listBody"></div>
     </div>
   </div>
-
-  <!-- ADDED ONLY - Edit Profile Popup -->
   <div class="modal" id="editModal" onclick="if(event.target===this) closeEdit()">
     <div class="editBox">
       <div style="display:flex;justify-content:space-between;align-items:center"><b>Edit Profile</b><span onclick="closeEdit()" style="cursor:pointer;font-size:20px">✕</span></div>
-
-      <!-- 1. Change Profile Picture -->
       <div class="editAvatar" id="editAvatarPreview" onclick="document.getElementById('uploaddInput').click()">U</div>
       <p style="text-align:center;font-size:12px;color:#aaa;margin:8px 0">Tap picture to change</p>
       <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewNewAvatar(this)">
-
-      <!-- 2. Change Name -->
       <label class="editLabel">Name / Username</label>
       <input class="editInput" id="editName" placeholder="Your name">
-
-      <!-- 3. Change Bio -->
       <label class="editLabel">Bio</label>
       <input class="editInput" id="editBio" placeholder="Tell people about you...">
-
-      <!-- 4. Change Link -->
       <label class="editLabel">Link</label>
       <input class="editInput" id="editLink" placeholder="https://your-link.com">
-
       <button class="btn-save" id="saveBtn" onclick="saveProfile()">Save Changes ✅</button>
       <button class="btn-remove" onclick="removeAvatar()">Remove Profile Picture</button>
     </div>
   </div>
-
-  <!-- Bottom navigation -->
   <div class="nav">
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
     <a href="create.html">✍️</a>
-    <!-- ADDED ONLY - Added class="navMsg" + <span id="msgBadge"> so badge can show on 💬 -->
     <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
     <a href="diary.html">📖</a>
     <a href="profile.html">👤</a>
   </div>
-
   <script>
     // ============================================================
     // CACHE ADDITION - ADDED ONLY - FIXED
     // FIX 1: Removed <script src="wildreaders-db.js"> from <head>
-    // Reason: That file + this inline block both declared const WRDB
-    // -> "Identifier 'WRDB' has already been declared" -> load() never ran
-    // Now WRDB exists ONLY here, so no clash.
     // FIX 2: Changed const WRDB = window.WRDB || {...} to const WRDB = {...}
     // FIX 3: Cache read has 500ms timeout, never blocks fetch.
     // ============================================================
@@ -198,6 +165,19 @@
             req.onerror = () => resolve(null);
           });
         } catch (e) { return null; }
+      },
+      // CACHE FIX - ADDED ONLY: Delete one key from IndexedDB
+      // Used after follow/unfollow + delete post so old data never shows again
+      async delete(key) {
+        try {
+          const db = await this._open();
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readwrite');
+            tx.objectStore(this.storeName).delete(key);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          });
+        } catch (e) { return false; }
       }
     };
     // CACHE ADDITION: Helper - 500ms timeout so cache never blocks fetch
@@ -209,6 +189,35 @@
     }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    // ============================================================
+    // CACHE FIX - ADDED ONLY: Clear ALL follow-related caches
+    // WHY: Follow/unfollow changed on server, but profile.html + message.html
+    // kept showing OLD cached following list + OLD counts.
+    // Call this AFTER every successful follow/unfollow, BEFORE re-render.
+    // ============================================================
+    async function clearFollowCaches() {
+      const myId = getMyId();
+      try {
+        // 1. Clear message.html caches - it builds people list from following
+        localStorage.removeItem('msg_people_' + myId);
+        localStorage.removeItem('msg_meta_' + myId);
+        localStorage.removeItem('msg_order_' + myId);
+        // 2. Clear own profile cache - so my Following count + list refresh fresh
+        localStorage.removeItem('profile_' + myId);
+      } catch (e) {}
+      try {
+        // 3. Clear IndexedDB same keys
+        await WRDB.delete('msg_people_' + myId);
+        await WRDB.delete('msg_meta_' + myId);
+        await WRDB.delete('profile_' + myId);
+        await WRDB.delete('profile_posts_' + myId);
+        // 4. Clear the OTHER person's profile cache too (their followers changed)
+        if (profileId) {
+          await WRDB.delete('profile_' + profileId);
+          await WRDB.delete('profile_posts_' + profileId);
+        }
+      } catch (e) {}
     }
     function renderProfileFromCache(cachedUser, cachedMine) {
       try {
@@ -236,15 +245,12 @@
         }
       } catch (e) {}
     }
-
     // ============================================================
-    // ORIGINAL CODE - Do not touch, everything below is your old code
+    // ORIGINAL CODE
     // ============================================================
     const BASE = "https://raymonddomain.dev";
     const token = localStorage.getItem('token');
     if (!token) location.href = "login.html";
-
-    // Get my own ID from token
     function getMyId() {
       try {
         return JSON.parse(atob(token.split('.')[1])).id;
@@ -252,17 +258,14 @@
         return "";
       }
     }
-
     let profileUser = null;
     let isOwn = false;
     let profileId = "";
     let newAvatarFile = null;
-
     // Load profile + novels
     async function load() {
       profileId = new URLSearchParams(location.search).get('id') || getMyId();
       isOwn = profileId === getMyId();
-
       // CACHE ADDITION - FIXED: 500ms timeout, never blocks fetch
       try {
         const cachedUser = await getCacheFast('profile_' + profileId);
@@ -283,17 +286,13 @@
           }
         }
       } catch (e) {}
-
       try {
         const r1 = await fetch(BASE + '/api/users/' + profileId, { headers: { authorization: token } });
         const data = await r1.json();
         profileUser = data.user || data;
-
         document.getElementById('name').innerText = profileUser.username || 'User';
         document.getElementById('emailLine').innerText = '';
         document.getElementById('bio').innerText = profileUser.bio || '';
-
-        // ADDED ONLY - Show link
         const linkEl = document.getElementById('linkLine');
         if (profileUser.link) {
           linkEl.style.display = 'block';
@@ -302,18 +301,15 @@
         } else {
           linkEl.style.display = 'none';
         }
-
         if (profileUser.avatar) {
           document.getElementById('avatar').innerHTML = '<img src="' + profileUser.avatar + '">';
         } else {
           document.getElementById('avatar').innerText = (profileUser.username || 'U')[0].toUpperCase();
         }
-
         const followers = profileUser.followers || [];
         const following = profileUser.following || [];
         document.getElementById('fCount').innerText = followers.length;
         document.getElementById('fgCount').innerText = following.length;
-
         if (isOwn) {
           document.getElementById('writeBtn').style.display = 'inline-block';
           document.getElementById('editBtn').style.display = 'inline-block';
@@ -325,19 +321,15 @@
           fb.innerText = amIFollowing ? 'Following' : 'Follow';
           fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
         }
-
         const r2 = await fetch(BASE + '/api/posts', { headers: { authorization: token } });
         const all = await r2.json();
         const mine = all.filter(p => (p.user?._id || p.user) === profileId);
         document.getElementById('postCount').innerText = mine.length;
-
         document.getElementById('grid').innerHTML = mine.length ? mine.map(p => {
           let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
-          // ADDED ONLY - Delete button shows only if this is YOUR profile (isOwn) and you are logged in
           let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
           return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
         }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
-
         WRDB.save('profile_' + profileId, profileUser);
         WRDB.save('profile_posts_' + profileId, mine);
       } catch (e) {
@@ -347,41 +339,50 @@
         }
       }
     }
-
-    // Follow / Unfollow - updates button IMMEDIATELY before fetch returns
+    // ============================================================
+    // FOLLOW / UNFOLLOW - FIXED - CACHE FIX
+    // OLD BUG: Only updated fCount, never MY fgCount, never cleared cache.
+    // NEW: Update UI instantly, clear caches, re-fetch MY profile for true fgCount.
+    // ============================================================
     async function toggleFollow() {
       const fb = document.getElementById('followBtn');
       const fCountEl = document.getElementById('fCount');
+      const fgCountEl = document.getElementById('fgCount');
       const wasFollowing = fb.innerText === 'Following';
       const myId = getMyId();
-
-      // 1. UPDATE UI IMMEDIATELY - before fetch
       fb.disabled = true;
       if (wasFollowing) {
         fb.innerText = 'Follow';
         fb.className = 'btn btn-follow';
         fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
-        // remove me from local followers list so showList is correct
         if (profileUser && profileUser.followers) profileUser.followers = profileUser.followers.filter(f => (f._id || f) !== myId);
       } else {
         fb.innerText = 'Following';
         fb.className = 'btn btn-following';
         fCountEl.innerText = (parseInt(fCountEl.innerText) || 0) + 1;
-        // add me to local followers list
         if (profileUser) {
           if (!profileUser.followers) profileUser.followers = [];
           profileUser.followers.push(myId);
         }
       }
-
-      // 2. NOW do the real fetch in background
       try {
         const res = await fetch(BASE + '/api/users/' + profileId + '/follow', { method: 'POST', headers: { authorization: token } });
         if (!res.ok) throw new Error('failed');
-        // 3. Sync with server silently - no reload flash, just update counts if needed
-        // We don't call full load() here to avoid flicker.
+        await clearFollowCaches();
+        if (profileUser) WRDB.save('profile_' + profileId, profileUser);
+        try {
+          const meRes = await fetch(BASE + '/api/users/' + myId, { headers: { authorization: token } });
+          const meData = await meRes.json();
+          const me = meData.user || meData;
+          if (me) {
+            WRDB.save('profile_' + myId, me);
+            if (isOwn && me.following) fgCountEl.innerText = me.following.length;
+          }
+        } catch (e) {}
+        if (document.getElementById('listModal').classList.contains('open')) {
+          showList('following');
+        }
       } catch (e) {
-        // 4. If it failed, revert UI back
         if (wasFollowing) {
           fb.innerText = 'Following';
           fb.className = 'btn btn-following';
@@ -399,7 +400,31 @@
       }
       fb.disabled = false;
     }
-
+    // ============================================================
+    // UNFOLLOW FROM FOLLOWING LIST - ADDED ONLY
+    // For YOUR OWN profile -> click Following -> Unfollow button
+    // ============================================================
+    async function unfollowFromList(userId, btnEl) {
+      if (btnEl) { btnEl.innerText = '...'; btnEl.disabled = true; }
+      try {
+        const res = await fetch(BASE + '/api/users/' + userId + '/follow', { method: 'POST', headers: { authorization: token } });
+        if (!res.ok) throw new Error('failed');
+        if (profileUser && profileUser.following) {
+          profileUser.following = profileUser.following.filter(u => (u._id || u) !== userId);
+        }
+        const fg = document.getElementById('fgCount');
+        if (fg) fg.innerText = Math.max(0, (parseInt(fg.innerText) || 0) - 1);
+        const row = btnEl ? btnEl.closest('.row') : document.getElementById('follow-row-' + userId);
+        if (row) row.remove();
+        await clearFollowCaches();
+        if (profileUser) WRDB.save('profile_' + profileId, profileUser);
+        const body = document.getElementById('listBody');
+        if (body && !body.querySelector('.row')) body.innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+      } catch (e) {
+        if (btnEl) { btnEl.innerText = 'Unfollow'; btnEl.disabled = false; }
+        alert('Could not unfollow. Try again.');
+      }
+    }
     // Show followers / following popup
     function showList(type) {
       document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
@@ -408,34 +433,74 @@
         const id = u._id || u;
         const name = u.username || id;
         const av = u.avatar ? '<img src="' + u.avatar + '">' : name[0].toUpperCase();
-        return '<div class="row" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="mini">' + av + '</div><div><b>' + name + '</b><div style="font-size:12px;color:#888">' + ('') + '</div></div></div>';
+        const unfollowBtn = (isOwn && type === 'following')
+          ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>'
+          : '';
+        return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="mini">' + av + '</div><div><b>' + name + '</b><div style="font-size:12px;color:#888"></div></div>' + unfollowBtn + '</div>';
       }).join('') : '<p style="padding:15px;color:#777">None yet</p>';
       document.getElementById('listModal').classList.add('open');
     }
-
     function closeList() {
       document.getElementById('listModal').classList.remove('open');
     }
-
     function goMessage() {
       location.href = 'message.html?to=' + profileId;
     }
-
-    // ADDED ONLY - Delete your own post. Only works when logged in as owner.
+    // ============================================================
+    // DELETE POST - FIXED - DELETE IMMEDIATELY
+    // OLD BUG: alert() -> load() -> load() shows OLD cached profile_posts_
+    // So post re-appeared for 1-2 sec, looked like delete failed.
+    // NEW: Remove card from screen instantly + reduce count + clear cache
+    // Then delete from server. If server fails, bring card back.
+    // ============================================================
     async function deletePost(e, postId) {
-      e.stopPropagation(); // don't open read.html when clicking Delete
+      e.stopPropagation();
       if (!isOwn) return alert('You can only delete your own post');
       if (!confirm('Delete this novel? This cannot be undone.')) return;
+      // 1. Find card on screen BEFORE delete - so we can remove it instantly
+      const btn = e.target;
+      const card = btn.closest('.gcard');
+      // Save HTML in case server fails and we need to bring it back
+      const savedHTML = card ? card.outerHTML : '';
+      const savedCount = parseInt(document.getElementById('postCount').innerText) || 0;
+      // 2. DELETE IMMEDIATELY - from screen, no waiting for server
+      if (card) card.remove();
+      // Reduce novels count instantly
+      const countEl = document.getElementById('postCount');
+      if (countEl) countEl.innerText = Math.max(0, savedCount - 1);
+      // If grid is now empty, show empty message instantly
+      const grid = document.getElementById('grid');
+      if (grid && !grid.querySelector('.gcard')) {
+        grid.innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+      }
+      // 3. Clear cache instantly - so post never comes back on reload
+      try {
+        await WRDB.delete('profile_posts_' + profileId);
+        await WRDB.delete('profile_' + profileId);
+        localStorage.removeItem('profile_' + profileId);
+      } catch (err) {}
+      // 4. NOW delete from server in background
       try {
         const res = await fetch(BASE + '/api/posts/' + postId, { method: 'DELETE', headers: { authorization: token } });
         if (!res.ok) throw new Error('Could not delete. You can only delete your own post.');
-        alert('Deleted ✅');
-        load(); // reload grid without the deleted post
+        // SUCCESS - done, no reload needed, no alert blocking screen
+        try {
+          const r2 = await fetch(BASE + '/api/posts', { headers: { authorization: token } });
+          const all = await r2.json();
+          const mine = all.filter(p => (p.user?._id || p.user) === profileId);
+          WRDB.save('profile_posts_' + profileId, mine);
+        } catch (e2) {}
       } catch (err) {
+        // 5. FAILED - bring card back, restore count
         alert(err.message);
+        if (grid) {
+          if (grid.innerHTML.includes('No novels yet')) grid.innerHTML = '';
+          grid.insertAdjacentHTML('beforeend', savedHTML);
+        }
+        if (countEl) countEl.innerText = savedCount;
+        try { await WRDB.delete('profile_posts_' + profileId); } catch (e) {}
       }
     }
-
     // ===== ADDED ONLY - Edit Profile Functions =====
     function openEdit() {
       if (!isOwn) return;
@@ -448,30 +513,25 @@
       else prev.innerText = (profileUser.username || 'U')[0].toUpperCase();
       document.getElementById('editModal').classList.add('open');
     }
-
     function closeEdit() {
       document.getElementById('editModal').classList.remove('open');
     }
-
     function previewNewAvatar(input) {
       if (input.files[0]) {
         newAvatarFile = input.files[0];
         document.getElementById('editAvatarPreview').innerHTML = '<img src="' + URL.createObjectURL(newAvatarFile) + '">';
       }
     }
-
     async function saveProfile() {
       const btn = document.getElementById('saveBtn');
       btn.innerText = 'Saving...';
       btn.disabled = true;
       try {
-        // 1. Save Name, Bio, Link - to database
         const username = document.getElementById('editName').value.trim();
         const bio = document.getElementById('editBio').value.trim();
         const link = document.getElementById('editLink').value.trim();
         const res1 = await fetch(BASE + '/api/users/me', { method: 'PUT', headers: { 'Content-Type': 'application/json', authorization: token }, body: JSON.stringify({ username, bio, link }) });
         if (!res1.ok) throw new Error('Could not save profile');
-        // 2. Save Profile Picture - to database (uploadd)
         if (newAvatarFile) {
           const fd = new FormData();
           fd.append('file', newAvatarFile);
@@ -480,6 +540,7 @@
         }
         alert('Profile updated! ✅');
         closeEdit();
+        await clearFollowCaches();
         load();
       } catch (e) {
         alert(e.message);
@@ -487,69 +548,47 @@
       btn.innerText = 'Save Changes ✅';
       btn.disabled = false;
     }
-
     async function removeAvatar() {
       if (!confirm('Remove profile picture?')) return;
       await fetch(BASE + '/api/users/avatar', { method: 'DELETE', headers: { authorization: token } });
       alert('Picture removed');
       closeEdit();
+      await clearFollowCaches();
       load();
     }
-
     load();
-
     // ====================================================================
     // ADDED ONLY - MESSAGE NOTIFICATION FOR THIS PAGE (PROFILE)
-    // Copy this WHOLE block to any other page to get same badge there.
-    // It uses the SAME localStorage keys as message.html, so they stay in sync.
     // ====================================================================
-
-    // --- STEP 1: Get my own ID from token ---
-    // We need my ID to build the "read_" key and to know if a message is from me or from them
-    // We use a different name (getMyIdForBadge) so it does NOT clash with your existing getMyId() above
     function getMyIdForBadge() {
       try {
-        // Token is like xxx.YYY.zzz, the middle part holds my id
         return JSON.parse(atob(token.split('.')[1])).id;
       } catch {
         return "";
       }
     }
-
-    // --- STEP 2: Helpers to remember what I have already read ---
-    // We save: read_MYID_OTHERID = ID of last message I saw from that person
-    // Example: read_123_456 = "msg789"
-    // If server has a newer message ID after that one, and it's from THEM, it's unread.
     function getReadKeyForBadge(otherId) {
       return 'read_' + getMyIdForBadge() + '_' + otherId;
     }
     function getLastReadIdForBadge(otherId) {
       return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
     }
-
-    // --- STEP 3: Show / hide the red badge on 💬 button ---
     function updateMsgBadge(count) {
-      // Find the badge span in the bottom nav
       const badge = document.getElementById('msgBadge');
-      if (!badge) return; // If this page has no badge, do nothing
+      if (!badge) return;
       if (count > 0) {
-        badge.style.display = 'flex'; // Show badge
-        badge.innerText = count > 99 ? '99+' : count; // 99+ if too many
+        badge.style.display = 'flex';
+        badge.innerText = count > 99 ? '99+' : count;
       } else {
-        badge.style.display = 'none'; // Hide badge when 0 unread
+        badge.style.display = 'none';
       }
     }
-
-    // --- STEP 4: Check server for new messages ---
     async function checkMsgNotifications() {
       try {
-        // 4a. Get my profile to know who I follow / who follows me = people who can message me
         const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
         const meData = await meRes.json();
         const me = meData.user || meData;
         let people = [...(me.followers || []), ...(me.following || [])];
-
-        // 4b. Remove duplicates + remove myself
         let seen = {};
         people = people.filter(p => {
           let id = p._id || p;
@@ -557,39 +596,25 @@
           seen[id] = true;
           return id !== getMyIdForBadge();
         });
-
-        let totalUnread = 0; // Total unread across all chats
-
-        // 4c. For each person, fetch our chat and count unread
+        let totalUnread = 0;
         for (const p of people) {
           const otherId = p._id || p;
           const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
           const msgs = await res.json();
-          if (!Array.isArray(msgs) || !msgs.length) continue; // No messages with this person
-
+          if (!Array.isArray(msgs) || !msgs.length) continue;
           const lastReadId = getLastReadIdForBadge(otherId);
-
-          // If I have NEVER opened this chat before, treat all old messages as already read
-          // (so old chats don't suddenly show as unread on first load)
-          // We save the last message as "read" and continue
           if (!lastReadId) {
             localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
             continue;
           }
-
-          // Find where I stopped reading
           const idx = msgs.findIndex(m => m._id === lastReadId);
-
           if (idx === -1) {
-            // My last read message was deleted, so check last message:
-            // If last message is new AND from them, count it as 1 unread
             const lastMsg = msgs[msgs.length - 1];
             const fromId = lastMsg.from?._id || lastMsg.from;
             if (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) {
               totalUnread += 1;
             }
           } else {
-            // Count messages AFTER my last read one that are FROM THEM (not from me)
             const after = msgs.slice(idx + 1);
             for (const m of after) {
               const fromId = m.from?._id || m.from;
@@ -597,19 +622,10 @@
             }
           }
         }
-
-        // 4d. Update the badge on screen
         updateMsgBadge(totalUnread);
-
-      } catch (e) {
-        // If internet fails, just ignore, will try again in 3 seconds
-      }
+      } catch (e) {}
     }
-
-    // --- STEP 5: Start checking ---
-    // Check immediately when page loads
     checkMsgNotifications();
-    // Then check every 3 seconds, so new message shows fast while you are on Profile
     setInterval(checkMsgNotifications, 3000);
   </script>
 </body>
