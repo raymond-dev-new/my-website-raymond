@@ -555,7 +555,7 @@
     <div class="mbox">
       <!-- Modal header -->
       <div class="head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div>
-      <!-- List body - filled by JS, shows Loading... while fetching -->
+      <!-- List body - filled by JS, NO Loading... anymore, shows people instantly -->
       <div class="list" id="listBody"></div>
     </div>
   </div>
@@ -1321,104 +1321,134 @@
     }
 
     // ============================================================
-    // HELPER - Resolve one follower / following ID to full user
-    // FIXED: Backend returns followers as IDs only, e.g. ["674...", "675..."]
-    // Not as { username, avatar }. So we must fetch each person
-    // from backend to get their name + picture, so list can show them.
-    // If fetch fails, we still return { _id: id } so row still shows + is clickable.
+    // HELPER - Build one row instantly, no waiting
+    // FIXED: This renders a row immediately from what we already know.
+    // If user is already full object, show name + avatar now.
+    // If user is only an ID, show row now with ID, then fill name later.
+    // This is why list NEVER shows "Loading..." anymore.
     // ============================================================
-    async function resolveOneUser(userOrId) {
-      // If it is already a full user with username, use it as-is
-      // No extra fetch needed
+    function buildFollowRow(u, type) {
+      // Get ID - can be string "674..." or object { _id: "674..." }
+      const id = (u && u._id) || u;
+      // If we already have username, use it. If only ID, show short ID for now
+      // Later, when fetch returns, we will update this row's name
+      const name = (u && u.username) || String(id);
+      // If we already have avatar, use it. Else first letter
+      const av = (u && u.avatar) ? '<img src="' + u.avatar + '">' : name[0].toUpperCase();
+      // Unfollow button only on YOUR OWN Following list
+      const unfollowBtn = (isOwn && type === 'following') ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>' : '';
+      // Row click -> go to that person's profile
+      // We give name span an id so we can update it later without rebuilding list
+      return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="mini" id="follow-avatar-' + id + '">' + av + '</div><div><b id="follow-name-' + id + '">' + name + '</b></div>' + unfollowBtn + '</div>';
+    }
+
+    // ============================================================
+    // HELPER - Fill in one row's name + avatar after its fetch returns
+    // This runs in background, does NOT block the list.
+    // If fetch fails, row stays as it was - still clickable.
+    // ============================================================
+    async function fillOneFollowRow(userOrId) {
+      // If already full user, nothing to fill
       if (userOrId && typeof userOrId === 'object' && userOrId.username) {
-        return userOrId;
+        return;
       }
-
-      // Get the ID - it can be string "674..." or object { _id: "674..." }
+      // Get ID
       const userId = (userOrId && userOrId._id) || userOrId;
-
-      // If no ID, return as-is
       if (!userId) {
-        return userOrId;
+        return;
       }
-
-      // If it is already an object with _id but no username, fetch full user
-      // If it is just a string ID, fetch full user
+      // Fetch this one person from backend
       try {
-        const res = await fetch(BASE + '/api/users/' + userId, {
-          headers: { authorization: token }
-        });
+        const res = await fetch(BASE + '/api/users/' + userId, { headers: { authorization: token } });
         if (!res.ok) {
-          // Backend failed, return ID only so row still shows + is clickable
-          return { _id: userId, username: userId };
+          return;
         }
         const data = await res.json();
         const fullUser = data.user || data;
-        // Return full user with name + avatar
-        return fullUser;
+        if (!fullUser || !fullUser.username) {
+          return;
+        }
+        // Update name in the row that is already on screen
+        const nameEl = document.getElementById('follow-name-' + userId);
+        if (nameEl) {
+          nameEl.innerText = fullUser.username;
+        }
+        // Update avatar in the row that is already on screen
+        const avEl = document.getElementById('follow-avatar-' + userId);
+        if (avEl && fullUser.avatar) {
+          avEl.innerHTML = '<img src="' + fullUser.avatar + '">';
+        }
       } catch (e) {
-        // Internet failed, return ID only so row still shows + is clickable
-        return { _id: userId, username: userId };
+        // Ignore - row stays clickable with ID
       }
     }
 
     // ============================================================
     // SHOW LIST - Show Followers / Following popup
-    // RULE: List ALWAYS fetched fresh from BACKEND.
-    // Never from storage, never from old cache.
-    // Shows Loading... while fetching, then shows real people.
-    // FIXED: If backend returns IDs only, resolve each ID to full user
-    // so name + picture show, and row is clickable to their profile.
+    // FIXED - NO "Loading..." AT ALL
+    // 1. Open modal instantly
+    // 2. Show people instantly from profileUser (already loaded in load())
+    // 3. In background, fetch fresh list + fill in names for IDs
+    // User sees people immediately, never sees Loading...
     // ============================================================
-    async function showList(type) {
+    function showList(type) {
       // Set title
       document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
 
-      // Show loading while fetching from backend
-      document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">Loading...</p>';
+      // Open modal instantly - do NOT wait for fetch
       document.getElementById('listModal').classList.add('open');
 
-      // RULE: Fetch fresh from BACKEND every time you open list
-      const followData = await fetchFollowFromBackend(profileId);
-      let rawList = [];
-      if (followData) {
-        // Update live object + counts from backend too
+      // STEP 1 - Show people INSTANTLY from memory (profileUser)
+      // profileUser was already fetched in load(), so this is instant, no Loading...
+      let instantList = [];
+      if (profileUser) {
+        instantList = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
+      }
+
+      // If we have people in memory, show them NOW
+      if (instantList.length) {
+        document.getElementById('listBody').innerHTML = instantList.map(u => buildFollowRow(u, type)).join('');
+        // Fill in names for IDs in background - each row updates by itself when its fetch returns
+        // This does NOT rebuild the list, so user never sees Loading...
+        instantList.forEach(u => fillOneFollowRow(u));
+      } else {
+        // No people in memory yet (e.g. profile still loading) - show "None yet" for now
+        // Do NOT show Loading... - background fetch below will fill it when it returns
+        document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+      }
+
+      // STEP 2 - In background, fetch fresh from BACKEND and update list when it returns
+      // This does NOT block the instant list above. User already sees people.
+      // We do NOT await it here, so showList returns instantly.
+      fetchFollowFromBackend(profileId).then(followData => {
+        // If backend failed, keep instant list as-is, do nothing
+        if (!followData) {
+          return;
+        }
+        // Update live object + counts from backend
         if (profileUser) {
           profileUser.followers = followData.followers;
           profileUser.following = followData.following;
         }
         applyFollowFromBackend(followData.followers, followData.following);
-        rawList = type === 'followers' ? followData.followers : followData.following;
-      } else {
-        // If backend fails, fall back to live in-memory list (not storage)
-        rawList = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
-      }
-
-      // FIXED: Resolve IDs to full users
-      // If rawList is ["id1", "id2"], fetch each person so we get name + avatar
-      // If rawList is already full users, resolveOneUser returns them as-is, no extra fetch
-      let list = [];
-      try {
-        // Fetch all people in parallel, so list loads fast
-        list = await Promise.all(rawList.map(u => resolveOneUser(u)));
-      } catch (e) {
-        // If resolving fails, use raw list as-is so list still shows
-        list = rawList;
-      }
-
-      // Build rows from resolved list
-      // Each row is CLICKABLE - click goes to that person's profile
-      document.getElementById('listBody').innerHTML = list.length ? list.map(u => {
-        const id = u._id || u;
-        // Name - if backend gave username, use it. If only ID, show short ID
-        const name = u.username || String(id).slice(0, 8);
-        // Avatar - if backend gave avatar, use it. Else first letter of name
-        const av = u.avatar ? '<img src="' + u.avatar + '">' : name[0].toUpperCase();
-        // Unfollow button only on YOUR OWN Following list
-        const unfollowBtn = (isOwn && type === 'following') ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>' : '';
-        // Row click -> go to that person's profile
-        return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="mini">' + av + '</div><div><b>' + name + '</b></div>' + unfollowBtn + '</div>';
-      }).join('') : '<p style="padding:15px;color:#777">None yet</p>';
+        const freshList = type === 'followers' ? followData.followers : followData.following;
+        // If fresh list is empty, show None yet
+        if (!freshList.length) {
+          document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+          return;
+        }
+        // Rebuild list with fresh data - still NO Loading..., just people
+        // Only rebuild if modal is still open for this type, to avoid overwriting other modal
+        const modalOpen = document.getElementById('listModal').classList.contains('open');
+        if (!modalOpen) {
+          return;
+        }
+        document.getElementById('listBody').innerHTML = freshList.map(u => buildFollowRow(u, type)).join('');
+        // Fill in names for IDs in background
+        freshList.forEach(u => fillOneFollowRow(u));
+      }).catch(() => {
+        // Ignore - instant list stays
+      });
     }
 
     // ============================================================
