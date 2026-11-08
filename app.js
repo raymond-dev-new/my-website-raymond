@@ -276,22 +276,7 @@ app.post('/api/users/:id/follow', authh, async (req,res)=>{
 */
 
 
-// ============================================================
-// BACKEND - TIKTOK WAY - FOLLOW / UNFOLLOW / DELETE
-// ============================================================
-// RULES:
-// 1. Server is boss - frontend never trusts cache for counts.
-// 2. Separate /follow and /unfollow, never toggle.
-// 3. $addToSet / $pull = idempotent, no duplicates, safe to retry.
-// 4. Return real DB state after save, never fake true.
-// ============================================================
 
-// ============================================================
-// HELPER - Get my ID from token
-// WHY: Frontend sends authorization: token (no Bearer).
-// Old auth expected Bearer, so myId was undefined,
-// backend returned true but saved nothing. This fixes it.
-// Handles BOTH "token" and "Bearer token".
 // ============================================================
 function getAuthId(req) {
   try {
@@ -412,57 +397,7 @@ app.post('/api/users/:id/unfollow', async (req, res) => {
   }
 });
 
-// ============================================================
-// DELETE POST - DELETE /api/posts/:id
-// WHAT IT DOES:
-// 1. Checks post exists
-// 2. Checks you are owner - only owner can delete
-// 3. Deletes from DB
-// 4. Returns real deleted flag
-// ============================================================
-/*app.delete('/api/posts/:id', async (req, res) => {
-  try {
-    // Get my ID from token
-    const myId = getAuthId(req);
 
-    // Find post
-    const post = await Post.findById(req.params.id);
-
-    // If post not found, return error
-    if (!post) {
-      return res.status(404).json({ ok: false, error: 'Post not found' });
-    }
-
-    // Check owner - post.user can be ObjectId or populated object
-    const ownerId = String(post.user?._id || post.user);
-    if (ownerId !== String(myId)) {
-      return res.status(403).json({ ok: false, error: 'Not your post' });
-    }
-
-    // Delete from DB
-    await Post.findByIdAndDelete(req.params.id);
-
-    // Return success + deleted ID
-    res.json({ ok: true, deleted: true, postId: req.params.id });
-
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-}); */
-
-// ============================================================
-// USER SCHEMA - MUST HAVE THESE FIELDS
-// WHY: If schema has no followers / following,
-// Mongoose silently drops them, backend returns true
-// but nothing is saved. This is the hidden bug.
-// ============================================================
-// Paste this inside your User schema:
- // followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
- // following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-
-// =================================================
-// ===== NOVELS - ALL IN DATABASE =====
-// =================================================
 
 // CREATE NOVEL - uses uploadd
 app.post('/api/posts', authh, uploadd.fields([{name:'file', maxCount:1}, {name:'cover', maxCount:1}]), async (req,res)=>{

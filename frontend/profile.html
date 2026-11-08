@@ -762,11 +762,6 @@
       if (barText) {
         barText.innerText = 'Loading profile...';
       }
-      // If name is still empty / Loading, keep skeleton
-      // If cache already filled name, we keep cache name, we do NOT clear it
-      // Only counts go to ... if they are not already from cache posts
-      // Followers / following always show ... while fetching, because they have no cache
-      // But we do NOT clear avatar or novels - they stay
       // Follow button shows Loading... and is disabled while fetching
       const fb = document.getElementById('followBtn');
       if (fb && !isOwn) {
@@ -778,7 +773,6 @@
       if (editBtn && isOwn) {
         editBtn.innerText = '⏳ Loading...';
       }
-      // Write button - keep it, but show loading if own and not yet shown
       // We do NOT hide cached novels grid while loading
     }
 
@@ -806,7 +800,6 @@
       if (editBtn && isOwn) {
         editBtn.innerText = '✏️ Edit Profile';
       }
-      // Follow button loading class removed in load() when it sets Follow / Following
     }
 
     // ============================================================
@@ -875,7 +868,7 @@
     // ============================================================
     // CONFIG + AUTH
     // ============================================================
-    const BASE = "https://raymonddomain.dev";
+    const BASE = "http://localhost:8000";
     const token = localStorage.getItem('token');
     if (!token) {
       location.href = "login.html";
@@ -973,7 +966,6 @@
           // Live object starts from cache for name/avatar, follow fields will be overwritten by backend below
           profileUser = cachedUser;
           // Ensure live object has empty follow arrays for now, until backend returns
-          // This prevents old cached follow data from showing, because cache has none
           profileUser.followers = [];
           profileUser.following = [];
 
@@ -997,10 +989,6 @@
             document.getElementById('avatar').innerHTML = '<img src="' + cachedUser.avatar + '">';
             document.getElementById('avatar').classList.remove('loading');
           }
-
-          // RULE: DO NOT set fCount / fgCount from cache here.
-          // Cache has no follow data. Keep them as ... while backend fetches.
-          // This is why followers / following show loading ...
 
           // Show cached posts (novels) - REMAIN while loading, NOT cleared
           if (Array.isArray(cachedMine)) {
@@ -1120,8 +1108,6 @@
         if (grid && grid.querySelector('.gcard.loading')) {
           grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
         }
-        // If backend fails, keep cached counts if any, else keep ...
-        // Do NOT set followers to 0 on error, that would be fake
       } finally {
         // 6. Hide loading UI - fetch done (success or fail)
         hideProfileLoading();
@@ -1129,9 +1115,12 @@
     }
 
     // ============================================================
-    // FOLLOW / UNFOLLOW - Main Follow button
-    // RULE: Followers / following NEVER saved to storage.
-    // After action, re-fetch from backend and update screen.
+    // FOLLOW / UNFOLLOW - FAST VERSION
+    // FIX: Do NOT wait for 2 extra re-fetches before finishing.
+    // 1. Optimistic UI instantly
+    // 2. POST to backend - only ONE fetch to wait for
+    // 3. Re-fetch in BACKGROUND, do NOT await it, do NOT block button
+    // This is what makes Follow feel instant even if backend is slow.
     // ============================================================
     async function toggleFollow() {
       // If profile is still loading, do NOT allow follow yet - wait for backend
@@ -1148,7 +1137,7 @@
       const action = wasFollowing ? 'unfollow' : 'follow';
       const url = BASE + '/api/users/' + profileId + '/' + action;
 
-      // Disable button so user cannot double-tap
+      // Disable button briefly so user cannot double-tap
       fb.disabled = true;
 
       // 1. OPTIMISTIC UI - Update instantly, before server answers
@@ -1180,7 +1169,10 @@
       // Pending saves only URL + method, NOT followers / following
       savePending({ url: url, method: 'POST' });
 
-      // 3. Real fetch to BACKEND
+      // Re-enable button INSTANTLY - do NOT wait 2 minutes for backend
+      fb.disabled = false;
+
+      // 3. ONE fetch only - POST to BACKEND
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -1195,9 +1187,12 @@
         // 4. SUCCESS - Remove from pending queue
         removePending(url, 'POST');
 
-        // 5. RULE: Re-fetch follow data from BACKEND, never from storage
-        const followData = await fetchFollowFromBackend(profileId);
-        if (followData) {
+        // 5. BACKGROUND re-fetch - do NOT await, do NOT block
+        // If this is slow, user already sees correct UI, so they don't feel it
+        fetchFollowFromBackend(profileId).then(followData => {
+          if (!followData) {
+            return;
+          }
           // Update live object + screen from backend
           if (profileUser) {
             profileUser.followers = followData.followers;
@@ -1207,18 +1202,12 @@
           const amI = (followData.followers || []).some(f => (f._id || f) === myId);
           fb.innerText = amI ? 'Following' : 'Follow';
           fb.className = amI ? 'btn btn-following' : 'btn btn-follow';
-          // RULE: Save profile to storage WITHOUT follow fields
+          // Save profile to storage WITHOUT follow fields
           saveProfileToStorage(profileId, followData.fullUser);
-        }
-
-        // 6. RULE: Also re-fetch MY profile from BACKEND for my following
-        const myFollowData = await fetchFollowFromBackend(myId);
-        if (myFollowData) {
-          saveProfileToStorage(myId, myFollowData.fullUser);
-        }
+        }).catch(() => {});
 
       } catch (e) {
-        // 7. FAILED - Revert UI back
+        // 6. FAILED - Revert UI back
         // Pending stays in queue, will retry on next load
         if (wasFollowing) {
           fb.innerText = 'Following';
@@ -1230,15 +1219,11 @@
           fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
         }
       }
-
-      // 8. Re-enable button
-      fb.disabled = false;
     }
 
     // ============================================================
-    // UNFOLLOW FROM LIST - Unfollow button inside Following list
-    // RULE: Followers / following NEVER saved to storage.
-    // After unfollow, re-fetch from backend.
+    // UNFOLLOW FROM LIST - FAST VERSION
+    // Same idea: instant UI, 1 POST, background re-fetch, no waiting
     // ============================================================
     async function unfollowFromList(userId, btnEl) {
       // Disable button, show loading
@@ -1273,7 +1258,7 @@
       const url = BASE + '/api/users/' + userId + '/unfollow';
       savePending({ url: url, method: 'POST' });
 
-      // 3. Real fetch to BACKEND - /unfollow only, not toggle
+      // 3. ONE fetch only - POST to BACKEND - /unfollow only, not toggle
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -1288,16 +1273,16 @@
         // 4. SUCCESS - Remove from pending
         removePending(url, 'POST');
 
-        // 5. RULE: Re-fetch MY follow data from BACKEND
-        const myFollowData = await fetchFollowFromBackend(getMyId());
-        if (myFollowData) {
-          // Save MY profile to storage WITHOUT follow fields
+        // 5. BACKGROUND re-fetch - do NOT await, do NOT block
+        fetchFollowFromBackend(getMyId()).then(myFollowData => {
+          if (!myFollowData) {
+            return;
+          }
           saveProfileToStorage(getMyId(), myFollowData.fullUser);
-          // If I am on my own profile, update screen from backend
           if (isOwn) {
             applyFollowFromBackend(myFollowData.followers, myFollowData.following);
           }
-        }
+        }).catch(() => {});
 
       } catch (e) {
         // 6. FAILED - Bring row back, restore count + list
@@ -1575,7 +1560,6 @@
         if (countEl) {
           countEl.innerText = savedCount;
         }
-        // Restore cache - re-fetch will refill it on next load, but we do NOT delete cache here
         // Pending stays, so delete will retry on next load and delete in database
       }
     }
@@ -1599,8 +1583,6 @@
         document.getElementById('editLink').value = '';
         document.getElementById('editLink').placeholder = 'Loading...';
         document.getElementById('editModal').classList.add('open');
-        // Wait a bit and try again when load finishes - load() will have filled profileUser
-        // User can close and reopen, or we auto-fill when load finishes (see below)
         return;
       }
       // Normal open - profile already loaded
@@ -1712,6 +1694,7 @@
     // MESSAGE NOTIFICATION BADGE - For this page (Profile)
     // Uses SAME localStorage keys as message.html, so they stay in sync.
     // RULE: Badge also uses backend follow data, not storage.
+    // FIXED: Polling is now 15s, not 3s - was hammering server and slowing Follow
     // ============================================================
 
     // STEP 1: Get my own ID from token for badge
@@ -1820,15 +1803,16 @@
         // 4d. Update badge on screen
         updateMsgBadge(totalUnread);
       } catch (e) {
-        // If internet fails, just ignore, will try again in 3 seconds
+        // If internet fails, just ignore, will try again in 15 seconds
       }
     }
 
     // STEP 5: Start checking
     // Check immediately when page loads
     checkMsgNotifications();
-    // Then check every 3 seconds, so new message shows fast while you are on Profile
-    setInterval(checkMsgNotifications, 3000);
+    // FIXED: Then check every 15 seconds, NOT 3 seconds
+    // 3s was hammering server and making Follow take 2 minutes
+    setInterval(checkMsgNotifications, 15000);
   </script>
 </body>
 </html>
