@@ -1120,7 +1120,7 @@
         if (grid && grid.querySelector('.gcard.loading')) {
           grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
         }
-        // If backend fails, keep cached counts if any, else keep ... 
+        // If backend fails, keep cached counts if any, else keep ...
         // Do NOT set followers to 0 on error, that would be fake
       } finally {
         // 6. Hide loading UI - fetch done (success or fail)
@@ -1321,10 +1321,54 @@
     }
 
     // ============================================================
+    // HELPER - Resolve one follower / following ID to full user
+    // FIXED: Backend returns followers as IDs only, e.g. ["674...", "675..."]
+    // Not as { username, avatar }. So we must fetch each person
+    // from backend to get their name + picture, so list can show them.
+    // If fetch fails, we still return { _id: id } so row still shows + is clickable.
+    // ============================================================
+    async function resolveOneUser(userOrId) {
+      // If it is already a full user with username, use it as-is
+      // No extra fetch needed
+      if (userOrId && typeof userOrId === 'object' && userOrId.username) {
+        return userOrId;
+      }
+
+      // Get the ID - it can be string "674..." or object { _id: "674..." }
+      const userId = (userOrId && userOrId._id) || userOrId;
+
+      // If no ID, return as-is
+      if (!userId) {
+        return userOrId;
+      }
+
+      // If it is already an object with _id but no username, fetch full user
+      // If it is just a string ID, fetch full user
+      try {
+        const res = await fetch(BASE + '/api/users/' + userId, {
+          headers: { authorization: token }
+        });
+        if (!res.ok) {
+          // Backend failed, return ID only so row still shows + is clickable
+          return { _id: userId, username: userId };
+        }
+        const data = await res.json();
+        const fullUser = data.user || data;
+        // Return full user with name + avatar
+        return fullUser;
+      } catch (e) {
+        // Internet failed, return ID only so row still shows + is clickable
+        return { _id: userId, username: userId };
+      }
+    }
+
+    // ============================================================
     // SHOW LIST - Show Followers / Following popup
     // RULE: List ALWAYS fetched fresh from BACKEND.
     // Never from storage, never from old cache.
-    // Shows Loading... while fetching.
+    // Shows Loading... while fetching, then shows real people.
+    // FIXED: If backend returns IDs only, resolve each ID to full user
+    // so name + picture show, and row is clickable to their profile.
     // ============================================================
     async function showList(type) {
       // Set title
@@ -1336,7 +1380,7 @@
 
       // RULE: Fetch fresh from BACKEND every time you open list
       const followData = await fetchFollowFromBackend(profileId);
-      let list = [];
+      let rawList = [];
       if (followData) {
         // Update live object + counts from backend too
         if (profileUser) {
@@ -1344,19 +1388,35 @@
           profileUser.following = followData.following;
         }
         applyFollowFromBackend(followData.followers, followData.following);
-        list = type === 'followers' ? followData.followers : followData.following;
+        rawList = type === 'followers' ? followData.followers : followData.following;
       } else {
         // If backend fails, fall back to live in-memory list (not storage)
-        list = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
+        rawList = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
       }
 
-      // Build rows from backend list
+      // FIXED: Resolve IDs to full users
+      // If rawList is ["id1", "id2"], fetch each person so we get name + avatar
+      // If rawList is already full users, resolveOneUser returns them as-is, no extra fetch
+      let list = [];
+      try {
+        // Fetch all people in parallel, so list loads fast
+        list = await Promise.all(rawList.map(u => resolveOneUser(u)));
+      } catch (e) {
+        // If resolving fails, use raw list as-is so list still shows
+        list = rawList;
+      }
+
+      // Build rows from resolved list
+      // Each row is CLICKABLE - click goes to that person's profile
       document.getElementById('listBody').innerHTML = list.length ? list.map(u => {
         const id = u._id || u;
-        const name = u.username || id;
+        // Name - if backend gave username, use it. If only ID, show short ID
+        const name = u.username || String(id).slice(0, 8);
+        // Avatar - if backend gave avatar, use it. Else first letter of name
         const av = u.avatar ? '<img src="' + u.avatar + '">' : name[0].toUpperCase();
         // Unfollow button only on YOUR OWN Following list
         const unfollowBtn = (isOwn && type === 'following') ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>' : '';
+        // Row click -> go to that person's profile
         return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="mini">' + av + '</div><div><b>' + name + '</b></div>' + unfollowBtn + '</div>';
       }).join('') : '<p style="padding:15px;color:#777">None yet</p>';
     }
