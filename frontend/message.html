@@ -513,12 +513,15 @@
         return "";
       }
     }
+    // FIX ONLY - ADDED - localStorage email fallback for admin
+    // login.html now saves userEmail / myEmail / isAdmin on login.
+    // If token has no email, we use localStorage. Nothing else changed.
     function getMyEmailFromToken() {
       try {
-        return (JSON.parse(atob(token.split('.')[1])).email || "").toLowerCase().trim();
-      } catch {
-        return "";
-      }
+        const fromToken = (JSON.parse(atob(token.split('.')[1])).email || "").toLowerCase().trim();
+        if (fromToken) return fromToken;
+      } catch {}
+      return (localStorage.getItem('userEmail') || localStorage.getItem('myEmail') || "").toLowerCase().trim();
     }
 
     // ============================================================
@@ -527,8 +530,8 @@
     const ADMIN_EMAIL = "letswintrade@gmail.com";
     const GROUP_ID = "ADMIN_GROUP";
     const GROUP_NAME = "📢 WildReaders";
-    // FIX ONLY - PROFILE + ADMIN: isAdmin is instant from token, never waits for server
-    let isAdmin = (getMyEmailFromToken() === ADMIN_EMAIL);
+    // FIX ONLY - PROFILE + ADMIN: check token email OR localStorage isAdmin saved by login.html
+    let isAdmin = (getMyEmailFromToken() === ADMIN_EMAIL) || (localStorage.getItem('isAdmin') === 'true');
     let myEmail = getMyEmailFromToken();
     let adminUserId = isAdmin ? getMyId() : "";
     let adminUserName = "LetsWin";

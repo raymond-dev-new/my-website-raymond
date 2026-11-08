@@ -294,6 +294,9 @@ load();
  const button = document.getElementById('logoutBtn')
 
  button.addEventListener('click', () => {
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('myEmail');
+  localStorage.removeItem('isAdmin');
   localStorage.removeItem('token')
   location.href="dashboard.html"
  })

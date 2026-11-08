@@ -77,6 +77,16 @@ async function login(){
     const d=await res.json();
     if(!res.ok){ alert(d.msg||'Login failed'); return; }
     localStorage.setItem('token',d.token);
+    // FIX ONLY - ADMIN + PROFILE: Save email in localStorage so message.html can check admin instantly
+    // Old code saved ONLY token, so message.html could not know email if token had no email.
+    // Now: email is saved lowercase, plus isAdmin flag for letswintrade@gmail.com
+    const savedEmail = (email || (d.user && d.user.email) || '').toLowerCase().trim();
+    localStorage.setItem('userEmail', savedEmail);
+    localStorage.setItem('myEmail', savedEmail);
+    localStorage.setItem('isAdmin', savedEmail === 'letswintrade@gmail.com' ? 'true' : 'false');
+    if (d.user && d.user._id) localStorage.setItem('userId', d.user._id);
+    if (d.user && d.user.username) localStorage.setItem('username', d.user.username);
+    if (d.user && d.user.avatar) localStorage.setItem('avatar', d.user.avatar);
     location.href='feed.html';
   }catch(e){
     alert('Server error');
