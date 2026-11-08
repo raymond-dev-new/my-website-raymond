@@ -198,16 +198,7 @@ app.get('/api/users/:id/profile', authh, async (req,res)=>{
   res.json({ user, posts, followersCount:user.followers.length, followingCount:user.following.length });
 });
 
-// GET ONE USER BY ID
-app.get('/api/users/:id', authh, async (req,res)=>{
-  if(req.params.id==='me'){
-    const me = await User.findById(req.user.id).select('-password').populate('followers','username email avatar').populate('following','username email avatar');
-    return res.json({ user: me });
-  }
-  const user = await User.findById(req.params.id).select('-password').populate('followers','username email avatar').populate('following','username email avatar');
-  if(!user) return res.status(404).json({msg:'Not found'});
-  res.json({ user });
-});
+//here
 
 // UPDATE - NO displayName
 app.put('/api/users/me', authh, async (req,res)=>{
@@ -277,7 +268,6 @@ app.post('/api/users/:id/follow', authh, async (req,res)=>{
 
 
 
-// ============================================================
 function getAuthId(req) {
   try {
     // Get header, default empty
@@ -295,109 +285,54 @@ function getAuthId(req) {
   }
 }
 
-// ============================================================
-// FOLLOW - POST /api/users/:id/follow
-// WHAT IT DOES:
-// 1. Adds me to target's followers
-// 2. Adds target to my following
-// 3. Both in same request, so both sides always match
-// 4. $addToSet = if already following, does nothing, no duplicate
-// ============================================================
+
+
+app.get('/api/users/:id', authh, async (req, res) => {
+  try {
+    const targetId = req.params.id === 'me' ? req.user.id : req.params.id;
+    const user = await User.findById(targetId)
+      .select('username bio link avatar followers following')
+      .lean();
+    if (!user) return res.status(404).json({ msg: 'Not found' });
+    res.json({ user });
+  } catch (e) { res.status(500).json({ msg: e.message }); }
+});
+
 app.post('/api/users/:id/follow', async (req, res) => {
-  try {
-    // Get target ID from URL
-    const targetId = req.params.id;
-
-    // Get my ID from token
-    const myId = getAuthId(req);
-
-    // If no myId, auth failed - do NOT return fake true
-    if (!myId) {
-      return res.status(401).json({ ok: false, error: 'Auth failed - no myId' });
-    }
-
-    // Cannot follow yourself
-    if (targetId === myId) {
-      return res.status(400).json({ ok: false, error: 'Cannot follow yourself' });
-    }
-
-    // Check both users exist
-    const target = await User.findById(targetId);
-    const me = await User.findById(myId);
-    if (!target || !me) {
-      return res.status(404).json({ ok: false, error: 'User not found' });
-    }
-
-    // TIKTOK WAY: Update BOTH sides
-    // Side 1: Target gets new follower = me
-    await User.findByIdAndUpdate(targetId, { $addToSet: { followers: myId } });
-
-    // Side 2: I get new following = target
-    await User.findByIdAndUpdate(myId, { $addToSet: { following: targetId } });
-
-    // VERIFY: Re-read from DB, return real state, not fake true
-    const targetAfter = await User.findById(targetId);
-    const meAfter = await User.findById(myId);
-
-    // Return success + real lists
-    res.json({
-      ok: true,
-      following: true,
-      targetFollowers: targetAfter.followers,
-      myFollowing: meAfter.following
-    });
-
-  } catch (e) {
-    // If anything fails, return error, NOT true
-    res.status(500).json({ ok: false, error: e.message });
-  }
+  const targetId = req.params.id;
+  const myId = getAuthId(req);
+  if (!myId) return res.status(401).json({ ok: false });
+  await Promise.all([
+    User.findByIdAndUpdate(targetId, { $addToSet: { followers: myId } }),
+    User.findByIdAndUpdate(myId, { $addToSet: { following: targetId } })
+  ]);
+  res.json({ ok: true, following: true });
 });
 
-// ============================================================
-// UNFOLLOW - POST /api/users/:id/unfollow
-// WHAT IT DOES:
-// 1. Removes me from target's followers
-// 2. Removes target from my following
-// 3. $pull = if already unfollowed, does nothing, safe to retry
-// ============================================================
 app.post('/api/users/:id/unfollow', async (req, res) => {
-  try {
-    // Get target ID from URL
-    const targetId = req.params.id;
-
-    // Get my ID from token
-    const myId = getAuthId(req);
-
-    // If no myId, auth failed
-    if (!myId) {
-      return res.status(401).json({ ok: false, error: 'Auth failed' });
-    }
-
-    // TIKTOK WAY: Remove from BOTH sides
-    // Side 1: Remove me from target's followers
-    await User.findByIdAndUpdate(targetId, { $pull: { followers: myId } });
-
-    // Side 2: Remove target from my following
-    await User.findByIdAndUpdate(myId, { $pull: { following: targetId } });
-
-    // VERIFY: Re-read from DB
-    const targetAfter = await User.findById(targetId);
-    const meAfter = await User.findById(myId);
-
-    // Return success + real lists
-    res.json({
-      ok: true,
-      following: false,
-      targetFollowers: targetAfter ? targetAfter.followers : [],
-      myFollowing: meAfter ? meAfter.following : []
-    });
-
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
+  const targetId = req.params.id;
+  const myId = getAuthId(req);
+  if (!myId) return res.status(401).json({ ok: false });
+  await Promise.all([
+    User.findByIdAndUpdate(targetId, { $pull: { followers: myId } }),
+    User.findByIdAndUpdate(myId, { $pull: { following: targetId } })
+  ]);
+  res.json({ ok: true, following: false });
 });
 
+app.get('/api/users/:id/followers', authh, async (req, res) => {
+  const u = await User.findById(req.params.id).select('followers').lean();
+  if (!u) return res.json({ followers: [] });
+  const followers = await User.find({ _id: { $in: u.followers } }).select('username avatar bio').limit(100).lean();
+  res.json({ followers });
+});
 
+app.get('/api/users/:id/following', authh, async (req, res) => {
+  const u = await User.findById(req.params.id).select('following').lean();
+  if (!u) return res.json({ following: [] });
+  const following = await User.find({ _id: { $in: u.following } }).select('username avatar bio').limit(100).lean();
+  res.json({ following });
+});
 
 // CREATE NOVEL - uses uploadd
 app.post('/api/posts', authh, uploadd.fields([{name:'file', maxCount:1}, {name:'cover', maxCount:1}]), async (req,res)=>{

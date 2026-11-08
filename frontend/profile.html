@@ -6,9 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile</title>
   <style>
-    /* ============================================ */
-    /* GLOBAL - Page background + text + spacing   */
-    /* ============================================ */
     * {
       box-sizing: border-box;
     }
@@ -19,27 +16,15 @@
       font-family: Arial;
       padding-bottom: 90px;
     }
-
-    /* ============================================ */
-    /* TOP BANNER - Gradient strip at top           */
-    /* ============================================ */
     .banner {
       height: 120px;
       background: linear-gradient(90deg, #7c3aed, #ec4899, #f59e0b);
     }
-
-    /* ============================================ */
-    /* PROFILE CARD WRAPPER - Centers the card     */
-    /* ============================================ */
     .top {
       max-width: 935px;
       margin: -55px auto 0;
       padding: 0 16px;
     }
-
-    /* ============================================ */
-    /* PROFILE CARD - The dark box with avatar      */
-    /* ============================================ */
     .card {
       background: #14141d;
       border: 1px solid #262626;
@@ -47,12 +32,6 @@
       padding: 20px;
       position: relative;
     }
-
-    /* ============================================ */
-    /* LOADING - Top bar that shows while fetching  */
-    /* Shows "Loading profile..." while backend fetch runs */
-    /* Cached picture + novels stay visible under it */
-    /* ============================================ */
     .loadingBar {
       display: none;
       align-items: center;
@@ -69,7 +48,6 @@
     .loadingBar.show {
       display: inline-flex;
     }
-    /* Spinning dot inside loading bar */
     .spinner {
       width: 12px;
       height: 12px;
@@ -84,12 +62,6 @@
         transform: rotate(360deg);
       }
     }
-
-    /* ============================================ */
-    /* SKELETON - Shimmer for loading name / counts */
-    /* Used when there is NO cache yet (first visit) */
-    /* If cache exists, cache shows instead, skeleton NOT used */
-    /* ============================================ */
     .skeleton {
       background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
       background-size: 200% 100%;
@@ -105,24 +77,18 @@
         background-position: -200% 0;
       }
     }
-    /* Skeleton for avatar circle */
     .avatar.loading {
       background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
       background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
       color: transparent;
     }
-    /* Skeleton for novel cards while first load with no cache */
     .gcard.loading {
       min-height: 260px;
       background: linear-gradient(90deg, #16161f 25%, #26262f 50%, #16161f 75%);
       background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
     }
-
-    /* ============================================ */
-    /* AVATAR - Big circle profile picture         */
-    /* ============================================ */
     .avatar {
       width: 96px;
       height: 96px;
@@ -143,10 +109,6 @@
       height: 100%;
       object-fit: cover;
     }
-
-    /* ============================================ */
-    /* STATS ROW - novels / followers / following  */
-    /* ============================================ */
     .stats {
       display: flex;
       gap: 26px;
@@ -165,10 +127,6 @@
       font-size: 12px;
       color: #aaa;
     }
-
-    /* ============================================ */
-    /* BUTTONS - Follow / Following / General       */
-    /* ============================================ */
     .btn {
       padding: 9px 20px;
       border-radius: 12px;
@@ -177,18 +135,15 @@
       cursor: pointer;
       margin-top: 12px;
     }
-    /* Follow button - purple / pink gradient */
     .btn-follow {
       background: linear-gradient(90deg, #7c3aed, #ec4899);
       color: #fff;
     }
-    /* Following button - dark grey, shows you already follow */
     .btn-following {
       background: #262626;
       color: #fff;
       border: 1px solid #555;
     }
-    /* Write Novel button */
     .btn-write {
       background: linear-gradient(90deg, #7c3aed, #ec4899);
       color: #fff;
@@ -199,16 +154,11 @@
       display: inline-block;
       margin-top: 12px;
     }
-    /* Button in loading state - grey, disabled look */
     .btn.loadingBtn {
       background: #26262f !important;
       color: #888 !important;
       pointer-events: none;
     }
-
-    /* ============================================ */
-    /* NOVELS GRID - 2 columns of novel cards      */
-    /* ============================================ */
     .grid {
       max-width: 935px;
       margin: 0 auto;
@@ -217,7 +167,6 @@
       gap: 14px;
       padding: 14px 16px;
     }
-    /* One novel card */
     .gcard {
       background: #16161f;
       border: 1px solid #26262f;
@@ -225,7 +174,6 @@
       overflow: hidden;
       cursor: pointer;
     }
-    /* Novel cover area */
     .cover {
       width: 100%;
       height: 210px;
@@ -235,7 +183,6 @@
       height: 100%;
       object-fit: cover;
     }
-    /* No cover - gradient placeholder with book emoji */
     .noimg {
       width: 100%;
       height: 100%;
@@ -245,19 +192,13 @@
       justify-content: center;
       font-size: 50px;
     }
-    /* Text area under cover */
     .body {
       padding: 12px;
     }
-    /* Novel title */
     .title {
       font-size: 14px;
       font-weight: 800;
     }
-
-    /* ============================================ */
-    /* BOTTOM NAV - Fixed at bottom of screen      */
-    /* ============================================ */
     .nav {
       position: fixed;
       bottom: 0;
@@ -274,10 +215,6 @@
       text-decoration: none;
       font-size: 22px;
     }
-
-    /* ============================================ */
-    /* MODAL - Followers / Following / Edit popup  */
-    /* ============================================ */
     .modal {
       display: none;
       position: fixed;
@@ -287,11 +224,9 @@
       justify-content: center;
       align-items: center;
     }
-    /* When .open is added, modal shows */
     .modal.open {
       display: flex;
     }
-    /* White / dark box inside modal */
     .mbox {
       background: #1a1a24;
       width: 90%;
@@ -300,19 +235,16 @@
       max-height: 70vh;
       overflow: hidden;
     }
-    /* Modal header - title + X button */
     .head {
       padding: 14px;
       border-bottom: 1px solid #262626;
       display: flex;
       justify-content: space-between;
     }
-    /* Scrollable list inside modal */
     .list {
       overflow-y: auto;
       max-height: 60vh;
     }
-    /* One row in followers / following list */
     .row {
       display: flex;
       gap: 10px;
@@ -321,7 +253,6 @@
       align-items: center;
       cursor: pointer;
     }
-    /* Small avatar in list */
     .mini {
       width: 36px;
       height: 36px;
@@ -337,10 +268,23 @@
       height: 100%;
       object-fit: cover;
     }
-
-    /* ============================================ */
-    /* EDIT PROFILE POPUP - Box + inputs           */
-    /* ============================================ */
+    /* NEW: Grey shimmer for follower row while name is loading - never shows ID */
+    .mini.loadingMini {
+      background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      color: transparent;
+    }
+    .followName.loadingName {
+      background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+      color: transparent !important;
+      min-width: 110px;
+      min-height: 16px;
+      display: inline-block;
+    }
     .editBox {
       background: #1a1a24;
       width: 90%;
@@ -350,7 +294,6 @@
       overflow-y: auto;
       padding: 20px;
     }
-    /* Avatar preview inside edit popup */
     .editAvatar {
       width: 90px;
       height: 90px;
@@ -370,7 +313,6 @@
       height: 100%;
       object-fit: cover;
     }
-    /* Text inputs in edit popup */
     .editInput {
       width: 100%;
       background: #26262f;
@@ -382,14 +324,12 @@
       outline: none;
       font-size: 14px;
     }
-    /* Small label above each input */
     .editLabel {
       font-size: 12px;
       color: #aaa;
       margin-top: 14px;
       display: block;
     }
-    /* Save button in edit popup */
     .btn-save {
       width: 100%;
       padding: 14px;
@@ -401,7 +341,6 @@
       margin-top: 16px;
       cursor: pointer;
     }
-    /* Remove picture button */
     .btn-remove {
       background: #262626;
       color: #fff;
@@ -412,15 +351,10 @@
       margin-top: 8px;
       cursor: pointer;
     }
-    /* Edit popup loading - inputs disabled while saving */
     .editBox.loadingInputs .editInput {
       opacity: 0.6;
       pointer-events: none;
     }
-
-    /* ============================================ */
-    /* DELETE BUTTON - Only on your own posts      */
-    /* ============================================ */
     .btn-delete {
       background: #ff3b30;
       color: #fff;
@@ -432,11 +366,6 @@
       cursor: pointer;
       margin-top: 8px;
     }
-
-    /* ============================================ */
-    /* MINI UNFOLLOW BUTTON - Inside Following list */
-    /* Needed so you can unfollow from list instantly */
-    /* ============================================ */
     .btn-mini-unfollow {
       background: #262626;
       color: #fff;
@@ -449,15 +378,9 @@
       margin-left: auto;
       flex-shrink: 0;
     }
-
-    /* ============================================ */
-    /* MESSAGE BADGE - Red circle on 💬 icon       */
-    /* ============================================ */
-    /* Makes the 💬 link able to hold a badge on top */
     .navMsg {
       position: relative;
     }
-    /* The red circle with number, e.g. 1, 2, 99+ */
     .msgBadge {
       position: absolute;
       top: -8px;
@@ -469,7 +392,7 @@
       min-width: 18px;
       height: 18px;
       border-radius: 999px;
-      display: none; /* Hidden when 0 unread, JS will show it */
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 0 4px;
@@ -478,1341 +401,1182 @@
 </head>
 <body>
 
-  <!-- ============================================ -->
-  <!-- TOP BANNER - Gradient strip                 -->
-  <!-- ============================================ -->
   <div class="banner"></div>
 
-  <!-- ============================================ -->
-  <!-- PROFILE CARD - Avatar, name, bio, stats     -->
-  <!-- ============================================ -->
   <div class="top">
     <div class="card">
 
-      <!-- LOADING BAR - Shows while backend fetch is running -->
-      <!-- Cached picture + novels stay visible under this bar -->
+      <!-- Loading bar - shows while profile is fetching -->
       <div class="loadingBar" id="loadingBar">
         <div class="spinner"></div>
         <span id="loadingBarText">Loading profile...</span>
       </div>
 
-      <!-- Avatar - Click to edit if own profile -->
-      <!-- Starts in loading state, cache or backend will replace it -->
+      <!-- Avatar - click to edit if own profile -->
       <div class="avatar loading" id="avatar" onclick="if(isOwn) openEdit()">U</div>
 
-      <!-- Name - Starts as Loading..., cache or backend will replace it -->
+      <!-- Name -->
       <h3 id="name" style="margin:12px 0 2px">Loading...</h3>
 
-      <!-- Email line - kept empty, for styling -->
+      <!-- Email line - kept empty for styling -->
       <p id="emailLine" style="color:#a78bfa;font-size:13px;margin:0"></p>
 
-      <!-- Bio - Starts as Loading..., cache or backend will replace it -->
+      <!-- Bio -->
       <p id="bio" style="color:#aaa;font-size:14px;margin:8px 0">Loading...</p>
 
-      <!-- Link - Shows if user has a link -->
+      <!-- Link -->
       <a id="linkLine" href="#" target="_blank" style="color:#7dd3fc;font-size:13px;display:none"></a>
 
-      <!-- Stats - novels / followers / following -->
-      <!-- Each count starts as ... while fetching, cache does NOT set followers/following -->
+      <!-- Stats -->
       <div class="stats">
         <div class="stat"><b id="postCount">...</b><span>novels</span></div>
         <div class="stat" onclick="showList('followers')"><b id="fCount">...</b><span>followers</span></div>
         <div class="stat" onclick="showList('following')"><b id="fgCount">...</b><span>following</span></div>
       </div>
 
-      <!-- Follow button - Only on other people's profile -->
-      <!-- Starts as Loading..., backend will set Follow / Following -->
+      <!-- Follow button - only on other people's profile -->
       <button id="followBtn" class="btn btn-follow loadingBtn" style="display:none" onclick="toggleFollow()">Loading...</button>
 
-      <!-- Write Novel button - Only on own profile -->
-      <!-- Starts as Loading..., backend will show it if own profile -->
+      <!-- Write Novel button - only on own profile -->
       <a href="create.html" id="writeBtn" class="btn-write" style="display:none">+ Write Novel ✍️</a>
 
-      <!-- Message button - Only on other people's profile -->
+      <!-- Message button - only on other people's profile -->
       <button id="msgBtn" class="btn" style="display:none;background:#262626;color:#fff" onclick="goMessage()">💬 Message</button>
 
-      <!-- Edit Profile button - Only on own profile -->
-      <!-- Edit / name box button - shows loading until fetch done -->
+      <!-- Edit Profile button - only on own profile -->
       <button id="editBtn" class="btn" style="display:none;background:#262626;color:#fff;border:1px solid #555" onclick="openEdit()">✏️ Edit Profile</button>
 
     </div>
   </div>
 
-  <!-- ============================================ -->
-  <!-- NOVELS GRID - All novels by this user       -->
-  <!-- If cache exists, cached novels stay here while loading -->
-  <!-- If NO cache, skeleton loading cards show here -->
-  <!-- ============================================ -->
+  <!-- Novels grid -->
   <div class="grid" id="grid">
     <div class="gcard loading"></div>
     <div class="gcard loading"></div>
   </div>
 
-  <!-- ============================================ -->
-  <!-- FOLLOWERS / FOLLOWING POPUP                 -->
-  <!-- ============================================ -->
+  <!-- Followers / Following popup -->
   <div class="modal" id="listModal" onclick="if(event.target===this) closeList()">
     <div class="mbox">
-      <!-- Modal header -->
       <div class="head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div>
-      <!-- List body - filled by JS, NO Loading... anymore, shows people instantly -->
       <div class="list" id="listBody"></div>
     </div>
   </div>
 
-  <!-- ============================================ -->
-  <!-- EDIT PROFILE POPUP - Name box / Edit box    -->
-  <!-- ============================================ -->
+  <!-- Edit Profile popup -->
   <div class="modal" id="editModal" onclick="if(event.target===this) closeEdit()">
     <div class="editBox" id="editBox">
-
-      <!-- Edit header + loading text inside edit box -->
       <div style="display:flex;justify-content:space-between;align-items:center"><b>Edit Profile</b><span onclick="closeEdit()" style="cursor:pointer;font-size:20px">✕</span></div>
-
-      <!-- Edit loading bar - Shows while profile is still fetching -->
       <p id="editLoadingText" style="display:none;color:#a78bfa;font-size:12px;font-weight:700;margin:10px 0">Loading profile... please wait</p>
-
-      <!-- 1. Change Profile Picture -->
       <div class="editAvatar" id="editAvatarPreview" onclick="document.getElementById('uploaddInput').click()">U</div>
       <p style="text-align:center;font-size:12px;color:#aaa;margin:8px 0">Tap picture to change</p>
       <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewNewAvatar(this)">
-
-      <!-- 2. Change Name - Name box -->
       <label class="editLabel">Name / Username</label>
       <input class="editInput" id="editName" placeholder="Loading...">
-
-      <!-- 3. Change Bio -->
       <label class="editLabel">Bio</label>
       <input class="editInput" id="editBio" placeholder="Loading...">
-
-      <!-- 4. Change Link -->
       <label class="editLabel">Link</label>
       <input class="editInput" id="editLink" placeholder="Loading...">
-
-      <!-- Save button -->
       <button class="btn-save" id="saveBtn" onclick="saveProfile()">Save Changes ✅</button>
-
-      <!-- Remove picture button -->
       <button class="btn-remove" onclick="removeAvatar()">Remove Profile Picture</button>
-
     </div>
   </div>
 
-  <!-- ============================================ -->
-  <!-- BOTTOM NAVIGATION                           -->
-  <!-- ============================================ -->
+  <!-- Bottom navigation -->
   <div class="nav">
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
     <a href="create.html">✍️</a>
-    <!-- Message link with badge - badge shows unread count -->
     <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
     <a href="diary.html">📖</a>
     <a href="profile.html">👤</a>
   </div>
 
-  <script>
-    // ============================================================
-    // CACHE - WRDB - IndexedDB wrapper
-    // RULE: Cache ONLY for name / avatar / bio / link / posts (novels).
-    // RULE: NEVER save followers / following to storage.
-    // RULE: Followers / following ALWAYS come from backend.
-    // WHY: Storage goes stale and causes "Following here, 0 there".
-    // Backend is the only truth for follow.
-    // ============================================================
-    const WRDB = {
-      dbName: 'WildReadersDB',
-      storeName: 'cache',
+<script>
 
-      // Open IndexedDB, create store if first time
-      _open() {
-        return new Promise((resolve, reject) => {
-          const req = indexedDB.open(this.dbName, 1);
-          req.onupgradeneeded = () => {
-            if (!req.result.objectStoreNames.contains(this.storeName)) {
-              req.result.createObjectStore(this.storeName);
-            }
-          };
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      },
+  // ============================================================
+  // WRDB - IndexedDB cache
+  // Saves profile + novels so page shows instantly on next visit
+  // ============================================================
+  const WRDB = {
+    dbName: 'WildReadersDB',
+    storeName: 'cache',
 
-      // Save one key to cache
-      // NOTE: Caller must strip followers / following before calling this.
-      async save(key, data) {
-        try {
-          const db = await this._open();
-          return new Promise((resolve) => {
-            const tx = db.transaction(this.storeName, 'readwrite');
-            tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
-            tx.oncomplete = () => resolve(true);
-            tx.onerror = () => resolve(false);
-          });
-        } catch (e) {
-          return false;
-        }
-      },
-
-      // Get one key from cache
-      async get(key) {
-        try {
-          const db = await this._open();
-          return new Promise((resolve) => {
-            const tx = db.transaction(this.storeName, 'readonly');
-            const req = tx.objectStore(this.storeName).get(key);
-            req.onsuccess = () => resolve(req.result ? req.result.data : null);
-            req.onerror = () => resolve(null);
-          });
-        } catch (e) {
-          return null;
-        }
-      },
-
-      // Delete one key from cache
-      // Needed so after delete, old cached post never comes back
-      async delete(key) {
-        try {
-          const db = await this._open();
-          return new Promise((resolve) => {
-            const tx = db.transaction(this.storeName, 'readwrite');
-            tx.objectStore(this.storeName).delete(key);
-            tx.oncomplete = () => resolve(true);
-            tx.onerror = () => resolve(false);
-          });
-        } catch (e) {
-          return false;
-        }
-      }
-    };
-
-    // ============================================================
-    // HELPER - Strip followers / following before saving to storage
-    // - Input: full user object from backend (with followers / following)
-    // - Output: copy WITHOUT followers / following
-    // - So storage NEVER holds follow data, only name / avatar / bio / link
-    // ============================================================
-    function stripFollowFields(user) {
-      // If no user, return null
-      if (!user) {
-        return null;
-      }
-      // Make a shallow copy so we do NOT mutate the live object in memory
-      const copy = { ...user };
-      // Delete follow fields from the COPY only
-      // The live profileUser in memory still keeps them for this page view
-      delete copy.followers;
-      delete copy.following;
-      // Return copy safe to save to storage
-      // Avatar, username, bio, link STILL inside copy - they stay cached
-      return copy;
-    }
-
-    // ============================================================
-    // HELPER - Save profile to storage WITHOUT follow data
-    // Use this EVERYWHERE instead of WRDB.save('profile_...', user)
-    // This guarantees we never save followers / following by accident
-    // But picture + name + bio + link ARE still saved
-    // ============================================================
-    function saveProfileToStorage(profileIdToSave, user) {
-      // Strip follow fields first
-      const safe = stripFollowFields(user);
-      // Save stripped version - picture + name still saved
-      WRDB.save('profile_' + profileIdToSave, safe);
-    }
-
-    // ============================================================
-    // HELPER - Get cache fast with 500ms timeout
-    // So cache never blocks fresh fetch from server.
-    // ============================================================
-    function getCacheFast(key) {
-      return Promise.race([
-        WRDB.get(key),
-        new Promise(r => setTimeout(() => r(null), 500))
-      ]);
-    }
-
-    // ============================================================
-    // SERVICE WORKER - For offline / PWA
-    // ============================================================
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-
-    // ============================================================
-    // LOADING STATE - Show loading while fetch is running
-    // RULE: Loading does NOT clear cache.
-    // Cached picture + novels stay on screen while loading bar shows.
-    // Loading only affects: top bar, counts showing ..., buttons showing Loading...
-    // ============================================================
-
-    // Is backend fetch still running? True = loading, False = done
-    let isProfileLoading = false;
-
-    // Show loading UI at start of fetch
-    function showProfileLoading() {
-      // Mark as loading
-      isProfileLoading = true;
-      // Show top loading bar
-      const bar = document.getElementById('loadingBar');
-      if (bar) {
-        bar.classList.add('show');
-      }
-      const barText = document.getElementById('loadingBarText');
-      if (barText) {
-        barText.innerText = 'Loading profile...';
-      }
-      // Follow button shows Loading... and is disabled while fetching
-      const fb = document.getElementById('followBtn');
-      if (fb && !isOwn) {
-        fb.innerText = 'Loading...';
-        fb.className = 'btn btn-follow loadingBtn';
-      }
-      // Edit button shows loading state
-      const editBtn = document.getElementById('editBtn');
-      if (editBtn && isOwn) {
-        editBtn.innerText = '⏳ Loading...';
-      }
-      // We do NOT hide cached novels grid while loading
-    }
-
-    // Hide loading UI when fetch finishes
-    function hideProfileLoading() {
-      // Mark as not loading
-      isProfileLoading = false;
-      // Hide top loading bar
-      const bar = document.getElementById('loadingBar');
-      if (bar) {
-        bar.classList.remove('show');
-      }
-      // Remove skeleton from avatar if it had it
-      const av = document.getElementById('avatar');
-      if (av) {
-        av.classList.remove('loading');
-      }
-      // Remove skeleton from name if it had it
-      const nameEl = document.getElementById('name');
-      if (nameEl) {
-        nameEl.classList.remove('skeleton');
-      }
-      // Restore Edit button text if own
-      const editBtn = document.getElementById('editBtn');
-      if (editBtn && isOwn) {
-        editBtn.innerText = '✏️ Edit Profile';
-      }
-    }
-
-    // ============================================================
-    // PENDING QUEUE
-    // WHY: If you tap Follow and leave page before fetch finishes,
-    // browser kills fetch. Pending queue saves it and retries on next load.
-    // keepalive alone is NOT enough. Queue is the guarantee.
-    // NOTE: Pending queue saves only URL + method, NOT followers / following.
-    // ============================================================
-
-    // Get all pending actions from localStorage
-    function getPending() {
-      try {
-        return JSON.parse(localStorage.getItem('pending_actions') || '[]');
-      } catch (e) {
-        return [];
-      }
-    }
-
-    // Save one pending action BEFORE fetch
-    // So leaving page never loses follow / unfollow / delete
-    function savePending(action) {
-      // Remove old same action first, to avoid double-send
-      const list = getPending().filter(x => !(x.url === action.url && x.method === action.method));
-      list.push({
-        url: action.url,
-        method: action.method,
-        time: Date.now()
-      });
-      try {
-        localStorage.setItem('pending_actions', JSON.stringify(list));
-      } catch (e) {}
-    }
-
-    // Remove pending action AFTER server confirms it worked
-    function removePending(url, method) {
-      try {
-        const filtered = getPending().filter(x => !(x.url === url && x.method === method));
-        localStorage.setItem('pending_actions', JSON.stringify(filtered));
-      } catch (e) {}
-    }
-
-    // Retry all pending actions on every page load
-    // This is what makes follow survive leaving page instantly
-    async function retryPending() {
-      const list = getPending();
-      for (const a of list) {
-        // If pending is older than 5 minutes, drop it, too old
-        if (Date.now() - a.time > 5 * 60 * 1000) {
-          removePending(a.url, a.method);
-          continue;
-        }
-        try {
-          const res = await fetch(a.url, {
-            method: a.method,
-            headers: { authorization: token },
-            keepalive: true
-          });
-          if (res.ok) {
-            removePending(a.url, a.method);
+    // Open IndexedDB, create store if first time
+    _open() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(this.dbName, 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains(this.storeName)) {
+            req.result.createObjectStore(this.storeName);
           }
-        } catch (e) {}
-      }
-    }
-
-    // ============================================================
-    // CONFIG + AUTH
-    // ============================================================
-    const BASE = "http://localhost:8000";
-    const token = localStorage.getItem('token');
-    if (!token) {
-      location.href = "login.html";
-    }
-
-    // Get my own ID from token
-    // Token is xxx.YYY.zzz, middle part holds my id
-    function getMyId() {
-      try {
-        return JSON.parse(atob(token.split('.')[1])).id;
-      } catch (e) {
-        return "";
-      }
-    }
-
-    // ============================================================
-    // GLOBAL STATE
-    // ============================================================
-    let profileUser = null; // The user whose profile we are viewing - live from backend, NOT from storage
-    let isOwn = false; // True if viewing my own profile
-    let profileId = ""; // ID of profile we are viewing
-    let newAvatarFile = null; // New avatar file picked in edit popup
-
-    // ============================================================
-    // HELPER - Fetch fresh follow data from backend
-    // RULE: Every followers / following number comes from here.
-    // Never from cache, never from storage.
-    // Returns { followers, following } from backend, or null if fails.
-    // ============================================================
-    async function fetchFollowFromBackend(userId) {
-      try {
-        const res = await fetch(BASE + '/api/users/' + userId, {
-          headers: { authorization: token }
-        });
-        if (!res.ok) {
-          return null;
-        }
-        const data = await res.json();
-        const user = data.user || data;
-        // Return only follow fields, from backend
-        return {
-          followers: user.followers || [],
-          following: user.following || [],
-          fullUser: user
         };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    },
+
+    // Save one key to cache
+    async save(key, data) {
+      try {
+        const db = await this._open();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        });
+      } catch (e) {
+        return false;
+      }
+    },
+
+    // Get one key from cache
+    async get(key) {
+      try {
+        const db = await this._open();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readonly');
+          const req = tx.objectStore(this.storeName).get(key);
+          req.onsuccess = () => resolve(req.result ? req.result.data : null);
+          req.onerror = () => resolve(null);
+        });
       } catch (e) {
         return null;
       }
-    }
+    },
 
-    // ============================================================
-    // HELPER - Apply fresh follow counts to screen from backend
-    // Takes followers / following from backend and updates UI.
-    // Also updates live profileUser in memory (not storage).
-    // ============================================================
-    function applyFollowFromBackend(followers, following) {
-      // Update counts on screen
-      document.getElementById('fCount').innerText = (followers || []).length;
-      document.getElementById('fgCount').innerText = (following || []).length;
-      // Update live object in memory only, never save to storage
-      if (profileUser) {
-        profileUser.followers = followers || [];
-        profileUser.following = following || [];
+    // Delete one key from cache - needed so deleted post never comes back
+    async delete(key) {
+      try {
+        const db = await this._open();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).delete(key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        });
+      } catch (e) {
+        return false;
       }
     }
+  };
 
-    // ============================================================
-    // LOAD - Load profile + novels
-    // RULE:
-    // - Cache: name / avatar / bio / link / posts (novels) ONLY - STAYS while loading
-    // - Backend: followers / following ONLY - shows ... while loading
-    // - Loading bar shows, but cached picture + novels are NOT cleared
-    // ============================================================
-    async function load() {
-      // 1. Figure out whose profile to show
-      profileId = new URLSearchParams(location.search).get('id') || getMyId();
-      isOwn = profileId === getMyId();
+  // ============================================================
+  // STRIP FOLLOW FIELDS BEFORE SAVING TO CACHE
+  // We never save followers / following to storage.
+  // They always come fresh from backend, so counts are never stale.
+  // ============================================================
+  function stripFollowFields(user) {
+    if (!user) {
+      return null;
+    }
+    const copy = { ...user };
+    delete copy.followers;
+    delete copy.following;
+    return copy;
+  }
 
-      // 2. Show loading UI at start - bar + ... + Loading... buttons
-      // Cached content underneath is NOT cleared
-      showProfileLoading();
+  function saveProfileToStorage(profileIdToSave, user) {
+    const safe = stripFollowFields(user);
+    WRDB.save('profile_' + profileIdToSave, safe);
+  }
 
-      // 3. Retry any pending follow / unfollow / delete from before
-      retryPending();
+  // ============================================================
+  // GET CACHE FAST WITH 500ms TIMEOUT
+  // So cache never blocks fresh fetch from server.
+  // ============================================================
+  function getCacheFast(key) {
+    return Promise.race([
+      WRDB.get(key),
+      new Promise(r => setTimeout(() => r(null), 500))
+    ]);
+  }
 
-      // 4. Show cache instantly - name / avatar / bio / posts ONLY
-      // RULE: Cache has NO followers / following, so we do NOT read them from cache.
-      // RULE: Cached picture + novels REMAIN on screen while backend fetch runs.
-      let hasCache = false;
+  // Service worker for offline / PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  // ============================================================
+  // FIXED FETCH - NO ABORT
+  // OLD BUG: AbortController killed fetch at 9s -> (cancelled)
+  // NEW: No abort at all. Fetch runs until server answers.
+  // Also dedupes main profile/posts fetches.
+  // Per-person fill uses direct fetch (see fillOneFollowRow).
+  // ============================================================
+  const _inFlight = new Map();
+
+  function fetchFast(url) {
+    if (_inFlight.has(url)) {
+      return _inFlight.get(url);
+    }
+    const p = fetch(url, {
+      headers: { authorization: token }
+    }).finally(() => {
+      setTimeout(() => _inFlight.delete(url), 500);
+    });
+    _inFlight.set(url, p);
+    return p;
+  }
+
+  // ============================================================
+  // FETCH WITH NO CACHE - FIXES 304 NOT MODIFIED
+  // no-store + no-cache forces fresh data from backend every time.
+  // ============================================================
+  function fetchNoCache(url) {
+    if (_inFlight.has(url)) {
+      return _inFlight.get(url);
+    }
+    const p = fetch(url, {
+      headers: {
+        authorization: token,
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      cache: 'no-store'
+    }).finally(() => {
+      setTimeout(() => _inFlight.delete(url), 500);
+    });
+    _inFlight.set(url, p);
+    return p;
+  }
+
+  // ============================================================
+  // SURVIVE NAVIGATION - Follow / Delete finishes even if you leave page
+  // fetch with keepalive + sendBeacon on pagehide.
+  // ============================================================
+  let _pendingBeacon = [];
+
+  function surviveFetch(url, method) {
+    return fetch(url, {
+      method: method,
+      headers: { authorization: token },
+      keepalive: true
+    })
+    .then(async r => {
+      return { ok: r.ok, data: await r.json().catch(() => ({})) };
+    })
+    .catch(() => {
+      _pendingBeacon.push({ url: url, method: method });
+      return { ok: true, data: {}, beaconQueued: true };
+    });
+  }
+
+  window.addEventListener('pagehide', () => {
+    for (const p of _pendingBeacon) {
       try {
-        const cachedUser = await getCacheFast('profile_' + profileId);
-        const cachedMine = await getCacheFast('profile_posts_' + profileId);
-        if (cachedUser) {
-          hasCache = true;
-          // Live object starts from cache for name/avatar, follow fields will be overwritten by backend below
-          profileUser = cachedUser;
-          // Ensure live object has empty follow arrays for now, until backend returns
-          profileUser.followers = [];
-          profileUser.following = [];
+        navigator.sendBeacon(p.url, new Blob([], { type: 'application/json' }));
+      } catch (e) {}
+    }
+    for (const a of getPending()) {
+      try {
+        navigator.sendBeacon(a.url, new Blob([], { type: 'application/json' }));
+      } catch (e) {}
+    }
+    _pendingBeacon = [];
+  });
 
-          // Show cached name - replaces Loading...
-          document.getElementById('name').innerText = cachedUser.username || 'User';
-          document.getElementById('name').classList.remove('skeleton');
+  // ============================================================
+  // LOADING UI - Spinner / Loading bar
+  // ============================================================
+  let isProfileLoading = false;
 
-          // Show cached bio
-          document.getElementById('bio').innerText = cachedUser.bio || '';
+  function showProfileLoading() {
+    isProfileLoading = true;
+    const bar = document.getElementById('loadingBar');
+    if (bar) {
+      bar.classList.add('show');
+    }
+    const barText = document.getElementById('loadingBarText');
+    if (barText) {
+      barText.innerText = 'Loading profile...';
+    }
+    const fb = document.getElementById('followBtn');
+    if (fb && !isOwn) {
+      fb.innerText = 'Loading...';
+      fb.className = 'btn btn-follow loadingBtn';
+    }
+    const editBtn = document.getElementById('editBtn');
+    if (editBtn && isOwn) {
+      editBtn.innerText = '⏳ Loading...';
+    }
+  }
 
-          // Show link from cache
-          const linkEl = document.getElementById('linkLine');
-          if (cachedUser.link) {
-            linkEl.style.display = 'block';
-            linkEl.innerText = cachedUser.link;
-            linkEl.href = cachedUser.link.startsWith('http') ? cachedUser.link : 'https://' + cachedUser.link;
-          }
+  function hideProfileLoading() {
+    isProfileLoading = false;
+    const bar = document.getElementById('loadingBar');
+    if (bar) {
+      bar.classList.remove('show');
+    }
+    const av = document.getElementById('avatar');
+    if (av) {
+      av.classList.remove('loading');
+    }
+    const nameEl = document.getElementById('name');
+    if (nameEl) {
+      nameEl.classList.remove('skeleton');
+    }
+    const editBtn = document.getElementById('editBtn');
+    if (editBtn && isOwn) {
+      editBtn.innerText = '✏️ Edit Profile';
+    }
+  }
 
-          // Show cached avatar - REMAINS while loading, NOT cleared
-          if (cachedUser.avatar) {
-            document.getElementById('avatar').innerHTML = '<img src="' + cachedUser.avatar + '">';
-            document.getElementById('avatar').classList.remove('loading');
-          }
+  // ============================================================
+  // PENDING QUEUE - Save action BEFORE fetch
+  // So leaving page never loses follow / unfollow / delete
+  // ============================================================
+  function getPending() {
+    try {
+      return JSON.parse(localStorage.getItem('pending_actions') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
 
-          // Show cached posts (novels) - REMAIN while loading, NOT cleared
-          if (Array.isArray(cachedMine)) {
-            document.getElementById('postCount').innerText = cachedMine.length;
-            document.getElementById('grid').innerHTML = cachedMine.length ? cachedMine.map(p => {
-              let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
-              let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
-              return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
-            }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
-          }
+  function savePending(action) {
+    const list = getPending().filter(x => !(x.url === action.url && x.method === action.method));
+    list.push({
+      url: action.url,
+      method: action.method,
+      time: Date.now()
+    });
+    try {
+      localStorage.setItem('pending_actions', JSON.stringify(list));
+    } catch (e) {}
+  }
 
-          // Show correct buttons - but keep Follow button as Loading... until backend confirms
-          if (isOwn) {
-            document.getElementById('writeBtn').style.display = 'inline-block';
-            document.getElementById('editBtn').style.display = 'inline-block';
-            document.getElementById('editBtn').innerText = '⏳ Loading...';
-          } else {
-            // Follow button stays Loading... until backend returns real state
-            const fbCache = document.getElementById('followBtn');
-            fbCache.style.display = 'block';
-            fbCache.innerText = 'Loading...';
-            fbCache.className = 'btn btn-follow loadingBtn';
-            document.getElementById('msgBtn').style.display = 'block';
-          }
+  function removePending(url, method) {
+    try {
+      const filtered = getPending().filter(x => !(x.url === url && x.method === method));
+      localStorage.setItem('pending_actions', JSON.stringify(filtered));
+    } catch (e) {}
+  }
+
+  async function retryPending() {
+    const list = getPending();
+    if (!list.length) {
+      return;
+    }
+    await Promise.allSettled(list.map(async (a) => {
+      if (Date.now() - a.time > 5 * 60 * 1000) {
+        removePending(a.url, a.method);
+        return;
+      }
+      try {
+        const r = await fetch(a.url, {
+          method: a.method,
+          headers: { authorization: token },
+          keepalive: true
+        });
+        if (r.ok) {
+          removePending(a.url, a.method);
         }
       } catch (e) {}
+    }));
+  }
 
-      // If NO cache, keep skeleton / Loading... visible - user sees loading, not blank
-      if (!hasCache) {
-        document.getElementById('name').innerText = 'Loading...';
-        document.getElementById('bio').innerText = 'Loading...';
-        document.getElementById('postCount').innerText = '...';
-        document.getElementById('fCount').innerText = '...';
-        document.getElementById('fgCount').innerText = '...';
-        // Grid already has skeleton cards from HTML, keep them until backend returns
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const BASE = "http://localhost:8000";
+  const token = localStorage.getItem('token');
+  if (!token) {
+    location.href = "login.html";
+  }
+
+  function getMyId() {
+    try {
+      return JSON.parse(atob(token.split('.')[1])).id;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  // ============================================================
+  // GLOBAL STATE
+  // ============================================================
+  let profileUser = null;
+  let isOwn = false;
+  let profileId = "";
+  let newAvatarFile = null;
+
+  // ============================================================
+  // FETCH FOLLOW DATA - RETURNS IMMEDIATELY FROM MEMORY
+  // ============================================================
+  async function fetchFollowFromBackend(userId) {
+    if (profileUser && String(profileId) === String(userId) && profileUser.followers) {
+      return {
+        followers: profileUser.followers || [],
+        following: profileUser.following || [],
+        fullUser: profileUser
+      };
+    }
+    try {
+      const res = await fetchNoCache(BASE + '/api/users/' + userId);
+      if (!res.ok) {
+        return null;
       }
+      const data = await res.json();
+      const user = data.user || data;
+      return {
+        followers: user.followers || [],
+        following: user.following || [],
+        fullUser: user
+      };
+    } catch (e) {
+      return null;
+    }
+  }
 
-      // 5. Fresh from BACKEND - profile + posts, follow counts ONLY from backend
-      // While this runs, loading bar is visible, cached picture + novels stay visible
-      try {
-        const [r1, r2] = await Promise.all([
-          fetch(BASE + '/api/users/' + profileId, { headers: { authorization: token } }),
-          fetch(BASE + '/api/posts', { headers: { authorization: token } })
-        ]);
+  function applyFollowFromBackend(followers, following) {
+    document.getElementById('fCount').innerText = (followers || []).length;
+    document.getElementById('fgCount').innerText = (following || []).length;
+    if (profileUser) {
+      profileUser.followers = followers || [];
+      profileUser.following = following || [];
+    }
+  }
 
-        // 5a. Fresh profile from BACKEND
-        if (r1.ok) {
-          const data = await r1.json();
-          const freshUser = data.user || data;
+  // ============================================================
+  // LOAD - MAIN FUNCTION
+  // 1. Show cache instantly
+  // 2. Fetch USER - spinner stops HERE
+  // 3. Fetch POSTS in background
+  // 4. Start badge ONLY after load finishes
+  // ============================================================
+  async function load() {
+    profileId = new URLSearchParams(location.search).get('id') || getMyId();
+    isOwn = profileId === getMyId();
+    showProfileLoading();
+    retryPending().catch(() => {});
 
-          // Keep live object = fresh from backend (has real followers / following)
-          profileUser = freshUser;
-          document.getElementById('name').innerText = profileUser.username || 'User';
-          document.getElementById('name').classList.remove('skeleton');
-          document.getElementById('emailLine').innerText = '';
-          document.getElementById('bio').innerText = profileUser.bio || '';
+    let hasCache = false;
+    try {
+      const cachedUser = await getCacheFast('profile_' + profileId);
+      const cachedMine = await getCacheFast('profile_posts_' + profileId);
 
-          // Show link from backend
-          const linkEl = document.getElementById('linkLine');
-          if (profileUser.link) {
-            linkEl.style.display = 'block';
-            linkEl.innerText = profileUser.link;
-            linkEl.href = profileUser.link.startsWith('http') ? profileUser.link : 'https://' + profileUser.link;
-          } else {
-            linkEl.style.display = 'none';
-          }
+      if (cachedUser) {
+        hasCache = true;
+        profileUser = cachedUser;
+        profileUser.followers = [];
+        profileUser.following = [];
 
-          // Show avatar from backend - replaces cached avatar, never blanks it
-          if (profileUser.avatar) {
-            document.getElementById('avatar').innerHTML = '<img src="' + profileUser.avatar + '">';
-            document.getElementById('avatar').classList.remove('loading');
-          } else {
-            document.getElementById('avatar').innerText = (profileUser.username || 'U')[0].toUpperCase();
-            document.getElementById('avatar').classList.remove('loading');
-          }
+        document.getElementById('name').innerText = cachedUser.username || 'User';
+        document.getElementById('name').classList.remove('skeleton');
+        document.getElementById('bio').innerText = cachedUser.bio || '';
 
-          // RULE: Counts ONLY from backend, via helper - replaces ... with real numbers
-          applyFollowFromBackend(profileUser.followers || [], profileUser.following || []);
-
-          // Show correct buttons from backend follow data - replaces Loading...
-          if (isOwn) {
-            document.getElementById('writeBtn').style.display = 'inline-block';
-            document.getElementById('editBtn').style.display = 'inline-block';
-            document.getElementById('editBtn').innerText = '✏️ Edit Profile';
-          } else {
-            const fb = document.getElementById('followBtn');
-            fb.style.display = 'block';
-            document.getElementById('msgBtn').style.display = 'block';
-            const amIFollowing = (profileUser.followers || []).some(f => (f._id || f) === getMyId());
-            fb.innerText = amIFollowing ? 'Following' : 'Follow';
-            fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
-            fb.disabled = false;
-          }
-
-          // RULE: Save to storage WITHOUT followers / following
-          // So storage never holds follow data, but picture + name ARE saved
-          saveProfileToStorage(profileId, profileUser);
+        const linkEl = document.getElementById('linkLine');
+        if (cachedUser.link) {
+          linkEl.style.display = 'block';
+          linkEl.innerText = cachedUser.link;
+          linkEl.href = cachedUser.link.startsWith('http') ? cachedUser.link : 'https://' + cachedUser.link;
         }
 
-        // 5b. Fresh posts (novels) from BACKEND
-        if (r2.ok) {
-          const all = await r2.json();
-          const mine = Array.isArray(all) ? all.filter(p => (p.user?._id || p.user) === profileId) : [];
-          document.getElementById('postCount').innerText = mine.length;
-          document.getElementById('grid').innerHTML = mine.length ? mine.map(p => {
+        if (cachedUser.avatar) {
+          document.getElementById('avatar').innerHTML = '<img src="' + cachedUser.avatar + '">';
+          document.getElementById('avatar').classList.remove('loading');
+        }
+
+        if (Array.isArray(cachedMine)) {
+          document.getElementById('postCount').innerText = cachedMine.length;
+          document.getElementById('grid').innerHTML = cachedMine.length ? cachedMine.map(p => {
             let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
             let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
             return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
           }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
-          // Posts cache is OK - posts are not follow data, novels stay cached
-          WRDB.save('profile_posts_' + profileId, mine);
         }
-      } catch (e) {
-        // If internet fails and grid still has skeleton, show error
-        // But if cache already showed novels, keep them, do NOT clear them
-        const grid = document.getElementById('grid');
-        if (grid && grid.querySelector('.gcard.loading')) {
-          grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
+
+        if (isOwn) {
+          document.getElementById('writeBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').innerText = '⏳ Loading...';
+        } else {
+          const fbCache = document.getElementById('followBtn');
+          fbCache.style.display = 'block';
+          fbCache.innerText = 'Loading...';
+          fbCache.className = 'btn btn-follow loadingBtn';
+          document.getElementById('msgBtn').style.display = 'block';
         }
-      } finally {
-        // 6. Hide loading UI - fetch done (success or fail)
-        hideProfileLoading();
+      }
+    } catch (e) {}
+
+    if (!hasCache) {
+      document.getElementById('name').innerText = 'Loading...';
+      document.getElementById('bio').innerText = 'Loading...';
+      document.getElementById('postCount').innerText = '...';
+      document.getElementById('fCount').innerText = '...';
+      document.getElementById('fgCount').innerText = '...';
+    }
+
+    try {
+      // STEP A - FETCH USER FIRST
+      const r1 = await fetchNoCache(BASE + '/api/users/' + profileId).catch(() => null);
+
+      if (r1 && r1.ok) {
+        const data = await r1.json();
+        const freshUser = data.user || data;
+        profileUser = freshUser;
+
+        document.getElementById('name').innerText = profileUser.username || 'User';
+        document.getElementById('name').classList.remove('skeleton');
+        document.getElementById('emailLine').innerText = '';
+        document.getElementById('bio').innerText = profileUser.bio || '';
+
+        const linkEl = document.getElementById('linkLine');
+        if (profileUser.link) {
+          linkEl.style.display = 'block';
+          linkEl.innerText = profileUser.link;
+          linkEl.href = profileUser.link.startsWith('http') ? profileUser.link : 'https://' + profileUser.link;
+        } else {
+          linkEl.style.display = 'none';
+        }
+
+        if (profileUser.avatar) {
+          document.getElementById('avatar').innerHTML = '<img src="' + profileUser.avatar + '">';
+          document.getElementById('avatar').classList.remove('loading');
+        } else {
+          document.getElementById('avatar').innerText = (profileUser.username || 'U')[0].toUpperCase();
+          document.getElementById('avatar').classList.remove('loading');
+        }
+
+        applyFollowFromBackend(profileUser.followers || [], profileUser.following || []);
+
+        if (isOwn) {
+          document.getElementById('writeBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').innerText = '✏️ Edit Profile';
+        } else {
+          const fb = document.getElementById('followBtn');
+          fb.style.display = 'block';
+          document.getElementById('msgBtn').style.display = 'block';
+          const amIFollowing = (profileUser.followers || []).some(f => (f._id || f) === getMyId());
+          fb.innerText = amIFollowing ? 'Following' : 'Follow';
+          fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
+          fb.disabled = false;
+        }
+
+        saveProfileToStorage(profileId, profileUser);
+      }
+
+      // STOP SPINNER HERE - followers/following already returned
+      hideProfileLoading();
+      isProfileLoading = false;
+
+      // STEP B - FETCH POSTS IN BACKGROUND
+      const r2 = await fetchNoCache(BASE + '/api/posts').catch(() => null);
+
+      if (r2 && r2.ok) {
+        const all = await r2.json();
+        const mine = Array.isArray(all) ? all.filter(p => (p.user?._id || p.user) === profileId) : [];
+        document.getElementById('postCount').innerText = mine.length;
+        document.getElementById('grid').innerHTML = mine.length ? mine.map(p => {
+          let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
+          let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
+          return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
+        }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        WRDB.save('profile_posts_' + profileId, mine);
+      }
+
+      // STEP C - START BADGE ONLY AFTER LOAD FINISHES
+      checkMsgNotifications();
+      setInterval(checkMsgNotifications, 30000);
+
+    } catch (e) {
+      hideProfileLoading();
+      isProfileLoading = false;
+      const grid = document.getElementById('grid');
+      if (grid && grid.querySelector('.gcard.loading')) {
+        grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
+      }
+    }
+  }
+
+  // ============================================================
+  // TOGGLE FOLLOW - FAST + OPTIMISTIC
+  // ============================================================
+  async function toggleFollow() {
+    if (isProfileLoading && !profileUser) {
+      return;
+    }
+
+    const fb = document.getElementById('followBtn');
+    const fCountEl = document.getElementById('fCount');
+    const wasFollowing = fb.innerText === 'Following';
+    const myId = getMyId();
+
+    const action = wasFollowing ? 'unfollow' : 'follow';
+    const url = BASE + '/api/users/' + profileId + '/' + action;
+
+    fb.disabled = true;
+
+    if (wasFollowing) {
+      fb.innerText = 'Follow';
+      fb.className = 'btn btn-follow';
+      fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
+      if (profileUser && profileUser.followers) {
+        profileUser.followers = profileUser.followers.filter(f => (f._id || f) !== myId);
+      }
+    } else {
+      fb.innerText = 'Following';
+      fb.className = 'btn btn-following';
+      fCountEl.innerText = (parseInt(fCountEl.innerText) || 0) + 1;
+      if (profileUser) {
+        if (!profileUser.followers) {
+          profileUser.followers = [];
+        }
+        profileUser.followers.push(myId);
       }
     }
 
-    // ============================================================
-    // FOLLOW / UNFOLLOW - FAST VERSION
-    // FIX: Do NOT wait for 2 extra re-fetches before finishing.
-    // 1. Optimistic UI instantly
-    // 2. POST to backend - only ONE fetch to wait for
-    // 3. Re-fetch in BACKGROUND, do NOT await it, do NOT block button
-    // This is what makes Follow feel instant even if backend is slow.
-    // ============================================================
-    async function toggleFollow() {
-      // If profile is still loading, do NOT allow follow yet - wait for backend
-      if (isProfileLoading) {
-        return;
+    savePending({ url: url, method: 'POST' });
+    fb.disabled = false;
+
+    try {
+      const result = await surviveFetch(url, 'POST');
+      if (!result.ok || result.data.ok === false) {
+        throw new Error(result.data.error || 'failed');
       }
-      // Get button + count + state
-      const fb = document.getElementById('followBtn');
-      const fCountEl = document.getElementById('fCount');
-      const wasFollowing = fb.innerText === 'Following';
-      const myId = getMyId();
-
-      // Decide which endpoint to call - separate follow / unfollow, NOT toggle
-      const action = wasFollowing ? 'unfollow' : 'follow';
-      const url = BASE + '/api/users/' + profileId + '/' + action;
-
-      // Disable button briefly so user cannot double-tap
-      fb.disabled = true;
-
-      // 1. OPTIMISTIC UI - Update instantly, before server answers
-      // This is only on screen, NOT saved to storage
+      removePending(url, 'POST');
+    } catch (e) {
       if (wasFollowing) {
-        // Was Following -> show Follow, count -1
-        fb.innerText = 'Follow';
-        fb.className = 'btn btn-follow';
-        fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
-        // Remove me from live followers list in memory only
-        if (profileUser && profileUser.followers) {
-          profileUser.followers = profileUser.followers.filter(f => (f._id || f) !== myId);
-        }
-      } else {
-        // Was Follow -> show Following, count +1
         fb.innerText = 'Following';
         fb.className = 'btn btn-following';
         fCountEl.innerText = (parseInt(fCountEl.innerText) || 0) + 1;
-        // Add me to live followers list in memory only
-        if (profileUser) {
-          if (!profileUser.followers) {
-            profileUser.followers = [];
-          }
-          profileUser.followers.push(myId);
-        }
-      }
-
-      // 2. Save to pending queue BEFORE fetch
-      // Pending saves only URL + method, NOT followers / following
-      savePending({ url: url, method: 'POST' });
-
-      // Re-enable button INSTANTLY - do NOT wait 2 minutes for backend
-      fb.disabled = false;
-
-      // 3. ONE fetch only - POST to BACKEND
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { authorization: token },
-          keepalive: true // Lets POST finish even if user leaves page
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.ok === false) {
-          throw new Error(data.error || 'failed');
-        }
-
-        // 4. SUCCESS - Remove from pending queue
-        removePending(url, 'POST');
-
-        // 5. BACKGROUND re-fetch - do NOT await, do NOT block
-        // If this is slow, user already sees correct UI, so they don't feel it
-        fetchFollowFromBackend(profileId).then(followData => {
-          if (!followData) {
-            return;
-          }
-          // Update live object + screen from backend
-          if (profileUser) {
-            profileUser.followers = followData.followers;
-            profileUser.following = followData.following;
-          }
-          applyFollowFromBackend(followData.followers, followData.following);
-          const amI = (followData.followers || []).some(f => (f._id || f) === myId);
-          fb.innerText = amI ? 'Following' : 'Follow';
-          fb.className = amI ? 'btn btn-following' : 'btn btn-follow';
-          // Save profile to storage WITHOUT follow fields
-          saveProfileToStorage(profileId, followData.fullUser);
-        }).catch(() => {});
-
-      } catch (e) {
-        // 6. FAILED - Revert UI back
-        // Pending stays in queue, will retry on next load
-        if (wasFollowing) {
-          fb.innerText = 'Following';
-          fb.className = 'btn btn-following';
-          fCountEl.innerText = (parseInt(fCountEl.innerText) || 0) + 1;
-        } else {
-          fb.innerText = 'Follow';
-          fb.className = 'btn btn-follow';
-          fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
-        }
+      } else {
+        fb.innerText = 'Follow';
+        fb.className = 'btn btn-follow';
+        fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
       }
     }
+  }
 
-    // ============================================================
-    // UNFOLLOW FROM LIST - FAST VERSION
-    // Same idea: instant UI, 1 POST, background re-fetch, no waiting
-    // ============================================================
-    async function unfollowFromList(userId, btnEl) {
-      // Disable button, show loading
-      if (btnEl) {
-        btnEl.innerText = '...';
-        btnEl.disabled = true;
-      }
+  // ============================================================
+  // UNFOLLOW FROM LIST
+  // ============================================================
+  async function unfollowFromList(userId, btnEl) {
+    if (btnEl) {
+      btnEl.innerText = '...';
+      btnEl.disabled = true;
+    }
 
-      // Save row + count so we can bring it back if server fails
-      const rowEl = btnEl ? btnEl.closest('.row') : document.getElementById('follow-row-' + userId);
-      const savedRowHTML = rowEl ? rowEl.outerHTML : '';
-      const savedFg = parseInt(document.getElementById('fgCount').innerText) || 0;
+    const rowEl = btnEl ? btnEl.closest('.row') : document.getElementById('follow-row-' + userId);
+    const savedRowHTML = rowEl ? rowEl.outerHTML : '';
+    const savedFg = parseInt(document.getElementById('fgCount').innerText) || 0;
 
-      // 1. Remove instantly from screen + from live following list in memory + count -1
-      // This is only on screen, NOT saved to storage
-      if (rowEl) {
-        rowEl.remove();
+    if (rowEl) {
+      rowEl.remove();
+    }
+    if (profileUser && profileUser.following) {
+      profileUser.following = profileUser.following.filter(u => (u._id || u) !== userId);
+    }
+    const fg = document.getElementById('fgCount');
+    if (fg) {
+      fg.innerText = Math.max(0, savedFg - 1);
+    }
+    const body = document.getElementById('listBody');
+    if (body && !body.querySelector('.row')) {
+      body.innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+    }
+
+    const url = BASE + '/api/users/' + userId + '/unfollow';
+    savePending({ url: url, method: 'POST' });
+
+    try {
+      const result = await surviveFetch(url, 'POST');
+      if (!result.ok || result.data.ok === false) {
+        throw new Error('failed');
       }
-      if (profileUser && profileUser.following) {
-        profileUser.following = profileUser.following.filter(u => (u._id || u) !== userId);
+      removePending(url, 'POST');
+    } catch (e) {
+      alert('Could not unfollow. Will retry on next load.');
+      if (savedRowHTML && body) {
+        if (body.innerHTML.includes('None yet')) {
+          body.innerHTML = '';
+        }
+        body.insertAdjacentHTML('beforeend', savedRowHTML);
       }
-      const fg = document.getElementById('fgCount');
       if (fg) {
-        fg.innerText = Math.max(0, savedFg - 1);
+        fg.innerText = savedFg;
       }
-      const body = document.getElementById('listBody');
-      if (body && !body.querySelector('.row')) {
-        body.innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+      if (profileUser) {
+        if (!profileUser.following) {
+          profileUser.following = [];
+        }
+        profileUser.following.push(userId);
+      }
+    }
+  }
+
+  // ============================================================
+  // FIXED - BUILD FOLLOW ROW - NEVER SHOWS USER ID AS TEXT
+  // OLD BUG:
+  //   const name = (u && u.username) || String(id);
+  //   If username missing, it showed the ID like "6aec93388c..."
+  // NEW:
+  //   If username missing -> show grey shimmer "Loading..." placeholder
+  //   If avatar missing -> show grey shimmer circle, NOT first letter of ID
+  //   ID is ONLY used in id="follow-row-..." and onclick="...?id=..."
+  //   which are hidden attributes, never visible text.
+  // ============================================================
+  function buildFollowRow(u, type) {
+    const id = (u && u._id) || u;
+
+    // Has real data? Use it. No data? Show Loading placeholder, NEVER id.
+    const hasName = u && typeof u === 'object' && u.username;
+    const hasAvatar = u && typeof u === 'object' && u.avatar;
+
+    const nameText = hasName ? u.username : 'Loading...';
+    const nameClass = hasName ? 'followName' : 'followName loadingName';
+
+    // Avatar: real picture, or first letter of NAME, or grey shimmer if no name yet
+    let avatarHTML = '';
+    let avatarClass = 'mini';
+    if (hasAvatar) {
+      avatarHTML = '<img src="' + u.avatar + '">';
+    } else if (hasName) {
+      avatarHTML = u.username[0].toUpperCase();
+    } else {
+      // No name yet - grey shimmer circle, no letter, no ID
+      avatarHTML = '';
+      avatarClass = 'mini loadingMini';
+    }
+
+    const unfollowBtn = (isOwn && type === 'following') ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>' : '';
+
+    return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="' + avatarClass + '" id="follow-avatar-' + id + '">' + avatarHTML + '</div><div><b class="' + nameClass + '" id="follow-name-' + id + '">' + nameText + '</b></div>' + unfollowBtn + '</div>';
+  }
+
+  // ============================================================
+  // FIXED - FILL ONE ROW
+  // Uses direct fetch (no shared Response) and when it fills,
+  // it also REMOVES the loading shimmer classes.
+  // ============================================================
+  async function fillOneFollowRow(userOrId) {
+    if (userOrId && typeof userOrId === 'object' && userOrId.username) {
+      return;
+    }
+
+    const userId = (userOrId && userOrId._id) || userOrId;
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const res = await fetch(BASE + '/api/users/' + userId, {
+        headers: {
+          authorization: token,
+          'Cache-Control': 'no-cache'
+        },
+        cache: 'no-store'
+      });
+
+      if (!res.ok) {
+        return;
       }
 
-      // 2. Save to pending queue BEFORE fetch
-      const url = BASE + '/api/users/' + userId + '/unfollow';
-      savePending({ url: url, method: 'POST' });
+      const data = await res.json();
+      const fullUser = data.user || data;
 
-      // 3. ONE fetch only - POST to BACKEND - /unfollow only, not toggle
-      try {
-        const res = await fetch(url, {
+      if (!fullUser || !fullUser.username) {
+        return;
+      }
+
+      // Fill name + remove shimmer
+      const nameEl = document.getElementById('follow-name-' + userId);
+      if (nameEl) {
+        nameEl.innerText = fullUser.username;
+        nameEl.classList.remove('loadingName');
+      }
+
+      // Fill avatar + remove shimmer
+      const avEl = document.getElementById('follow-avatar-' + userId);
+      if (avEl) {
+        avEl.classList.remove('loadingMini');
+        if (fullUser.avatar) {
+          avEl.innerHTML = '<img src="' + fullUser.avatar + '">';
+        } else {
+          avEl.innerHTML = fullUser.username[0].toUpperCase();
+        }
+      }
+    } catch (e) {
+      // Ignore - row stays as Loading... placeholder, never ID
+    }
+  }
+
+  // ============================================================
+  // FIXED - SHOW LIST
+  // Try batch first. If batch 404, fill every row one by one.
+  // Rows start as Loading... shimmer, never ID.
+  // ============================================================
+  async function showList(type) {
+    document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
+    document.getElementById('listModal').classList.add('open');
+
+    let instantList = [];
+    if (profileUser) {
+      instantList = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
+    }
+
+    if (instantList.length) {
+      document.getElementById('listBody').innerHTML = instantList.map(u => buildFollowRow(u, type)).join('');
+    } else {
+      document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+      return;
+    }
+
+    try {
+      const res = await fetch(BASE + '/api/users/' + profileId + '/' + type, {
+        headers: {
+          authorization: token,
+          'Cache-Control': 'no-cache'
+        },
+        cache: 'no-store'
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const freshList = data[type] || [];
+
+        if (freshList.length) {
+          if (!document.getElementById('listModal').classList.contains('open')) {
+            return;
+          }
+          document.getElementById('listBody').innerHTML = freshList.map(u => buildFollowRow(u, type)).join('');
+
+          if (profileUser) {
+            if (type === 'followers') {
+              profileUser.followers = freshList;
+            } else {
+              profileUser.following = freshList;
+            }
+            applyFollowFromBackend(profileUser.followers, profileUser.following);
+          }
+          return;
+        }
+      }
+
+      // Batch 404 / empty - fallback fill one by one
+      for (let i = 0; i < instantList.length; i += 5) {
+        const chunk = instantList.slice(i, i + 5);
+        await Promise.all(chunk.map(u => fillOneFollowRow(u)));
+      }
+
+    } catch (e) {
+      for (let i = 0; i < instantList.length; i += 5) {
+        const chunk = instantList.slice(i, i + 5);
+        await Promise.all(chunk.map(u => fillOneFollowRow(u)));
+      }
+    }
+  }
+
+  function closeList() {
+    document.getElementById('listModal').classList.remove('open');
+  }
+
+  function goMessage() {
+    location.href = 'message.html?to=' + profileId;
+  }
+
+  // ============================================================
+  // DELETE POST
+  // ============================================================
+  async function deletePost(e, postId) {
+    e.stopPropagation();
+    if (!isOwn) {
+      return alert('You can only delete your own post');
+    }
+    if (!confirm('Delete this novel? This cannot be undone.')) {
+      return;
+    }
+
+    const btn = e.target;
+    const card = btn.closest('.gcard');
+    const savedHTML = card ? card.outerHTML : '';
+    const savedCount = parseInt(document.getElementById('postCount').innerText) || 0;
+    const grid = document.getElementById('grid');
+    const countEl = document.getElementById('postCount');
+
+    btn.innerText = 'Deleting...';
+    btn.disabled = true;
+
+    if (card) {
+      card.remove();
+    }
+    if (countEl) {
+      countEl.innerText = Math.max(0, savedCount - 1);
+    }
+    if (grid && !grid.querySelector('.gcard')) {
+      grid.innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+    }
+
+    const url = BASE + '/api/posts/' + postId;
+    savePending({ url: url, method: 'DELETE' });
+
+    try {
+      await WRDB.delete('profile_posts_' + profileId);
+      await WRDB.delete('profile_' + profileId);
+      await WRDB.delete('feed_posts');
+      let del = JSON.parse(localStorage.getItem('deleted_post_ids') || '[]');
+      if (!del.includes(postId)) {
+        del.push(postId);
+      }
+      localStorage.setItem('deleted_post_ids', JSON.stringify(del));
+    } catch (err) {}
+
+    try {
+      const result = await surviveFetch(url, 'DELETE');
+      if (!result.ok || result.data.ok === false) {
+        throw new Error(result.data.error || 'Could not delete. You can only delete your own post.');
+      }
+      removePending(url, 'DELETE');
+    } catch (err) {
+      alert(err.message + ' - Novel NOT deleted in database. Will retry on next load.');
+      if (grid) {
+        if (grid.innerHTML.includes('No novels yet')) {
+          grid.innerHTML = '';
+        }
+        grid.insertAdjacentHTML('beforeend', savedHTML);
+      }
+      if (countEl) {
+        countEl.innerText = savedCount;
+      }
+    }
+  }
+
+  // ============================================================
+  // EDIT PROFILE
+  // ============================================================
+  function openEdit() {
+    if (!isOwn) {
+      return;
+    }
+    if (isProfileLoading) {
+      document.getElementById('editLoadingText').style.display = 'block';
+      document.getElementById('editBox').classList.add('loadingInputs');
+      document.getElementById('editName').value = '';
+      document.getElementById('editName').placeholder = 'Loading...';
+      document.getElementById('editBio').value = '';
+      document.getElementById('editBio').placeholder = 'Loading...';
+      document.getElementById('editLink').value = '';
+      document.getElementById('editLink').placeholder = 'Loading...';
+      document.getElementById('editModal').classList.add('open');
+      return;
+    }
+    document.getElementById('editLoadingText').style.display = 'none';
+    document.getElementById('editBox').classList.remove('loadingInputs');
+    newAvatarFile = null;
+    document.getElementById('editName').value = profileUser.username || '';
+    document.getElementById('editBio').value = profileUser.bio || '';
+    document.getElementById('editLink').value = profileUser.link || '';
+    const prev = document.getElementById('editAvatarPreview');
+    if (profileUser.avatar) {
+      prev.innerHTML = '<img src="' + profileUser.avatar + '">';
+    } else {
+      prev.innerText = (profileUser.username || 'U')[0].toUpperCase();
+    }
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeEdit() {
+    document.getElementById('editModal').classList.remove('open');
+  }
+
+  function previewNewAvatar(input) {
+    if (input.files[0]) {
+      newAvatarFile = input.files[0];
+      document.getElementById('editAvatarPreview').innerHTML = '<img src="' + URL.createObjectURL(newAvatarFile) + '">';
+    }
+  }
+
+  async function saveProfile() {
+    const btn = document.getElementById('saveBtn');
+    btn.innerText = 'Saving...';
+    btn.disabled = true;
+    document.getElementById('editBox').classList.add('loadingInputs');
+    try {
+      const username = document.getElementById('editName').value.trim();
+      const bio = document.getElementById('editBio').value.trim();
+      const link = document.getElementById('editLink').value.trim();
+
+      const res1 = await fetch(BASE + '/api/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', authorization: token },
+        body: JSON.stringify({ username: username, bio: bio, link: link }),
+        keepalive: true
+      });
+      if (!res1.ok) {
+        throw new Error('Could not save profile');
+      }
+
+      if (newAvatarFile) {
+        const fd = new FormData();
+        fd.append('file', newAvatarFile);
+        const res2 = await fetch(BASE + '/api/users/avatar', {
           method: 'POST',
           headers: { authorization: token },
+          body: fd,
           keepalive: true
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.ok === false) {
-          throw new Error('failed');
-        }
-
-        // 4. SUCCESS - Remove from pending
-        removePending(url, 'POST');
-
-        // 5. BACKGROUND re-fetch - do NOT await, do NOT block
-        fetchFollowFromBackend(getMyId()).then(myFollowData => {
-          if (!myFollowData) {
-            return;
-          }
-          saveProfileToStorage(getMyId(), myFollowData.fullUser);
-          if (isOwn) {
-            applyFollowFromBackend(myFollowData.followers, myFollowData.following);
-          }
-        }).catch(() => {});
-
-      } catch (e) {
-        // 6. FAILED - Bring row back, restore count + list
-        alert('Could not unfollow. Will retry on next load.');
-        if (savedRowHTML && body) {
-          if (body.innerHTML.includes('None yet')) {
-            body.innerHTML = '';
-          }
-          body.insertAdjacentHTML('beforeend', savedRowHTML);
-        }
-        if (fg) {
-          fg.innerText = savedFg;
-        }
-        if (profileUser) {
-          if (!profileUser.following) {
-            profileUser.following = [];
-          }
-          profileUser.following.push(userId);
+        if (!res2.ok) {
+          throw new Error('Could not save picture');
         }
       }
-    }
 
-    // ============================================================
-    // HELPER - Build one row instantly, no waiting
-    // FIXED: This renders a row immediately from what we already know.
-    // If user is already full object, show name + avatar now.
-    // If user is only an ID, show row now with ID, then fill name later.
-    // This is why list NEVER shows "Loading..." anymore.
-    // ============================================================
-    function buildFollowRow(u, type) {
-      // Get ID - can be string "674..." or object { _id: "674..." }
-      const id = (u && u._id) || u;
-      // If we already have username, use it. If only ID, show short ID for now
-      // Later, when fetch returns, we will update this row's name
-      const name = (u && u.username) || String(id);
-      // If we already have avatar, use it. Else first letter
-      const av = (u && u.avatar) ? '<img src="' + u.avatar + '">' : name[0].toUpperCase();
-      // Unfollow button only on YOUR OWN Following list
-      const unfollowBtn = (isOwn && type === 'following') ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>' : '';
-      // Row click -> go to that person's profile
-      // We give name span an id so we can update it later without rebuilding list
-      return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="mini" id="follow-avatar-' + id + '">' + av + '</div><div><b id="follow-name-' + id + '">' + name + '</b></div>' + unfollowBtn + '</div>';
-    }
-
-    // ============================================================
-    // HELPER - Fill in one row's name + avatar after its fetch returns
-    // This runs in background, does NOT block the list.
-    // If fetch fails, row stays as it was - still clickable.
-    // ============================================================
-    async function fillOneFollowRow(userOrId) {
-      // If already full user, nothing to fill
-      if (userOrId && typeof userOrId === 'object' && userOrId.username) {
-        return;
-      }
-      // Get ID
-      const userId = (userOrId && userOrId._id) || userOrId;
-      if (!userId) {
-        return;
-      }
-      // Fetch this one person from backend
-      try {
-        const res = await fetch(BASE + '/api/users/' + userId, { headers: { authorization: token } });
-        if (!res.ok) {
-          return;
-        }
-        const data = await res.json();
-        const fullUser = data.user || data;
-        if (!fullUser || !fullUser.username) {
-          return;
-        }
-        // Update name in the row that is already on screen
-        const nameEl = document.getElementById('follow-name-' + userId);
-        if (nameEl) {
-          nameEl.innerText = fullUser.username;
-        }
-        // Update avatar in the row that is already on screen
-        const avEl = document.getElementById('follow-avatar-' + userId);
-        if (avEl && fullUser.avatar) {
-          avEl.innerHTML = '<img src="' + fullUser.avatar + '">';
-        }
-      } catch (e) {
-        // Ignore - row stays clickable with ID
-      }
-    }
-
-    // ============================================================
-    // SHOW LIST - Show Followers / Following popup
-    // FIXED - NO "Loading..." AT ALL
-    // 1. Open modal instantly
-    // 2. Show people instantly from profileUser (already loaded in load())
-    // 3. In background, fetch fresh list + fill in names for IDs
-    // User sees people immediately, never sees Loading...
-    // ============================================================
-    function showList(type) {
-      // Set title
-      document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
-
-      // Open modal instantly - do NOT wait for fetch
-      document.getElementById('listModal').classList.add('open');
-
-      // STEP 1 - Show people INSTANTLY from memory (profileUser)
-      // profileUser was already fetched in load(), so this is instant, no Loading...
-      let instantList = [];
-      if (profileUser) {
-        instantList = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
-      }
-
-      // If we have people in memory, show them NOW
-      if (instantList.length) {
-        document.getElementById('listBody').innerHTML = instantList.map(u => buildFollowRow(u, type)).join('');
-        // Fill in names for IDs in background - each row updates by itself when its fetch returns
-        // This does NOT rebuild the list, so user never sees Loading...
-        instantList.forEach(u => fillOneFollowRow(u));
-      } else {
-        // No people in memory yet (e.g. profile still loading) - show "None yet" for now
-        // Do NOT show Loading... - background fetch below will fill it when it returns
-        document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
-      }
-
-      // STEP 2 - In background, fetch fresh from BACKEND and update list when it returns
-      // This does NOT block the instant list above. User already sees people.
-      // We do NOT await it here, so showList returns instantly.
-      fetchFollowFromBackend(profileId).then(followData => {
-        // If backend failed, keep instant list as-is, do nothing
-        if (!followData) {
-          return;
-        }
-        // Update live object + counts from backend
-        if (profileUser) {
-          profileUser.followers = followData.followers;
-          profileUser.following = followData.following;
-        }
-        applyFollowFromBackend(followData.followers, followData.following);
-        const freshList = type === 'followers' ? followData.followers : followData.following;
-        // If fresh list is empty, show None yet
-        if (!freshList.length) {
-          document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
-          return;
-        }
-        // Rebuild list with fresh data - still NO Loading..., just people
-        // Only rebuild if modal is still open for this type, to avoid overwriting other modal
-        const modalOpen = document.getElementById('listModal').classList.contains('open');
-        if (!modalOpen) {
-          return;
-        }
-        document.getElementById('listBody').innerHTML = freshList.map(u => buildFollowRow(u, type)).join('');
-        // Fill in names for IDs in background
-        freshList.forEach(u => fillOneFollowRow(u));
-      }).catch(() => {
-        // Ignore - instant list stays
-      });
-    }
-
-    // ============================================================
-    // CLOSE LIST - Close Followers / Following popup
-    // ============================================================
-    function closeList() {
-      document.getElementById('listModal').classList.remove('open');
-    }
-
-    // ============================================================
-    // GO MESSAGE - Go to message page with this user
-    // ============================================================
-    function goMessage() {
-      location.href = 'message.html?to=' + profileId;
-    }
-
-    // ============================================================
-    // DELETE POST - Delete your own novel
-    // RULE: Delete from SCREEN + CACHE + DATABASE (all 3)
-    // 1. Remove from screen instantly
-    // 2. Remove from cache instantly (so it never comes back on reload)
-    // 3. Delete from DATABASE via DELETE /api/posts/:id
-    // 4. Verify from database - re-fetch posts, if still there, restore
-    // ============================================================
-    async function deletePost(e, postId) {
-      // Don't open read.html when clicking Delete
-      e.stopPropagation();
-
-      // Only owner can delete
-      if (!isOwn) {
-        return alert('You can only delete your own post');
-      }
-
-      // Confirm
-      if (!confirm('Delete this novel? This cannot be undone.')) {
-        return;
-      }
-
-      // 1. Find card + save HTML + count, so we can bring it back if server fails
-      const btn = e.target;
-      const card = btn.closest('.gcard');
-      const savedHTML = card ? card.outerHTML : '';
-      const savedCount = parseInt(document.getElementById('postCount').innerText) || 0;
-      const grid = document.getElementById('grid');
-
-      // Show deleting state on button while database delete runs
-      btn.innerText = 'Deleting...';
-      btn.disabled = true;
-
-      // 2. Delete instantly from SCREEN, no waiting for server
-      // We keep savedHTML so we can restore if database fails
-      if (card) {
-        card.remove();
-      }
-      const countEl = document.getElementById('postCount');
-      if (countEl) {
-        countEl.innerText = Math.max(0, savedCount - 1);
-      }
-      if (grid && !grid.querySelector('.gcard')) {
-        grid.innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
-      }
-
-      // 3. Save to pending queue BEFORE fetch
-      // So if you leave page, delete still retries and deletes in database
-      const url = BASE + '/api/posts/' + postId;
-      savePending({ url: url, method: 'DELETE' });
-
-      // 4. Delete instantly from CACHE, so post never comes back on reload
-      // Cache for posts is OK, posts are not follow data
-      // We delete BOTH profile cache and posts cache, then re-save clean list after DB confirms
-      try {
-        await WRDB.delete('profile_posts_' + profileId);
-        await WRDB.delete('profile_' + profileId);
-      } catch (err) {}
-
-      // 5. Now delete from DATABASE - THIS IS THE REAL DELETE
-      try {
-        const res = await fetch(url, {
-          method: 'DELETE',
-          headers: { authorization: token },
-          keepalive: true // Lets DELETE finish even if you leave page
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.ok === false) {
-          throw new Error(data.error || 'Could not delete. You can only delete your own post.');
-        }
-
-        // 6. SUCCESS - Remove from pending, verify from DATABASE
-        removePending(url, 'DELETE');
-
-        // VERIFY: Re-fetch posts from DATABASE, make sure novel is really gone
-        try {
-          const r2 = await fetch(BASE + '/api/posts', { headers: { authorization: token } });
-          const all = await r2.json();
-          const mine = all.filter(p => (p.user?._id || p.user) === profileId);
-          // Check if deleted post is still in database (should NOT be)
-          const stillThere = mine.some(p => p._id === postId);
-          if (stillThere) {
-            throw new Error('Delete did not work in database, novel still there');
-          }
-          // Save fresh clean list to cache - novels cache updated, without deleted novel
-          WRDB.save('profile_posts_' + profileId, mine);
-          // Re-save profile to cache (without follow data) so picture stays cached
-          if (profileUser) {
-            saveProfileToStorage(profileId, profileUser);
-          }
-          if (countEl) {
-            countEl.innerText = mine.length;
-          }
-        } catch (e2) {
-          // If verify fetch fails, we already deleted, just keep screen as deleted
-          // Pending already removed, so no retry needed
-        }
-
-      } catch (err) {
-        // 7. FAILED - Database did NOT delete, bring card back, restore count
-        alert(err.message + ' - Novel NOT deleted in database. Will retry on next load.');
-        if (grid) {
-          if (grid.innerHTML.includes('No novels yet')) {
-            grid.innerHTML = '';
-          }
-          grid.insertAdjacentHTML('beforeend', savedHTML);
-        }
-        if (countEl) {
-          countEl.innerText = savedCount;
-        }
-        // Pending stays, so delete will retry on next load and delete in database
-      }
-    }
-
-    // ============================================================
-    // EDIT PROFILE - Open edit popup (Name box)
-    // If profile still loading, show Loading... inside name box
-    // ============================================================
-    function openEdit() {
-      if (!isOwn) {
-        return;
-      }
-      // If profile is still loading from backend, show loading in edit box
-      if (isProfileLoading) {
-        document.getElementById('editLoadingText').style.display = 'block';
-        document.getElementById('editBox').classList.add('loadingInputs');
-        document.getElementById('editName').value = '';
-        document.getElementById('editName').placeholder = 'Loading...';
-        document.getElementById('editBio').value = '';
-        document.getElementById('editBio').placeholder = 'Loading...';
-        document.getElementById('editLink').value = '';
-        document.getElementById('editLink').placeholder = 'Loading...';
-        document.getElementById('editModal').classList.add('open');
-        return;
-      }
-      // Normal open - profile already loaded
-      document.getElementById('editLoadingText').style.display = 'none';
-      document.getElementById('editBox').classList.remove('loadingInputs');
-      newAvatarFile = null;
-      document.getElementById('editName').value = profileUser.username || '';
-      document.getElementById('editBio').value = profileUser.bio || '';
-      document.getElementById('editLink').value = profileUser.link || '';
-      const prev = document.getElementById('editAvatarPreview');
-      if (profileUser.avatar) {
-        prev.innerHTML = '<img src="' + profileUser.avatar + '">';
-      } else {
-        prev.innerText = (profileUser.username || 'U')[0].toUpperCase();
-      }
-      document.getElementById('editModal').classList.add('open');
-    }
-
-    // ============================================================
-    // CLOSE EDIT - Close edit popup
-    // ============================================================
-    function closeEdit() {
-      document.getElementById('editModal').classList.remove('open');
-    }
-
-    // ============================================================
-    // PREVIEW NEW AVATAR - Show picked picture before save
-    // ============================================================
-    function previewNewAvatar(input) {
-      if (input.files[0]) {
-        newAvatarFile = input.files[0];
-        document.getElementById('editAvatarPreview').innerHTML = '<img src="' + URL.createObjectURL(newAvatarFile) + '">';
-      }
-    }
-
-    // ============================================================
-    // SAVE PROFILE - Save Name, Bio, Link, Picture to DB
-    // Shows Saving... / Loading... while saving
-    // ============================================================
-    async function saveProfile() {
-      const btn = document.getElementById('saveBtn');
-      btn.innerText = 'Saving...';
-      btn.disabled = true;
-      // Show loading in edit box
-      document.getElementById('editBox').classList.add('loadingInputs');
-      try {
-        // 1. Save Name, Bio, Link to database
-        const username = document.getElementById('editName').value.trim();
-        const bio = document.getElementById('editBio').value.trim();
-        const link = document.getElementById('editLink').value.trim();
-        const res1 = await fetch(BASE + '/api/users/me', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', authorization: token },
-          body: JSON.stringify({ username, bio, link })
-        });
-        if (!res1.ok) {
-          throw new Error('Could not save profile');
-        }
-
-        // 2. Save Profile Picture to database if new file picked
-        if (newAvatarFile) {
-          const fd = new FormData();
-          fd.append('file', newAvatarFile);
-          const res2 = await fetch(BASE + '/api/users/avatar', {
-            method: 'POST',
-            headers: { authorization: token },
-            body: fd
-          });
-          if (!res2.ok) {
-            throw new Error('Could not save picture');
-          }
-        }
-
-        alert('Profile updated! ✅');
-        closeEdit();
-        // Reload profile - will show loading bar again, but cached picture stays
-        load();
-      } catch (e) {
-        alert(e.message);
-      }
-      btn.innerText = 'Save Changes ✅';
-      btn.disabled = false;
-      document.getElementById('editBox').classList.remove('loadingInputs');
-    }
-
-    // ============================================================
-    // REMOVE AVATAR - Delete profile picture
-    // ============================================================
-    async function removeAvatar() {
-      if (!confirm('Remove profile picture?')) {
-        return;
-      }
-      await fetch(BASE + '/api/users/avatar', {
-        method: 'DELETE',
-        headers: { authorization: token }
-      });
-      alert('Picture removed');
+      alert('Profile updated! ✅');
       closeEdit();
       load();
+    } catch (e) {
+      alert(e.message);
     }
+    btn.innerText = 'Save Changes ✅';
+    btn.disabled = false;
+    document.getElementById('editBox').classList.remove('loadingInputs');
+  }
 
-    // ============================================================
-    // START - Load profile when page opens
-    // Shows loading bar, keeps cached picture + novels visible
-    // ============================================================
+  async function removeAvatar() {
+    if (!confirm('Remove profile picture?')) {
+      return;
+    }
+    await fetch(BASE + '/api/users/avatar', {
+      method: 'DELETE',
+      headers: { authorization: token },
+      keepalive: true
+    });
+    alert('Picture removed');
+    closeEdit();
     load();
+  }
 
-    // ============================================================
-    // MESSAGE NOTIFICATION BADGE - For this page (Profile)
-    // Uses SAME localStorage keys as message.html, so they stay in sync.
-    // RULE: Badge also uses backend follow data, not storage.
-    // FIXED: Polling is now 15s, not 3s - was hammering server and slowing Follow
-    // ============================================================
-
-    // STEP 1: Get my own ID from token for badge
-    // We use different name (getMyIdForBadge) so it does NOT clash with getMyId() above
-    function getMyIdForBadge() {
-      try {
-        // Token is like xxx.YYY.zzz, middle part holds my id
-        return JSON.parse(atob(token.split('.')[1])).id;
-      } catch (e) {
-        return "";
-      }
+  // ============================================================
+  // MESSAGE BADGE
+  // ============================================================
+  function getMyIdForBadge() {
+    try {
+      return JSON.parse(atob(token.split('.')[1])).id;
+    } catch (e) {
+      return "";
     }
+  }
 
-    // STEP 2: Helpers to remember what I have already read
-    // We save: read_MYID_OTHERID = ID of last message I saw from that person
-    // Example: read_123_456 = "msg789"
-    // If server has newer message after that one, and it's from THEM, it's unread.
-    // NOTE: This is read-state, NOT followers / following, so saving it is OK.
-    function getReadKeyForBadge(otherId) {
-      return 'read_' + getMyIdForBadge() + '_' + otherId;
+  function getReadKeyForBadge(otherId) {
+    return 'read_' + getMyIdForBadge() + '_' + otherId;
+  }
+
+  function getLastReadIdForBadge(otherId) {
+    return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
+  }
+
+  function updateMsgBadge(count) {
+    const badge = document.getElementById('msgBadge');
+    if (!badge) {
+      return;
     }
-
-    // Get last read message ID for one person
-    function getLastReadIdForBadge(otherId) {
-      return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
+    if (count > 0) {
+      badge.style.display = 'flex';
+      badge.innerText = count > 99 ? '99+' : count;
+    } else {
+      badge.style.display = 'none';
     }
+  }
 
-    // STEP 3: Show / hide red badge on 💬 button
-    function updateMsgBadge(count) {
-      // Find badge span in bottom nav
-      const badge = document.getElementById('msgBadge');
-      if (!badge) {
-        return; // If this page has no badge, do nothing
-      }
-      if (count > 0) {
-        badge.style.display = 'flex'; // Show badge
-        badge.innerText = count > 99 ? '99+' : count; // 99+ if too many
-      } else {
-        badge.style.display = 'none'; // Hide badge when 0 unread
-      }
+  let _meCache = null;
+  let _meCacheTime = 0;
+  let _badgeRunning = false;
+
+  async function checkMsgNotifications() {
+    if (_badgeRunning) {
+      return;
     }
+    if (document.hidden) {
+      return;
+    }
+    _badgeRunning = true;
 
-    // STEP 4: Check server for new messages
-    async function checkMsgNotifications() {
-      try {
-        // 4a. Get my profile from BACKEND to know who I follow / who follows me
-        // RULE: Follow data from backend, never from storage
-        const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
+    try {
+      let me = _meCache;
+      if (!me || Date.now() - _meCacheTime > 60000) {
+        const meRes = await fetchNoCache(BASE + '/api/users/' + getMyIdForBadge());
+        if (!meRes.ok) {
+          return;
+        }
         const meData = await meRes.json();
-        const me = meData.user || meData;
-        let people = [...(me.followers || []), ...(me.following || [])];
+        me = meData.user || meData;
+        _meCache = me;
+        _meCacheTime = Date.now();
+      }
 
-        // 4b. Remove duplicates + remove myself
-        let seen = {};
-        people = people.filter(p => {
-          let id = p._id || p;
-          if (seen[id]) {
-            return false;
-          }
-          seen[id] = true;
-          return id !== getMyIdForBadge();
-        });
+      let people = [...(me.followers || []), ...(me.following || [])];
 
-        // Total unread across all chats
-        let totalUnread = 0;
+      let seen = {};
+      people = people.filter(p => {
+        let id = p._id || p;
+        if (seen[id]) {
+          return false;
+        }
+        seen[id] = true;
+        return id !== getMyIdForBadge();
+      });
 
-        // 4c. For each person, fetch our chat and count unread
-        for (const p of people) {
+      let totalUnread = 0;
+
+      for (let i = 0; i < people.length; i += 5) {
+        const chunk = people.slice(i, i + 5);
+        const results = await Promise.allSettled(chunk.map(async (p) => {
           const otherId = p._id || p;
-          const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
+          const res = await fetchNoCache(BASE + '/api/messages/' + otherId);
+          if (!res.ok) {
+            return 0;
+          }
           const msgs = await res.json();
           if (!Array.isArray(msgs) || !msgs.length) {
-            continue; // No messages with this person
+            return 0;
           }
           const lastReadId = getLastReadIdForBadge(otherId);
 
-          // If I have NEVER opened this chat before, treat all old messages as already read
-          // So old chats don't suddenly show as unread on first load
           if (!lastReadId) {
             localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
-            continue;
+            return 0;
           }
 
-          // Find where I stopped reading
           const idx = msgs.findIndex(m => m._id === lastReadId);
           if (idx === -1) {
-            // My last read message was deleted, so check last message:
-            // If last message is new AND from them, count it as 1 unread
             const lastMsg = msgs[msgs.length - 1];
             const fromId = lastMsg.from?._id || lastMsg.from;
-            if (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) {
-              totalUnread += 1;
-            }
-          } else {
-            // Count messages AFTER my last read one that are FROM THEM (not from me)
-            const after = msgs.slice(idx + 1);
-            for (const m of after) {
-              const fromId = m.from?._id || m.from;
-              if (fromId !== getMyIdForBadge()) {
-                totalUnread++;
-              }
+            return (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) ? 1 : 0;
+          }
+
+          let c = 0;
+          for (const m of msgs.slice(idx + 1)) {
+            const fromId = m.from?._id || m.from;
+            if (fromId !== getMyIdForBadge()) {
+              c++;
             }
           }
+          return c;
+        }));
+
+        for (const r of results) {
+          if (r.status === 'fulfilled') {
+            totalUnread += r.value;
+          }
         }
-
-        // 4d. Update badge on screen
-        updateMsgBadge(totalUnread);
-      } catch (e) {
-        // If internet fails, just ignore, will try again in 15 seconds
       }
-    }
 
-    // STEP 5: Start checking
-    // Check immediately when page loads
-    checkMsgNotifications();
-    // FIXED: Then check every 15 seconds, NOT 3 seconds
-    // 3s was hammering server and making Follow take 2 minutes
-    setInterval(checkMsgNotifications, 15000);
-  </script>
+      updateMsgBadge(totalUnread);
+    } catch (e) {
+    } finally {
+      _badgeRunning = false;
+    }
+  }
+
+  // ============================================================
+  // START - Only load() here.
+  // Badge is started INSIDE load() after profile finishes.
+  // ============================================================
+  load();
+
+</script>
 </body>
 </html>
