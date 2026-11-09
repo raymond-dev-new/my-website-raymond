@@ -67,7 +67,11 @@
     <div class="cover" onclick="document.getElementById('uploaddInput').click()" id="coverBox">
       <b>🖼️</b>
       <p>Tap to add beautiful cover</p>
-      <p style="font-size:11px;color:#888">Saved in database <br> updating profile with new post usually take 1 minutes + please wait</p>
+      <p style="font-size:11px;color:#888;"> 
+        <div style="align-items: center; justify-content: center; font-size:11px;color:#888;">Saved in database</div> 
+        <div style="align-items: center; justify-content: center; font-size:14px;color:#888; padding: 10px;"> updating profile with new post usually take 1 minutes + please wait on profile while post is updating
+        </div>
+      </p>
     </div>
 
     <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewUploadd(this)">
