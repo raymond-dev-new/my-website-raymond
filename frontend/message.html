@@ -842,7 +842,7 @@
           + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
           + '</div>';
       }).join('');
-      const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px"> Loading chat....<br>Follow someone to chat privately.</p>');
+      const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px"> Loading chat please wait....<br>Follow someone to chat privately.</p>');
       if (html === lastRenderedListHtml) return;
       lastRenderedListHtml = html;
       document.getElementById('peopleList').innerHTML = html;
