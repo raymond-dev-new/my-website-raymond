@@ -655,7 +655,9 @@
       keepalive: true
     })
     .then(async r => {
-      return { ok: r.ok, data: await r.json().catch(() => ({})) };
+      return { ok: r.ok,
+         data: await r.json().catch(() => ({})) 
+      };
     })
     .catch(() => {
       _pendingBeacon.push({ url: url, method: method });
@@ -783,7 +785,7 @@
   const BASE = "https://my-website-raymond-sepia.vercel.app";
   const token = localStorage.getItem('token');
   if (!token) {
-    location.href = "login.html";
+    location.href = "dashboard.html";
   }
 
   function getMyId() {
