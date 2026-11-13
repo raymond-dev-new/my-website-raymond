@@ -820,6 +820,7 @@ app.delete('/api/delete-media/:id', async (req, res) => {
    app.post('/api/login', (req,res) => {
      const {email} = req.body;
      if(!email) return res.status(400).json({error: "Email required"});
+     
      const token = jwt.sign({id: email}, JWT_SECRETT); // use email as userId
      res.json({token});
    });

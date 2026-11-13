@@ -91,7 +91,7 @@ async function login(){
   }catch(e){
     alert('Server error');
   }finally{
-    // ADDED ONLY - Hide spinner again if login failed / error (if success we already left page)
+    //  ADDED ONLY - Hide spinner again if login failed / error (if success we already left page)
     btn.disabled=false;
     btnText.innerText='Login 🚀';
     spinner.classList.remove('show');

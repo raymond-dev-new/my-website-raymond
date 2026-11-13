@@ -507,6 +507,7 @@
     const BASE = "https://my-website-raymond-sepia.vercel.app";
     const token = localStorage.getItem('token');
     if (!token) location.href = "login.html";
+
     function getMyId() {
       try {
         return JSON.parse(atob(token.split('.')[1])).id;
@@ -522,6 +523,7 @@
         const fromToken = (JSON.parse(atob(token.split('.')[1])).email || "").toLowerCase().trim();
         if (fromToken) return fromToken;
       } catch {}
+      
       return (localStorage.getItem('userEmail') || localStorage.getItem('myEmail') || "").toLowerCase().trim();
     }
 
@@ -583,12 +585,16 @@
           profileCache[id] = { username: u.username, avatar: u.avatar || '' };
           // Also update peopleCache so it stays correct after reload
           const found = peopleCache.find(x => (x._id || x) === id);
-          if (found && typeof found === 'object') { found.username = u.username; if (u.avatar) found.avatar = u.avatar; }
+          if (found && typeof found === 'object') { 
+          found.username = u.username;
+          if (u.avatar) found.avatar = u.avatar; 
+         }
           return profileCache[id];
         }
       } catch {}
       return null;
     }
+
     async function enrichProfiles() {
       // Fetch missing profiles in parallel, then re-render once
       const missing = peopleCache
@@ -623,22 +629,33 @@
     function getMetaCacheKey() { return 'msg_meta_' + getMyId(); }
     function getChatCacheKey(otherId) { return 'msg_chat_' + getMyId() + '_' + otherId; }
     function getChatOrderKey() { return 'msg_order_' + getMyId(); }
+
     function safeSetItem(key, value) {
-      try { localStorage.setItem(key, value); return true; } catch (e) {
+      try {
+         localStorage.setItem(key, value); 
+         return true; 
+       } catch (e) {
         const freed = deleteOldestChatFromStorage();
         if (freed) { try { localStorage.setItem(key, value); return true; } catch (e2) {} }
         try { clearAllMessageCache(); localStorage.setItem(key, value); return true; } catch (e3) { return false; }
       }
     }
+
     function getChatOrder() {
-      try { const raw = localStorage.getItem(getChatOrderKey()); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; } catch { return []; }
+      try { 
+        const raw = localStorage.getItem(getChatOrderKey()); 
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
     }
+
     function touchChatInOrder(otherId) {
       let order = getChatOrder().filter(id => id !== otherId);
       order.push(otherId);
       if (order.length > MAX_CHATS_SAVED) order = order.slice(order.length - MAX_CHATS_SAVED);
       try { localStorage.setItem(getChatOrderKey(), JSON.stringify(order)); } catch {}
     }
+    
     function deleteOldestChatFromStorage() {
       const order = getChatOrder();
       if (!order.length) return false;
@@ -648,6 +665,7 @@
       try { localStorage.setItem(getChatOrderKey(), JSON.stringify(newOrder)); } catch {}
       return true;
     }
+
     function clearAllMessageCache() {
       const order = getChatOrder();
       for (const id of order) { try { localStorage.removeItem(getChatCacheKey(id)); } catch {} }
@@ -656,8 +674,14 @@
     function trimMessages(msgs) {
       if (!Array.isArray(msgs)) return [];
       const last = msgs.slice(-MAX_MSGS_PER_CHAT);
-      return last.map(m => ({ _id: m._id, from: (m.from?._id || m.from), text: String(m.text || '').slice(0, 2000), createdAt: m.createdAt || '' }));
+      return last.map(m => ({
+         _id: m._id,
+          from: (m.from?._id || m.from),
+          text: String(m.text || '').slice(0, 2000), 
+          createdAt: m.createdAt || '' 
+        }));
     }
+
     function savePeopleToStorage() {
       const slim = (peopleCache || []).slice(0, MAX_PEOPLE_SAVED).map(p => ({
         _id: p._id || p,
@@ -665,13 +689,16 @@
         username: (typeof p === 'object' && p.username && !isIdLike(p.username)) ? p.username : (profileCache[p._id || p]?.username || ''),
         avatar: (typeof p === 'object' ? (p.avatar || '') : '') || (profileCache[p._id || p]?.avatar || '')
       }));
+
       safeSetItem(getPeopleCacheKey(), JSON.stringify(slim));
       WRDB.save(getPeopleCacheKey(), slim);
     }
+
     function saveMetaToStorage() {
       safeSetItem(getMetaCacheKey(), JSON.stringify(chatMeta));
       WRDB.save(getMetaCacheKey(), chatMeta);
     }
+
     function saveMessagesToStorage(otherId, msgs) {
       const trimmed = trimMessages(msgs);
       touchChatInOrder(otherId);
@@ -680,28 +707,49 @@
       safeSetItem(getChatCacheKey(otherId), JSON.stringify(trimmed));
       WRDB.save(getChatCacheKey(otherId), trimmed);
     }
+
     function loadMessagesFromStorage(otherId) {
-      try { const raw = localStorage.getItem(getChatCacheKey(otherId)); if (!raw) return []; const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : []; } catch { return []; }
+      try { 
+        const raw = localStorage.getItem(getChatCacheKey(otherId));
+         if (!raw) return [];
+         const arr = JSON.parse(raw);
+         return Array.isArray(arr) ? arr : [];
+        } catch { return []; }
     }
+
     async function loadMessagesFromWRDB(otherId) {
       const data = await WRDB.get(getChatCacheKey(otherId));
       return Array.isArray(data) ? data : [];
     }
+
     function loadCacheAtStart() {
       try {
         const peopleRaw = localStorage.getItem(getPeopleCacheKey());
-        if (peopleRaw) { const parsed = JSON.parse(peopleRaw); if (Array.isArray(parsed) && parsed.length) peopleCache = parsed; }
+        if (peopleRaw) {
+           const parsed = JSON.parse(peopleRaw); 
+           if (Array.isArray(parsed) && parsed.length) peopleCache = parsed; 
+        }
         const metaRaw = localStorage.getItem(getMetaCacheKey());
-        if (metaRaw) { const parsed = JSON.parse(metaRaw); if (parsed && typeof parsed === 'object') chatMeta = parsed; }
+        if (metaRaw) {
+           const parsed = JSON.parse(metaRaw);
+           if (parsed && typeof parsed === 'object') chatMeta = parsed; 
+        }
       } catch {}
     }
+
     async function loadCacheFromWRDBAtStart() {
       try {
-        if (!peopleCache.length) { const p = await WRDB.get(getPeopleCacheKey()); if (Array.isArray(p) && p.length) peopleCache = p; }
+        if (!peopleCache.length) { 
+          const p = await WRDB.get(getPeopleCacheKey());
+          if (Array.isArray(p) && p.length) peopleCache = p; 
+        }
         const m = await WRDB.get(getMetaCacheKey());
-        if (m && typeof m === 'object') { if (!Object.keys(chatMeta).length) chatMeta = m; }
+        if (m && typeof m === 'object') {
+           if (!Object.keys(chatMeta).length) chatMeta = m; 
+        }
       } catch {}
     }
+
     function getReadKey(otherId) { return 'read_' + getMyId() + '_' + otherId; }
     function getLastReadId(otherId) { return localStorage.getItem(getReadKey(otherId)) || ''; }
     function saveLastReadId(otherId, msgId) { if (msgId) safeSetItem(getReadKey(otherId), msgId); }
@@ -711,7 +759,10 @@
     // ============================================================
     async function identifyAdminAndMembers() {
       // FIX ONLY - ADMIN: if token already says admin, stay admin instantly
-      if (getMyEmailFromToken() === ADMIN_EMAIL) { isAdmin = true; if (!adminUserId) adminUserId = getMyId(); }
+      if (getMyEmailFromToken() === ADMIN_EMAIL) { 
+        isAdmin = true;
+        if (!adminUserId) adminUserId = getMyId(); 
+      }
       if (isAdmin) {
         if (!adminUserId) adminUserId = getMyId();
         if (!chatMeta[GROUP_ID]) { chatMeta[GROUP_ID] = { lastText: 'Tap to view announcements', lastTime: 0, unread: 0, lastMsgId: '' }; saveMetaToStorage(); }
@@ -721,32 +772,59 @@
           .catch(() => {});
         return;
       }
+
       try {
         const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
         const meData = await meRes.json();
         const me = meData.user || meData;
         if (me) {
           if (me.email) myEmail = String(me.email).toLowerCase();
-          if (myEmail === ADMIN_EMAIL) { isAdmin = true; adminUserId = getMyId(); adminUserName = me.username || "LetsWin"; adminUserAvatar = me.avatar || ""; }
+          if (myEmail === ADMIN_EMAIL) {
+             isAdmin = true;
+             adminUserId = getMyId();
+             adminUserName = me.username || "LetsWin";
+             adminUserAvatar = me.avatar || ""; 
+          }
         }
       } catch {}
+     
       if (!isAdmin) {
         try {
           const r = await fetch(BASE + '/api/admin-user', { headers: { authorization: token } });
-          if (r.ok) { const d = await r.json(); const adm = d.user || d; if (adm && adm._id) { adminUserId = adm._id; adminUserName = adm.username || "LetsWin"; adminUserAvatar = adm.avatar || ""; } }
+          if (r.ok) {
+             const d = await r.json();
+             const adm = d.user || d;
+             if (adm && adm._id) { adminUserId = adm._id;
+             adminUserName = adm.username || "LetsWin";
+             adminUserAvatar = adm.avatar || ""; } 
+          }
         } catch {}
       }
-      if (!chatMeta[GROUP_ID]) { chatMeta[GROUP_ID] = { lastText: 'Tap to view announcements', lastTime: 0, unread: 0, lastMsgId: '' }; saveMetaToStorage(); }
+
+      if (!chatMeta[GROUP_ID]) { 
+         chatMeta[GROUP_ID] = { 
+         lastText: 'Tap to view announcements',
+         lastTime: 0,
+         unread: 0, 
+         lastMsgId: '' 
+        };
+       saveMetaToStorage(); 
+     }
     }
+
     async function getGroupMessages() {
       try {
         const res = await fetch(BASE + '/api/group-messages', { headers: { authorization: token } });
-        if (res.ok) { const msgs = await res.json(); if (Array.isArray(msgs)) return msgs; }
+        if (res.ok) {
+           const msgs = await res.json(); 
+           if (Array.isArray(msgs)) return msgs; 
+        }
       } catch {}
       const fromWRDB = await loadMessagesFromWRDB(GROUP_ID);
       if (fromWRDB.length) return fromWRDB;
       return loadMessagesFromStorage(GROUP_ID);
     }
+
     async function sendGroupMessage(text) {
       const res = await fetch(BASE + '/api/group-messages', { method: 'POST', headers: { 'Content-Type': 'application/json', authorization: token }, body: JSON.stringify({ text }) });
       return res.ok;
@@ -778,7 +856,12 @@
         if (me && me.email && String(me.email).toLowerCase().trim() === ADMIN_EMAIL) { isAdmin = true; adminUserId = getMyId(); }
         let people = [...(me.followers || []), ...(me.following || [])];
         let seen = {};
-        people = people.filter(p => { let id = p._id || p; if (seen[id]) return false; seen[id] = true; return id !== getMyId(); });
+        people = people.filter(p => { 
+          let id = p._id || p;
+           if (seen[id]) return false;
+           seen[id] = true;
+           return id !== getMyId(); 
+        });
         peopleCache = people;
         savePeopleToStorage();
         identifyAdminAndMembers();
@@ -806,11 +889,16 @@
     // ============================================================
     function renderPeopleList() {
       let sorted = [...peopleCache].sort((a, b) => {
-        const idA = a._id || a; const idB = b._id || b;
-        const timeA = chatMeta[idA]?.lastTime || 0; const timeB = chatMeta[idB]?.lastTime || 0;
+        const idA = a._id || a;
+        const idB = b._id || b;
+        const timeA = chatMeta[idA]?.lastTime || 0;
+        const timeB = chatMeta[idB]?.lastTime || 0;
         return timeB - timeA;
       });
+
       const gMeta = chatMeta[GROUP_ID] || { lastText: 'Tap to view announcements', lastTime: 0, unread: 0 };
+
+
       const gPreview = gMeta.lastText || 'Tap to view announcements';
       const gTime = gMeta.lastTime ? formatTime(gMeta.lastTime) : '';
       const gUnread = gMeta.unread || 0;
@@ -819,7 +907,7 @@
       const memberText = isAdmin ? ' • ' + totalGroupMembers + ' members' : '';
       const groupRow = '<div class="row" onclick="openGroupChat()" style="background:#1a1405;border-bottom:1px solid #2a2200">'
         + '<div class="avatar groupAvatar">📢</div>'
-        + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b><span class="rowTime">' + gTime + '</span></div>'
+        + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b> <span class="rowTime">' + gTime + '</span></div>'
         + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + gPreviewClass + '">' + escapeHtml(gPreview) + (isAdmin ? ' (' + totalGroupMembers + ' members)' : '') + '</span>' + gUnreadHtml + '</div>'
         + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
       const htmlPeople = sorted.map(p => {
@@ -847,9 +935,11 @@
       lastRenderedListHtml = html;
       document.getElementById('peopleList').innerHTML = html;
     }
+
     function escapeHtml(text) {
       return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
+
     function formatTime(timestamp) {
       const d = new Date(timestamp);
       const now = new Date();
@@ -958,14 +1048,18 @@
       }
       await loadGroupMessages(true);
     }
+
     function viewAdminProfile() {
       if (adminUserId) { location.href = 'profile.html?id=' + adminUserId; }
       else if (isAdmin) { location.href = 'profile.html'; }
       else { alert('Admin profile loading... tap again'); }
     }
+
     function messageAdmin() {
-      if (adminUserId) { location.href = 'message.html?to=' + adminUserId; } else { alert('Admin loading... try again'); }
+      if (adminUserId) { location.href = 'message.html?to=' + adminUserId; } 
+      else { alert('Admin loading... try again'); }
     }
+
     function renderGroupMessages(msgs) {
       const html = msgs.length ? msgs.map(m => {
         const isMine = isAdmin && ((m.from?._id || m.from) === getMyId());
@@ -978,6 +1072,7 @@
       document.getElementById('chatBox').innerHTML = html;
       window.scrollTo(0, document.body.scrollHeight);
     }
+   
     async function loadGroupMessages(silent) {
       if (!isGroupChat) return;
       const msgs = await getGroupMessages();
@@ -985,24 +1080,31 @@
       if (msgs.length === 0) {
         saveMessagesToStorage(GROUP_ID, []);
         chatMeta[GROUP_ID] = { lastText: 'No announcements yet', lastTime: Date.now(), unread: 0, lastMsgId: '' };
-        saveMetaToStorage(); updateBadge(); renderGroupMessages([]); return;
+        saveMetaToStorage();
+        updateBadge();
+        renderGroupMessages([]); 
+        return;
       }
       saveMessagesToStorage(GROUP_ID, msgs);
       if (msgs.length) {
         saveLastReadId(GROUP_ID, msgs[msgs.length - 1]._id);
         chatMeta[GROUP_ID] = { lastText: msgs[msgs.length - 1].text, lastTime: msgs[msgs.length - 1].createdAt ? new Date(msgs[msgs.length - 1].createdAt).getTime() : Date.now(), lastMsgId: msgs[msgs.length - 1]._id, unread: 0 };
-        saveMetaToStorage(); updateBadge();
+        saveMetaToStorage(); 
+        updateBadge();
       }
       renderGroupMessages(msgs);
     }
+
     async function deleteGroupMsg(e, msgId) {
       e.stopPropagation();
       if (!confirm('Delete this announcement for everyone?')) return;
       if (String(msgId).startsWith('temp_')) { alert('Wait a second, message is still sending...'); return; }
+
       try {
         const res = await fetch(BASE + '/api/group-messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
         if (!res.ok) { alert('Could not delete from server. Message still exists for users. Try again.'); return; }
       } catch { alert('No connection. Could not delete from server.'); return; }
+
       const wrap = e.target.closest('.msgWrap');
       if (wrap) wrap.remove();
       lastRenderedChatHtml = '';
@@ -1012,6 +1114,7 @@
       await loadGroupMessages(true);
       await refreshGroupMeta(true);
     }
+
     async function refreshGroupMeta(silent) {
       const msgs = await getGroupMessages();
       if (!msgs || !msgs.length) return;
@@ -1020,15 +1123,22 @@
       const lastReadId = getLastReadId(GROUP_ID);
       let unread = 0;
       if (isGroupChat) { unread = 0; }
-      else if (!lastReadId) { unread = 0; saveLastReadId(GROUP_ID, lastMsg._id); }
+      else if (!lastReadId) { 
+        unread = 0; 
+        saveLastReadId(GROUP_ID, lastMsg._id); 
+      }
       else {
         const idx = msgs.findIndex(m => m._id === lastReadId);
-        if (idx === -1) { if (lastMsg._id !== lastReadId) unread = 1; } else { unread = msgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; }
+        if (idx === -1) { 
+          if (lastMsg._id !== lastReadId) unread = 1; 
+      } else { unread = msgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; }
       }
+
       const old = chatMeta[GROUP_ID] || {};
       if (old.lastMsgId !== lastMsg._id || old.unread !== unread) {
         chatMeta[GROUP_ID] = { lastText: lastMsg.text, lastTime: lastTime, lastMsgId: lastMsg._id, unread: unread };
-        saveMetaToStorage(); updateBadge();
+        saveMetaToStorage(); 
+        updateBadge();
         if (!chatWith) renderPeopleList();
       }
     }
@@ -1047,11 +1157,12 @@
         return [];
       }
     }
+
     function renderChatMessages(msgs) {
       const html = msgs.length ? msgs.map(m => {
         const isMine = (m.from?._id || m.from) === getMyId();
         const del = isMine ? '<button class="delBtn" onclick="deleteMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
-        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
+        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"> <div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
       }).join('') : '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
       if (html === lastRenderedChatHtml) return;
       lastRenderedChatHtml = html;
@@ -1094,7 +1205,8 @@
       const finalText = rawText.replace(/^\s+|\s+$/g, '');
       if (isGroupChat) {
         if (!isAdmin) { alert('Only admin can send in this group'); return; }
-        input.value = ''; input.style.height = 'auto';
+        input.value = ''; 
+        input.style.height = 'auto';
         const tempMsg = { _id: 'temp_' + Date.now(), from: getMyId(), text: finalText, createdAt: new Date().toISOString() };
         const cached = loadMessagesFromStorage(GROUP_ID);
         cached.push(tempMsg);
@@ -1107,7 +1219,9 @@
         await refreshGroupMeta(true);
         return;
       }
-      input.value = ''; input.style.height = 'auto';
+
+      input.value = ''; 
+      input.style.height = 'auto';
       const tempMsg = { _id: 'temp_' + Date.now(), from: getMyId(), text: finalText, createdAt: new Date().toISOString() };
       const cached = loadMessagesFromStorage(chatWith);
       cached.push(tempMsg);
@@ -1131,8 +1245,12 @@
       document.getElementById('topTitle').innerText = '💬 Messages';
       document.getElementById('chatHeaderAvatar').style.display = 'none';
       document.getElementById('backBtn').style.display = 'none';
-      chatWith = null; chatWithName = ''; isGroupChat = false; lastRenderedChatHtml = '';
-      refreshRecentAndUnread(true); refreshGroupMeta(true);
+      chatWith = null; 
+      chatWithName = ''; 
+      isGroupChat = false; 
+      lastRenderedChatHtml = '';
+      refreshRecentAndUnread(true); 
+      refreshGroupMeta(true);
     }
 
     // ============================================================
@@ -1151,9 +1269,13 @@
       }
       try {
         const res = await fetch(BASE + '/api/messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
-        if (!res.ok) { alert('Could not delete from server. Please try again.'); if (chatWith) loadMessages(true); }
+        if (!res.ok) { alert('Could not delete from server. Please try again.'); 
+        if (chatWith) loadMessages(true); }
         else { refreshRecentAndUnread(true); }
-      } catch (err) { alert('Could not delete. Check connection.'); if (chatWith) loadMessages(true); }
+      } catch (err) { 
+        alert('Could not delete. Check connection.'); 
+        if (chatWith) loadMessages(true); 
+      }
     }
 
     // ============================================================
@@ -1171,7 +1293,10 @@
       let total = 0;
       for (const id in chatMeta) { total += chatMeta[id].unread || 0; }
       const badge = document.getElementById('msgBadge');
-      if (total > 0) { badge.style.display = 'flex'; badge.innerText = total > 99 ? '99+' : total; } else { badge.style.display = 'none'; }
+      if (total > 0) { 
+        badge.style.display = 'flex'; 
+        badge.innerText = total > 99 ? '99+' : total;
+       } else { badge.style.display = 'none'; }
     }
 
     // ============================================================
@@ -1199,7 +1324,12 @@
         else if (!lastReadId) {
           if (chatMeta[id] && chatMeta[id].lastText) {
             const oldLastId = chatMeta[id].lastMsgId;
-            if (oldLastId) { const idx = useMsgs.findIndex(m => m._id === oldLastId); if (idx !== -1) { unread = useMsgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; } }
+            if (oldLastId) {
+               const idx = useMsgs.findIndex(m => m._id === oldLastId); 
+              if (idx !== -1) {
+                 unread = useMsgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; 
+              }
+             }
           } else { unread = 0; saveLastReadId(id, lastMsg._id); }
         } else {
           const idx = useMsgs.findIndex(m => m._id === lastReadId);
@@ -1223,9 +1353,17 @@
     loadPeople();
     setInterval(async () => {
       if (chatWith) {
-        if (isGroupChat) { await loadGroupMessages(true); await refreshGroupMeta(true); }
-        else { await loadMessages(true); await refreshRecentAndUnread(true); }
-      } else { await refreshRecentAndUnread(true); await refreshGroupMeta(true); }
+        if (isGroupChat) { 
+          await loadGroupMessages(true); 
+          await refreshGroupMeta(true); 
+        } else { 
+          await loadMessages(true); 
+          await refreshRecentAndUnread(true); 
+        }
+      } else { 
+        await refreshRecentAndUnread(true); 
+        await refreshGroupMeta(true); 
+      }
     }, 2000);
   </script>
 </body>
