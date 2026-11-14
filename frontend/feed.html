@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html><head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed</title>
@@ -197,7 +198,7 @@ function getPinned(all){
   let shuffled = seededShuffle(sorted, period);
   return shuffled.slice(0,3);
 }
-// ADDED ONLY - for background pins, does not change your logic
+// ADDED ONLY - background pins, never touches spinner / isLoading
 let globalPinnedIds = new Set();
 async function updatePinsFromAllPosts(){
   try{
@@ -230,6 +231,7 @@ let allLoadedIds = new Set();
 async function load(pageToLoad = 1, isFirstLoad = false){
   if(isLoading || !hasMore) return;
   isLoading = true;
+  // YOUR ORIGINAL SPINNER - UNTOUCHED
   if(!isFirstLoad){
     document.getElementById('scrollLoader').style.display = 'block';
   }
@@ -270,8 +272,6 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       document.getElementById('pinSec').style.display='block';
       document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
       WRDB.save('feed_posts', posts);
-      // ADDED ONLY - background pins from ALL posts, runs last
-      updatePinsFromAllPosts();
     } else {
       let newPosts = posts.filter(p => !allLoadedIds.has(String(p._id)) && !globalPinnedIds.has(String(p._id)));
       newPosts.forEach(p => allLoadedIds.add(String(p._id)));
@@ -286,8 +286,13 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
     }
   }
+  // YOUR ORIGINAL SPINNER HIDE - UNTOUCHED
   document.getElementById('scrollLoader').style.display = 'none';
   isLoading = false;
+  // FIXED: Background pins AFTER load finishes, so it never blocks spinner
+  if(isFirstLoad){
+    updatePinsFromAllPosts();
+  }
 }
 load(1, true);
 window.addEventListener('scroll', () => {

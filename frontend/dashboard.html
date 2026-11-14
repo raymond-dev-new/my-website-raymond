@@ -210,8 +210,6 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       document.getElementById('pinSec').style.display='block';
       document.getElementById('feedGrid').innerHTML=rest.map(p=>card(p,false)).join('');
       WRDB.save('feed_posts_public', posts);
-      // ADDED ONLY - background pins from ALL posts, runs last
-      updatePinsFromAllPosts();
     } else {
       let newPosts = posts.filter(p => !allLoadedIds.has(String(p._id)) && !globalPinnedIds.has(String(p._id)));
       newPosts.forEach(p => allLoadedIds.add(String(p._id)));
@@ -228,6 +226,10 @@ async function load(pageToLoad = 1, isFirstLoad = false){
   }
   document.getElementById('scrollLoader').style.display = 'none';
   isLoading = false;
+  // FIXED: Background pins AFTER load finishes, so spinner for next 9 works
+  if(isFirstLoad){
+    updatePinsFromAllPosts();
+  }
 }
 load(1, true);
 window.addEventListener('scroll', () => {
