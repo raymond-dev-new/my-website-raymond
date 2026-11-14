@@ -464,14 +464,13 @@ app.post('/api/posts/create', authh, uploadd.fields([{name:'file', maxCount:1}, 
 });
 
 // FEED - MUST be before /:id - GET POSTS - Returns cover as R2 URL now, no change needed
-
-
 // ---------- Seeded shuffle ----------
 function seededShuffle(arr, seed){
   let a = [...arr]; let s = seed >>> 0;
   function rand(){
     s = (s + 0x6D2B79F5) >>> 0;
-    let t = s; t = Math.imul(t ^ (t >>> 15), t | 1);
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
@@ -479,27 +478,27 @@ function seededShuffle(arr, seed){
   return a;
 }
 
-// ---------- FEED — COMPLETE NEW RANDOM EVERY REFRESH ----------
+// ---------- FEED — RANDOM ON EVERY FETCH, 30 POSTS ----------
 app.get('/api/posts/feed', async (req,res)=>{
   try{
-    const page = parseInt(req.query.page||1);
-    const limit = parseInt(req.query.limit||15);
-    // seed from frontend — new every refresh, same while scrolling
-    const seed = parseInt(req.query.seed) || Math.floor(Math.random()*1000000000);
+    const page = parseInt(req.query.page || 1);
+    const limit = parseInt(req.query.limit || 30);
+    // NEW - New random seed on EVERY fetch, ignore frontend seed
+    // Old code reused same seed, so background fetch returned same 30 forever
+    const seed = Math.floor(Math.random() * 1000000000);
 
-    // 1. Only IDs — light, fast even with 10,000 posts
     let allIds = await Post.find({}, { _id: 1 }).lean();
+    if(!allIds.length) return res.json([]);
+
     let shuffledIds = seededShuffle(allIds.map(p => p._id), seed);
-    let pageIds = shuffledIds.slice((page-1)*limit, page*limit);
+    let pageIds = shuffledIds.slice((page - 1) * limit, page * limit);
     if(pageIds.length === 0) return res.json([]);
 
-    // 2. Fetch ONLY those 15 with populate
     let posts = await Post.find({ _id: { $in: pageIds } })
       .populate('user','username email avatar')
       .populate('comments.user','username email')
       .lean();
 
-    // 3. Keep shuffled order — $in does not keep order
     let order = new Map(pageIds.map((id, i) => [String(id), i]));
     posts.sort((a,b) => order.get(String(a._id)) - order.get(String(b._id)));
 
