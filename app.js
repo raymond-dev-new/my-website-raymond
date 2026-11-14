@@ -464,18 +464,58 @@ app.post('/api/posts/create', authh, uploadd.fields([{name:'file', maxCount:1}, 
 });
 
 // FEED - MUST be before /:id - GET POSTS - Returns cover as R2 URL now, no change needed
+
+
+// ---------- Seeded shuffle ----------
+function seededShuffle(arr, seed){
+  let a = [...arr]; let s = seed >>> 0;
+  function rand(){
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s; t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  for(let i=a.length-1;i>0;i--){ let j=Math.floor(rand()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// ---------- FEED — COMPLETE NEW RANDOM EVERY REFRESH ----------
 app.get('/api/posts/feed', async (req,res)=>{
-  const page = parseInt(req.query.page||1);
-  const limit = parseInt(req.query.limit||9); // was 8, now 9
-  const posts = await Post.find().populate('user','username email avatar').populate('comments.user','username email').sort({createdAt:-1}).skip((page-1)*limit).limit(limit);
-  res.json(posts);
+  try{
+    const page = parseInt(req.query.page||1);
+    const limit = parseInt(req.query.limit||15);
+    // seed from frontend — new every refresh, same while scrolling
+    const seed = parseInt(req.query.seed) || Math.floor(Math.random()*1000000000);
+
+    // 1. Only IDs — light, fast even with 10,000 posts
+    let allIds = await Post.find({}, { _id: 1 }).lean();
+    let shuffledIds = seededShuffle(allIds.map(p => p._id), seed);
+    let pageIds = shuffledIds.slice((page-1)*limit, page*limit);
+    if(pageIds.length === 0) return res.json([]);
+
+    // 2. Fetch ONLY those 15 with populate
+    let posts = await Post.find({ _id: { $in: pageIds } })
+      .populate('user','username email avatar')
+      .populate('comments.user','username email')
+      .lean();
+
+    // 3. Keep shuffled order — $in does not keep order
+    let order = new Map(pageIds.map((id, i) => [String(id), i]));
+    posts.sort((a,b) => order.get(String(a._id)) - order.get(String(b._id)));
+
+    res.json(posts);
+  }catch(e){
+    console.error(e);
+    res.status(500).json({ error: 'feed failed' });
+  }
 });
+
 
 // Profile posts - 8 per page - ADDED ONLY for profile infinite scroll
 // page=1 = first 15, page=2 = next 15...
 app.get('/api/posts/user/:userId', async (req,res)=>{
   const page = parseInt(req.query.page||1);
-  const limit = parseInt(req.query.limit||15);
+  const limit = parseInt(req.query.limit||18);
   const posts = await Post.find({ user: req.params.userId })
     .populate('user','username email avatar')
     .sort({createdAt:-1})
