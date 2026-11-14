@@ -98,15 +98,36 @@
     // ============================================================
     // ORIGINAL CODE - Do not touch, everything below is your old code
     // ============================================================
-    const BASE = "https://my-website-raymond-sepia.vercel.app";
+    const BASE = "https://raymond-web-dusky.vercel.app";
     const token = localStorage.getItem('token');
     if (!token) location.href = "login.html";
 
     let uploaddFile = null;
 
+    // ============================================================
+    // ADDED ONLY - BANNED WORD CHECK FOR COVER PHOTO FILE NAME
+    // ============================================================
+    const BANNED_WORDS = ['porn','xxx','sex','nude','naked','pussy','dick','cock','boobs','erotic','hentai','onlyfans','pornhub','xvideos'];
+    function hasBannedWord(fileName) {
+      if (!fileName) return false;
+      const lower = fileName.toLowerCase();
+      return BANNED_WORDS.some(w => lower.includes(w));
+    }
+    function resetCoverInput() {
+      uploaddFile = null;
+      const inp = document.getElementById('uploaddInput');
+      if (inp) inp.value = '';
+    }
+
     // Preview cover image when user picks a file
     function previewUploadd(input) {
       if (input.files[0]) {
+        // ADDED ONLY - Block banned file name immediately
+        if (hasBannedWord(input.files[0].name)) {
+          alert('Cover photo not allowed');
+          resetCoverInput();
+          return;
+        }
         uploaddFile = input.files[0];
         document.getElementById('coverBox').innerHTML = '<img src="' + URL.createObjectURL(uploaddFile) + '">';
       }
@@ -138,6 +159,13 @@
       if (!title) return alert('Add title');
       if (!content) return alert('Write your story');
 
+      // ADDED ONLY - Check again before upload, in case file was changed
+      if (uploaddFile && hasBannedWord(uploaddFile.name)) {
+        alert('Cover photo not allowed');
+        resetCoverInput();
+        return;
+      }
+
       // Minimum 100 WORDS, no maximum - 100, 2000, 50000, any amount
       const wordCount = countWords(content);
       if (wordCount < 100) return alert('Story too short. Write at least 100 words. You have ' + wordCount + ' / 100 words');
@@ -158,7 +186,18 @@
           body: fd
         });
 
-        if (!res.ok) throw new Error('Publish failed');
+        if (!res.ok) {
+          // ADDED ONLY - If backend says banned, show same alert
+          let msg = 'Publish failed';
+          try { const d = await res.json(); if (d && d.error) msg = d.error; } catch {}
+          if (msg.toLowerCase().includes('not allowed') || msg.toLowerCase().includes('banned')) {
+            alert('Cover photo not allowed');
+            btn.innerText = 'Publish Novel 📚';
+            btn.disabled = false;
+            return;
+          }
+          throw new Error(msg);
+        }
 
         alert('Published! 🎉');
         location.href = 'profile.html';

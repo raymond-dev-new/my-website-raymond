@@ -22,6 +22,7 @@
    import { Server } from 'socket.io'
    import { exec } from 'child_process'
    import util from 'util'
+   import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
    
    const app = express()
    const port = process.env.PORT || 8000
@@ -41,7 +42,60 @@
    app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'sbd.html')); })
 
 
+// ADDED ONLY - Put this at the very TOP of your file with your other require() lines
+// const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+
 const SECRET = process.env.SECRET || 'my-secret-key-123';
+
+
+//Public Development URL ='https://pub-8de88b749b3443328e081c896840922a.r2.dev'
+const R2_CONFIG = {
+  accessKeyId: "2017c00e704eb61d8912c00d685ea14d",
+  secretAccessKey: "00f5acecbfc82cc8c5b511baaa94c956e9308c9582ff2e86efbf439eb28681e9",
+  endpoint: "https://6016fafb8951ef8f141abd96197a32a6.r2.cloudflarestorage.com",
+  bucket: "raymond-images",
+  publicUrl: "https://pub-8de88b749b3443328e081c896840922a.r2.dev"
+};
+
+// Only create R2 client if keys exist, so your local test won't crash
+let r2Client = null;
+try {
+  if (R2_CONFIG.accessKeyId && R2_CONFIG.secretAccessKey && R2_CONFIG.endpoint) {
+    r2Client = new S3Client({
+      region: 'auto',
+      endpoint: R2_CONFIG.endpoint,
+      credentials: {
+        accessKeyId: R2_CONFIG.accessKeyId,
+        secretAccessKey: R2_CONFIG.secretAccessKey
+      }
+    });
+  }
+} catch(e) { console.log( e, 'R2 not configured yet'); }
+
+// ADDED ONLY - Banned words for cover photo file name
+const BANNED_WORDS = ['porn','xxx','sex','nude','naked','pussy','dick','cock','boobs','erotic','hentai','onlyfans','pornhub','xvideos'];
+function hasBannedWord(fileName) {
+  if (!fileName) return false;
+  const lower = String(fileName).toLowerCase();
+  return BANNED_WORDS.some(w => lower.includes(w));
+}
+
+// ADDED ONLY - Upload buffer to R2, return clean public URL
+async function uploadToR2(file) {
+  if (!r2Client) throw new Error('R2 not configured - add keys in Vercel');
+  const ext = (file.originalname.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5) || 'jpg';
+  // Clean normal file name - no user name, no banned words
+  const cleanName = 'cover-' + Date.now() + '-' + Math.floor(Math.random()*100000) + '.' + ext;
+  await r2Client.send(new PutObjectCommand({
+    Bucket: R2_CONFIG.bucket,
+    Key: cleanName,
+    Body: file.buffer,
+    ContentType: file.mimetype
+  }));
+  // Remove trailing / from public URL if any
+  const base = (R2_CONFIG.publicUrl || '').replace(/\/$/, '');
+  return base + '/' + cleanName;
+}
 
 // ===== USER TABLE - NO displayName, WITH email =====
 const userSchema = new mongoose.Schema({
@@ -222,7 +276,7 @@ app.put('/api/users/update', authh, async (req,res)=>{
   res.json({ user });
 });
 
-// AVATAR - Saved in DB as base64, uses uploadd
+// AVATAR - Saved in DB as base64, uses uploadd - LEFT ALONE AS YOU SAID
 app.post('/api/users/avatar', authh, uploadd.single('file'), async (req,res)=>{
   if(!req.file) return res.status(400).json({msg:'No file'});
   const avatar = toBase64(req.file);
@@ -246,28 +300,6 @@ app.delete('/api/users/avatar', authh, async (req,res)=>{
   res.json({ ok:true });
 });
 
-/*
-// FOLLOW / UNFOLLOW
-app.post('/api/users/:id/follow', authh, async (req,res)=>{
-  const targetId = req.params.id; const myId = req.user.id;
-  if(targetId===myId) return res.status(400).json({msg:'Cannot follow yourself'});
-  const target = await User.findById(targetId);
-  const me = await User.findById(myId);
-  if(!target || !me) return res.status(404).json({msg:'User not found'});
-  if(target.followers.includes(myId)){
-    target.followers = target.followers.filter(id=> id.toString()!==myId);
-    me.following = me.following.filter(id=> id.toString()!==targetId);
-  } else {
-    target.followers.push(myId);
-    me.following.push(targetId);
-  }
-  await target.save(); await me.save();
-  res.json({ ok:true });
-});
-*/
-
-
-
 function getAuthId(req) {
   try {
     // Get header, default empty
@@ -284,8 +316,6 @@ function getAuthId(req) {
     return null;
   }
 }
-
-
 
 app.get('/api/users/:id', authh, async (req, res) => {
   try {
@@ -334,7 +364,7 @@ app.get('/api/users/:id/following', authh, async (req, res) => {
   res.json({ following });
 });
 
-// CREATE NOVEL - uses uploadd
+// CREATE NOVEL - uses uploadd - ADDED ONLY: Banned check + Upload to R2
 app.post('/api/posts', authh, uploadd.fields([{name:'file', maxCount:1}, {name:'cover', maxCount:1}]), async (req,res)=>{
   try{
     const title = req.body.title || req.body.caption;
@@ -344,12 +374,25 @@ app.post('/api/posts', authh, uploadd.fields([{name:'file', maxCount:1}, {name:'
     let fileData = req.body.fileData || "";
     let fileName = "";
     let fileType = "";
+    // ADDED ONLY - Check banned word in uploaded file names
+    if(req.files && req.files.file && req.files.file[0] && hasBannedWord(req.files.file[0].originalname)){
+      return res.status(400).json({ error: 'Cover photo not allowed' });
+    }
+    if(req.files && req.files.cover && req.files.cover[0] && hasBannedWord(req.files.cover[0].originalname)){
+      return res.status(400).json({ error: 'Cover photo not allowed' });
+    }
     if(req.files && req.files.file && req.files.file[0]){
       const f = req.files.file[0];
-      if(f.mimetype.startsWith('image/')) cover = toBase64(f);
+      if(f.mimetype.startsWith('image/')) {
+        // FIXED ONLY - Upload image to R2 only, no base64 fallback to MongoDB. If R2 fails, stop and return error.
+        try { cover = await uploadToR2(f); } catch(e) { console.log('R2 upload failed', e.message); return res.status(500).json({ error: 'Image upload to R2 failed, try again' }); }
+      }
       else { fileData = toBase64(f); fileName = f.originalname; fileType = f.mimetype; }
     }
-    if(req.files && req.files.cover && req.files.cover[0]) cover = toBase64(req.files.cover[0]);
+    if(req.files && req.files.cover && req.files.cover[0]) {
+      // FIXED ONLY - Same R2 only, no base64 fallback
+      try { cover = await uploadToR2(req.files.cover[0]); } catch(e) { console.log('R2 upload failed', e.message); return res.status(500).json({ error: 'Image upload to R2 failed, try again' }); }
+    }
     const post = new Post({ title, content, cover, fileData, fileName, fileType, user: req.user.id });
     await post.save(); res.json(post);
   }catch(e){ res.status(500).json({msg:'Server error'}); }
@@ -362,18 +405,29 @@ app.post('/api/posts/create', authh, uploadd.fields([{name:'file', maxCount:1}, 
     let cover = req.body.cover || "";
     let fileData = req.body.fileData || "";
     let fileName = ""; let fileType = "";
+    // ADDED ONLY - Check banned word
+    if(req.files && req.files.file && req.files.file[0] && hasBannedWord(req.files.file[0].originalname)){
+      return res.status(400).json({ error: 'Cover photo not allowed' });
+    }
+    if(req.files && req.files.cover && req.files.cover[0] && hasBannedWord(req.files.cover[0].originalname)){
+      return res.status(400).json({ error: 'Cover photo not allowed' });
+    }
     if(req.files && req.files.file && req.files.file[0]){
       const f = req.files.file[0];
-      if(f.mimetype.startsWith('image/')) cover = toBase64(f);
+      if(f.mimetype.startsWith('image/')) {
+        try { cover = await uploadToR2(f); } catch(e) { console.log('R2 upload failed', e.message); return res.status(500).json({ error: 'Image upload to R2 failed, try again' }); }
+      }
       else { fileData = toBase64(f); fileName = f.originalname; fileType = f.mimetype; }
     }
-    if(req.files && req.files.cover && req.files.cover[0]) cover = toBase64(req.files.cover[0]);
+    if(req.files && req.files.cover && req.files.cover[0]) {
+      try { cover = await uploadToR2(req.files.cover[0]); } catch(e) { console.log('R2 upload failed', e.message); return res.status(500).json({ error: 'Image upload to R2 failed, try again' }); }
+    }
     const post = new Post({ title, content, cover, fileData, fileName, fileType, user: req.user.id });
     await post.save(); res.json(post);
   }catch(e){ res.status(500).json({msg:'Server error'}); }
 });
 
-// FEED - MUST be before /:id
+// FEED - MUST be before /:id - GET POSTS - Returns cover as R2 URL now, no change needed
 app.get('/api/posts/feed', async (req,res)=>{
   const page = parseInt(req.query.page||1);
   const limit = parseInt(req.query.limit||8);
@@ -397,13 +451,13 @@ app.get('/api/posts/saved/mine', authh, async (req,res)=>{
   res.json(posts);
 });
 
-// ALL NOVELS
+// ALL NOVELS - GET POSTS
 app.get('/api/posts', authh, async (req,res)=>{
   const posts = await Post.find().populate('user','username email avatar').populate('comments.user','username email').sort({createdAt:-1});
   res.json(posts);
 });
 
-// ONE NOVEL
+// ONE NOVEL - GET ONE POST - Returns cover as R2 URL
 app.get('/api/posts/:id', async (req,res)=>{
   const p = await Post.findById(req.params.id).populate('user','username email avatar').populate('comments.user','username email');
   if(!p) return res.status(404).json({msg:'Not found'});
@@ -498,7 +552,6 @@ app.delete('/api/messages/:id', authh, async (req, res) => {
     res.status(500).json({ error: 'Could not delete message' });
   }
 });
-
 
 // ============================================================
 // GROUP ONLY - ADDED BELOW - DOES NOT TOUCH Message ABOVE
