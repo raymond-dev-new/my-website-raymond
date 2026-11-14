@@ -40,7 +40,9 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
 .loadMore{grid-column:1/3;text-align:center;color:#888;padding:16px 0;font-size:13px}
 </style>
 </head><body>
+<!-- COMMENT: Dark overlay behind sidebar, click it to close sidebar -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<!-- COMMENT: Left sidebar menu -->
 <div class="sidebar" id="sidebar">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
     <b style="font-size:20px">WildReaders ✨</b>
@@ -53,6 +55,7 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
       <div class="side-link"><span>🗝️🔐</span> <a href="resetpassword.html"> Reset Password </a></div>
       <div class="side-link"><span>📊</span> <a href="next.html"> Games </a></div>
 </div>
+<!-- COMMENT: Top bar with menu button, logo and logout -->
 <div class="top">
   <div style="display:flex;align-items:center;gap:6px">
     <button type="button" class="menuBtn" id="menuBtn" onclick="toggleSidebar()">☰</button>
@@ -60,19 +63,25 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
   </div>
   <button id="logoutBtn"> Logout</button>
 </div>
+<!-- COMMENT: Pinned section, hidden until pins load -->
 <div class="section" id="pinSec" style="display:none">
   <h3>📌 Pinned For You</h3>
   <p id="pinCountdown">3 random novels stay here for 3 days</p>
 </div>
+<!-- COMMENT: Grid where pinned novels will show -->
 <div class="grid" id="pinnedGrid"></div>
+<!-- COMMENT: Discover section title -->
 <div class="section">
   <h3>📚 Discover Stories</h3>
   <p>Tap any cover to read</p>
 </div>
+<!-- COMMENT: Main feed grid, shows loading spinner first -->
 <div class="grid" id="feedGrid">
   <div style="grid-column:1/3;text-align:center;color:#777"><div class="spinner"></div><p style="text-align:center;color:#777">Loading stories... <br> updating page usually take 1 minutes + please stay on page while is still loading</p></div>
 </div>
+<!-- COMMENT: Bottom spinner, shows when loading more stories -->
 <div id="scrollLoader" style="display:none;text-align:center;padding:16px;color:#888"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 8px"></div>Loading more stories...</div>
+<!-- COMMENT: Bottom navigation bar -->
 <div class="nav">
   <a href="feed.html" class="active">🏠</a>
   <a href="search.html">🔍</a>
@@ -82,9 +91,11 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
   <a href="profile.html">👤</a>
 </div>
 <script>
+// COMMENT: WRDB = small helper to save / get data from IndexedDB (phone storage)
 const WRDB = {
   dbName: 'WildReadersDB',
   storeName: 'cache',
+  // COMMENT: Open the database, create store if it does not exist
   _open() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(this.dbName, 1);
@@ -97,6 +108,7 @@ const WRDB = {
       req.onerror = () => reject(req.error);
     });
   },
+  // COMMENT: Save data under a key, with current time
   async save(key, data) {
     try {
       const db = await this._open();
@@ -108,6 +120,7 @@ const WRDB = {
       });
     } catch (e) { return false; }
   },
+  // COMMENT: Get saved data by key, return null if nothing saved
   async get(key) {
     try {
       const db = await this._open();
@@ -120,9 +133,11 @@ const WRDB = {
     } catch (e) { return null; }
   }
 };
+// COMMENT: Register service worker for offline / caching, ignore if it fails
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+// COMMENT: Show cached posts instantly while fresh posts are loading
 function renderFeedFromCache(posts) {
   if (!Array.isArray(posts) || !posts.length) return;
   let pinned = getPinned(posts);
@@ -132,13 +147,17 @@ function renderFeedFromCache(posts) {
   document.getElementById('pinSec').style.display='block';
   document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
+// COMMENT: Your backend address
 const BASE="https://raymond-web-psi.vercel.app";
+// COMMENT: Get login token, if no token go to login page
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
+// COMMENT: Open / close sidebar menu
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');
 }
+// COMMENT: Shuffle array randomly, used for normal feed order
 function shuffle(a){ 
   let arr = [...a];
    for(let i = arr.length-1; i > 0 ; i--){ 
@@ -147,6 +166,7 @@ function shuffle(a){
   } 
   return arr; 
 }
+// COMMENT: Shuffle with a seed, same seed = same order, used for pins so pins stay same for 3 days
 function seededShuffle(a, seed){
   let arr = [...a];
   let s = seed >>> 0;
@@ -163,6 +183,7 @@ function seededShuffle(a, seed){
   }
   return arr;
 }
+// COMMENT: Pick 3 pinned novels, changes every 3 days
 function getPinned(all){
   if(!Array.isArray(all) || !all.length) return [];
   const THREE = 3*24*60*60*1000;
@@ -171,7 +192,9 @@ function getPinned(all){
   let shuffled = seededShuffle(sorted, period);
   return shuffled.slice(0,3);
 }
+// COMMENT: Store pinned IDs here so they don't show twice in feed
 let globalPinnedIds = new Set();
+// COMMENT: Fetch ALL posts once, pick new pins, show them, remove pins from feed grid
 async function updatePinsFromAllPosts(){
   try{
     const res = await fetch(BASE+'/api/posts', {headers:{authorization:token}});
@@ -192,6 +215,7 @@ async function updatePinsFromAllPosts(){
     });
   }catch(e){}
 }
+// COMMENT: Build one novel card HTML, isPin = true shows PINNED badge
 function card(p, isPin) {
   let cover = p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>';
  return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'read.html?id='+p._id+'\'"> <div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+' </div> <div class="body"> <div class="title">'+p.title+'</div> <div class="meta"> <span>@'+(p.user?.username||'author')+'</span> <span>❤️ '+(p.likes?.length||0)+'</span> <span>💬 '+(p.comments?.length||0)+'</span> </div> </div> </div>';
@@ -200,19 +224,32 @@ function card(p, isPin) {
 // FIXED - INFINITE SCROLL - 15 PER PAGE + RANDOM SEED
 // New every refresh, same while scrolling
 // ============================================================
+// COMMENT: currentPage = which page we are on now, starts at 1
 let currentPage = 1;
+// COMMENT: isLoading = true while a fetch is running, stops double fetch
 let isLoading = false;
+// COMMENT: hasMore = false when backend sends less than 15, means no more posts
 let hasMore = true;
+// COMMENT: Set of IDs already shown, stops duplicates
 let allLoadedIds = new Set();
 // CHANGED ONLY - new random seed once per page load
 let feedSeed = Math.floor(Math.random()*1000000000);
+// COMMENT: NEW - Count how many times we auto-fetched. Starts at 0.
+// COMMENT: NEW - We want total 3 pages: page 1 (manual) + 2 auto fetches = 45 posts, then stop auto-fetch
+let autoFetchCount = 0;
 
+// COMMENT: Main function to load one page of posts
+// COMMENT: pageToLoad = which page to ask backend for, isFirstLoad = true only for page 1
 async function load(pageToLoad = 1, isFirstLoad = false){
+  // COMMENT: If already loading or no more posts, do nothing
   if(isLoading || !hasMore) return;
+  // COMMENT: Mark as loading so scroll cannot start another fetch at same time
   isLoading = true;
+  // COMMENT: If this is NOT page 1, show bottom spinner
   if(!isFirstLoad){
     document.getElementById('scrollLoader').style.display = 'block';
   }
+  // COMMENT: If this is page 1, try to show saved cache instantly while waiting for internet
   if(isFirstLoad){
     try {
       const cachedPosts = await Promise.race([
@@ -231,16 +268,20 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       headers:{authorization:token}
     });
     let posts = await res.json();
+    // COMMENT: If backend sent nothing, there is nothing more to load
     if(!posts || !posts.length){
       hasMore = false;
       if(isFirstLoad){
         document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>';
       }
+      // COMMENT: No more posts, so hide spinner for real
       document.getElementById('scrollLoader').style.display = 'none';
       isLoading = false;
       return;
     }
+    // COMMENT: If backend sent less than 15, that was the last page
     if(posts.length < 15) hasMore = false;
+    // COMMENT: If this is page 1, show pins + rest, and save page 1 to cache
     if(isFirstLoad){
       let pinned = getPinned(posts);
       let pinnedIds = pinned.map(p => p._id );
@@ -252,26 +293,56 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
       WRDB.save('feed_posts', posts);
     } else {
+      // COMMENT: If this is page 2 or 3, remove duplicates and pins, then add to feed
       let newPosts = posts.filter(p => !allLoadedIds.has(String(p._id)) && !globalPinnedIds.has(String(p._id)));
       newPosts.forEach(p => allLoadedIds.add(String(p._id)));
       if(newPosts.length){
         document.getElementById('feedGrid').innerHTML += shuffle(newPosts).map(p=>card(p,false)).join('');
       }
     }
+    // COMMENT: Remember which page we just loaded, so scroll knows next page number
     currentPage = pageToLoad;
   } catch (e) {
+    // COMMENT: If fetch failed and feed still shows "Loading stories", show error message
     const grid = document.getElementById('feedGrid');
     if (grid && grid.innerHTML.includes('Loading stories')) {
       grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
     }
   }
+  // COMMENT: NEW - Decide if we should auto-fetch the next 15 or stop
+  // COMMENT: NEW - We auto-fetch only 2 times: after page 1 -> page 2, after page 2 -> page 3. Total = 3 pages = 45 posts
+  // COMMENT: NEW - hasMore must be true, and autoFetchCount must still be less than 2
+  let willAutoFetch = hasMore && autoFetchCount < 2;
+  if(willAutoFetch){
+    // COMMENT: NEW - Count this auto-fetch, so we stop after 2 auto-fetches
+    autoFetchCount++;
+    // COMMENT: NEW - Keep spinner VISIBLE while next auto-fetch is running, do NOT hide it yet
+    document.getElementById('scrollLoader').style.display = 'block';
+    // COMMENT: NEW - Allow next load to run, then after 500ms auto-load next page without waiting for scroll
+    isLoading = false;
+    // COMMENT: NEW - If this was page 1, also refresh pins in background
+    if(isFirstLoad){
+      updatePinsFromAllPosts();
+    }
+    setTimeout(() => {
+      // COMMENT: NEW - Auto load next page, isFirstLoad = false because it is not page 1
+      load(currentPage + 1, false);
+    }, 500);
+    // COMMENT: NEW - Stop here, do NOT hide spinner, do NOT finish yet, next page will handle it
+    return;
+  }
+  // COMMENT: NEW - No more auto-fetch to do (we already did 3 pages, or no more posts), so now hide spinner for real
   document.getElementById('scrollLoader').style.display = 'none';
+  // COMMENT: Allow next load (scroll) to run
   isLoading = false;
+  // COMMENT: If this was page 1, refresh pins in background
   if(isFirstLoad){
     updatePinsFromAllPosts();
   }
 }
+// COMMENT: Start by loading page 1
 load(1, true);
+// COMMENT: When user scrolls near bottom (300px left), load next page if not loading and more posts exist
 window.addEventListener('scroll', () => {
   if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 300){
     if(!isLoading && hasMore){
@@ -279,6 +350,7 @@ window.addEventListener('scroll', () => {
     }
   }
 });
+ // COMMENT: Logout button - clear saved user data and go to dashboard
  const button = document.getElementById('logoutBtn')
  button.addEventListener('click', () => {
   localStorage.removeItem('userEmail');
@@ -287,7 +359,9 @@ window.addEventListener('scroll', () => {
   localStorage.removeItem('token')
   location.href="dashboard.html"
  })
+ // COMMENT: League Match button - sync then go to football page
  const ball=document.querySelector('.ball'); 
+ // COMMENT: Country Match button
  const Country=document.querySelector('.Country');
   if(ball) ball.addEventListener('click', async () => { 
       fetch(BASE+'/api/sync'); 
@@ -297,16 +371,21 @@ window.addEventListener('scroll', () => {
      fetch(BASE+'/api/fetch-now'); 
       location.href="countrymatch.html"; 
   });
+// COMMENT: Get my user ID from token, used for message badge
 function getMyIdForBadge(){
   try{ return JSON.parse(atob(token.split('.')[1])).id; }catch{ return ""; }
 }
+// COMMENT: Build storage key for last read message with one person
 function getReadKeyForBadge(otherId){ return 'read_' + getMyIdForBadge() + '_' + otherId; }
+// COMMENT: Get last read message ID for one person
 function getLastReadIdForBadge(otherId){ return localStorage.getItem(getReadKeyForBadge(otherId)) || ''; }
+// COMMENT: Show / hide red message badge with unread count
 function updateMsgBadge(count){
   const badge = document.getElementById('msgBadge');
   if(!badge) return;
   if(count > 0){ badge.style.display = 'flex'; badge.innerText = count > 99 ? '99+' : count; }else{ badge.style.display = 'none'; }
 }
+// COMMENT: Check all followers / following for unread messages
 async function checkMsgNotifications(){
   try{
     const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
@@ -344,6 +423,7 @@ async function checkMsgNotifications(){
     updateMsgBadge(totalUnread);
   }catch(e){}
 }
+// COMMENT: Check messages now, then check again every 3 seconds
 checkMsgNotifications();
 setInterval(checkMsgNotifications, 3000);
 </script>
