@@ -396,7 +396,9 @@
       justify-content: center;
       padding: 0 4px;
     }
-    
+    /* ADDED ONLY - Loader for infinite scroll, shows "Loading more novels..." at bottom */
+    .scrollLoader{ text-align:center; padding:16px; color:#888; display:none; }
+    .scrollLoader .spinner{ width:28px; height:28px; border-width:3px; margin:0 auto 8px; }
   </style>
 </head>
 <body>
@@ -454,6 +456,9 @@
     <div class="gcard loading"></div>
     <div class="gcard loading"></div>
   </div>
+
+  <!-- ADDED ONLY - Loader shown at bottom while next 8 novels are loading on scroll -->
+  <div id="scrollLoader" class="scrollLoader"><div class="spinner"></div>Loading more novels...</div>
 
   <!-- Followers / Following popup -->
   <div class="modal" id="listModal" onclick="if(event.target===this) closeList()">
@@ -805,6 +810,127 @@
   let newAvatarFile = null;
 
   // ============================================================
+  // INFINITE SCROLL STATE - ADDED ONLY - 8 PER PAGE
+  // profilePage = which page we are on (1,2,3...)
+  // isLoadingPosts = true while fetching, stops double fetch
+  // hasMorePosts = false when server returns less than 8 = no more posts
+  // loadedPostIds = remembers IDs already shown, so we never show same novel twice
+  // ============================================================
+  let profilePage = 1;
+  let isLoadingPosts = false;
+  let hasMorePosts = true;
+  let loadedPostIds = new Set();
+
+  // ============================================================
+  // postCard - ADDED ONLY - builds ONE novel card HTML
+  // Before: this HTML was written twice inside load() (cache + fresh)
+  // Now: one function, used by cache, fresh load, and scroll load
+  // p = one post, returns HTML string for that post
+  // ============================================================
+  function postCard(p){
+    let cover = p.cover ? '<img src="' + p.cover + '" loading="lazy">' : '<div class="noimg">📖</div>';
+    let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
+    return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
+  }
+
+  // ============================================================
+  // loadProfilePosts - ADDED ONLY - loads 8 novels at a time
+  // pageToLoad = 1 for first 8, 2 for next 8, 3 for next 8...
+  // isFirstLoad = true = replace grid, false = APPEND to grid (scroll)
+  // Uses new backend: GET /api/posts/user/:userId?page=1&limit=8
+  // If backend route not added yet, fallback uses old /api/posts and slices 8
+  // ============================================================
+  async function loadProfilePosts(pageToLoad = 1, isFirstLoad = false){
+    // Stop if already loading or no more posts
+    if(isLoadingPosts || !hasMorePosts) return;
+    isLoadingPosts = true;
+    // Show bottom loader only on scroll, not on first load
+    if(!isFirstLoad) document.getElementById('scrollLoader').style.display = 'block';
+
+    try {
+      // Try new paginated endpoint first
+      let res = await fetchNoCache(BASE + '/api/posts/user/' + profileId + '?page=' + pageToLoad + '&limit=8');
+      // Fallback: if backend route not added yet (404), use old /api/posts and slice 8
+      if(!res.ok){
+        const allRes = await fetchNoCache(BASE + '/api/posts');
+        if(allRes && allRes.ok){
+          const all = await allRes.json();
+          // Filter only this user's posts
+          const mineAll = Array.isArray(all) ? all.filter(p => (p.user?._id || p.user) === profileId) : [];
+          // Take only 8 for this page: page 1 = 0-7, page 2 = 8-15...
+          const start = (pageToLoad-1)*8;
+          const pagePosts = mineAll.slice(start, start+8);
+          // Less than 8 = this was last page
+          if(pagePosts.length < 8) hasMorePosts = false;
+          if(isFirstLoad){
+            document.getElementById('grid').innerHTML = pagePosts.length ? pagePosts.map(p=>postCard(p)).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+            pagePosts.forEach(p=>loadedPostIds.add(String(p._id)));
+          } else {
+            const newPosts = pagePosts.filter(p=>!loadedPostIds.has(String(p._id)));
+            newPosts.forEach(p=>loadedPostIds.add(String(p._id)));
+            if(newPosts.length) document.getElementById('grid').innerHTML += newPosts.map(p=>postCard(p)).join('');
+          }
+          profilePage = pageToLoad;
+          isLoadingPosts = false;
+          document.getElementById('scrollLoader').style.display = 'none';
+          return;
+        }
+      }
+
+      let posts = await res.json();
+      if(!Array.isArray(posts)) posts = [];
+
+      // No posts at all
+      if(!posts.length){
+        hasMorePosts = false;
+        if(isFirstLoad) document.getElementById('grid').innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        isLoadingPosts = false;
+        document.getElementById('scrollLoader').style.display = 'none';
+        return;
+      }
+      // Less than 8 returned = last page, no more to load
+      if(posts.length < 8) hasMorePosts = false;
+
+      if(isFirstLoad){
+        // First page - REPLACE loading skeletons
+        document.getElementById('grid').innerHTML = posts.map(p=>postCard(p)).join('');
+        posts.forEach(p=>loadedPostIds.add(String(p._id)));
+        // Cache first page for instant load next time
+        WRDB.save('profile_posts_' + profileId, posts);
+      } else {
+        // Scroll page - APPEND, never clear, skip duplicates
+        let newPosts = posts.filter(p => !loadedPostIds.has(String(p._id)));
+        newPosts.forEach(p=>loadedPostIds.add(String(p._id)));
+        if(newPosts.length) document.getElementById('grid').innerHTML += newPosts.map(p=>postCard(p)).join('');
+      }
+      profilePage = pageToLoad;
+    } catch(e) {
+      if(isFirstLoad){
+        const grid = document.getElementById('grid');
+        if(grid && grid.querySelector('.gcard.loading')){
+          grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
+        }
+      }
+    }
+    document.getElementById('scrollLoader').style.display = 'none';
+    isLoadingPosts = false;
+  }
+
+  // ============================================================
+  // SCROLL LISTENER - ADDED ONLY
+  // When user scrolls to 300px before bottom, load next 8
+  // window.innerHeight + scrollY = how far you scrolled
+  // document.body.scrollHeight - 300 = near bottom
+  // ============================================================
+  window.addEventListener('scroll', () => {
+    if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 300){
+      if(!isLoadingPosts && hasMorePosts && profileId){
+        loadProfilePosts(profilePage + 1, false);
+      }
+    }
+  });
+
+  // ============================================================
   // FETCH FOLLOW DATA - RETURNS IMMEDIATELY FROM MEMORY
   // ============================================================
   async function fetchFollowFromBackend(userId) {
@@ -845,12 +971,14 @@
   // LOAD - MAIN FUNCTION
   // 1. Show cache instantly
   // 2. Fetch USER - spinner stops HERE
-  // 3. Fetch POSTS in background
+  // 3. Fetch POSTS in background (NOW 8 PER PAGE - see loadProfilePosts)
   // 4. Start badge ONLY after load finishes
   // ============================================================
   async function load() {
     profileId = new URLSearchParams(location.search).get('id') || getMyId();
     isOwn = profileId === getMyId();
+    // Reset pagination on fresh load - start again from page 1
+    profilePage = 1; isLoadingPosts = false; hasMorePosts = true; loadedPostIds = new Set();
     showProfileLoading();
     retryPending().catch(() => {});
 
@@ -881,13 +1009,13 @@
           document.getElementById('avatar').classList.remove('loading');
         }
 
-        if (Array.isArray(cachedMine)) {
-          document.getElementById('postCount').innerText = cachedMine.length;
-          document.getElementById('grid').innerHTML = cachedMine.length ? cachedMine.map(p => {
-            let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
-            let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
-            return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
-          }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        if (Array.isArray(cachedMine) && cachedMine.length) {
+          // Cached first page only - show it, scroll will load more from server
+          document.getElementById('grid').innerHTML = cachedMine.map(p => postCard(p)).join('');
+          cachedMine.forEach(p=>loadedPostIds.add(String(p._id)));
+          // Cache had 8 = there may be more, keep hasMore true so scroll fetches page 2
+          profilePage = 1;
+          if(cachedMine.length < 8) hasMorePosts = false;
         }
 
         if (isOwn) {
@@ -966,19 +1094,32 @@
       hideProfileLoading();
       isProfileLoading = false;
 
-      // STEP B - FETCH POSTS IN BACKGROUND
-      const r2 = await fetchNoCache(BASE + '/api/posts').catch(() => null);
-
-      if (r2 && r2.ok) {
-        const all = await r2.json();
-        const mine = Array.isArray(all) ? all.filter(p => (p.user?._id || p.user) === profileId) : [];
-        document.getElementById('postCount').innerText = mine.length;
-        document.getElementById('grid').innerHTML = mine.length ? mine.map(p => {
-          let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
-          let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
-          return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
-        }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
-        WRDB.save('profile_posts_' + profileId, mine);
+      // STEP B - FETCH POSTS IN BACKGROUND - NOW 8 PER PAGE
+      // CHANGED: Before it fetched ALL posts via /api/posts then filtered.
+      // Now it calls loadProfilePosts(1, true) which fetches only first 8.
+      // If we already showed cache, we refresh page 1 fresh to sync.
+      if(hasCache){
+        // We already show cache - now refresh page 1 fresh
+        // Reset dedup to allow fresh page 1 to re-render
+        loadedPostIds = new Set();
+        hasMorePosts = true;
+        profilePage = 1;
+        isLoadingPosts = false;
+        await loadProfilePosts(1, true);
+        // postCount: if hasMore = there are more than 8, show "8+" until all loaded
+        // else exact count = loaded IDs
+        if(hasMorePosts){
+          document.getElementById('postCount').innerText = '8+';
+        } else {
+          document.getElementById('postCount').innerText = loadedPostIds.size;
+        }
+      } else {
+        await loadProfilePosts(1, true);
+        if(hasMorePosts){
+          document.getElementById('postCount').innerText = '8+';
+        } else {
+          document.getElementById('postCount').innerText = loadedPostIds.size;
+        }
       }
 
       // STEP C - START BADGE ONLY AFTER LOAD FINISHES
@@ -1306,7 +1447,9 @@
     if (card) {
       card.remove();
     }
-    if (countEl) {
+    // ADDED ONLY - remove from loaded IDs so it never comes back on scroll
+    loadedPostIds.delete(String(postId));
+    if (countEl && !String(countEl.innerText).includes('+')) {
       countEl.innerText = Math.max(0, savedCount - 1);
     }
     if (grid && !grid.querySelector('.gcard')) {
@@ -1344,6 +1487,8 @@
       if (countEl) {
         countEl.innerText = savedCount;
       }
+      // ADDED ONLY - put back ID if delete failed
+      loadedPostIds.add(String(postId));
     }
   }
 

@@ -3,43 +3,383 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Write Novel</title>
+  <title>Profile</title>
   <style>
-    * { box-sizing: border-box; }
-
-    body { margin: 0; background: linear-gradient(180deg, #0f0c29, #1a1a2e); color: #fff; font-family: Arial; padding-bottom: 90px; }
-
-    .box { max-width: 600px; margin: 0 auto; padding: 18px; }
-
-    .top { font-size: 22px; font-weight: 800; margin-bottom: 14px; }
-
-    .cover { width: 100%; height: 240px; background: rgba(255, 255, 255, .06); border: 2px dashed rgba(255, 255, 255, .25); border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
-
-    .cover img { width: 100%; height: 100%; object-fit: cover; }
-
-    .cover b { font-size: 34px; }
-
-    .cover p { color: #bbb; font-size: 13px; }
-
-    input, textarea { width: 100%; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-radius: 16px; color: #fff; padding: 15px; margin-top: 12px; outline: none; font-size: 15px; }
-
-    /* FIXED - box now grows with your story, no more feeling full */
-    textarea { min-height: 500px; height: auto; line-height: 1.7; resize: vertical; overflow-y: auto; field-sizing: content; }
-
-    .btn { width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(90deg, #7c3aed, #ec4899); color: #fff; font-weight: 800; font-size: 16px; margin-top: 16px; cursor: pointer; box-shadow: 0 10px 25px rgba(124, 58, 237, .4); }
-
-    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10, 10, 20, .95); backdrop-filter: blur(10px); border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 14px 0; }
-
-    .nav a { color: #fff; text-decoration: none; font-size: 22px; }
-    .nav a.active { transform: scale(1.2); }
-
-    /* ============================================================ */
-    /* ADDED ONLY - MESSAGE NOTIFICATION BADGE STYLES               */
-    /* Copy this whole block to any other page you want badge on    */
-    /* ============================================================ */
-    /* Makes the 💬 link able to hold a badge on top of it */
-    .navMsg { position: relative; }
-    /* The red circle with number, e.g. 1, 2, 99+ */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #0a0a12;
+      color: #fff;
+      font-family: Arial;
+      padding-bottom: 90px;
+    }
+    .banner {
+      height: 120px;
+      background: linear-gradient(90deg, #7c3aed, #ec4899, #f59e0b);
+    }
+    .top {
+      max-width: 935px;
+      margin: -55px auto 0;
+      padding: 0 16px;
+    }
+    .card {
+      background: #14141d;
+      border: 1px solid #262626;
+      border-radius: 22px;
+      padding: 20px;
+      position: relative;
+    }
+    .loadingBar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #26262f;
+      border: 1px solid #3a3a4a;
+      color: #a78bfa;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .loadingBar.show {
+      display: inline-flex;
+    }
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid #555;
+      border-top: 2px solid #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 8px;
+      color: transparent !important;
+    }
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+    .avatar.loading {
+      background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      color: transparent;
+    }
+    .gcard.loading {
+      min-height: 260px;
+      background: linear-gradient(90deg, #16161f 25%, #26262f 50%, #16161f 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+    }
+    .avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 4px solid #14141d;
+      background: linear-gradient(45deg, #7c3aed, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 800;
+      overflow: hidden;
+      margin-top: -10px;
+      cursor: pointer;
+    }
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .stats {
+      display: flex;
+      gap: 26px;
+      margin-top: 14px;
+    }
+    .stat {
+      text-align: center;
+      cursor: pointer;
+    }
+    .stat b {
+      display: block;
+      font-size: 18px;
+      min-height: 22px;
+    }
+    .stat span {
+      font-size: 12px;
+      color: #aaa;
+    }
+    .btn {
+      padding: 9px 20px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    .btn-follow {
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+      color: #fff;
+    }
+    .btn-following {
+      background: #262626;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    .btn-write {
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+      color: #fff;
+      padding: 9px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      display: inline-block;
+      margin-top: 12px;
+    }
+    .btn.loadingBtn {
+      background: #26262f !important;
+      color: #888 !important;
+      pointer-events: none;
+    }
+    .grid {
+      max-width: 935px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 14px 16px;
+    }
+    .gcard {
+      background: #16161f;
+      border: 1px solid #26262f;
+      border-radius: 18px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .cover {
+      width: 100%;
+      height: 210px;
+    }
+    .cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .noimg {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+    }
+    .body {
+      padding: 12px;
+    }
+    .title {
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 10, 18, .95);
+      border-top: 1px solid #262626;
+      display: flex;
+      justify-content: space-around;
+      padding: 14px 0;
+    }
+    .nav a {
+      color: #fff;
+      text-decoration: none;
+      font-size: 22px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .8);
+      z-index: 99;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.open {
+      display: flex;
+    }
+    .mbox {
+      background: #1a1a24;
+      width: 90%;
+      max-width: 380px;
+      border-radius: 18px;
+      max-height: 70vh;
+      overflow: hidden;
+    }
+    .head {
+      padding: 14px;
+      border-bottom: 1px solid #262626;
+      display: flex;
+      justify-content: space-between;
+    }
+    .list {
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid #222;
+      align-items: center;
+      cursor: pointer;
+    }
+    .mini {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #7c3aed, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .mini img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* NEW: Grey shimmer for follower row while name is loading - never shows ID */
+    .mini.loadingMini {
+      background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      color: transparent;
+    }
+    .followName.loadingName {
+      background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 6px;
+      color: transparent !important;
+      min-width: 110px;
+      min-height: 16px;
+      display: inline-block;
+    }
+    .editBox {
+      background: #1a1a24;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 18px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .editAvatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #7c3aed, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      font-weight: 800;
+      overflow: hidden;
+      margin: 0 auto;
+      cursor: pointer;
+    }
+    .editAvatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .editInput {
+      width: 100%;
+      background: #26262f;
+      border: 1px solid #333;
+      border-radius: 12px;
+      color: #fff;
+      padding: 13px;
+      margin-top: 10px;
+      outline: none;
+      font-size: 14px;
+    }
+    .editLabel {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 14px;
+      display: block;
+    }
+    .btn-save {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+      color: #fff;
+      font-weight: 800;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+    .btn-remove {
+      background: #262626;
+      color: #fff;
+      border: 1px solid #444;
+      width: 100%;
+      padding: 11px;
+      border-radius: 12px;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+    .editBox.loadingInputs .editInput {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .btn-delete {
+      background: #ff3b30;
+      color: #fff;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-mini-unfollow {
+      background: #262626;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .navMsg {
+      position: relative;
+    }
     .msgBadge {
       position: absolute;
       top: -8px;
@@ -51,238 +391,1194 @@
       min-width: 18px;
       height: 18px;
       border-radius: 999px;
-      display: none; /* hidden when 0 unread, JS will show it */
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 0 4px;
     }
+    
   </style>
 </head>
 <body>
 
-  <!-- Write novel form -->
-  <div class="box">
-    <div class="top">✍️ Write Novel</div>
+  <div class="banner"></div>
 
-    <div class="cover" onclick="document.getElementById('uploaddInput').click()" id="coverBox">
-      <b>🖼️</b>
-      <p>Tap to add beautiful cover</p>
-      <p style="font-size:11px;color:#888;"> 
-        <div style="align-items: center; justify-content: center; font-size:11px;color:#888;">Saved in database</div> 
-        <div style="align-items: center; justify-content: center; font-size:14px;color:#888; padding-left: 20px; margin-top: 10px;"> updating profile with new post usually take 1 minutes + please wait on profile while post is updating in background
-        </div>
-      </p>
+  <div class="top">
+    <div class="card">
+
+      <!-- Loading bar - shows while profile is fetching -->
+      <div class="loadingBar" id="loadingBar">
+        <div class="spinner"></div>
+        <span id="loadingBarText">Loading profile...</span>
+      </div>
+
+      <!-- Avatar - click to edit if own profile -->
+      <div class="avatar loading" id="avatar" onclick="if(isOwn) openEdit()">U</div>
+
+      <!-- Name -->
+      <h3 id="name" style="margin:12px 0 2px">Loading...</h3>
+
+      <!-- Email line - kept empty for styling -->
+      <p id="emailLine" style="color:#a78bfa;font-size:13px;margin:0"></p>
+
+      <!-- Bio -->
+      <p id="bio" style="color:#aaa;font-size:14px;margin:8px 0">Loading...</p>
+
+      <!-- Link -->
+      <a id="linkLine" href="#" target="_blank" style="color:#7dd3fc;font-size:13px;display:none"></a>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat"><b id="postCount">...</b><span>novels</span></div>
+        <div class="stat" onclick="showList('followers')"><b id="fCount">...</b><span>followers</span></div>
+        <div class="stat" onclick="showList('following')"><b id="fgCount">...</b><span>following</span></div>
+      </div>
+
+      <!-- Follow button - only on other people's profile -->
+      <button id="followBtn" class="btn btn-follow loadingBtn" style="display:none" onclick="toggleFollow()">Loading...</button>
+
+      <!-- Write Novel button - only on own profile -->
+      <a href="create.html" id="writeBtn" class="btn-write" style="display:none">+ Write Novel ✍️</a>
+
+      <!-- Message button - only on other people's profile -->
+      <button id="msgBtn" class="btn" style="display:none;background:#262626;color:#fff" onclick="goMessage()">💬 Message</button>
+
+      <!-- Edit Profile button - only on own profile -->
+      <button id="editBtn" class="btn" style="display:none;background:#262626;color:#fff;border:1px solid #555" onclick="openEdit()">✏️ Edit Profile</button>
+
     </div>
+  </div>
 
-    <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewUploadd(this)">
-    <input id="titleInput" placeholder="Novel Title - e.g. Silently Winning ✨" maxlength="80">
-    <!-- NO maxlength = unlimited words. Browser can accept 100,000+ words -->
-    <textarea id="contentInput" placeholder="Start writing your story here...&#10;&#10;Once upon a time..."></textarea>
-    <p id="charCount" style="font-size:12px;color:#aaa;margin:6px 0 0;text-align:right">0 words • Minimum 100 • No maximum</p>
+  <!-- Novels grid -->
+  <div class="grid" id="grid">
+    <div class="gcard loading"></div>
+    <div class="gcard loading"></div>
+  </div>
 
-    <button class="btn" id="publishBtn" onclick="publishNovel()">Publish Novel 📚</button>
+  <!-- Followers / Following popup -->
+  <div class="modal" id="listModal" onclick="if(event.target===this) closeList()">
+    <div class="mbox">
+      <div class="head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div>
+      <div class="list" id="listBody"></div>
+    </div>
+  </div>
+
+  <!-- Edit Profile popup -->
+  <div class="modal" id="editModal" onclick="if(event.target===this) closeEdit()">
+    <div class="editBox" id="editBox">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b>Edit Profile</b><span onclick="closeEdit()" style="cursor:pointer;font-size:20px">✕</span></div>
+      <p id="editLoadingText" style="display:none;color:#a78bfa;font-size:12px;font-weight:700;margin:10px 0">Loading profile... please wait</p>
+      <div class="editAvatar" id="editAvatarPreview" onclick="document.getElementById('uploaddInput').click()">U</div>
+      <p style="text-align:center;font-size:12px;color:#aaa;margin:8px 0">Tap picture to change</p>
+      <input type="file" id="uploaddInput" accept="image/*" hidden onchange="previewNewAvatar(this)">
+      <label class="editLabel">Name / Username</label>
+      <input class="editInput" id="editName" placeholder="Loading...">
+      <label class="editLabel">Bio</label>
+      <input class="editInput" id="editBio" placeholder="Loading...">
+      <label class="editLabel">Link</label>
+      <input class="editInput" id="editLink" placeholder="Loading...">
+      <button class="btn-save" id="saveBtn" onclick="saveProfile()">Save Changes ✅</button>
+      <button class="btn-remove" onclick="removeAvatar()">Remove Profile Picture</button>
+    </div>
   </div>
 
   <!-- Bottom navigation -->
   <div class="nav">
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
-    <a href="create.html" class="active">✍️</a>
-    <!-- ADDED ONLY - Added class="navMsg" + <span id="msgBadge"> so badge can show on 💬 -->
+    <a href="create.html">✍️</a>
     <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
     <a href="diary.html">📖</a>
     <a href="profile.html">👤</a>
   </div>
 
-  <script>
-    // ============================================================
-    // ORIGINAL CODE - Do not touch, everything below is your old code
-    // ============================================================
-    const BASE = "https://my-website-raymond-sepia.vercel.app";
-    const token = localStorage.getItem('token');
-    if (!token) location.href = "login.html";
+<script>
 
-    let uploaddFile = null;
+  // ============================================================
+  // WRDB - IndexedDB cache
+  // Saves profile + novels so page shows instantly on next visit
+  // ============================================================
+  const WRDB = {
+    dbName: 'WildReadersDB',
+    storeName: 'cache',
 
-    // Preview cover image when user picks a file
-    function previewUploadd(input) {
-      if (input.files[0]) {
-        uploaddFile = input.files[0];
-        document.getElementById('coverBox').innerHTML = '<img src="' + URL.createObjectURL(uploaddFile) + '">';
-      }
-    }
+    // Open IndexedDB, create store if first time
+    _open() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(this.dbName, 1);
+        req.onupgradeneeded = () => {
+          if (!req.result.objectStoreNames.contains(this.storeName)) {
+            req.result.createObjectStore(this.storeName);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    },
 
-    // Count words: split by spaces, remove empty pieces
-    function countWords(text) {
-      return text.trim().split(/\s+/).filter(Boolean).length;
-    }
-
-    // FIXED - box grows as you type, so 2000 words will never look stuck
-    const ta = document.getElementById('contentInput');
-
-    function autoGrow() {
-      ta.style.height = 'auto';
-      ta.style.height = (ta.scrollHeight + 20) + 'px';
-      const len = countWords(ta.value);
-      const el = document.getElementById('charCount');
-      el.innerText = len + ' words • Minimum 100 • No maximum';
-      el.style.color = len >= 100 ? '#4ade80' : '#aaa';
-    }
-
-    ta.addEventListener('input', autoGrow);
-
-    // Publish novel to server
-    async function publishNovel() {
-      const title = document.getElementById('titleInput').value.trim();
-      const content = document.getElementById('contentInput').value.trim();
-      if (!title) return alert('Add title');
-      if (!content) return alert('Write your story');
-
-      // Minimum 100 WORDS, no maximum - 100, 2000, 50000, any amount
-      const wordCount = countWords(content);
-      if (wordCount < 100) return alert('Story too short. Write at least 100 words. You have ' + wordCount + ' / 100 words');
-
-      const btn = document.getElementById('publishBtn');
-      btn.innerText = 'Publishing... ✨';
-      btn.disabled = true;
-
-      const fd = new FormData();
-      fd.append('title', title);
-      fd.append('content', content);
-      if (uploaddFile) fd.append('file', uploaddFile);
-
+    // Save one key to cache
+    async save(key, data) {
       try {
-        const res = await fetch(BASE + '/api/posts', {
-          method: 'POST',
-          headers: { authorization: token },
-          body: fd
+        const db = await this._open();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
         });
-
-        if (!res.ok) throw new Error('Publish failed');
-
-        alert('Published! 🎉');
-        location.href = 'profile.html';
-
       } catch (e) {
-        alert(e.message);
-        btn.innerText = 'Publish Novel 📚';
-        btn.disabled = false;
+        return false;
       }
-    }
+    },
 
-    // ====================================================================
-    // ADDED ONLY - MESSAGE NOTIFICATION FOR THIS PAGE (CREATE / WRITE NOVEL)
-    // Copy this WHOLE block to any other page to get same badge there.
-    // It uses the SAME localStorage keys as message.html, so they stay in sync.
-    // ====================================================================
-
-    // --- STEP 1: Get my own ID from token ---
-    // We need my ID to build the "read_" key and to know if a message is from me or from them
-    function getMyIdForBadge() {
+    // Get one key from cache
+    async get(key) {
       try {
-        // Token is like xxx.YYY.zzz, the middle part holds my id
-        return JSON.parse(atob(token.split('.')[1])).id;
-      } catch {
-        return "";
-      }
-    }
-
-    // --- STEP 2: Helpers to remember what I have already read ---
-    // We save: read_MYID_OTHERID = ID of last message I saw from that person
-    // Example: read_123_456 = "msg789"
-    // If server has a newer message ID after that one, and it's from THEM, it's unread.
-    function getReadKeyForBadge(otherId) {
-      return 'read_' + getMyIdForBadge() + '_' + otherId;
-    }
-    function getLastReadIdForBadge(otherId) {
-      return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
-    }
-
-    // --- STEP 3: Show / hide the red badge on 💬 button ---
-    function updateMsgBadge(count) {
-      // Find the badge span in the bottom nav
-      const badge = document.getElementById('msgBadge');
-      if (!badge) return; // If this page has no badge, do nothing
-      if (count > 0) {
-        badge.style.display = 'flex'; // Show badge
-        badge.innerText = count > 99 ? '99+' : count; // 99+ if too many
-      } else {
-        badge.style.display = 'none'; // Hide badge when 0 unread
-      }
-    }
-
-    // --- STEP 4: Check server for new messages ---
-    async function checkMsgNotifications() {
-      try {
-        // 4a. Get my profile to know who I follow / who follows me = people who can message me
-        const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
-        const meData = await meRes.json();
-        const me = meData.user || meData;
-        let people = [...(me.followers || []), ...(me.following || [])];
-
-        // 4b. Remove duplicates + remove myself
-        let seen = {};
-        people = people.filter(p => {
-          let id = p._id || p;
-          if (seen[id]) return false;
-          seen[id] = true;
-          return id !== getMyIdForBadge();
+        const db = await this._open();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readonly');
+          const req = tx.objectStore(this.storeName).get(key);
+          req.onsuccess = () => resolve(req.result ? req.result.data : null);
+          req.onerror = () => resolve(null);
         });
+      } catch (e) {
+        return null;
+      }
+    },
 
-        let totalUnread = 0; // Total unread across all chats
+    // Delete one key from cache - needed so deleted post never comes back
+    async delete(key) {
+      try {
+        const db = await this._open();
+        return new Promise((resolve) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).delete(key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        });
+      } catch (e) {
+        return false;
+      }
+    }
+  };
 
-        // 4c. For each person, fetch our chat and count unread
-        for (const p of people) {
-          const otherId = p._id || p;
-          const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
-          const msgs = await res.json();
-          if (!Array.isArray(msgs) || !msgs.length) continue; // No messages with this person
+  // ============================================================
+  // STRIP FOLLOW FIELDS BEFORE SAVING TO CACHE
+  // We never save followers / following to storage.
+  // They always come fresh from backend, so counts are never stale.
+  // ============================================================
+  function stripFollowFields(user) {
+    if (!user) {
+      return null;
+    }
+    const copy = { ...user };
+    delete copy.followers;
+    delete copy.following;
+    return copy;
+  }
 
-          const lastReadId = getLastReadIdForBadge(otherId);
+  function saveProfileToStorage(profileIdToSave, user) {
+    const safe = stripFollowFields(user);
+    WRDB.save('profile_' + profileIdToSave, safe);
+  }
 
-          // If I have NEVER opened this chat before, treat all old messages as already read
-          // (so old chats don't suddenly show as unread on first load)
-          // We save the last message as "read" and continue
-          if (!lastReadId) {
-            localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
-            continue;
-          }
+  // ============================================================
+  // GET CACHE FAST WITH 500ms TIMEOUT
+  // So cache never blocks fresh fetch from server.
+  // ============================================================
+  function getCacheFast(key) {
+    return Promise.race([
+      WRDB.get(key),
+      new Promise(r => setTimeout(() => r(null), 500))
+    ]);
+  }
 
-          // Find where I stopped reading
-          const idx = msgs.findIndex(m => m._id === lastReadId);
+  // Service worker for offline / PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 
-          if (idx === -1) {
-            // My last read message was deleted, so check last message:
-            // If last message is new AND from them, count it as 1 unread
-            const lastMsg = msgs[msgs.length - 1];
-            const fromId = lastMsg.from?._id || lastMsg.from;
-            if (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) {
-              totalUnread += 1;
-            }
-          } else {
-            // Count messages AFTER my last read one that are FROM THEM (not from me)
-            const after = msgs.slice(idx + 1);
-            for (const m of after) {
-              const fromId = m.from?._id || m.from;
-              if (fromId !== getMyIdForBadge()) totalUnread++;
-            }
-          }
+  // ============================================================
+  // FIXED FETCH - NO ABORT
+  // OLD BUG: AbortController killed fetch at 9s -> (cancelled)
+  // NEW: No abort at all. Fetch runs until server answers.
+  // Also dedupes main profile/posts fetches.
+  // Per-person fill uses direct fetch (see fillOneFollowRow).
+  // ============================================================
+  const _inFlight = new Map();
+
+  function fetchFast(url) {
+    if (_inFlight.has(url)) {
+      return _inFlight.get(url);
+    }
+    const p = fetch(url, {
+      headers: { authorization: token }
+    }).finally(() => {
+      setTimeout(() => _inFlight.delete(url), 500);
+    });
+    _inFlight.set(url, p);
+    return p;
+  }
+
+  // ============================================================
+  // FETCH WITH NO CACHE - FIXES 304 NOT MODIFIED
+  // no-store + no-cache forces fresh data from backend every time.
+  // ============================================================
+  function fetchNoCache(url) {
+    if (_inFlight.has(url)) {
+      return _inFlight.get(url);
+    }
+    const p = fetch(url, {
+      headers: {
+        authorization: token,
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      cache: 'no-store'
+    }).finally(() => {
+      setTimeout(() => _inFlight.delete(url), 500);
+    });
+    _inFlight.set(url, p);
+    return p;
+  }
+
+  // ============================================================
+  // SURVIVE NAVIGATION - Follow / Delete finishes even if you leave page
+  // fetch with keepalive + sendBeacon on pagehide.
+  // ============================================================
+  let _pendingBeacon = [];
+
+  function surviveFetch(url, method) {
+    return fetch(url, {
+      method: method,
+      headers: { authorization: token },
+      keepalive: true
+    })
+    .then(async r => {
+      return { ok: r.ok,
+         data: await r.json().catch(() => ({})) 
+      };
+    })
+    .catch(() => {
+      _pendingBeacon.push({ url: url, method: method });
+      return { ok: true, data: {}, beaconQueued: true };
+    });
+  }
+
+  window.addEventListener('pagehide', () => {
+    for (const p of _pendingBeacon) {
+      try {
+        navigator.sendBeacon(p.url, new Blob([], { type: 'application/json' }));
+      } catch (e) {}
+    }
+    for (const a of getPending()) {
+      try {
+        navigator.sendBeacon(a.url, new Blob([], { type: 'application/json' }));
+      } catch (e) {}
+    }
+    _pendingBeacon = [];
+  });
+
+  // ============================================================
+  // LOADING UI - Spinner / Loading bar
+  // ============================================================
+  let isProfileLoading = false;
+
+  function showProfileLoading() {
+    isProfileLoading = true;
+    const bar = document.getElementById('loadingBar');
+    if (bar) {
+      bar.classList.add('show');
+    }
+    const barText = document.getElementById('loadingBarText');
+    if (barText) {
+      barText.innerText = 'Loading profile...';
+    }
+    const fb = document.getElementById('followBtn');
+    if (fb && !isOwn) {
+      fb.innerText = 'Loading...';
+      fb.className = 'btn btn-follow loadingBtn';
+    }
+    const editBtn = document.getElementById('editBtn');
+    if (editBtn && isOwn) {
+      editBtn.innerText = '⏳ Loading...';
+    }
+  }
+
+  function hideProfileLoading() {
+    isProfileLoading = false;
+    const bar = document.getElementById('loadingBar');
+    if (bar) {
+      bar.classList.remove('show');
+    }
+    const av = document.getElementById('avatar');
+    if (av) {
+      av.classList.remove('loading');
+    }
+    const nameEl = document.getElementById('name');
+    if (nameEl) {
+      nameEl.classList.remove('skeleton');
+    }
+    const editBtn = document.getElementById('editBtn');
+    if (editBtn && isOwn) {
+      editBtn.innerText = '✏️ Edit Profile';
+    }
+  }
+
+  // ============================================================
+  // PENDING QUEUE - Save action BEFORE fetch
+  // So leaving page never loses follow / unfollow / delete
+  // ============================================================
+  function getPending() {
+    try {
+      return JSON.parse(localStorage.getItem('pending_actions') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function savePending(action) {
+    const list = getPending().filter(x => !(x.url === action.url && x.method === action.method));
+    list.push({
+      url: action.url,
+      method: action.method,
+      time: Date.now()
+    });
+    try {
+      localStorage.setItem('pending_actions', JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function removePending(url, method) {
+    try {
+      const filtered = getPending().filter(x => !(x.url === url && x.method === method));
+      localStorage.setItem('pending_actions', JSON.stringify(filtered));
+    } catch (e) {}
+  }
+
+  async function retryPending() {
+    const list = getPending();
+    if (!list.length) {
+      return;
+    }
+    await Promise.allSettled(list.map(async (a) => {
+      if (Date.now() - a.time > 5 * 60 * 1000) {
+        removePending(a.url, a.method);
+        return;
+      }
+      try {
+        const r = await fetch(a.url, {
+          method: a.method,
+          headers: { authorization: token },
+          keepalive: true
+        });
+        if (r.ok) {
+          removePending(a.url, a.method);
+        }
+      } catch (e) {}
+    }));
+  }
+
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const BASE = "https://raymond-web-dusky.vercel.app";
+  const token = localStorage.getItem('token');
+  if (!token) {
+    location.href = "dashboard.html";
+  } 
+
+  function getMyId() {
+    try {
+      return JSON.parse(atob(token.split('.')[1])).id;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  // ============================================================
+  // GLOBAL STATE
+  // ============================================================
+  let profileUser = null;
+  let isOwn = false;
+  let profileId = "";
+  let newAvatarFile = null;
+
+  // ============================================================
+  // FETCH FOLLOW DATA - RETURNS IMMEDIATELY FROM MEMORY
+  // ============================================================
+  async function fetchFollowFromBackend(userId) {
+    if (profileUser && String(profileId) === String(userId) && profileUser.followers) {
+      return {
+        followers: profileUser.followers || [],
+        following: profileUser.following || [],
+        fullUser: profileUser
+      };
+    }
+    try {
+      const res = await fetchNoCache(BASE + '/api/users/' + userId);
+      if (!res.ok) {
+        return null;
+      }
+      const data = await res.json();
+      const user = data.user || data;
+      return {
+        followers: user.followers || [],
+        following: user.following || [],
+        fullUser: user
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function applyFollowFromBackend(followers, following) {
+    document.getElementById('fCount').innerText = (followers || []).length;
+    document.getElementById('fgCount').innerText = (following || []).length;
+    if (profileUser) {
+      profileUser.followers = followers || [];
+      profileUser.following = following || [];
+    }
+  }
+
+  // ============================================================
+  // LOAD - MAIN FUNCTION
+  // 1. Show cache instantly
+  // 2. Fetch USER - spinner stops HERE
+  // 3. Fetch POSTS in background
+  // 4. Start badge ONLY after load finishes
+  // ============================================================
+  async function load() {
+    profileId = new URLSearchParams(location.search).get('id') || getMyId();
+    isOwn = profileId === getMyId();
+    showProfileLoading();
+    retryPending().catch(() => {});
+
+    let hasCache = false;
+    try {
+      const cachedUser = await getCacheFast('profile_' + profileId);
+      const cachedMine = await getCacheFast('profile_posts_' + profileId);
+
+      if (cachedUser) {
+        hasCache = true;
+        profileUser = cachedUser;
+        profileUser.followers = [];
+        profileUser.following = [];
+
+        document.getElementById('name').innerText = cachedUser.username || 'User';
+        document.getElementById('name').classList.remove('skeleton');
+        document.getElementById('bio').innerText = cachedUser.bio || '';
+
+        const linkEl = document.getElementById('linkLine');
+        if (cachedUser.link) {
+          linkEl.style.display = 'block';
+          linkEl.innerText = cachedUser.link;
+          linkEl.href = cachedUser.link.startsWith('http') ? cachedUser.link : 'https://' + cachedUser.link;
         }
 
-        // 4d. Update the badge on screen
-        updateMsgBadge(totalUnread);
+        if (cachedUser.avatar) {
+          document.getElementById('avatar').innerHTML = '<img src="' + cachedUser.avatar + '">';
+          document.getElementById('avatar').classList.remove('loading');
+        }
 
-      } catch (e) {
-        // If internet fails, just ignore, will try again in 3 seconds
+        if (Array.isArray(cachedMine)) {
+          document.getElementById('postCount').innerText = cachedMine.length;
+          document.getElementById('grid').innerHTML = cachedMine.length ? cachedMine.map(p => {
+            let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
+            let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
+            return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
+          }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        }
+
+        if (isOwn) {
+          document.getElementById('writeBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').innerText = '⏳ Loading...';
+        } else {
+          const fbCache = document.getElementById('followBtn');
+          fbCache.style.display = 'block';
+          fbCache.innerText = 'Loading...';
+          fbCache.className = 'btn btn-follow loadingBtn';
+          document.getElementById('msgBtn').style.display = 'block';
+        }
+      }
+    } catch (e) {}
+
+    if (!hasCache) {
+      document.getElementById('name').innerText = 'Loading...';
+      document.getElementById('bio').innerText = 'Loading...';
+      document.getElementById('postCount').innerText = '...';
+      document.getElementById('fCount').innerText = '...';
+      document.getElementById('fgCount').innerText = '...';
+    }
+
+    try {
+      // STEP A - FETCH USER FIRST
+      const r1 = await fetchNoCache(BASE + '/api/users/' + profileId).catch(() => null);
+
+      if (r1 && r1.ok) {
+        const data = await r1.json();
+        const freshUser = data.user || data;
+        profileUser = freshUser;
+
+        document.getElementById('name').innerText = profileUser.username || 'User';
+        document.getElementById('name').classList.remove('skeleton');
+        document.getElementById('emailLine').innerText = '';
+        document.getElementById('bio').innerText = profileUser.bio || '';
+
+        const linkEl = document.getElementById('linkLine');
+        if (profileUser.link) {
+          linkEl.style.display = 'block';
+          linkEl.innerText = profileUser.link;
+          linkEl.href = profileUser.link.startsWith('http') ? profileUser.link : 'https://' + profileUser.link;
+        } else {
+          linkEl.style.display = 'none';
+        }
+
+        if (profileUser.avatar) {
+          document.getElementById('avatar').innerHTML = '<img src="' + profileUser.avatar + '">';
+          document.getElementById('avatar').classList.remove('loading');
+        } else {
+          document.getElementById('avatar').innerText = (profileUser.username || 'U')[0].toUpperCase();
+          document.getElementById('avatar').classList.remove('loading');
+        }
+
+        applyFollowFromBackend(profileUser.followers || [], profileUser.following || []);
+
+        if (isOwn) {
+          document.getElementById('writeBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').style.display = 'inline-block';
+          document.getElementById('editBtn').innerText = '✏️ Edit Profile';
+        } else {
+          const fb = document.getElementById('followBtn');
+          fb.style.display = 'block';
+          document.getElementById('msgBtn').style.display = 'block';
+          const amIFollowing = (profileUser.followers || []).some(f => (f._id || f) === getMyId());
+          fb.innerText = amIFollowing ? 'Following' : 'Follow';
+          fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
+          fb.disabled = false;
+        }
+
+        saveProfileToStorage(profileId, profileUser);
+      }
+
+      // STOP SPINNER HERE - followers/following already returned
+      hideProfileLoading();
+      isProfileLoading = false;
+
+      // STEP B - FETCH POSTS IN BACKGROUND
+      const r2 = await fetchNoCache(BASE + '/api/posts').catch(() => null);
+
+      if (r2 && r2.ok) {
+        const all = await r2.json();
+        const mine = Array.isArray(all) ? all.filter(p => (p.user?._id || p.user) === profileId) : [];
+        document.getElementById('postCount').innerText = mine.length;
+        document.getElementById('grid').innerHTML = mine.length ? mine.map(p => {
+          let cover = p.cover ? '<img src="' + p.cover + '">' : '<div class="noimg">📖</div>';
+          let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
+          return '<div class="gcard" onclick="location.href=\'read.html?id=' + p._id + '\'"><div class="cover">' + cover + '</div><div class="body"><div class="title">' + p.title + '</div><div style="font-size:12px;color:#888;margin-top:4px">❤️ ' + (p.likes?.length || 0) + ' • 💬 ' + (p.comments?.length || 0) + '</div>' + delBtn + '</div></div>';
+        }).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        WRDB.save('profile_posts_' + profileId, mine);
+      }
+
+      // STEP C - START BADGE ONLY AFTER LOAD FINISHES
+      checkMsgNotifications();
+      setInterval(checkMsgNotifications, 30000);
+
+    } catch (e) {
+      hideProfileLoading();
+      isProfileLoading = false;
+      const grid = document.getElementById('grid');
+      if (grid && grid.querySelector('.gcard.loading')) {
+        grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
+      }
+    }
+  }
+
+  // ============================================================
+  // TOGGLE FOLLOW - FAST + OPTIMISTIC
+  // ============================================================
+  async function toggleFollow() {
+    if (isProfileLoading && !profileUser) {
+      return;
+    }
+
+    const fb = document.getElementById('followBtn');
+    const fCountEl = document.getElementById('fCount');
+    const wasFollowing = fb.innerText === 'Following';
+    const myId = getMyId();
+
+    const action = wasFollowing ? 'unfollow' : 'follow';
+    const url = BASE + '/api/users/' + profileId + '/' + action;
+
+    fb.disabled = true;
+
+    if (wasFollowing) {
+      fb.innerText = 'Follow';
+      fb.className = 'btn btn-follow';
+      fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
+      if (profileUser && profileUser.followers) {
+        profileUser.followers = profileUser.followers.filter(f => (f._id || f) !== myId);
+      }
+    } else {
+      fb.innerText = 'Following';
+      fb.className = 'btn btn-following';
+      fCountEl.innerText = (parseInt(fCountEl.innerText) || 0) + 1;
+      if (profileUser) {
+        if (!profileUser.followers) {
+          profileUser.followers = [];
+        }
+        profileUser.followers.push(myId);
       }
     }
 
-    // --- STEP 5: Start checking ---
-    // Check immediately when page loads
-    checkMsgNotifications();
-    
-    // Then check every 3 seconds, so new message shows fast while you are writing
-    setInterval(checkMsgNotifications, 3000);
-  </script>
+    savePending({ url: url, method: 'POST' });
+    fb.disabled = false;
+
+    try {
+      const result = await surviveFetch(url, 'POST');
+      if (!result.ok || result.data.ok === false) {
+        throw new Error(result.data.error || 'failed');
+      }
+      removePending(url, 'POST');
+    } catch (e) {
+      if (wasFollowing) {
+        fb.innerText = 'Following';
+        fb.className = 'btn btn-following';
+        fCountEl.innerText = (parseInt(fCountEl.innerText) || 0) + 1;
+      } else {
+        fb.innerText = 'Follow';
+        fb.className = 'btn btn-follow';
+        fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
+      }
+    }
+  }
+
+  // ============================================================
+  // UNFOLLOW FROM LIST
+  // ============================================================
+  async function unfollowFromList(userId, btnEl) {
+    if (btnEl) {
+      btnEl.innerText = '...';
+      btnEl.disabled = true;
+    }
+
+    const rowEl = btnEl ? btnEl.closest('.row') : document.getElementById('follow-row-' + userId);
+    const savedRowHTML = rowEl ? rowEl.outerHTML : '';
+    const savedFg = parseInt(document.getElementById('fgCount').innerText) || 0;
+
+    if (rowEl) {
+      rowEl.remove();
+    }
+    if (profileUser && profileUser.following) {
+      profileUser.following = profileUser.following.filter(u => (u._id || u) !== userId);
+    }
+    const fg = document.getElementById('fgCount');
+    if (fg) {
+      fg.innerText = Math.max(0, savedFg - 1);
+    }
+    const body = document.getElementById('listBody');
+    if (body && !body.querySelector('.row')) {
+      body.innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+    }
+
+    const url = BASE + '/api/users/' + userId + '/unfollow';
+    savePending({ url: url, method: 'POST' });
+
+    try {
+      const result = await surviveFetch(url, 'POST');
+      if (!result.ok || result.data.ok === false) {
+        throw new Error('failed');
+      }
+      removePending(url, 'POST');
+    } catch (e) {
+      alert('Could not unfollow. Will retry on next load.');
+      if (savedRowHTML && body) {
+        if (body.innerHTML.includes('None yet')) {
+          body.innerHTML = '';
+        }
+        body.insertAdjacentHTML('beforeend', savedRowHTML);
+      }
+      if (fg) {
+        fg.innerText = savedFg;
+      }
+      if (profileUser) {
+        if (!profileUser.following) {
+          profileUser.following = [];
+        }
+        profileUser.following.push(userId);
+      }
+    }
+  }
+
+  // ============================================================
+  // FIXED - BUILD FOLLOW ROW - NEVER SHOWS USER ID AS TEXT
+  // OLD BUG:
+  //   const name = (u && u.username) || String(id);
+  //   If username missing, it showed the ID like "6aec93388c..."
+  // NEW:
+  //   If username missing -> show grey shimmer "Loading..." placeholder
+  //   If avatar missing -> show grey shimmer circle, NOT first letter of ID
+  //   ID is ONLY used in id="follow-row-..." and onclick="...?id=..."
+  //   which are hidden attributes, never visible text.
+  // ============================================================
+  function buildFollowRow(u, type) {
+    const id = (u && u._id) || u;
+
+    // Has real data? Use it. No data? Show Loading placeholder, NEVER id.
+    const hasName = u && typeof u === 'object' && u.username;
+    const hasAvatar = u && typeof u === 'object' && u.avatar;
+
+    const nameText = hasName ? u.username : 'Loading...';
+    const nameClass = hasName ? 'followName' : 'followName loadingName';
+
+    // Avatar: real picture, or first letter of NAME, or grey shimmer if no name yet
+    let avatarHTML = '';
+    let avatarClass = 'mini';
+    if (hasAvatar) {
+      avatarHTML = '<img src="' + u.avatar + '">';
+    } else if (hasName) {
+      avatarHTML = u.username[0].toUpperCase();
+    } else {
+      // No name yet - grey shimmer circle, no letter, no ID
+      avatarHTML = '';
+      avatarClass = 'mini loadingMini';
+    }
+
+    const unfollowBtn = (isOwn && type === 'following') ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>' : '';
+
+    return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="' + avatarClass + '" id="follow-avatar-' + id + '">' + avatarHTML + '</div><div><b class="' + nameClass + '" id="follow-name-' + id + '">' + nameText + '</b></div>' + unfollowBtn + '</div>';
+  }
+
+  // ============================================================
+  // FIXED - FILL ONE ROW
+  // Uses direct fetch (no shared Response) and when it fills,
+  // it also REMOVES the loading shimmer classes.
+  // ============================================================
+  async function fillOneFollowRow(userOrId) {
+    if (userOrId && typeof userOrId === 'object' && userOrId.username) {
+      return;
+    }
+
+    const userId = (userOrId && userOrId._id) || userOrId;
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const res = await fetch(BASE + '/api/users/' + userId, {
+        headers: {
+          authorization: token,
+          'Cache-Control': 'no-cache'
+        },
+        cache: 'no-store'
+      });
+
+      if (!res.ok) {
+        return;
+      }
+
+      const data = await res.json();
+      const fullUser = data.user || data;
+
+      if (!fullUser || !fullUser.username) {
+        return;
+      }
+
+      // Fill name + remove shimmer
+      const nameEl = document.getElementById('follow-name-' + userId);
+      if (nameEl) {
+        nameEl.innerText = fullUser.username;
+        nameEl.classList.remove('loadingName');
+      }
+
+      // Fill avatar + remove shimmer
+      const avEl = document.getElementById('follow-avatar-' + userId);
+      if (avEl) {
+        avEl.classList.remove('loadingMini');
+        if (fullUser.avatar) {
+          avEl.innerHTML = '<img src="' + fullUser.avatar + '">';
+        } else {
+          avEl.innerHTML = fullUser.username[0].toUpperCase();
+        }
+      }
+    } catch (e) {
+      // Ignore - row stays as Loading... placeholder, never ID
+    }
+  }
+
+  // ============================================================
+  // FIXED - SHOW LIST
+  // Try batch first. If batch 404, fill every row one by one.
+  // Rows start as Loading... shimmer, never ID.
+  // ============================================================
+  async function showList(type) {
+    document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
+    document.getElementById('listModal').classList.add('open');
+
+    let instantList = [];
+    if (profileUser) {
+      instantList = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
+    }
+
+    if (instantList.length) {
+      document.getElementById('listBody').innerHTML = instantList.map(u => buildFollowRow(u, type)).join('');
+    } else {
+      document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
+      return;
+    }
+
+    try {
+      const res = await fetch(BASE + '/api/users/' + profileId + '/' + type, {
+        headers: {
+          authorization: token,
+          'Cache-Control': 'no-cache'
+        },
+        cache: 'no-store'
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const freshList = data[type] || [];
+
+        if (freshList.length) {
+          if (!document.getElementById('listModal').classList.contains('open')) {
+            return;
+          }
+          document.getElementById('listBody').innerHTML = freshList.map(u => buildFollowRow(u, type)).join('');
+
+          if (profileUser) {
+            if (type === 'followers') {
+              profileUser.followers = freshList;
+            } else {
+              profileUser.following = freshList;
+            }
+            applyFollowFromBackend(profileUser.followers, profileUser.following);
+          }
+          return;
+        }
+      }
+
+      // Batch 404 / empty - fallback fill one by one
+      for (let i = 0; i < instantList.length; i += 5) {
+        const chunk = instantList.slice(i, i + 5);
+        await Promise.all(chunk.map(u => fillOneFollowRow(u)));
+      }
+
+    } catch (e) {
+      for (let i = 0; i < instantList.length; i += 5) {
+        const chunk = instantList.slice(i, i + 5);
+        await Promise.all(chunk.map(u => fillOneFollowRow(u)));
+      }
+    }
+  }
+
+  function closeList() {
+    document.getElementById('listModal').classList.remove('open');
+  }
+
+  function goMessage() {
+    location.href = 'message.html?to=' + profileId;
+  }
+
+  // ============================================================
+  // DELETE POST
+  // ============================================================
+  async function deletePost(e, postId) {
+    e.stopPropagation();
+    if (!isOwn) {
+      return alert('You can only delete your own post');
+    }
+    if (!confirm('Delete this novel? This cannot be undone.')) {
+      return;
+    }
+
+    const btn = e.target;
+    const card = btn.closest('.gcard');
+    const savedHTML = card ? card.outerHTML : '';
+    const savedCount = parseInt(document.getElementById('postCount').innerText) || 0;
+    const grid = document.getElementById('grid');
+    const countEl = document.getElementById('postCount');
+
+    btn.innerText = 'Deleting...';
+    btn.disabled = true;
+
+    if (card) {
+      card.remove();
+    }
+    if (countEl) {
+      countEl.innerText = Math.max(0, savedCount - 1);
+    }
+    if (grid && !grid.querySelector('.gcard')) {
+      grid.innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+    }
+
+    const url = BASE + '/api/posts/' + postId;
+    savePending({ url: url, method: 'DELETE' });
+
+    try {
+      await WRDB.delete('profile_posts_' + profileId);
+      await WRDB.delete('profile_' + profileId);
+      await WRDB.delete('feed_posts');
+      let del = JSON.parse(localStorage.getItem('deleted_post_ids') || '[]');
+      if (!del.includes(postId)) {
+        del.push(postId);
+      }
+      localStorage.setItem('deleted_post_ids', JSON.stringify(del));
+    } catch (err) {}
+
+    try {
+      const result = await surviveFetch(url, 'DELETE');
+      if (!result.ok || result.data.ok === false) {
+        throw new Error(result.data.error || 'Could not delete. You can only delete your own post.');
+      }
+      removePending(url, 'DELETE');
+    } catch (err) {
+      alert(err.message + ' - Novel NOT deleted in database. Will retry on next load.');
+      if (grid) {
+        if (grid.innerHTML.includes('No novels yet')) {
+          grid.innerHTML = '';
+        }
+        grid.insertAdjacentHTML('beforeend', savedHTML);
+      }
+      if (countEl) {
+        countEl.innerText = savedCount;
+      }
+    }
+  }
+
+  // ============================================================
+  // EDIT PROFILE
+  // ============================================================
+  function openEdit() {
+    if (!isOwn) {
+      return;
+    }
+    if (isProfileLoading) {
+      document.getElementById('editLoadingText').style.display = 'block';
+      document.getElementById('editBox').classList.add('loadingInputs');
+      document.getElementById('editName').value = '';
+      document.getElementById('editName').placeholder = 'Loading...';
+      document.getElementById('editBio').value = '';
+      document.getElementById('editBio').placeholder = 'Loading...';
+      document.getElementById('editLink').value = '';
+      document.getElementById('editLink').placeholder = 'Loading...';
+      document.getElementById('editModal').classList.add('open');
+      return;
+    }
+    document.getElementById('editLoadingText').style.display = 'none';
+    document.getElementById('editBox').classList.remove('loadingInputs');
+    newAvatarFile = null;
+    document.getElementById('editName').value = profileUser.username || '';
+    document.getElementById('editBio').value = profileUser.bio || '';
+    document.getElementById('editLink').value = profileUser.link || '';
+    const prev = document.getElementById('editAvatarPreview');
+    if (profileUser.avatar) {
+      prev.innerHTML = '<img src="' + profileUser.avatar + '">';
+    } else {
+      prev.innerText = (profileUser.username || 'U')[0].toUpperCase();
+    }
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeEdit() {
+    document.getElementById('editModal').classList.remove('open');
+  }
+
+  function previewNewAvatar(input) {
+    if (input.files[0]) {
+      newAvatarFile = input.files[0];
+      document.getElementById('editAvatarPreview').innerHTML = '<img src="' + URL.createObjectURL(newAvatarFile) + '">';
+    }
+  }
+
+  async function saveProfile() {
+    const btn = document.getElementById('saveBtn');
+    btn.innerText = 'Saving...';
+    btn.disabled = true;
+    document.getElementById('editBox').classList.add('loadingInputs');
+    try {
+      const username = document.getElementById('editName').value.trim();
+      const bio = document.getElementById('editBio').value.trim();
+      const link = document.getElementById('editLink').value.trim();
+
+      const res1 = await fetch(BASE + '/api/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', authorization: token },
+        body: JSON.stringify({ username: username, bio: bio, link: link }),
+        keepalive: true
+      });
+      if (!res1.ok) {
+        throw new Error('Could not save profile');
+      }
+
+      if (newAvatarFile) {
+        const fd = new FormData();
+        fd.append('file', newAvatarFile);
+        const res2 = await fetch(BASE + '/api/users/avatar', {
+          method: 'POST',
+          headers: { authorization: token },
+          body: fd,
+          keepalive: true
+        });
+        if (!res2.ok) {
+          throw new Error('Could not save picture');
+        }
+      }
+
+      alert('Profile updated! ✅');
+      closeEdit();
+      load();
+    } catch (e) {
+      alert(e.message);
+    }
+    btn.innerText = 'Save Changes ✅';
+    btn.disabled = false;
+    document.getElementById('editBox').classList.remove('loadingInputs');
+  }
+
+  async function removeAvatar() {
+    if (!confirm('Remove profile picture?')) {
+      return;
+    }
+    await fetch(BASE + '/api/users/avatar', {
+      method: 'DELETE',
+      headers: { authorization: token },
+      keepalive: true
+    });
+    alert('Picture removed');
+    closeEdit();
+    load();
+  }
+
+  // ============================================================
+  // MESSAGE BADGE
+  // ============================================================
+  function getMyIdForBadge() {
+    try {
+      return JSON.parse(atob(token.split('.')[1])).id;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function getReadKeyForBadge(otherId) {
+    return 'read_' + getMyIdForBadge() + '_' + otherId;
+  }
+
+  function getLastReadIdForBadge(otherId) {
+    return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
+  }
+
+  function updateMsgBadge(count) {
+    const badge = document.getElementById('msgBadge');
+    if (!badge) {
+      return;
+    }
+    if (count > 0) {
+      badge.style.display = 'flex';
+      badge.innerText = count > 99 ? '99+' : count;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  let _meCache = null;
+  let _meCacheTime = 0;
+  let _badgeRunning = false;
+
+  async function checkMsgNotifications() {
+    if (_badgeRunning) {
+      return;
+    }
+    if (document.hidden) {
+      return;
+    }
+    _badgeRunning = true;
+
+    try {
+      let me = _meCache;
+      if (!me || Date.now() - _meCacheTime > 60000) {
+        const meRes = await fetchNoCache(BASE + '/api/users/' + getMyIdForBadge());
+        if (!meRes.ok) {
+          return;
+        }
+        const meData = await meRes.json();
+        me = meData.user || meData;
+        _meCache = me;
+        _meCacheTime = Date.now();
+      }
+
+      let people = [...(me.followers || []), ...(me.following || [])];
+
+      let seen = {};
+      people = people.filter(p => {
+        let id = p._id || p;
+        if (seen[id]) {
+          return false;
+        }
+        seen[id] = true;
+        return id !== getMyIdForBadge();
+      });
+
+      let totalUnread = 0;
+
+      for (let i = 0; i < people.length; i += 5) {
+        const chunk = people.slice(i, i + 5);
+        const results = await Promise.allSettled(chunk.map(async (p) => {
+          const otherId = p._id || p;
+          const res = await fetchNoCache(BASE + '/api/messages/' + otherId);
+          if (!res.ok) {
+            return 0;
+          }
+          const msgs = await res.json();
+          if (!Array.isArray(msgs) || !msgs.length) {
+            return 0;
+          }
+          const lastReadId = getLastReadIdForBadge(otherId);
+
+          if (!lastReadId) {
+            localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
+            return 0;
+          }
+
+          const idx = msgs.findIndex(m => m._id === lastReadId);
+          if (idx === -1) {
+            const lastMsg = msgs[msgs.length - 1];
+            const fromId = lastMsg.from?._id || lastMsg.from;
+            return (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) ? 1 : 0;
+          }
+
+          let c = 0;
+          for (const m of msgs.slice(idx + 1)) {
+            const fromId = m.from?._id || m.from;
+            if (fromId !== getMyIdForBadge()) {
+              c++;
+            }
+          }
+          return c;
+        }));
+
+        for (const r of results) {
+          if (r.status === 'fulfilled') {
+            totalUnread += r.value;
+          }
+        }
+      }
+
+      updateMsgBadge(totalUnread);
+    } catch (e) {
+    } finally {
+      _badgeRunning = false;
+    }
+  }
+
+  // ============================================================
+  // START - Only load() here.
+  // Badge is started INSIDE load() after profile finishes.
+  // ============================================================
+  load();
+
+</script>
 </body>
-</html>
+</html> make it render 8 oce it keep scrolling its keep showing more

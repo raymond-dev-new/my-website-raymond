@@ -466,8 +466,20 @@ app.post('/api/posts/create', authh, uploadd.fields([{name:'file', maxCount:1}, 
 // FEED - MUST be before /:id - GET POSTS - Returns cover as R2 URL now, no change needed
 app.get('/api/posts/feed', async (req,res)=>{
   const page = parseInt(req.query.page||1);
-  const limit = parseInt(req.query.limit||8);
+  const limit = parseInt(req.query.limit||9); // was 8, now 9
   const posts = await Post.find().populate('user','username email avatar').populate('comments.user','username email').sort({createdAt:-1}).skip((page-1)*limit).limit(limit);
+  res.json(posts);
+});
+
+// Profile posts - 8 per page - ADDED ONLY for profile infinite scroll
+// page=1 = first 8, page=2 = next 8...
+app.get('/api/posts/user/:userId', async (req,res)=>{
+  const page = parseInt(req.query.page||1);
+  const limit = parseInt(req.query.limit||8);
+  const posts = await Post.find({ user: req.params.userId })
+    .populate('user','username email avatar')
+    .sort({createdAt:-1})
+    .skip((page-1)*limit).limit(limit);
   res.json(posts);
 });
 

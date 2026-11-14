@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html><head>
   
@@ -86,7 +85,7 @@ button{
   min-width:18px;
   height:18px;
   border-radius:999px;
-  display:none; /* hidden when 0 unread, JS will show it */
+  display:none;
   align-items:center;
   justify-content:center;
   padding:0 4px;
@@ -102,6 +101,8 @@ button{
   animation:spin 0.8s linear infinite;
 }
 @keyframes spin{ to{ transform:rotate(360deg); } }
+
+.loadMore{grid-column:1/3;text-align:center;color:#888;padding:16px 0;font-size:13px}
 
 </style>
 </head><body>
@@ -122,7 +123,6 @@ button{
 </div>
 
 <div class="top">
-  <!-- FIXED - type="button" + id, so it only opens sidebar, never logs out -->
   <div style="display:flex;align-items:center;gap:6px">
     <button type="button" class="menuBtn" id="menuBtn" onclick="toggleSidebar()">☰</button>
     <b class="logo">WildReaders ✨</b>
@@ -144,30 +144,19 @@ button{
 </div>
 
 <div class="grid" id="feedGrid">
-  <!-- ADDED ONLY - spinner div, original text kept -->
   <div style="grid-column:1/3;text-align:center;color:#777"><div class="spinner"></div><p style="text-align:center;color:#777">Loading stories... <br> updating page usually take 1 minutes + please stay on page while is still loading</p></div>
 </div>
+<div id="scrollLoader" style="display:none;text-align:center;padding:16px;color:#888"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 8px"></div>Loading more stories...</div>
 
 <div class="nav">
   <a href="feed.html" class="active">🏠</a>
   <a href="search.html">🔍</a>
   <a href="create.html">✍️</a>
-  <!-- ADDED ONLY - Added class="navMsg" + <span id="msgBadge"> so badge can show on 💬 -->
   <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
   <a href="diary.html">📖</a>
   <a href="profile.html">👤</a>
 </div>
 <script>
-// ============================================================
-// CACHE ADDITION - ADDED ONLY - FIXED
-// FIX 1: Removed <script src="wildreaders-db.js"> from <head>
-// Reason: That file + this inline block both declared const WRDB
-// -> "Identifier 'WRDB' has already been declared" -> load() never ran
-// Now WRDB exists ONLY here, so no clash.
-// FIX 2: Changed const WRDB = window.WRDB || {...} to const WRDB = {...}
-// Reason: No need to look at window anymore, this is the only WRDB.
-// FIX 3: Cache read has 500ms timeout, never blocks fetch.
-// ============================================================
 const WRDB = {
   dbName: 'WildReadersDB',
   storeName: 'cache',
@@ -206,7 +195,6 @@ const WRDB = {
     } catch (e) { return null; }
   }
 };
-// CACHE ADDITION: Turn ON Cache Storage for images (covers) via Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
@@ -222,13 +210,10 @@ function renderFeedFromCache(posts) {
 const BASE="https://raymond-web-dusky.vercel.app";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
-// ADDED ONLY - Open / Close sidebar only, no redirect
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');
 }
-
-// NEW: cover is already full image from DB, use directly - no BASE +
 function shuffle(a){ 
   let arr = [...a];
    for(let i = arr.length-1; i > 0 ; i--){ 
@@ -237,18 +222,8 @@ function shuffle(a){
   } 
   return arr; 
 }
-
-// ============================================================
-// CHANGED ONLY - GLOBAL PINNED POSTS - SAME FOR ALL USERS
-// Before: used localStorage 'pinned_novels' + Math.random() per device,
-// so every user got different 3 pins.
-// Now: NO localStorage. Seed = current 3-day period number.
-// Same seed + same posts list = same shuffle = same 3 pins for everyone.
-// After 3 days, seed changes, so a NEW set of 3 is picked for everyone.
-// ============================================================
 function seededShuffle(a, seed){
   let arr = [...a];
-  // Mulberry32 - deterministic random from seed
   let s = seed >>> 0;
   function rand(){
     s = (s + 0x6D2B79F5) >>> 0;
@@ -263,66 +238,108 @@ function seededShuffle(a, seed){
   }
   return arr;
 }
-
 function getPinned(all){
   if(!Array.isArray(all) || !all.length) return [];
   const THREE = 3*24*60*60*1000;
-  // Same for all users in the same 3-day window
   const period = Math.floor(Date.now() / THREE);
-  // Sort by _id first so order is identical for all users
-  // before we apply the seeded shuffle
   let sorted = [...all].sort((a,b) => String(a._id).localeCompare(String(b._id)));
   let shuffled = seededShuffle(sorted, period);
   return shuffled.slice(0,3);
 }
-
 function card(p, isPin) {
-  let cover = p.cover ? '<img src="'+p.cover+'">' : '<div class="noimg">📖</div>';
-
+  let cover = p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>';
  return '<div class="card" onclick="location.href=\'read.html?id='+p._id+'\'"> <div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+' </div> <div class="body"> <div class="title">'+p.title+'</div> <div class="meta"> <span>@'+(p.user?.username||'author')+'</span> <span>❤️ '+(p.likes?.length||0)+'</span> <span>💬 '+(p.comments?.length||0)+'</span> </div> </div> </div>';
 }
 
-async function load(){
-  // CACHE ADDITION - FIXED: 500ms timeout, never blocks fetch
-  try {
-    const cachedPosts = await Promise.race([
-      WRDB.get('feed_posts'),
-      new Promise(r => setTimeout(() => r(null), 500))
-    ]);
-    if (cachedPosts && cachedPosts.length) {
-      renderFeedFromCache(cachedPosts);
-    }
-  } catch (e) {}
+// ============================================================
+// FIXED - INFINITE SCROLL - 9 PER PAGE
+// Before: fetch page=1 limit=20 once, never load more on scroll
+// Now: load 9, on scroll load next 9, append, never clear
+// ============================================================
+let currentPage = 1;
+let isLoading = false;
+let hasMore = true;
+let allLoadedIds = new Set();
+
+async function load(pageToLoad = 1, isFirstLoad = false){
+  if(isLoading || !hasMore) return;
+  isLoading = true;
+  if(!isFirstLoad){
+    document.getElementById('scrollLoader').style.display = 'block';
+  }
+
+  if(isFirstLoad){
+    try {
+      const cachedPosts = await Promise.race([
+        WRDB.get('feed_posts'),
+        new Promise(r => setTimeout(() => r(null), 500))
+      ]);
+      if (cachedPosts && cachedPosts.length) {
+        renderFeedFromCache(cachedPosts);
+        cachedPosts.forEach(p => allLoadedIds.add(String(p._id)));
+      }
+    } catch (e) {}
+  }
 
   try {
-    const res = await fetch(BASE+'/api/posts/feed?page=1&limit=20',{
+    const res = await fetch(BASE+'/api/posts/feed?page='+pageToLoad+'&limit=9',{
       headers:{authorization:token}
     });
     let posts = await res.json();
-    if(!posts.length){ 
-      document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; 
-      return; 
+
+    if(!posts || !posts.length){
+      hasMore = false;
+      if(isFirstLoad){
+        document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>';
+      }
+      document.getElementById('scrollLoader').style.display = 'none';
+      isLoading = false;
+      return;
     }
-    let pinned = getPinned(posts);
-    let pinnedIds = pinned.map(p => p._id );
-    let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
-    document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
-    document.getElementById('pinSec').style.display='block';
-    document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
-    WRDB.save('feed_posts', posts);
+
+    if(posts.length < 9) hasMore = false;
+
+    if(isFirstLoad){
+      let pinned = getPinned(posts);
+      let pinnedIds = pinned.map(p => p._id );
+      pinned.forEach(p => allLoadedIds.add(String(p._id)));
+      let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
+      rest.forEach(p => allLoadedIds.add(String(p._id)));
+      document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+      document.getElementById('pinSec').style.display='block';
+      document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+      WRDB.save('feed_posts', posts);
+    } else {
+      let newPosts = posts.filter(p => !allLoadedIds.has(String(p._id)));
+      newPosts.forEach(p => allLoadedIds.add(String(p._id)));
+      if(newPosts.length){
+        document.getElementById('feedGrid').innerHTML += newPosts.map(p=>card(p,false)).join('');
+      }
+    }
+    currentPage = pageToLoad;
   } catch (e) {
     const grid = document.getElementById('feedGrid');
     if (grid && grid.innerHTML.includes('Loading stories')) {
       grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
     }
   }
+  document.getElementById('scrollLoader').style.display = 'none';
+  isLoading = false;
 }
 
-load();
+// Load page 1 first
+load(1, true);
 
-// FIXED - Was document.querySelector('button') which picked the ☰ button. Now picks Logout by ID only.
+// INFINITE SCROLL - when user reaches bottom, load next 9
+window.addEventListener('scroll', () => {
+  if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 300){
+    if(!isLoading && hasMore){
+      load(currentPage + 1, false);
+    }
+  }
+});
+
  const button = document.getElementById('logoutBtn')
-
  button.addEventListener('click', () => {
   localStorage.removeItem('userEmail');
   localStorage.removeItem('myEmail');
@@ -330,71 +347,46 @@ load();
   localStorage.removeItem('token')
   location.href="dashboard.html"
  })
-
  const ball=document.querySelector('.ball'); 
  const Country=document.querySelector('.Country');
-
   if(ball) ball.addEventListener('click', async () => { 
       fetch(BASE+'/api/sync'); 
        location.href="football.html"; 
   });
-
   if(Country) Country.addEventListener('click', async () => { 
      fetch(BASE+'/api/fetch-now'); 
       location.href="countrymatch.html"; 
   });
 
-// ====================================================================
-// ADDED ONLY - MESSAGE NOTIFICATION FOR THIS PAGE (FEED)
-// Copy this WHOLE block to any other page to get same badge there.
-// It uses the SAME localStorage keys as message.html, so they stay in sync.
-// ====================================================================
-
-// --- STEP 1: Get my own ID from token ---
-// We need my ID to build the "read_" key and to know if a message is from me or from them
 function getMyIdForBadge(){
   try{
-    // Token is like xxx.YYY.zzz, the middle part holds my id
     return JSON.parse(atob(token.split('.')[1])).id;
   }catch{
     return "";
   }
 }
-
-// --- STEP 2: Helpers to remember what I have already read ---
-// We save: read_MYID_OTHERID = ID of last message I saw from that person
-// Example: read_123_456 = "msg789"
-// If server has a newer message ID after that one, and it's from THEM, it's unread.
 function getReadKeyForBadge(otherId){
   return 'read_' + getMyIdForBadge() + '_' + otherId;
 }
 function getLastReadIdForBadge(otherId){
   return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
 }
-
-// --- STEP 3: Show / hide the red badge on 💬 button ---
 function updateMsgBadge(count){
-  // Find the badge span in the bottom nav
   const badge = document.getElementById('msgBadge');
-  if(!badge) return; // If this page has no badge, do nothing
+  if(!badge) return;
   if(count > 0){
-    badge.style.display = 'flex'; // Show badge
-    badge.innerText = count > 99 ? '99+' : count; // 99+ if too many
+    badge.style.display = 'flex';
+    badge.innerText = count > 99 ? '99+' : count;
   }else{
-    badge.style.display = 'none'; // Hide badge when 0 unread
+    badge.style.display = 'none';
   }
 }
-
-// --- STEP 4: Check server for new messages ---
 async function checkMsgNotifications(){
   try{
-    // 4a. Get my profile to know who I follow / who follows me = people who can message me
     const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
     const meData = await meRes.json();
     const me = meData.user || meData;
     let people = [...(me.followers || []), ...(me.following || [])];
-
-    // 4b. Remove duplicates + remove myself
     let seen = {};
     people = people.filter(p => {
       let id = p._id || p;
@@ -402,39 +394,25 @@ async function checkMsgNotifications(){
       seen[id] = true;
       return id !== getMyIdForBadge();
     });
-
-    let totalUnread = 0; // Total unread across all chats
-
-    // 4c. For each person, fetch our chat and count unread
+    let totalUnread = 0;
     for(const p of people){
       const otherId = p._id || p;
       const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
       const msgs = await res.json();
-      if(!Array.isArray(msgs) || !msgs.length) continue; // No messages with this person
-
+      if(!Array.isArray(msgs) || !msgs.length) continue;
       const lastReadId = getLastReadIdForBadge(otherId);
-
-      // If I have NEVER opened this chat before, treat all old messages as already read
-      // (so old chats don't suddenly show as unread on first load)
-      // We save the last message as "read" and continue
       if(!lastReadId){
         localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length-1]._id);
         continue;
       }
-
-      // Find where I stopped reading
       const idx = msgs.findIndex(m => m._id === lastReadId);
-
       if(idx === -1){
-        // My last read message was deleted, so check last message:
-        // If last message is new AND from them, count it as 1 unread
         const lastMsg = msgs[msgs.length-1];
         const fromId = lastMsg.from?._id || lastMsg.from;
         if(lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()){
           totalUnread += 1;
         }
       }else{
-        // Count messages AFTER my last read one that are FROM THEM (not from me)
         const after = msgs.slice(idx + 1);
         for(const m of after){
           const fromId = m.from?._id || m.from;
@@ -442,19 +420,10 @@ async function checkMsgNotifications(){
         }
       }
     }
-
-    // 4d. Update the badge on screen
     updateMsgBadge(totalUnread);
-
-  }catch(e){
-    // If internet fails, just ignore, will try again in 3 seconds
-  }
+  }catch(e){}
 }
-
-// --- STEP 5: Start checking ---
-// Check immediately when page loads
 checkMsgNotifications();
-// Then check every 3 seconds, so new message shows fast while you are on Feed
 setInterval(checkMsgNotifications, 3000);
 </script>
 
