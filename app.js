@@ -22,7 +22,7 @@
    import { Server } from 'socket.io'
    import { exec } from 'child_process'
    import util from 'util'
-   import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+   import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
    
    const app = express()
    const port = process.env.PORT || 8000
@@ -57,6 +57,7 @@ const R2_CONFIG = {
   publicUrl: "https://pub-8de88b749b3443328e081c896840922a.r2.dev"
 };
 
+
 // Only create R2 client if keys exist, so your local test won't crash
 let r2Client = null;
 try {
@@ -73,7 +74,23 @@ try {
 } catch(e) { console.log( e, 'R2 not configured yet'); }
 
 // ADDED ONLY - Banned words for cover photo file name
-const BANNED_WORDS = ['porn','xxx','sex','nude','naked','pussy','dick','cock','boobs','erotic','hentai','onlyfans','pornhub','xvideos'];
+const BANNED_WORDS = [
+  // Porn / Adult sites
+  'porn','pornhub','xvideos','xnxx','xhamster','redtube','youporn','brazzers','onlyfans','fansly','manyvids','chaturbate','stripchat','livejasmin','cam4','bongacams','porntrex','porn300','tube8','spankbang','xhamsterlive','erome','fapello','pornonly','porn555',
+
+  // Sex / Sexual acts
+  'sex','sexy','sexual','erotic','erotica','hentai','xxx','xxn','porno','pornographic','nude','naked','nudity','pussy','dick','cock','penis','vagina','boobs','boob','tits','tit','ass','butt','anal','oral','blowjob','handjob','fuck','fucking','fucked','suck','sucking','cum','cumming','sperm','orgasm','masturbate','masturbation','jerkoff','horny','hardcore','softcore','threesome','gangbang','bukkake','creampie','deepthroat','doggy','missionary','pussies','dicks','cocks','penises','vaginas','clit','clitoris','nipple','nipples','fetish','kink','kinky','bdsm','bondage','dominatrix','submissive','escort','prostitute','hooker','slut','whore','bitch','milf','dilf','gilf','shemale','tranny','ladyboy','sexdoll','sexting','nudes','nsfw','leak','leaked','leaks','onlyfan',
+
+  // Genitals / Body explicit
+  'pubic','pubic hair','labia','testicle','testicles','balls','ball sack','anus','analsex','butthole','buttplug','dildo','vibrator','sextoy','sex toy','strap-on','strapon',
+
+  // Other adult
+  'playboy','penthouse','hustler','pornstar','porn star','camgirl','cam girl','camboy','stripper','stripping','stripclub','strip club','peeping','voyeur','exhibitionist','incest','rape','rapist','molest','pedophile','pedofilia','childporn','child porn','cp','teenporn','teen porn','lolita','jailbait',
+
+  // Drugs / Violence for file name (optional)
+  'weed','cocaine','heroin','meth','crack','opium','marijuana','ganja'
+];
+
 function hasBannedWord(fileName) {
   if (!fileName) return false;
   const lower = String(fileName).toLowerCase();
@@ -95,6 +112,25 @@ async function uploadToR2(file) {
   // Remove trailing / from public URL if any
   const base = (R2_CONFIG.publicUrl || '').replace(/\/$/, '');
   return base + '/' + cleanName;
+}
+
+// ADDED ONLY - FIXED - Delete cover from R2 by its URL
+async function deleteFromR2(coverUrl) {
+  if (!r2Client || !coverUrl) return;
+  try {
+    // coverUrl = https://your-public-url/cover-12345.jpg
+    // We need only the last part: cover-12345.jpg
+    const key = coverUrl.split('/').pop().split('?')[0];
+    if (!key || !key.includes('cover-')) return; // safety, don't delete wrong file
+    await r2Client.send(new DeleteObjectCommand({
+      Bucket: R2_CONFIG.bucket,
+      Key: key
+    }));
+    console.log('Deleted from R2:', key);
+  } catch(e) {
+    console.log('R2 delete failed, but post still deleted from DB:', e.message);
+    // Don't throw - we still want the post deleted from DB even if R2 fails
+  }
 }
 
 // ===== USER TABLE - NO displayName, WITH email =====
@@ -123,7 +159,7 @@ const postSchema = new mongoose.Schema({
   fileType: { type: String, default: "" },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
   comments: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     text: String,
@@ -435,15 +471,20 @@ app.get('/api/posts/feed', async (req,res)=>{
   res.json(posts);
 });
 
-// ADDED ONLY - Delete post - only owner can delete, must be logged in
+// FIXED - Delete post - only owner can delete, deletes from DB + R2
 app.delete('/api/posts/:id', authh, async (req, res) => {
   const post = await Post.findById(req.params.id);
   if(!post) return res.status(404).json({msg:'Post not found'});
   // Only the owner can delete
   if(post.user.toString() !== req.user.id) return res.status(403).json({msg:'You can only delete your own post'});
+  // 1. Delete cover from Cloudflare R2 first
+  if (post.cover) {
+    await deleteFromR2(post.cover);
+  }
+  // 2. Delete post from MongoDB
   await post.deleteOne();
   res.json({msg:'Deleted'});
-}); 
+});
 
 // MY SAVED - MUST be before /:id
 app.get('/api/posts/saved/mine', authh, async (req,res)=>{
@@ -492,11 +533,7 @@ app.post('/api/posts/:id/save', authh, async (req,res)=>{
   await p.save(); res.json({ saved: p.savedBy.includes(uid) });
 });
 
-// DELETE NOVEL
-app.delete('/api/posts/:id', authh, async (req,res)=>{
-  await Post.findByIdAndDelete(req.params.id);
-  res.json({ ok:true });
-});
+// NOTE: DUPLICATE DELETE REMOVED - The old second app.delete('/api/posts/:id') that only did findByIdAndDelete is deleted
 
 // =================================================
 // ===== PRIVATE MESSAGES =====
@@ -723,7 +760,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 });
-
    
    // blog end here uytrewdrtgyhujkluytrrtyuiuytrevcdfgh
    // ytrefghjkkjhgfdfghjklkjhgfdsfghjklkjhgfdsfiuyfdjhg
