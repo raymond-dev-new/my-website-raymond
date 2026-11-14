@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html><head>
- 
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}.top{max-width:935px;margin:0 auto;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);z-index:10}.logo{font-family:cursive;font-size:26px;background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}.section{max-width:935px;margin:0 auto;padding:14px 16px 4px}.section h3{margin:0}.section p{color:#888;font-size:12px;margin:4px 0}.grid{max-width:935px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:10px 16px}.card{background:#16161f;border:1px solid #26262f;border-radius:18px;overflow:hidden;cursor:pointer;transition:.2s}.card:active{transform:scale(.97)}.cover{position:relative;width:100%;height:220px;background:#222}.cover img{width:100%;height:100%;object-fit:cover}.noimg{width:100%;height:100%;background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:56px}.pin{position:absolute;top:10px;left:10px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,.4)}.body{padding:12px}.title{font-size:14px;font-weight:800;line-height:1.3;min-height:36px}.meta{font-size:12px;color:#999;margin-top:8px;display:flex;gap:10px}.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}.nav a{color:#fff;text-decoration:none;font-size:22px}.nav a.active{transform:scale(1.25)}
@@ -11,7 +10,6 @@ button{
   font-size: 15px;
   font-weight: 700;
 }
-
 .lin{
   background-color: #ec4899;
   padding: 10px 20px;
@@ -19,7 +17,6 @@ button{
   font-size: 15px;
   font-weight: 700;
 }
-
 .linn{
   background-color: blue;
   padding: 10px 20px;
@@ -27,7 +24,6 @@ button{
   font-size: 15px;
   font-weight: 700;
 }
-
 .b{
   display: flex;
   align-items: center;
@@ -41,7 +37,6 @@ button{
   box-sizing: border-box;
   font-size: 14px;
 }
-/* ADDED ONLY - Loading spinner */
 .spinner{
   width:42px;height:42px;margin:18px auto 10px;
   border:4px solid #26262f;
@@ -54,20 +49,18 @@ button{
 </style>
 </head>
 <body>
-  
 <div class="top">
   <b class="logo">WildReaders ✨</b>
 </div>
 <b class="b"> Register an account to enjoy the full functionality</b>
-<div class="section" id="pinSec" style="display:none"><h3>📌 Pinned For You</h3><p>3 random novels stay here for 3 days</p></div>
+<div class="section" id="pinSec" style="display:none"><h3>📌 Pinned For You</h3><p id="pinCountdown">3 random novels stay here for 3 days</p></div>
 <div class="grid" id="pinnedGrid"></div>
 <div class="section"><h3>📚 Discover Stories</h3><p>Tap any cover to read</p></div>
-<div class="grid" id="feedGrid"><!-- ADDED ONLY - spinner div, original text kept --><div style="grid-column:1/3;text-align:center;color:#777"><div class="spinner"></div><p style="text-align:center;color:#777">Loading stories... <br> updating page usually take 1 minutes + please stay on page while is still loading</p></div></div>
+<div class="grid" id="feedGrid"><div style="grid-column:1/3;text-align:center;color:#777"><div class="spinner"></div><p style="text-align:center;color:#777">Loading stories... <br> updating page usually take 1 minutes + please stay on page while is still loading</p></div></div>
 <div id="scrollLoader" style="display:none;text-align:center;padding:16px;color:#888"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 8px"></div>Loading more stories...</div>
 <div class="nav">
   <a href="register.html" class="lin">Register</a>
   <a href="login.html" class="linn">Login</a>
-  
 </div>
 <script>
 const WRDB = {
@@ -111,15 +104,6 @@ const WRDB = {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-function renderFeedFromCache(posts) {
-  if (!Array.isArray(posts) || !posts.length) return;
-  let pinned = getPinned(posts);
-  let pinnedIds = pinned.map(p => p._id);
-  let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
-  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
-  document.getElementById('pinSec').style.display='block';
-  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
-}
 const BASE="https://raymond-web-psi.vercel.app";
 const token=localStorage.getItem('token');
 function shuffle(a){ let arr=[...a]; for(let i=arr.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
@@ -139,24 +123,65 @@ function seededShuffle(a, seed){
   }
   return arr;
 }
+
+// ===== FIXED PIN LOGIC - SAME FOR ALL USERS, 3 DAYS, FROM ALL POSTS =====
+const THREE_DAYS = 3*24*60*60*1000;
+function getCurrentPeriod(){ return Math.floor(Date.now() / THREE_DAYS); }
+function getDaysLeftInPeriod(){
+  const next = (getCurrentPeriod() + 1) * THREE_DAYS;
+  return Math.ceil((next - Date.now()) / (24*60*60*1000));
+}
 function getPinned(all){
   if(!Array.isArray(all) || !all.length) return [];
-  const THREE = 3*24*60*60*1000;
-  const period = Math.floor(Date.now() / THREE);
+  const period = getCurrentPeriod();
   let sorted = [...all].sort((a,b) => String(a._id).localeCompare(String(b._id)));
   let shuffled = seededShuffle(sorted, period);
   return shuffled.slice(0,3);
+}
+let pinnedIds = new Set();
+let pinnedLoaded = false;
+
+async function loadPinned(){
+  if(pinnedLoaded) return;
+  try{
+    const headers = token ? {authorization: token} : {};
+    const res = await fetch(BASE+'/api/posts', { headers });
+    let allPosts = await res.json();
+    if(!Array.isArray(allPosts)) allPosts = allPosts.posts || [];
+    let pinned = getPinned(allPosts);
+    pinnedIds = new Set(pinned.map(p => String(p._id)));
+    pinned.forEach(p => allLoadedIds.add(String(p._id)));
+    if(pinned.length){
+      document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+      document.getElementById('pinSec').style.display='block';
+      const d = getDaysLeftInPeriod();
+      document.getElementById('pinCountdown').innerText = '3 random novels stay here for 3 days • New pins in ' + d + ' day' + (d>1?'s':'');
+    }
+    pinnedLoaded = true;
+  }catch(e){}
+}
+
+function renderFeedFromCache(posts) {
+  if (!Array.isArray(posts) || !posts.length) return;
+  // If pins already loaded globally, use them - don't pick new pins from cache
+  if(pinnedLoaded && pinnedIds.size){
+    let rest = shuffle(posts.filter(p => !pinnedIds.has(String(p._id))));
+    document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+    return;
+  }
+  let pinned = getPinned(posts);
+  let pIds = pinned.map(p => String(p._id));
+  pinnedIds = new Set(pIds);
+  let rest = shuffle(posts.filter(p => !pinnedIds.has(String(p._id))));
+  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+  document.getElementById('pinSec').style.display='block';
+  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
 function card(p, isPin){
   let cover=p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>';
   return '<div class="card" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>';
 }
 
-// ============================================================
-// FIXED - INFINITE SCROLL - 9 PER PAGE
-// Before: fetch page=1 limit=20 once, never load more on scroll
-// Now: load 9, on scroll load next 9, append, never clear
-// ============================================================
 let currentPage = 1;
 let isLoading = false;
 let hasMore = true;
@@ -170,6 +195,7 @@ async function load(pageToLoad = 1, isFirstLoad = false){
   }
 
   if(isFirstLoad){
+    await loadPinned();
     try {
       const cachedPosts = await Promise.race([
         WRDB.get('feed_posts_public'),
@@ -183,7 +209,8 @@ async function load(pageToLoad = 1, isFirstLoad = false){
   }
 
   try {
-    const res=await fetch(BASE+'/api/posts/feed?page='+pageToLoad+'&limit=9',{headers:{authorization:token}});
+    const headers = token ? {authorization: token} : {};
+    const res=await fetch(BASE+'/api/posts/feed?page='+pageToLoad+'&limit=9',{headers});
     let posts=await res.json();
     if(!posts || !posts.length){
       hasMore = false;
@@ -195,18 +222,27 @@ async function load(pageToLoad = 1, isFirstLoad = false){
 
     if(posts.length < 9) hasMore = false;
 
+    // FIX: Always filter out pinned
+    let filtered = posts.filter(p => !pinnedIds.has(String(p._id)));
+
     if(isFirstLoad){
-      let pinned=getPinned(posts);
-      let pinnedIds=pinned.map(p=>p._id);
-      pinned.forEach(p => allLoadedIds.add(String(p._id)));
-      let rest=shuffle(posts.filter(p=> !pinnedIds.includes(p._id)));
+      if(!pinnedLoaded){
+        let pinned=getPinned(posts);
+        pinnedIds=new Set(pinned.map(p=>String(p._id)));
+        pinned.forEach(p => allLoadedIds.add(String(p._id)));
+        document.getElementById('pinnedGrid').innerHTML=pinned.map(p=>card(p,true)).join('');
+        document.getElementById('pinSec').style.display='block';
+        filtered = posts.filter(p => !pinnedIds.has(String(p._id)));
+        pinnedLoaded = true;
+      }
+      let rest=shuffle(filtered);
       rest.forEach(p => allLoadedIds.add(String(p._id)));
-      document.getElementById('pinnedGrid').innerHTML=pinned.map(p=>card(p,true)).join('');
-      document.getElementById('pinSec').style.display='block';
       document.getElementById('feedGrid').innerHTML=rest.map(p=>card(p,false)).join('');
       WRDB.save('feed_posts_public', posts);
     } else {
-      let newPosts = posts.filter(p => !allLoadedIds.has(String(p._id)));
+      let newPosts = filtered.filter(p => !allLoadedIds.has(String(p._id)));
+      // FIX: Shuffle Discover, not in backend order
+      newPosts = shuffle(newPosts);
       newPosts.forEach(p => allLoadedIds.add(String(p._id)));
       if(newPosts.length){
         document.getElementById('feedGrid').innerHTML += newPosts.map(p=>card(p,false)).join('');
@@ -223,10 +259,8 @@ async function load(pageToLoad = 1, isFirstLoad = false){
   isLoading = false;
 }
 
-// Load page 1 first
 load(1, true);
 
-// INFINITE SCROLL - when user reaches bottom, load next 9
 window.addEventListener('scroll', () => {
   if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 300){
     if(!isLoading && hasMore){
@@ -234,7 +268,6 @@ window.addEventListener('scroll', () => {
     }
   }
 });
-
 </script>
 <script>
 (function(rc){
