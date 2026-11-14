@@ -472,10 +472,10 @@ app.get('/api/posts/feed', async (req,res)=>{
 });
 
 // Profile posts - 8 per page - ADDED ONLY for profile infinite scroll
-// page=1 = first 8, page=2 = next 8...
+// page=1 = first 15, page=2 = next 15...
 app.get('/api/posts/user/:userId', async (req,res)=>{
   const page = parseInt(req.query.page||1);
-  const limit = parseInt(req.query.limit||8);
+  const limit = parseInt(req.query.limit||15);
   const posts = await Post.find({ user: req.params.userId })
     .populate('user','username email avatar')
     .sort({createdAt:-1})
