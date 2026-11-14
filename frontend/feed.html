@@ -210,9 +210,8 @@ async function updatePinsFromAllPosts(){
     const d = Math.ceil((next - Date.now())/(24*60*60*1000));
     document.getElementById('pinCountdown').innerText = '3 random novels stay here for 3 days • New pins in ' + d + ' day' + (d>1?'s':'');
     pinned.forEach(p => allLoadedIds.add(String(p._id)));
-    document.querySelectorAll('#feedGrid .card').forEach(el => {
-      if(globalPinnedIds.has(String(el.getAttribute('data-id')))) el.remove();
-    });
+    // COMMENT: FIXED - DO NOT DELETE feed cards here. Old code removed feed cards that became pins, that is why posts disappeared.
+    // COMMENT: FIXED - Pins just show on top, feed cards stay. Duplicates are filtered on NEXT fetch only, not by deleting.
   }catch(e){}
 }
 // COMMENT: Build one novel card HTML, isPin = true shows PINNED badge
@@ -234,20 +233,26 @@ let hasMore = true;
 let allLoadedIds = new Set();
 // CHANGED ONLY - new random seed once per page load
 let feedSeed = Math.floor(Math.random()*1000000000);
-// COMMENT: NEW - Count how many times we auto-fetched. Starts at 0.
-// COMMENT: NEW - We want total 3 pages: page 1 (manual) + 2 auto fetches = 45 posts, then stop auto-fetch
+// COMMENT: Count how many times we auto-fetched. Starts at 0.
 let autoFetchCount = 0;
 
-// COMMENT: Main function to load one page of posts
-// COMMENT: pageToLoad = which page to ask backend for, isFirstLoad = true only for page 1
+// COMMENT: FIXED - Load ONE page from backend, return the posts. No spinner hide here, no recursion here.
+async function fetchOnePage(pageToLoad){
+  const res = await fetch(BASE+'/api/posts/feed?page='+pageToLoad+'&limit=15&seed='+feedSeed,{
+    headers:{authorization:token}
+  });
+  let posts = await res.json();
+  if(!Array.isArray(posts)) posts = posts.posts || [];
+  return posts;
+}
+
+// COMMENT: Main function - if isFirstLoad, it runs fetch 1, 2, 3 one after another with await. If scroll, it runs 1 page only.
 async function load(pageToLoad = 1, isFirstLoad = false){
-  // COMMENT: If already loading or no more posts, do nothing
   if(isLoading || !hasMore) return;
-  // COMMENT: Mark as loading so scroll cannot start another fetch at same time
   isLoading = true;
-  // COMMENT: SPINNER FIX ONLY - Show bottom spinner IMMEDIATELY for ALL pages, including page 1
-  // COMMENT: SPINNER FIX ONLY - Before, it was if(!isFirstLoad), so page 1 showed no spinner
+  // COMMENT: RULE 1 - Show spinner IMMEDIATELY, hide only at the very end after all fetches
   document.getElementById('scrollLoader').style.display = 'block';
+
   // COMMENT: If this is page 1, try to show saved cache instantly while waiting for internet
   if(isFirstLoad){
     try {
@@ -261,84 +266,78 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       }
     } catch (e) {}
   }
+
   try {
-    // CHANGED ONLY - added &seed=${feedSeed}
-    const res = await fetch(BASE+'/api/posts/feed?page='+pageToLoad+'&limit=15&seed='+feedSeed,{
-      headers:{authorization:token}
-    });
-    let posts = await res.json();
-    // COMMENT: If backend sent nothing, there is nothing more to load
-    if(!posts || !posts.length){
-      hasMore = false;
-      if(isFirstLoad){
+    if(isFirstLoad){
+      // COMMENT: RULE 2 - Run fetch 1, 2, 3 in order, always all 3, even if one returns empty
+      for(let p = 1; p <= 3; p++){
+        let posts = [];
+        try { posts = await fetchOnePage(p); } catch(e){ posts = []; }
+        // COMMENT: RULE 3 - Fetch 1 updates cache IMMEDIATELY, before fetch 2 starts
+        if(p === 1 && posts && posts.length){
+          WRDB.save('feed_posts', posts);
+        }
+        if(posts && posts.length){
+          if(p === 1){
+            // COMMENT: First fetch replaces Loading text with real posts, never appends to Loading text
+            let pinned = getPinned(posts);
+            let pinnedIds = pinned.map(x => x._id);
+            pinned.forEach(x => allLoadedIds.add(String(x._id)));
+            let rest = shuffle(posts.filter(x => !pinnedIds.includes(x._id)));
+            rest.forEach(x => allLoadedIds.add(String(x._id)));
+            document.getElementById('pinnedGrid').innerHTML = pinned.map(x=>card(x,true)).join('');
+            document.getElementById('pinSec').style.display='block';
+            document.getElementById('feedGrid').innerHTML = rest.map(x=>card(x,false)).join('');
+          } else {
+            // COMMENT: Fetch 2 and 3 only ADD, never replace, never delete
+            let newPosts = posts.filter(x => !allLoadedIds.has(String(x._id)) && !globalPinnedIds.has(String(x._id)));
+            newPosts.forEach(x => allLoadedIds.add(String(x._id)));
+            if(newPosts.length){
+              document.getElementById('feedGrid').innerHTML += shuffle(newPosts).map(x=>card(x,false)).join('');
+            }
+          }
+          if(posts.length < 15) hasMore = false;
+        } else {
+          // COMMENT: RULE 2 - Empty fetch = just continue to next fetch, do NOT show No novels, do NOT hide spinner
+        }
+        currentPage = p;
+        autoFetchCount = p - 1;
+      }
+      // COMMENT: RULE 2 - After all 3 fetches, only now decide No novels
+      let hasCards = document.querySelectorAll('#feedGrid .card').length > 0;
+      let hasPins = document.querySelectorAll('#pinnedGrid .card').length > 0;
+      if(!hasCards && !hasPins){
         document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>';
       }
-      // COMMENT: No more posts, so hide spinner for real
-      document.getElementById('scrollLoader').style.display = 'none';
-      isLoading = false;
-      return;
-    }
-    // COMMENT: If backend sent less than 15, that was the last page
-    if(posts.length < 15) hasMore = false;
-    // COMMENT: If this is page 1, show pins + rest, and save page 1 to cache
-    if(isFirstLoad){
-      let pinned = getPinned(posts);
-      let pinnedIds = pinned.map(p => p._id );
-      pinned.forEach(p => allLoadedIds.add(String(p._id)));
-      let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
-      rest.forEach(p => allLoadedIds.add(String(p._id)));
-      document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
-      document.getElementById('pinSec').style.display='block';
-      document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
-      WRDB.save('feed_posts', posts);
+      // COMMENT: Pins only after all 3 fetches, so pins cannot delete feed posts in the middle
+      await updatePinsFromAllPosts();
     } else {
-      // COMMENT: If this is page 2 or 3, remove duplicates and pins, then add to feed
-      let newPosts = posts.filter(p => !allLoadedIds.has(String(p._id)) && !globalPinnedIds.has(String(p._id)));
-      newPosts.forEach(p => allLoadedIds.add(String(p._id)));
-      if(newPosts.length){
-        document.getElementById('feedGrid').innerHTML += shuffle(newPosts).map(p=>card(p,false)).join('');
+      // COMMENT: Scroll load - 1 page only
+      let posts = [];
+      try { posts = await fetchOnePage(pageToLoad); } catch(e){ posts = []; }
+      if(posts && posts.length){
+        let newPosts = posts.filter(x => !allLoadedIds.has(String(x._id)) && !globalPinnedIds.has(String(x._id)));
+        newPosts.forEach(x => allLoadedIds.add(String(x._id)));
+        if(newPosts.length){
+          document.getElementById('feedGrid').innerHTML += shuffle(newPosts).map(x=>card(x,false)).join('');
+        }
+        if(posts.length < 15) hasMore = false;
+        currentPage = pageToLoad;
+      } else {
+        hasMore = false;
       }
     }
-    // COMMENT: Remember which page we just loaded, so scroll knows next page number
-    currentPage = pageToLoad;
   } catch (e) {
-    // COMMENT: If fetch failed and feed still shows "Loading stories", show error message
     const grid = document.getElementById('feedGrid');
     if (grid && grid.innerHTML.includes('Loading stories')) {
       grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
     }
   }
-  // COMMENT: NEW - Decide if we should auto-fetch the next 15 or stop
-  // COMMENT: NEW - We auto-fetch only 2 times: after page 1 -> page 2, after page 2 -> page 3. Total = 3 pages = 45 posts
-  // COMMENT: NEW - hasMore must be true, and autoFetchCount must still be less than 2
-  let willAutoFetch = hasMore && autoFetchCount < 2;
-  if(willAutoFetch){
-    // COMMENT: NEW - Count this auto-fetch, so we stop after 2 auto-fetches
-    autoFetchCount++;
-    // COMMENT: NEW - Keep spinner VISIBLE while next auto-fetch is running, do NOT hide it yet
-    document.getElementById('scrollLoader').style.display = 'block';
-    // COMMENT: NEW - Allow next load to run
-    isLoading = false;
-    // COMMENT: NEW - If this was page 1, also refresh pins in background
-    if(isFirstLoad){
-      updatePinsFromAllPosts();
-    }
-    // COMMENT: SPINNER FIX ONLY - Start next page IMMEDIATELY, no 500ms setTimeout wait
-    // COMMENT: SPINNER FIX ONLY - Before, setTimeout 500ms made spinner look stuck with no fetch
-    load(currentPage + 1, false);
-    // COMMENT: NEW - Stop here, do NOT hide spinner, do NOT finish yet, next page will handle it
-    return;
-  }
-  // COMMENT: NEW - No more auto-fetch to do (we already did 3 pages, or no more posts), so now hide spinner for real
+  // COMMENT: RULE 1 - Hide spinner only here, after all 3 fetches are done
   document.getElementById('scrollLoader').style.display = 'none';
-  // COMMENT: Allow next load (scroll) to run
   isLoading = false;
-  // COMMENT: If this was page 1, refresh pins in background
-  if(isFirstLoad){
-    updatePinsFromAllPosts();
-  }
 }
-// COMMENT: Start by loading page 1
+// COMMENT: Start by loading page 1 (which runs 1,2,3)
 load(1, true);
 // COMMENT: When user scrolls near bottom (300px left), load next page if not loading and more posts exist
 window.addEventListener('scroll', () => {
