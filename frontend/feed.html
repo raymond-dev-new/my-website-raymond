@@ -245,10 +245,9 @@ async function load(pageToLoad = 1, isFirstLoad = false){
   if(isLoading || !hasMore) return;
   // COMMENT: Mark as loading so scroll cannot start another fetch at same time
   isLoading = true;
-  // COMMENT: If this is NOT page 1, show bottom spinner
-  if(!isFirstLoad){
-    document.getElementById('scrollLoader').style.display = 'block';
-  }
+  // COMMENT: SPINNER FIX ONLY - Show bottom spinner IMMEDIATELY for ALL pages, including page 1
+  // COMMENT: SPINNER FIX ONLY - Before, it was if(!isFirstLoad), so page 1 showed no spinner
+  document.getElementById('scrollLoader').style.display = 'block';
   // COMMENT: If this is page 1, try to show saved cache instantly while waiting for internet
   if(isFirstLoad){
     try {
@@ -318,16 +317,15 @@ async function load(pageToLoad = 1, isFirstLoad = false){
     autoFetchCount++;
     // COMMENT: NEW - Keep spinner VISIBLE while next auto-fetch is running, do NOT hide it yet
     document.getElementById('scrollLoader').style.display = 'block';
-    // COMMENT: NEW - Allow next load to run, then after 500ms auto-load next page without waiting for scroll
+    // COMMENT: NEW - Allow next load to run
     isLoading = false;
     // COMMENT: NEW - If this was page 1, also refresh pins in background
     if(isFirstLoad){
       updatePinsFromAllPosts();
     }
-    setTimeout(() => {
-      // COMMENT: NEW - Auto load next page, isFirstLoad = false because it is not page 1
-      load(currentPage + 1, false);
-    }, 500);
+    // COMMENT: SPINNER FIX ONLY - Start next page IMMEDIATELY, no 500ms setTimeout wait
+    // COMMENT: SPINNER FIX ONLY - Before, setTimeout 500ms made spinner look stuck with no fetch
+    load(currentPage + 1, false);
     // COMMENT: NEW - Stop here, do NOT hide spinner, do NOT finish yet, next page will handle it
     return;
   }
