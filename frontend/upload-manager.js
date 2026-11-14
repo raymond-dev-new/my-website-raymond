@@ -1,4 +1,4 @@
-const BASE_URL = "https://my-website-raymond-sepia.vercel.app";
+const BASE_URL = "https://raymond-web-psi.vercel.app";
 window.UploadManager = {
   uploadWithProgress(formData, token, onProgress){
     return new Promise((resolve, reject)=>{
