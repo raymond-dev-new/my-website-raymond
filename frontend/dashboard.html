@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html><head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed</title>
@@ -104,6 +105,15 @@ const WRDB = {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+function renderFeedFromCache(posts) {
+  if (!Array.isArray(posts) || !posts.length) return;
+  let pinned = getPinned(posts);
+  let pinnedIds = pinned.map(p => p._id);
+  let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
+  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+  document.getElementById('pinSec').style.display='block';
+  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+}
 const BASE="https://raymond-web-psi.vercel.app";
 const token=localStorage.getItem('token');
 function shuffle(a){ let arr=[...a]; for(let i=arr.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
@@ -123,79 +133,51 @@ function seededShuffle(a, seed){
   }
   return arr;
 }
-
-// ===== FIXED PIN LOGIC - SAME FOR ALL USERS, 3 DAYS, FROM ALL POSTS =====
-const THREE_DAYS = 3*24*60*60*1000;
-function getCurrentPeriod(){ return Math.floor(Date.now() / THREE_DAYS); }
-function getDaysLeftInPeriod(){
-  const next = (getCurrentPeriod() + 1) * THREE_DAYS;
-  return Math.ceil((next - Date.now()) / (24*60*60*1000));
-}
 function getPinned(all){
   if(!Array.isArray(all) || !all.length) return [];
-  const period = getCurrentPeriod();
+  const THREE = 3*24*60*60*1000;
+  const period = Math.floor(Date.now() / THREE);
   let sorted = [...all].sort((a,b) => String(a._id).localeCompare(String(b._id)));
   let shuffled = seededShuffle(sorted, period);
   return shuffled.slice(0,3);
 }
-let pinnedIds = new Set();
-let pinnedLoaded = false;
-
-async function loadPinned(){
-  if(pinnedLoaded) return;
+// ADDED ONLY - for background pins, does not change your logic
+let globalPinnedIds = new Set();
+async function updatePinsFromAllPosts(){
   try{
-    const headers = token ? {authorization: token} : {};
-    const res = await fetch(BASE+'/api/posts', { headers });
+    const res = await fetch(BASE+'/api/posts', {headers:{authorization:token}});
     let allPosts = await res.json();
     if(!Array.isArray(allPosts)) allPosts = allPosts.posts || [];
+    if(!allPosts.length) return;
     let pinned = getPinned(allPosts);
-    pinnedIds = new Set(pinned.map(p => String(p._id)));
+    globalPinnedIds = new Set(pinned.map(p => String(p._id)));
+    document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+    document.getElementById('pinSec').style.display='block';
+    const THREE = 3*24*60*60*1000;
+    const next = (Math.floor(Date.now()/THREE)+1)*THREE;
+    const d = Math.ceil((next - Date.now())/(24*60*60*1000));
+    document.getElementById('pinCountdown').innerText = '3 random novels stay here for 3 days • New pins in ' + d + ' day' + (d>1?'s':'');
     pinned.forEach(p => allLoadedIds.add(String(p._id)));
-    if(pinned.length){
-      document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
-      document.getElementById('pinSec').style.display='block';
-      const d = getDaysLeftInPeriod();
-      document.getElementById('pinCountdown').innerText = '3 random novels stay here for 3 days • New pins in ' + d + ' day' + (d>1?'s':'');
-    }
-    pinnedLoaded = true;
+    document.querySelectorAll('#feedGrid .card').forEach(el => {
+      if(globalPinnedIds.has(String(el.getAttribute('data-id')))) el.remove();
+    });
   }catch(e){}
-}
-
-function renderFeedFromCache(posts) {
-  if (!Array.isArray(posts) || !posts.length) return;
-  // If pins already loaded globally, use them - don't pick new pins from cache
-  if(pinnedLoaded && pinnedIds.size){
-    let rest = shuffle(posts.filter(p => !pinnedIds.has(String(p._id))));
-    document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
-    return;
-  }
-  let pinned = getPinned(posts);
-  let pIds = pinned.map(p => String(p._id));
-  pinnedIds = new Set(pIds);
-  let rest = shuffle(posts.filter(p => !pinnedIds.has(String(p._id))));
-  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
-  document.getElementById('pinSec').style.display='block';
-  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
 function card(p, isPin){
   let cover=p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>';
-  return '<div class="card" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>';
+  return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>';
 }
-
 let currentPage = 1;
 let isLoading = false;
 let hasMore = true;
 let allLoadedIds = new Set();
-
 async function load(pageToLoad = 1, isFirstLoad = false){
   if(isLoading || !hasMore) return;
   isLoading = true;
   if(!isFirstLoad){
     document.getElementById('scrollLoader').style.display = 'block';
   }
-
   if(isFirstLoad){
-    await loadPinned();
     try {
       const cachedPosts = await Promise.race([
         WRDB.get('feed_posts_public'),
@@ -207,10 +189,8 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       }
     } catch (e) {}
   }
-
   try {
-    const headers = token ? {authorization: token} : {};
-    const res=await fetch(BASE+'/api/posts/feed?page='+pageToLoad+'&limit=9',{headers});
+    const res=await fetch(BASE+'/api/posts/feed?page='+pageToLoad+'&limit=9',{headers:{authorization:token}});
     let posts=await res.json();
     if(!posts || !posts.length){
       hasMore = false;
@@ -219,33 +199,24 @@ async function load(pageToLoad = 1, isFirstLoad = false){
       isLoading = false;
       return;
     }
-
     if(posts.length < 9) hasMore = false;
-
-    // FIX: Always filter out pinned
-    let filtered = posts.filter(p => !pinnedIds.has(String(p._id)));
-
     if(isFirstLoad){
-      if(!pinnedLoaded){
-        let pinned=getPinned(posts);
-        pinnedIds=new Set(pinned.map(p=>String(p._id)));
-        pinned.forEach(p => allLoadedIds.add(String(p._id)));
-        document.getElementById('pinnedGrid').innerHTML=pinned.map(p=>card(p,true)).join('');
-        document.getElementById('pinSec').style.display='block';
-        filtered = posts.filter(p => !pinnedIds.has(String(p._id)));
-        pinnedLoaded = true;
-      }
-      let rest=shuffle(filtered);
+      let pinned=getPinned(posts);
+      let pinnedIds=pinned.map(p=>p._id);
+      pinned.forEach(p => allLoadedIds.add(String(p._id)));
+      let rest=shuffle(posts.filter(p=> !pinnedIds.includes(p._id)));
       rest.forEach(p => allLoadedIds.add(String(p._id)));
+      document.getElementById('pinnedGrid').innerHTML=pinned.map(p=>card(p,true)).join('');
+      document.getElementById('pinSec').style.display='block';
       document.getElementById('feedGrid').innerHTML=rest.map(p=>card(p,false)).join('');
       WRDB.save('feed_posts_public', posts);
+      // ADDED ONLY - background pins from ALL posts, runs last
+      updatePinsFromAllPosts();
     } else {
-      let newPosts = filtered.filter(p => !allLoadedIds.has(String(p._id)));
-      // FIX: Shuffle Discover, not in backend order
-      newPosts = shuffle(newPosts);
+      let newPosts = posts.filter(p => !allLoadedIds.has(String(p._id)) && !globalPinnedIds.has(String(p._id)));
       newPosts.forEach(p => allLoadedIds.add(String(p._id)));
       if(newPosts.length){
-        document.getElementById('feedGrid').innerHTML += newPosts.map(p=>card(p,false)).join('');
+        document.getElementById('feedGrid').innerHTML += shuffle(newPosts).map(p=>card(p,false)).join('');
       }
     }
     currentPage = pageToLoad;
@@ -258,9 +229,7 @@ async function load(pageToLoad = 1, isFirstLoad = false){
   document.getElementById('scrollLoader').style.display = 'none';
   isLoading = false;
 }
-
 load(1, true);
-
 window.addEventListener('scroll', () => {
   if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 300){
     if(!isLoading && hasMore){
