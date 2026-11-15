@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -377,25 +378,6 @@
       margin-left: auto;
       flex-shrink: 0;
     }
-    .navMsg {
-      position: relative;
-    }
-    .msgBadge {
-      position: absolute;
-      top: -8px;
-      right: -10px;
-      background: #ff3b30;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 800;
-      min-width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 0 4px;
-    }
     /* ADDED ONLY - Loader for infinite scroll, shows "Loading more novels..." at bottom */
     .scrollLoader{ text-align:center; padding:16px; color:#888; display:none; }
     .scrollLoader .spinner{ width:28px; height:28px; border-width:3px; margin:0 auto 8px; }
@@ -492,7 +474,7 @@
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
     <a href="create.html">✍️</a>
-    <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
+    <a href="message.html">💬</a>
     <a href="diary.html">📖</a>
     <a href="profile.html">👤</a>
   </div>
@@ -787,7 +769,7 @@
   // ============================================================
   // CONFIG
   // ============================================================
-  const BASE = "https://raymond-web-psi.vercel.app";
+  const BASE = "https://raymond-web-rho.vercel.app";
   const token = localStorage.getItem('token');
   if (!token) {
     location.href = "dashboard.html";
@@ -972,7 +954,6 @@
   // 1. Show cache instantly
   // 2. Fetch USER - spinner stops HERE
   // 3. Fetch POSTS in background (NOW 8 PER PAGE - see loadProfilePosts)
-  // 4. Start badge ONLY after load finishes
   // ============================================================
   async function load() {
     profileId = new URLSearchParams(location.search).get('id') || getMyId();
@@ -1121,10 +1102,6 @@
           document.getElementById('postCount').innerText = loadedPostIds.size;
         }
       }
-
-      // STEP C - START BADGE ONLY AFTER LOAD FINISHES
-      checkMsgNotifications();
-      setInterval(checkMsgNotifications, 30000);
 
     } catch (e) {
       hideProfileLoading();
@@ -1597,130 +1574,7 @@
   }
 
   // ============================================================
-  // MESSAGE BADGE
-  // ============================================================
-  function getMyIdForBadge() {
-    try {
-      return JSON.parse(atob(token.split('.')[1])).id;
-    } catch (e) {
-      return "";
-    }
-  }
-
-  function getReadKeyForBadge(otherId) {
-    return 'read_' + getMyIdForBadge() + '_' + otherId;
-  }
-
-  function getLastReadIdForBadge(otherId) {
-    return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
-  }
-
-  function updateMsgBadge(count) {
-    const badge = document.getElementById('msgBadge');
-    if (!badge) {
-      return;
-    }
-    if (count > 0) {
-      badge.style.display = 'flex';
-      badge.innerText = count > 99 ? '99+' : count;
-    } else {
-      badge.style.display = 'none';
-    }
-  }
-
-  let _meCache = null;
-  let _meCacheTime = 0;
-  let _badgeRunning = false;
-
-  async function checkMsgNotifications() {
-    if (_badgeRunning) {
-      return;
-    }
-    if (document.hidden) {
-      return;
-    }
-    _badgeRunning = true;
-
-    try {
-      let me = _meCache;
-      if (!me || Date.now() - _meCacheTime > 60000) {
-        const meRes = await fetchNoCache(BASE + '/api/users/' + getMyIdForBadge());
-        if (!meRes.ok) {
-          return;
-        }
-        const meData = await meRes.json();
-        me = meData.user || meData;
-        _meCache = me;
-        _meCacheTime = Date.now();
-      }
-
-      let people = [...(me.followers || []), ...(me.following || [])];
-
-      let seen = {};
-      people = people.filter(p => {
-        let id = p._id || p;
-        if (seen[id]) {
-          return false;
-        }
-        seen[id] = true;
-        return id !== getMyIdForBadge();
-      });
-
-      let totalUnread = 0;
-
-      for (let i = 0; i < people.length; i += 5) {
-        const chunk = people.slice(i, i + 5);
-        const results = await Promise.allSettled(chunk.map(async (p) => {
-          const otherId = p._id || p;
-          const res = await fetchNoCache(BASE + '/api/messages/' + otherId);
-          if (!res.ok) {
-            return 0;
-          }
-          const msgs = await res.json();
-          if (!Array.isArray(msgs) || !msgs.length) {
-            return 0;
-          }
-          const lastReadId = getLastReadIdForBadge(otherId);
-
-          if (!lastReadId) {
-            localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
-            return 0;
-          }
-
-          const idx = msgs.findIndex(m => m._id === lastReadId);
-          if (idx === -1) {
-            const lastMsg = msgs[msgs.length - 1];
-            const fromId = lastMsg.from?._id || lastMsg.from;
-            return (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) ? 1 : 0;
-          }
-
-          let c = 0;
-          for (const m of msgs.slice(idx + 1)) {
-            const fromId = m.from?._id || m.from;
-            if (fromId !== getMyIdForBadge()) {
-              c++;
-            }
-          }
-          return c;
-        }));
-
-        for (const r of results) {
-          if (r.status === 'fulfilled') {
-            totalUnread += r.value;
-          }
-        }
-      }
-
-      updateMsgBadge(totalUnread);
-    } catch (e) {
-    } finally {
-      _badgeRunning = false;
-    }
-  }
-
-  // ============================================================
   // START - Only load() here.
-  // Badge is started INSIDE load() after profile finishes.
   // ============================================================
   load();
 

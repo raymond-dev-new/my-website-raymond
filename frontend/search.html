@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -35,23 +36,6 @@
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .navMsg { position: relative; }
-    .msgBadge {
-      position: absolute;
-      top: -8px;
-      right: -10px;
-      background: #ff3b30;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 800;
-      min-width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 0 4px;
-    }
   </style>
 </head>
 <body>
@@ -76,13 +60,13 @@
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
     <a href="create.html">✍️</a>
-    <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
+    <a href="message.html">💬</a>
     <a href="saved.html">📖</a>
     <a href="profile.html">👤</a>
   </div>
 
   <script>
-    const BASE = "https://raymond-web-psi.vercel.app";
+    const BASE = "https://raymond-web-rho.vercel.app";
     const token = localStorage.getItem('token');
     if (!token) location.href = "login.html";
 
@@ -169,75 +153,6 @@
     }
 
     load();
-
-    // MESSAGE BADGE - SAME AS BEFORE
-    function getMyIdForBadge() {
-      try {
-        return JSON.parse(atob(token.split('.')[1])).id;
-      } catch {
-        return "";
-      }
-    }
-    function getReadKeyForBadge(otherId) {
-      return 'read_' + getMyIdForBadge() + '_' + otherId;
-    }
-    function getLastReadIdForBadge(otherId) {
-      return localStorage.getItem(getReadKeyForBadge(otherId)) || '';
-    }
-    function updateMsgBadge(count) {
-      const badge = document.getElementById('msgBadge');
-      if (!badge) return;
-      if (count > 0) {
-        badge.style.display = 'flex';
-        badge.innerText = count > 99 ? '99+' : count;
-      } else {
-        badge.style.display = 'none';
-      }
-    }
-    async function checkMsgNotifications() {
-      try {
-        const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
-        const meData = await meRes.json();
-        const me = meData.user || meData;
-        let people = [...(me.followers || []), ...(me.following || [])];
-        let seen = {};
-        people = people.filter(p => {
-          let id = p._id || p;
-          if (seen[id]) return false;
-          seen[id] = true;
-          return id !== getMyIdForBadge();
-        });
-        let totalUnread = 0;
-        for (const p of people) {
-          const otherId = p._id || p;
-          const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
-          const msgs = await res.json();
-          if (!Array.isArray(msgs) || !msgs.length) continue;
-          const lastReadId = getLastReadIdForBadge(otherId);
-          if (!lastReadId) {
-            localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length - 1]._id);
-            continue;
-          }
-          const idx = msgs.findIndex(m => m._id === lastReadId);
-          if (idx === -1) {
-            const lastMsg = msgs[msgs.length - 1];
-            const fromId = lastMsg.from?._id || lastMsg.from;
-            if (lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()) {
-              totalUnread += 1;
-            }
-          } else {
-            const after = msgs.slice(idx + 1);
-            for (const m of after) {
-              const fromId = m.from?._id || m.from;
-              if (fromId !== getMyIdForBadge()) totalUnread++;
-            }
-          }
-        }
-        updateMsgBadge(totalUnread);
-      } catch (e) {}
-    }
-    checkMsgNotifications();
-    setInterval(checkMsgNotifications, 3000);
   </script>
 </body>
 </html>

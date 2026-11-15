@@ -34,7 +34,7 @@ function renderFeedFromCache(posts) {
   let pinned = getPinned(posts); let pinnedIds = pinned.map(p => p._id); let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
   document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join(''); document.getElementById('pinSec').style.display='block'; document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
-const BASE="https://raymond-web-psi.vercel.app";
+const BASE="https://raymond-web-rho.vercel.app";
 const token=localStorage.getItem('token');
 function shuffle(a){ let arr=[...a]; for(let i=arr.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
 function seededShuffle(a, seed){ let arr = [...a]; let s = seed >>> 0; function rand(){ s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; } for(let i = arr.length-1; i > 0; i--){ let j = Math.floor(rand() * (i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
@@ -44,7 +44,6 @@ let allLoadedIds = new Set();
 async function updatePinsFromAllPosts(){ try{ const res = await fetch(BASE+'/api/posts', {headers:{authorization:token}}); let allPosts = await res.json(); if(!Array.isArray(allPosts)) allPosts = allPosts.posts || []; if(!allPosts.length) return; let pinned = getPinned(allPosts); globalPinnedIds = new Set(pinned.map(p => String(p._id))); document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join(''); document.getElementById('pinSec').style.display='block'; const THREE = 3*24*60*60*1000; const next = (Math.floor(Date.now()/THREE)+1)*THREE; const d = Math.ceil((next - Date.now())/(24*60*60*1000)); document.getElementById('pinCountdown').innerText = '3 random novels stay here for 3 days • New pins in ' + d + ' day' + (d>1?'s':''); pinned.forEach(p => allLoadedIds.add(String(p._id))); }catch(e){} }
 function card(p, isPin){ let cover=p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>'; return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>'; }
 let isLoading = false;
-let isBackgroundUpdating = false;
 async function fetch30(){
   let freshSeed = Math.floor(Math.random()*1000000000);
   const res = await fetch(BASE+'/api/posts/feed?page=1&limit=30&seed='+freshSeed,{headers:{authorization:token}});
@@ -83,29 +82,6 @@ async function load(){
     updatePinsFromAllPosts();
   } catch (e) { const grid = document.getElementById('feedGrid'); if (grid && grid.innerHTML.includes('Loading stories')) { grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>'; } }
   document.getElementById('scrollLoader').style.display = 'none'; isLoading = false;
-  startBackgroundUpdate();
-}
-let bgTimer = null;
-function startBackgroundUpdate(){
-  if(bgTimer) return;
-  bgTimer = setInterval(async () => {
-    if(isBackgroundUpdating || isLoading) return;
-    isBackgroundUpdating = true;
-    try {
-      let fresh = await fetch30();
-      if(!fresh || !fresh.length){ isBackgroundUpdating = false; return; }
-      WRDB.save('feed_posts_public', fresh);
-      let newPosts = fresh.filter(p => !allLoadedIds.has(String(p._id)));
-      if(newPosts.length){
-        newPosts.forEach(p => allLoadedIds.add(String(p._id)));
-        let html = shuffle(newPosts).map(p=>card(p,false)).join('');
-        let grid = document.getElementById('feedGrid');
-        if(grid.innerHTML.includes('No novels')){ grid.innerHTML = html; } else { grid.innerHTML = html + grid.innerHTML; }
-        updatePinsFromAllPosts();
-      }
-    } catch(e){}
-    isBackgroundUpdating = false;
-  }, 30000);
 }
 load();
 </script>

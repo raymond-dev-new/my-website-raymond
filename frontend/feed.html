@@ -32,8 +32,6 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
 .sidebar-overlay.open{display:block}
 .side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
 .menuBtn{background:none!important;border:none!important;color:#fff!important;font-size:22px!important;padding:0 8px 0 0!important;cursor:pointer}
-.navMsg{position:relative}
-.msgBadge{position:absolute;top:-8px;right:-10px;background:#ff3b30;color:#fff;font-size:11px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:none;align-items:center;justify-content:center;padding:0 4px}
 .spinner{width:42px;height:42px;margin:18px auto 10px;border:4px solid #26262f;border-top:4px solid #ec4899;border-right:4px solid #a78bfa;border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{ to{ transform:rotate(360deg); } }
 .loadMore{grid-column:1/3;text-align:center;color:#888;padding:16px 0;font-size:13px}
@@ -76,7 +74,7 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
   <a href="feed.html" class="active">🏠</a>
   <a href="search.html">🔍</a>
   <a href="create.html">✍️</a>
-  <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
+  <a href="message.html">💬</a>
   <a href="diary.html">📖</a>
   <a href="profile.html">👤</a>
 </div>
@@ -131,7 +129,7 @@ function renderFeedFromCache(posts) {
   document.getElementById('pinSec').style.display='block';
   document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
 }
-const BASE="https://raymond-web-psi.vercel.app";
+const BASE="https://raymond-web-rho.vercel.app";
 const token=localStorage.getItem('token');
 if(!token) location.href="login.html";
 function toggleSidebar(){
@@ -194,7 +192,6 @@ function card(p, isPin) {
   return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'read.html?id='+p._id+'\'"> <div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+' </div> <div class="body"> <div class="title">'+p.title+'</div> <div class="meta"> <span>@'+(p.user?.username||'author')+'</span> <span>❤️ '+(p.likes?.length||0)+'</span> <span>💬 '+(p.comments?.length||0)+'</span> </div> </div> </div>';
 }
 let isLoading = false;
-let isBackgroundUpdating = false;
 async function fetch30(){
   let freshSeed = Math.floor(Math.random()*1000000000);
   const res = await fetch(BASE+'/api/posts/feed?page=1&limit=30&seed='+freshSeed,{
@@ -249,33 +246,6 @@ async function load(){
   }
   document.getElementById('scrollLoader').style.display = 'none';
   isLoading = false;
-  startBackgroundUpdate();
-}
-let bgTimer = null;
-function startBackgroundUpdate(){
-  if(bgTimer) return;
-  bgTimer = setInterval(async () => {
-    if(isBackgroundUpdating || isLoading) return;
-    isBackgroundUpdating = true;
-    try {
-      let fresh = await fetch30();
-      if(!fresh || !fresh.length){ isBackgroundUpdating = false; return; }
-      WRDB.save('feed_posts', fresh);
-      let newPosts = fresh.filter(p => !allLoadedIds.has(String(p._id)));
-      if(newPosts.length){
-        newPosts.forEach(p => allLoadedIds.add(String(p._id)));
-        let html = shuffle(newPosts).map(p=>card(p,false)).join('');
-        let grid = document.getElementById('feedGrid');
-        if(grid.innerHTML.includes('No novels')){
-          grid.innerHTML = html;
-        } else {
-          grid.innerHTML = html + grid.innerHTML;
-        }
-        updatePinsFromAllPosts();
-      }
-    } catch(e){}
-    isBackgroundUpdating = false;
-  }, 30000);
 }
 load();
 const button = document.getElementById('logoutBtn')
@@ -296,55 +266,6 @@ if(Country) Country.addEventListener('click', async () => {
   fetch(BASE+'/api/fetch-now');
   location.href="countrymatch.html";
 });
-function getMyIdForBadge(){
-  try{ return JSON.parse(atob(token.split('.')[1])).id; }catch{ return ""; }
-}
-function getReadKeyForBadge(otherId){ return 'read_' + getMyIdForBadge() + '_' + otherId; }
-function getLastReadIdForBadge(otherId){ return localStorage.getItem(getReadKeyForBadge(otherId)) || ''; }
-function updateMsgBadge(count){
-  const badge = document.getElementById('msgBadge');
-  if(!badge) return;
-  if(count > 0){ badge.style.display = 'flex'; badge.innerText = count > 99 ? '99+' : count; }else{ badge.style.display = 'none'; }
-}
-async function checkMsgNotifications(){
-  try{
-    const meRes = await fetch(BASE + '/api/users/' + getMyIdForBadge(), { headers: { authorization: token } });
-    const meData = await meRes.json();
-    const me = meData.user || meData;
-    let people = [...(me.followers || []), ...(me.following || [])];
-    let seen = {};
-    people = people.filter(p => {
-      let id = p._id || p;
-      if(seen[id]) return false;
-      seen[id] = true;
-      return id !== getMyIdForBadge();
-    });
-    let totalUnread = 0;
-    for(const p of people){
-      const otherId = p._id || p;
-      const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
-      const msgs = await res.json();
-      if(!Array.isArray(msgs) || !msgs.length) continue;
-      const lastReadId = getLastReadIdForBadge(otherId);
-      if(!lastReadId){ localStorage.setItem(getReadKeyForBadge(otherId), msgs[msgs.length-1]._id); continue; }
-      const idx = msgs.findIndex(m => m._id === lastReadId);
-      if(idx === -1){
-        const lastMsg = msgs[msgs.length-1];
-        const fromId = lastMsg.from?._id || lastMsg.from;
-        if(lastMsg._id !== lastReadId && fromId !== getMyIdForBadge()){ totalUnread += 1; }
-      }else{
-        const after = msgs.slice(idx + 1);
-        for(const m of after){
-          const fromId = m.from?._id || m.from;
-          if(fromId !== getMyIdForBadge()) totalUnread++;
-        }
-      }
-    }
-    updateMsgBadge(totalUnread);
-  }catch(e){}
-}
-checkMsgNotifications();
-setInterval(checkMsgNotifications, 3000);
 </script>
 <script>
 (function(rc){

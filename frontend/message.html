@@ -17,12 +17,20 @@
       background: #0a0a12;
       color: #fff;
       font-family: Arial;
+      padding-top: 62px; /* FIXED - space for fixed top bar */
       padding-bottom: 90px; /* Space for bottom nav */
     }
     /* ============================= */
-    /* TOP BAR                       */
+    /* TOP BAR - FIXED, NEVER SCROLLS */
     /* ============================= */
     .top {
+      position: fixed; /* FIXED */
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100; /* FIXED - above messages */
+      background: #0a0a12; /* FIXED - messages don't show through */
+      border-bottom: 1px solid #1a1a1a; /* FIXED */
       max-width: 600px;
       margin: 0 auto;
       padding: 16px;
@@ -72,7 +80,7 @@
     .chat {
       max-width: 600px;
       margin: 0 auto;
-      padding: 0 16px;
+      padding: 0 16px 170px 16px; /* FIXED - 170px bottom so last msg sits above input + nav */
       display: none; /* Hidden until you open a chat */
     }
     /* ============================= */
@@ -85,9 +93,6 @@
       margin: 8px 0;
       font-size: 14px;
       line-height: 1.4;
-      /* CACHE ADDITION - ADDED ONLY - LINE BREAK FIX */
-      /* This keeps Enter / line breaks + spaces in messages */
-      /* Without this, \n is collapsed to one space */
       white-space: pre-wrap;
       word-break: break-word;
       overflow-wrap: break-word;
@@ -109,6 +114,7 @@
       bottom: 48px;
       left: 0;
       right: 0;
+      z-index: 100; /* FIXED - stays above messages */
       max-width: 600px;
       margin: 0 auto;
       display: none; /* Hidden until chat is opened */
@@ -117,9 +123,6 @@
       background: #0a0a12;
       align-items: flex-end;
     }
-    /* ADDED ONLY - LINE BREAK - CHANGED FROM input TO textarea */
-    /* Old: .inputRow input { single line, no line break possible } */
-    /* New: textarea, so Enter makes a new line + space */
     .inputRow textarea {
       flex: 1;
       background: #1e1e2a;
@@ -158,6 +161,7 @@
       display: flex;
       justify-content: space-around;
       padding: 14px 0;
+      z-index: 100;
     }
     .nav a {
       color: #fff;
@@ -166,7 +170,6 @@
     }
     /* ============================= */
     /* MESSAGE WRAPPER               */
-    /* Fix: wrapper has NO color, only bubble has color */
     /* ============================= */
     .msgWrap {
       position: relative;
@@ -191,8 +194,6 @@
       font-size: 14px;
       line-height: 1.4;
       word-break: break-word;
-      /* CACHE ADDITION - ADDED ONLY - LINE BREAK FIX */
-      /* Keeps admin Enter breaks + multiple spaces */
       white-space: pre-wrap;
       overflow-wrap: break-word;
     }
@@ -233,28 +234,6 @@
       width: 36px;
       height: 36px;
       font-size: 14px;
-    }
-    /* ============================= */
-    /* RED BADGE - UNREAD COUNT      */
-    /* ============================= */
-    .msgBadge {
-      position: absolute;
-      top: -8px;
-      right: -10px;
-      background: #ff3b30;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 800;
-      min-width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 0 4px;
-    }
-    .navMsg {
-      position: relative;
     }
     /* ============================= */
     /* ROW INFO - NAME + PREVIEW     */
@@ -304,7 +283,6 @@
     /* ================================================= */
     /* ===== GROUP ONLY - ADDED - START ================= */
     /* ================================================= */
-    /* Small yellow "GROUP" label */
     .groupBadge {
       background: #f59e0b;
       color: #000;
@@ -314,12 +292,10 @@
       border-radius: 999px;
       margin-left: 4px;
     }
-    /* Group avatar - megaphone, yellow color */
     .groupAvatar {
       background: linear-gradient(45deg, #f59e0b, #ec4899) !important;
       font-size: 22px !important;
     }
-    /* Grey notice box inside group */
     .groupNotice {
       text-align: center;
       color: #888;
@@ -328,10 +304,8 @@
       background: #1a1a1a;
       border-radius: 12px;
       margin: 10px 0;
-      /* CACHE ADDITION - ADDED ONLY - LINE BREAK FIX */
       white-space: pre-wrap;
     }
-    /* Buttons under group header: View Profile / Message Admin */
     .groupAdminBar {
       display: flex;
       gap: 8px;
@@ -356,14 +330,12 @@
 </head>
 <body>
 
-  <!-- ================= TOP BAR ================= -->
+  <!-- ================= TOP BAR - FIXED ================= -->
   <div class="top">
-    <!-- Clicking this goes to profile of person you are chatting with -->
     <div class="chatHeaderInfo" id="chatHeaderInfo" onclick="goToChatProfile()">
       <b id="topTitle">💬 Messages</b>
       <span id="chatHeaderAvatar" style="display: none;"></span>
     </div>
-    <!-- Back button - only shows inside a chat -->
     <span onclick="showList()" style="cursor: pointer; display: none;" id="backBtn">← Back</span>
   </div>
 
@@ -373,17 +345,12 @@
   </div>
 
   <!-- ================= CHAT BOX ================= -->
-  <!-- Messages appear here when you open a chat -->
   <div class="chat" id="chatBox"></div>
 
   <!-- ================= GROUP ACTIONS ================= -->
-  <!-- Only shows inside the group: View Admin / Message Admin -->
-  <div id="groupActions" style="display:none; max-width:600px; margin:0 auto; padding:0 16px;"></div>
+  <div id="groupActions" style="display:none; max-width:600px; margin:0 auto; padding:0 16px 170px 16px;"></div>
 
   <!-- ================= INPUT ROW ================= -->
-  <!-- ADDED ONLY - LINE BREAK - CHANGED input TO textarea -->
-  <!-- Old: <input onkeydown="if Enter send"> - could not make new line -->
-  <!-- New: <textarea> - Enter = New Line + Space, Send button = Send -->
   <div class="inputRow" id="inputRow">
     <textarea id="msgInput" rows="1" placeholder="Type message...&#10;Enter = new line + space"></textarea>
     <button onclick="sendMsg()">Send</button>
@@ -394,23 +361,12 @@
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
     <a href="create.html">✍️</a>
-    <a href="message.html" class="navMsg">💬<span class="msgBadge" id="msgBadge">0</span></a>
+    <a href="message.html">💬</a>
     <a href="diary.html">📖</a>
     <a href="profile.html">👤</a>
   </div>
 
   <script>
-    // ============================================================
-    // CACHE ADDITION - ADDED ONLY - FIXED
-    // FIX 1: Removed <script src="wildreaders-db.js"> from <head>
-    // Reason: That file + this inline block both declared const WRDB
-    // -> "Identifier 'WRDB' has already been declared" -> loadPeople() never ran
-    // Now WRDB exists ONLY here, so no clash.
-    // FIX 2: Changed const WRDB = window.WRDB || {...} to const WRDB = {...}
-    // FIX 3: WRDB.get() now has built-in 500ms timeout, so it can never
-    // hang the chat list / chat open. If IndexedDB is slow, it returns null
-    // and fetch from server continues.
-    // ============================================================
     const WRDB = {
       dbName: 'WildReadersDB',
       storeName: 'cache',
@@ -504,7 +460,7 @@
     // ============================================================
     // 1. SETUP - BASE URL + LOGIN CHECK
     // ============================================================
-    const BASE = "https://raymond-web-psi.vercel.app";
+    const BASE = "https://raymond-web-rho.vercel.app";
     const token = localStorage.getItem('token');
     if (!token) location.href = "login.html";
 
@@ -515,15 +471,11 @@
         return "";
       }
     }
-    // FIX ONLY - ADDED - localStorage email fallback for admin
-    // login.html now saves userEmail / myEmail / isAdmin on login.
-    // If token has no email, we use localStorage. Nothing else changed.
     function getMyEmailFromToken() {
       try {
         const fromToken = (JSON.parse(atob(token.split('.')[1])).email || "").toLowerCase().trim();
         if (fromToken) return fromToken;
       } catch {}
-      
       return (localStorage.getItem('userEmail') || localStorage.getItem('myEmail') || "").toLowerCase().trim();
     }
 
@@ -533,7 +485,6 @@
     const ADMIN_EMAIL = "letswintrade@gmail.com";
     const GROUP_ID = "ADMIN_GROUP";
     const GROUP_NAME = "📢 WildReaders";
-    // FIX ONLY - PROFILE + ADMIN: check token email OR localStorage isAdmin saved by login.html
     let isAdmin = (getMyEmailFromToken() === ADMIN_EMAIL) || (localStorage.getItem('isAdmin') === 'true');
     let myEmail = getMyEmailFromToken();
     let adminUserId = isAdmin ? getMyId() : "";
@@ -542,26 +493,17 @@
     let totalGroupMembers = 0;
     let isGroupChat = false;
 
-    // ============================================================
-    // FIX ONLY - PROFILE NAME + ADMIN - START
-    // Why IDs showed: followers/following from /api/users/me are often
-    // just IDs like "6aec..." with no username/avatar. Old code did
-    // name = p.username || id, so it showed the ID.
-    // Fix: NEVER use ID as name. Fetch real profile via /api/users/<id>
-    // and cache it. While loading, show "..." not the ID.
-    // ============================================================
-    let profileCache = {}; // id -> { username, avatar }
+    let profileCache = {};
     function isIdLike(str) {
       if (!str) return true;
       const s = String(str).trim();
-      // Mongo ObjectId (24 hex) or long hex/uuid-like ID
       return /^[0-9a-f]{20,}$/i.test(s) || /^[0-9a-f]{8}-[0-9a-f-]{10,}$/i.test(s);
     }
     function displayNameFor(p) {
       const id = p._id || p;
       if (typeof p === 'object' && p.username && !isIdLike(p.username)) return p.username;
       if (profileCache[id] && profileCache[id].username && !isIdLike(profileCache[id].username)) return profileCache[id].username;
-      return ''; // empty = still loading, caller shows "..." - NEVER the ID
+      return '';
     }
     function displayAvatarFor(p) {
       const id = p._id || p;
@@ -572,7 +514,7 @@
     function displayInitialFor(p) {
       const name = displayNameFor(p);
       if (name) return name[0].toUpperCase();
-      return '•'; // loading dot, NEVER first letter of ID
+      return '•';
     }
     async function fetchProfileForId(id) {
       if (!id || id === GROUP_ID || profileCache[id]) return profileCache[id] || null;
@@ -583,7 +525,6 @@
         const u = d.user || d;
         if (u && u.username && !isIdLike(u.username)) {
           profileCache[id] = { username: u.username, avatar: u.avatar || '' };
-          // Also update peopleCache so it stays correct after reload
           const found = peopleCache.find(x => (x._id || x) === id);
           if (found && typeof found === 'object') { 
           found.username = u.username;
@@ -596,7 +537,6 @@
     }
 
     async function enrichProfiles() {
-      // Fetch missing profiles in parallel, then re-render once
       const missing = peopleCache
         .map(p => p._id || p)
         .filter(id => id && id !== GROUP_ID && !displayNameFor(peopleCache.find(x => (x._id || x) === id) || id));
@@ -605,8 +545,6 @@
       savePeopleToStorage();
       renderPeopleList();
     }
-    // FIX ONLY - PROFILE + ADMIN - END
-    // ============================================================
 
     // ============================================================
     // 2. STATE
@@ -685,11 +623,9 @@
     function savePeopleToStorage() {
       const slim = (peopleCache || []).slice(0, MAX_PEOPLE_SAVED).map(p => ({
         _id: p._id || p,
-        // FIX ONLY: never save ID as username
         username: (typeof p === 'object' && p.username && !isIdLike(p.username)) ? p.username : (profileCache[p._id || p]?.username || ''),
         avatar: (typeof p === 'object' ? (p.avatar || '') : '') || (profileCache[p._id || p]?.avatar || '')
       }));
-
       safeSetItem(getPeopleCacheKey(), JSON.stringify(slim));
       WRDB.save(getPeopleCacheKey(), slim);
     }
@@ -758,7 +694,6 @@
     // 2C. GROUP HELPERS
     // ============================================================
     async function identifyAdminAndMembers() {
-      // FIX ONLY - ADMIN: if token already says admin, stay admin instantly
       if (getMyEmailFromToken() === ADMIN_EMAIL) { 
         isAdmin = true;
         if (!adminUserId) adminUserId = getMyId(); 
@@ -772,7 +707,6 @@
           .catch(() => {});
         return;
       }
-
       try {
         const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
         const meData = await meRes.json();
@@ -787,7 +721,6 @@
           }
         }
       } catch {}
-     
       if (!isAdmin) {
         try {
           const r = await fetch(BASE + '/api/admin-user', { headers: { authorization: token } });
@@ -800,7 +733,6 @@
           }
         } catch {}
       }
-
       if (!chatMeta[GROUP_ID]) { 
          chatMeta[GROUP_ID] = { 
          lastText: 'Tap to view announcements',
@@ -844,7 +776,6 @@
       const toEarly = new URLSearchParams(location.search).get('to');
       if (toEarly) {
         if (toEarly === GROUP_ID) { openGroupChat(); } else {
-          // FIX ONLY: never pass ID as name to openChat
           const foundEarly = peopleCache.find(p => (p._id || p) === toEarly);
           openChat(toEarly, displayNameFor(foundEarly || toEarly) || '');
         }
@@ -866,7 +797,6 @@
         savePeopleToStorage();
         identifyAdminAndMembers();
         renderPeopleList();
-        // FIX ONLY: fetch real names/avatars for anyone who is still just an ID, then re-render
         enrichProfiles();
         await refreshRecentAndUnread(true);
         await refreshGroupMeta(true);
@@ -879,7 +809,6 @@
         }
       } catch (e) {
         renderPeopleList();
-        // FIX ONLY: even if server list fails, try to enrich cached IDs
         enrichProfiles();
       }
     }
@@ -895,10 +824,7 @@
         const timeB = chatMeta[idB]?.lastTime || 0;
         return timeB - timeA;
       });
-
       const gMeta = chatMeta[GROUP_ID] || { lastText: 'Tap to view announcements', lastTime: 0, unread: 0 };
-
-
       const gPreview = gMeta.lastText || 'Tap to view announcements';
       const gTime = gMeta.lastTime ? formatTime(gMeta.lastTime) : '';
       const gUnread = gMeta.unread || 0;
@@ -912,7 +838,6 @@
         + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
       const htmlPeople = sorted.map(p => {
         const id = p._id || p;
-        // FIX ONLY: NEVER show ID. Name = real username or "..." while loading
         const name = displayNameFor(p) || '...';
         const avUrl = displayAvatarFor(p);
         const av = avUrl ? '<img src="' + avUrl + '">' : escapeHtml(displayInitialFor(p));
@@ -922,7 +847,6 @@
         const unread = meta.unread || 0;
         const unreadHtml = unread > 0 ? '<span class="chatUnread">' + unread + '</span>' : '';
         const previewClass = unread > 0 ? 'rowPreview unread' : 'rowPreview';
-        // FIX ONLY: openChat gets ID + display name (not ID as name). Escape quotes for onclick.
         const safeName = name.replace(/'/g, "\\'");
         return '<div class="row" onclick="openChat(\'' + id + '\',\'' + safeName + '\')">'
           + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
@@ -955,7 +879,6 @@
       isGroupChat = false;
       document.getElementById('groupActions').style.display = 'none';
       chatWith = id;
-      // FIX ONLY: if name passed is ID-like or empty, fetch real profile instead
       let realName = (name && !isIdLike(name)) ? name : displayNameFor(peopleCache.find(p => (p._id || p) === id) || id);
       if (!realName) {
         const prof = await fetchProfileForId(id);
@@ -1099,12 +1022,10 @@
       e.stopPropagation();
       if (!confirm('Delete this announcement for everyone?')) return;
       if (String(msgId).startsWith('temp_')) { alert('Wait a second, message is still sending...'); return; }
-
       try {
         const res = await fetch(BASE + '/api/group-messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
         if (!res.ok) { alert('Could not delete from server. Message still exists for users. Try again.'); return; }
       } catch { alert('No connection. Could not delete from server.'); return; }
-
       const wrap = e.target.closest('.msgWrap');
       if (wrap) wrap.remove();
       lastRenderedChatHtml = '';
@@ -1133,7 +1054,6 @@
           if (lastMsg._id !== lastReadId) unread = 1; 
       } else { unread = msgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; }
       }
-
       const old = chatMeta[GROUP_ID] || {};
       if (old.lastMsgId !== lastMsg._id || old.unread !== unread) {
         chatMeta[GROUP_ID] = { lastText: lastMsg.text, lastTime: lastTime, lastMsgId: lastMsg._id, unread: unread };
@@ -1219,7 +1139,6 @@
         await refreshGroupMeta(true);
         return;
       }
-
       input.value = ''; 
       input.style.height = 'auto';
       const tempMsg = { _id: 'temp_' + Date.now(), from: getMyId(), text: finalText, createdAt: new Date().toISOString() };
@@ -1287,17 +1206,9 @@
     }
 
     // ============================================================
-    // 11. NOTIFICATION BADGE
+    // 11. NOTIFICATION BADGE - REMOVED
     // ============================================================
-    function updateBadge() {
-      let total = 0;
-      for (const id in chatMeta) { total += chatMeta[id].unread || 0; }
-      const badge = document.getElementById('msgBadge');
-      if (total > 0) { 
-        badge.style.display = 'flex'; 
-        badge.innerText = total > 99 ? '99+' : total;
-       } else { badge.style.display = 'none'; }
-    }
+    function updateBadge() {}
 
     // ============================================================
     // 12. RECENT + UNREAD
@@ -1348,23 +1259,30 @@
     }
 
     // ============================================================
-    // 13. START + AUTO-REFRESH
+    // 13. START + LIGHT POLL - 10s, open chat only, pause when hidden
     // ============================================================
     loadPeople();
+    let _isPolling = false;
     setInterval(async () => {
-      if (chatWith) {
-        if (isGroupChat) { 
-          await loadGroupMessages(true); 
-          await refreshGroupMeta(true); 
-        } else { 
-          await loadMessages(true); 
-          await refreshRecentAndUnread(true); 
+      if (!chatWith) return;
+      if (document.hidden) return;
+      if (_isPolling) return;
+      _isPolling = true;
+      try {
+        if (isGroupChat) {
+          await loadGroupMessages(true);
+        } else {
+          await loadMessages(true);
         }
-      } else { 
-        await refreshRecentAndUnread(true); 
-        await refreshGroupMeta(true); 
+      } catch (e) {}
+      _isPolling = false;
+    }, 10000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && chatWith) {
+        if (isGroupChat) loadGroupMessages(true);
+        else loadMessages(true);
       }
-    }, 2000);
+    });
   </script>
 </body>
 </html>
