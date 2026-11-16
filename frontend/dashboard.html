@@ -55,7 +55,7 @@ async function load(){
     } else {
       // If fetch returns empty but we have saved, keep saved (already shown above)
       const hasCards = document.querySelectorAll('#feedGrid .card').length > 0;
-      if(!hasCards){ document.getElementById('feedGrid').innerHTML='<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; }
+      if(!hasCards){ document.getElementById('feedGrid').innerHTML='<p style="grid-column:1/3;text-align:center"> Network error retry</p>'; }
     }
   } catch(e) {
     const hasCards = document.querySelectorAll('#feedGrid .card').length > 0;
