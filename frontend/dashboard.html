@@ -30,27 +30,37 @@ const BASE="https://raymond-web-rho.vercel.app";
 const token=localStorage.getItem('token');
 function card(p){ let cover=p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>'; return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover"><span class="pin">📌 PINNED</span>'+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>'; }
 async function load(){
-  // 1. Show saved 10 forever - NO FETCH
+  // 1. Show saved 10 - if less than 24h since last fetch, NO FETCH
   try {
     const saved = await WRDB.get('pinned_10_forever');
     if (saved && saved.length) {
       document.getElementById('feedGrid').innerHTML = saved.map(p=>card(p)).join('');
-      return; // STOP - no fetch in background
+      const lastFetch = Number(localStorage.getItem('pinned_10_last_fetch') || 0);
+      if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
+        return; // STOP - still within 24 hours, no fetch
+      }
+      // 24 hours passed - fall through to fetch new 10 below
     }
   } catch(e) {}
-  // 2. Only first time ever - fetch once to save first 10
+  // 2. First time ever OR 24 hours passed - fetch once to save first 10
   try {
-    const res = await fetch(BASE+'/api/posts/feed?page=1&limit=10', {headers:{authorization:token}});
+    const res = await fetch(BASE+'/api/posts/feed?page=1&limit=20', {headers:{authorization:token}});
     let posts = await res.json();
     if(!Array.isArray(posts)) posts = posts.posts || [];
     let first10 = posts.slice(0,10);
     if(first10.length){
       await WRDB.save('pinned_10_forever', first10);
+      localStorage.setItem('pinned_10_last_fetch', String(Date.now()));
       document.getElementById('feedGrid').innerHTML = first10.map(p=>card(p)).join('');
     } else {
-      document.getElementById('feedGrid').innerHTML='<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>';
+      // If fetch returns empty but we have saved, keep saved (already shown above)
+      const hasCards = document.querySelectorAll('#feedGrid .card').length > 0;
+      if(!hasCards){ document.getElementById('feedGrid').innerHTML='<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>'; }
     }
-  } catch(e) { const grid = document.getElementById('feedGrid'); if (grid && grid.innerHTML.includes('Loading stories')) { grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>'; } }
+  } catch(e) {
+    const hasCards = document.querySelectorAll('#feedGrid .card').length > 0;
+    if(!hasCards){ const grid = document.getElementById('feedGrid'); if (grid && grid.innerHTML.includes('Loading stories')) { grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>'; } }
+  }
 }
 load();
 </script>

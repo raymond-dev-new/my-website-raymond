@@ -892,6 +892,16 @@
     showProfileLoading();
     retryPending().catch(() => {});
 
+    // ONCE PER DAY PER USER - only for OTHER users, not own profile
+    // Each profileId has its own timer, so you can still fetch different users
+    let skipFreshFetch = false;
+    if (!isOwn) {
+      const lastFetch = Number(localStorage.getItem('profile_last_fetch_' + profileId) || 0);
+      if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
+        skipFreshFetch = true;
+      }
+    }
+
     let hasCache = false;
     try {
       const cachedUser = await getCacheFast('profile_' + profileId);
@@ -939,6 +949,19 @@
         }
       }
     } catch (e) {}
+
+    // If same other user fetched within 24h and we have cache - STOP, no fresh fetch
+    if (skipFreshFetch && hasCache) {
+      hideProfileLoading();
+      // Show cached counts - follower counts from cache are empty (stripped), so keep what cache gave
+      // Post count = cached posts count if we don't know more
+      const pcEl = document.getElementById('postCount');
+      if (pcEl && pcEl.innerText === '...') pcEl.innerText = loadedPostIds.size;
+      // Follow button: we don't have fresh follower list, keep it as Follow (user can still tap)
+      const fb2 = document.getElementById('followBtn');
+      if (fb2 && !isOwn) { fb2.innerText = 'Follow'; fb2.className = 'btn btn-follow'; fb2.disabled = false; }
+      return;
+    }
 
     if (!hasCache) {
       document.getElementById('name').innerText = 'Loading...';
@@ -995,6 +1018,10 @@
         }
 
         saveProfileToStorage(profileId, profileUser);
+        // Save 24h timer for THIS user only
+        if (!isOwn) {
+          localStorage.setItem('profile_last_fetch_' + profileId, String(Date.now()));
+        }
       }
 
       hideProfileLoading();

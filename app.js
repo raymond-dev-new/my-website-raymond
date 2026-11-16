@@ -474,7 +474,7 @@ app.get('/api/posts/feed', async (req,res)=>{
     res.set('Expires', '0');
 
     const page = parseInt(req.query.page || 1);
-    const limit = parseInt(req.query.limit || 13);
+    const limit = parseInt(req.query.limit || 30);
 
     // 1. Let MongoDB pick truly random posts — different every time
     // $sample does not use a seed, so no repeat pattern

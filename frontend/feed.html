@@ -140,7 +140,7 @@ function card(p) {
 let isLoading = false;
 async function fetch30(){
   let freshSeed = Math.floor(Math.random()*1000000000);
-  const res = await fetch(BASE+'/api/posts/feed?page=1&limit=10&seed='+freshSeed,{
+  const res = await fetch(BASE+'/api/posts/feed?page=1&limit=30&seed='+freshSeed,{
     headers:{authorization:token}
   });
   let posts = await res.json();
@@ -164,12 +164,20 @@ async function load(){
     if (cachedPosts && cachedPosts.length) {
       renderFeedFromCache(cachedPosts);
       cachedPosts.forEach(p => allLoadedIds.add(String(p._id)));
+      // ONCE PER DAY: if last fetch was less than 24 hours ago, stop here - no new fetch
+      const lastFetch = Number(localStorage.getItem('feed_last_fetch') || 0);
+      if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
+        document.getElementById('scrollLoader').style.display = 'none';
+        isLoading = false;
+        return;
+      }
     }
   } catch (e) {}
   try {
     let posts = await fetch30();
     if(posts && posts.length){
       WRDB.save('feed_posts', posts);
+      localStorage.setItem('feed_last_fetch', String(Date.now()));
       render30(posts);
     } else {
       let hasCards = document.querySelectorAll('#feedGrid .card').length > 0;
