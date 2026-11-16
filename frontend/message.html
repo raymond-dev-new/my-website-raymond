@@ -9,7 +9,7 @@
     /* ============================= */
     /* BASIC PAGE SETUP              */
     /* ============================= */
-    * {
+        * {
       box-sizing: border-box;
     }
     body {
@@ -326,6 +326,95 @@
       border: none;
     }
     /* ===== GROUP ONLY - END =========================== */
+    /* ================================================= */
+    /* ===== ADMIN GROUP SIDEBAR ONLY - ADDED - START == */
+    /* ================================================= */
+    /* Sidebar only shows when: isAdmin = true AND isGroupChat = true */
+    /* Normal users never see it. Private chats never show it. */
+    /* Sidebar has 2 side-link buttons only - same format you gave. */
+    #adminGroupSidebarBtn {
+      display: none; /* Hidden by default, JS shows it only in admin group chat */
+      position: fixed;
+      top: 70px;
+      right: 10px;
+      z-index: 120;
+      background: linear-gradient(90deg,#7c3aed,#ec4899);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0,0,0,.5);
+    }
+    #adminGroupSidebarOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 200;
+    }
+    #adminGroupSidebarOverlay.open {
+      display: block;
+    }
+    #adminGroupSidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 88%;
+      max-width: 340px;
+      height: 100%;
+      background: #14141d;
+      border-left: 1px solid #333;
+      z-index: 201;
+      transform: translateX(105%);
+      transition: transform .25s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #adminGroupSidebar.open {
+      transform: translateX(0);
+    }
+    .adminGroupSideHead {
+      padding: 16px;
+      border-bottom: 1px solid #262626;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1a1a24;
+    }
+    .adminGroupSideBody {
+      padding: 14px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    /* Your exact format - side-link */
+    .side-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #1e1e2a;
+      border: 1px solid #333;
+      border-radius: 14px;
+      padding: 16px 12px;
+      cursor: pointer;
+    }
+    .side-link span {
+      font-size: 18px;
+    }
+    .side-link a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 14px;
+      flex: 1;
+    }
+    /* ===== ADMIN GROUP SIDEBAR ONLY - END ============ */
   </style>
 </head>
 <body>
@@ -338,6 +427,27 @@
     </div>
     <span onclick="showList()" style="cursor: pointer; display: none;" id="backBtn">← Back</span>
   </div>
+
+  <!-- ================================================= -->
+  <!-- ADMIN GROUP SIDEBAR ONLY - ADDED - START ========= -->
+  <!-- Shows only if isAdmin AND in admin group chat.    -->
+  <!-- Sidebar has 2 side-link buttons only.            -->
+  <!-- ================================================= -->
+  <button id="adminGroupSidebarBtn" onclick="toggleAdminGroupSidebar(true)">☰ Admin</button>
+  <div id="adminGroupSidebarOverlay" onclick="toggleAdminGroupSidebar(false)"></div>
+  <div id="adminGroupSidebar">
+    <div class="adminGroupSideHead">
+      <b>👑 Admin Sidebar</b>
+      <span onclick="toggleAdminGroupSidebar(false)" style="cursor:pointer;font-size:20px">✕</span>
+    </div>
+    <div class="adminGroupSideBody">
+      <!-- SIDE LINK 1 - Save Picture - same format you gave -->
+      <div class="side-link"><span>🖼️</span> <a href="media.html"> Save Picture </a></div>
+      <!-- SIDE LINK 2 - Save Note - same format you gave -->
+      <div class="side-link"><span>📝</span> <a href="note.html"> Save Note </a></div>
+    </div>
+  </div>
+  <!-- ADMIN GROUP SIDEBAR ONLY - END =================== -->
 
   <!-- ================= PEOPLE LIST ================= -->
   <div class="list" id="peopleList">
@@ -832,10 +942,10 @@
       const gPreviewClass = gUnread > 0 ? 'rowPreview unread' : 'rowPreview';
       const memberText = isAdmin ? ' • ' + totalGroupMembers + ' members' : '';
       const groupRow = '<div class="row" onclick="openGroupChat()" style="background:#1a1405;border-bottom:1px solid #2a2200">'
-        + '<div class="avatar groupAvatar">📢</div>'
-        + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b> <span class="rowTime">' + gTime + '</span></div>'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + gPreviewClass + '">' + escapeHtml(gPreview) + (isAdmin ? ' (' + totalGroupMembers + ' members)' : '') + '</span>' + gUnreadHtml + '</div>'
-        + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
+                + '<div class="avatar groupAvatar">📢</div>'
+                + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b> <span class="rowTime">' + gTime + '</span></div>'
+                + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + gPreviewClass + '">' + escapeHtml(gPreview) + (isAdmin ? ' (' + totalGroupMembers + ' members)' : '') + '</span>' + gUnreadHtml + '</div>'
+                + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
       const htmlPeople = sorted.map(p => {
         const id = p._id || p;
         const name = displayNameFor(p) || '...';
@@ -849,10 +959,10 @@
         const previewClass = unread > 0 ? 'rowPreview unread' : 'rowPreview';
         const safeName = name.replace(/'/g, "\\'");
         return '<div class="row" onclick="openChat(\'' + id + '\',\'' + safeName + '\')">'
-          + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
-          + '<div class="rowInfo"><div class="rowTop"><b>' + escapeHtml(name) + '</b><span class="rowTime">' + timeText + '</span></div>'
-          + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
-          + '</div>';
+                    + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
+                    + '<div class="rowInfo"><div class="rowTop"><b>' + escapeHtml(name) + '</b><span class="rowTime">' + timeText + '</span></div>'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
+                    + '</div>';
       }).join('');
       const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px"> Loading chat please wait....<br>Follow someone to chat privately.</p>');
       if (html === lastRenderedListHtml) return;
@@ -877,6 +987,8 @@
     // ============================================================
     async function openChat(id, name) {
       isGroupChat = false;
+      // ADDED ONLY - hide admin group sidebar when leaving group chat
+      updateAdminGroupSidebarVisibility();
       document.getElementById('groupActions').style.display = 'none';
       chatWith = id;
       let realName = (name && !isIdLike(name)) ? name : displayNameFor(peopleCache.find(p => (p._id || p) === id) || id);
@@ -923,6 +1035,8 @@
     // ============================================================
     async function openGroupChat() {
       isGroupChat = true;
+      // ADDED ONLY - show admin group sidebar only if admin + in group chat
+      updateAdminGroupSidebarVisibility();
       chatWith = GROUP_ID;
       chatWithName = GROUP_NAME;
       document.getElementById('peopleList').style.display = 'none';
@@ -948,10 +1062,10 @@
         memberLine = '<div style="text-align:center;color:#888;font-size:12px;padding:6px">Only admin can send messages here</div>';
       }
       ga.innerHTML = memberLine + '<div class="groupAdminBar">'
-        + '<button onclick="viewAdminProfile()">👤 View Admin Profile</button>'
-        + (isAdmin ? '<button onclick="alert(\'This is your group\')">⚙️ You are Admin</button>' : '<button class="primary" onclick="messageAdmin()">💬 Message Admin</button>')
-        + '</div>'
-        + '<div class="groupNotice"> </div>';
+                + '<button onclick="viewAdminProfile()">👤 View Admin Profile</button>'
+                + (isAdmin ? '<button onclick="alert(\'This is your group\')">⚙️ You are Admin</button>' : '<button class="primary" onclick="messageAdmin()">💬 Message Admin</button>')
+                + '</div>'
+                + '<div class="groupNotice"> </div>';
       if (chatMeta[GROUP_ID]) chatMeta[GROUP_ID].unread = 0;
       updateBadge();
       saveMetaToStorage();
@@ -1157,6 +1271,9 @@
     // 8. BACK TO LIST
     // ============================================================
     function showList() {
+      // ADDED ONLY - hide admin group sidebar when back to list
+      isGroupChat = false;
+      updateAdminGroupSidebarVisibility();
       document.getElementById('peopleList').style.display = 'block';
       document.getElementById('chatBox').style.display = 'none';
       document.getElementById('inputRow').style.display = 'none';
@@ -1257,6 +1374,34 @@
       updateBadge();
       if (!chatWith) renderPeopleList();
     }
+
+    // ============================================================
+    // ADMIN GROUP SIDEBAR ONLY - ADDED - START ================
+    // ============================================================
+    // Shows sidebar button ONLY if isAdmin AND isGroupChat
+    // Sidebar has 2 side-link buttons only.
+    // ============================================================
+    function updateAdminGroupSidebarVisibility() {
+      var btn = document.getElementById('adminGroupSidebarBtn');
+      if (!btn) return;
+      if (isAdmin && isGroupChat) {
+        btn.style.display = 'block';
+      } else {
+        btn.style.display = 'none';
+        var sb = document.getElementById('adminGroupSidebar');
+        var ov = document.getElementById('adminGroupSidebarOverlay');
+        if (sb) sb.classList.remove('open');
+        if (ov) ov.classList.remove('open');
+      }
+    }
+    function toggleAdminGroupSidebar(open) {
+      if (!isAdmin || !isGroupChat) return;
+      document.getElementById('adminGroupSidebar').classList.toggle('open', open);
+      document.getElementById('adminGroupSidebarOverlay').classList.toggle('open', open);
+    }
+    // ============================================================
+    // ADMIN GROUP SIDEBAR ONLY - END ==========================
+    // ============================================================
 
     // ============================================================
     // 13. START + LIGHT POLL - 10s, open chat only, pause when hidden

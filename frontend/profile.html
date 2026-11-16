@@ -268,7 +268,6 @@
       height: 100%;
       object-fit: cover;
     }
-    /* NEW: Grey shimmer for follower row while name is loading - never shows ID */
     .mini.loadingMini {
       background: linear-gradient(90deg, #26262f 25%, #3a3a4a 50%, #26262f 75%);
       background-size: 200% 100%;
@@ -378,7 +377,6 @@
       margin-left: auto;
       flex-shrink: 0;
     }
-    /* ADDED ONLY - Loader for infinite scroll, shows "Loading more novels..." at bottom */
     .scrollLoader{ text-align:center; padding:16px; color:#888; display:none; }
     .scrollLoader .spinner{ width:28px; height:28px; border-width:3px; margin:0 auto 8px; }
   </style>
@@ -389,60 +387,34 @@
 
   <div class="top">
     <div class="card">
-
-      <!-- Loading bar - shows while profile is fetching -->
       <div class="loadingBar" id="loadingBar">
         <div class="spinner"></div>
         <span id="loadingBarText">Loading profile...</span>
       </div>
-
-      <!-- Avatar - click to edit if own profile -->
       <div class="avatar loading" id="avatar" onclick="if(isOwn) openEdit()">U</div>
-
-      <!-- Name -->
       <h3 id="name" style="margin:12px 0 2px">Loading...</h3>
-
-      <!-- Email line - kept empty for styling -->
       <p id="emailLine" style="color:#a78bfa;font-size:13px;margin:0"></p>
-
-      <!-- Bio -->
       <p id="bio" style="color:#aaa;font-size:14px;margin:8px 0">Loading...</p>
-
-      <!-- Link -->
       <a id="linkLine" href="#" target="_blank" style="color:#7dd3fc;font-size:13px;display:none"></a>
-
-      <!-- Stats -->
       <div class="stats">
         <div class="stat"><b id="postCount">...</b><span>novels</span></div>
         <div class="stat" onclick="showList('followers')"><b id="fCount">...</b><span>followers</span></div>
         <div class="stat" onclick="showList('following')"><b id="fgCount">...</b><span>following</span></div>
       </div>
-
-      <!-- Follow button - only on other people's profile -->
       <button id="followBtn" class="btn btn-follow loadingBtn" style="display:none" onclick="toggleFollow()">Loading...</button>
-
-      <!-- Write Novel button - only on own profile -->
       <a href="create.html" id="writeBtn" class="btn-write" style="display:none">+ Write Novel ✍️</a>
-
-      <!-- Message button - only on other people's profile -->
       <button id="msgBtn" class="btn" style="display:none;background:#262626;color:#fff" onclick="goMessage()">💬 Message</button>
-
-      <!-- Edit Profile button - only on own profile -->
       <button id="editBtn" class="btn" style="display:none;background:#262626;color:#fff;border:1px solid #555" onclick="openEdit()">✏️ Edit Profile</button>
-
     </div>
   </div>
 
-  <!-- Novels grid -->
   <div class="grid" id="grid">
     <div class="gcard loading"></div>
     <div class="gcard loading"></div>
   </div>
 
-  <!-- ADDED ONLY - Loader shown at bottom while next 8 novels are loading on scroll -->
   <div id="scrollLoader" class="scrollLoader"><div class="spinner"></div>Loading more novels...</div>
 
-  <!-- Followers / Following popup -->
   <div class="modal" id="listModal" onclick="if(event.target===this) closeList()">
     <div class="mbox">
       <div class="head"><b id="listTitle"></b><span onclick="closeList()" style="cursor:pointer">✕</span></div>
@@ -450,7 +422,6 @@
     </div>
   </div>
 
-  <!-- Edit Profile popup -->
   <div class="modal" id="editModal" onclick="if(event.target===this) closeEdit()">
     <div class="editBox" id="editBox">
       <div style="display:flex;justify-content:space-between;align-items:center"><b>Edit Profile</b><span onclick="closeEdit()" style="cursor:pointer;font-size:20px">✕</span></div>
@@ -469,7 +440,6 @@
     </div>
   </div>
 
-  <!-- Bottom navigation -->
   <div class="nav">
     <a href="feed.html">🏠</a>
     <a href="search.html">🔍</a>
@@ -480,16 +450,9 @@
   </div>
 
 <script>
-
-  // ============================================================
-  // WRDB - IndexedDB cache
-  // Saves profile + novels so page shows instantly on next visit
-  // ============================================================
   const WRDB = {
     dbName: 'WildReadersDB',
     storeName: 'cache',
-
-    // Open IndexedDB, create store if first time
     _open() {
       return new Promise((resolve, reject) => {
         const req = indexedDB.open(this.dbName, 1);
@@ -502,8 +465,6 @@
         req.onerror = () => reject(req.error);
       });
     },
-
-    // Save one key to cache
     async save(key, data) {
       try {
         const db = await this._open();
@@ -517,8 +478,6 @@
         return false;
       }
     },
-
-    // Get one key from cache
     async get(key) {
       try {
         const db = await this._open();
@@ -532,8 +491,6 @@
         return null;
       }
     },
-
-    // Delete one key from cache - needed so deleted post never comes back
     async delete(key) {
       try {
         const db = await this._open();
@@ -549,11 +506,6 @@
     }
   };
 
-  // ============================================================
-  // STRIP FOLLOW FIELDS BEFORE SAVING TO CACHE
-  // We never save followers / following to storage.
-  // They always come fresh from backend, so counts are never stale.
-  // ============================================================
   function stripFollowFields(user) {
     if (!user) {
       return null;
@@ -569,10 +521,6 @@
     WRDB.save('profile_' + profileIdToSave, safe);
   }
 
-  // ============================================================
-  // GET CACHE FAST WITH 500ms TIMEOUT
-  // So cache never blocks fresh fetch from server.
-  // ============================================================
   function getCacheFast(key) {
     return Promise.race([
       WRDB.get(key),
@@ -580,18 +528,10 @@
     ]);
   }
 
-  // Service worker for offline / PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
-  // ============================================================
-  // FIXED FETCH - NO ABORT
-  // OLD BUG: AbortController killed fetch at 9s -> (cancelled)
-  // NEW: No abort at all. Fetch runs until server answers.
-  // Also dedupes main profile/posts fetches.
-  // Per-person fill uses direct fetch (see fillOneFollowRow).
-  // ============================================================
   const _inFlight = new Map();
 
   function fetchFast(url) {
@@ -607,10 +547,6 @@
     return p;
   }
 
-  // ============================================================
-  // FETCH WITH NO CACHE - FIXES 304 NOT MODIFIED
-  // no-store + no-cache forces fresh data from backend every time.
-  // ============================================================
   function fetchNoCache(url) {
     if (_inFlight.has(url)) {
       return _inFlight.get(url);
@@ -629,10 +565,6 @@
     return p;
   }
 
-  // ============================================================
-  // SURVIVE NAVIGATION - Follow / Delete finishes even if you leave page
-  // fetch with keepalive + sendBeacon on pagehide.
-  // ============================================================
   let _pendingBeacon = [];
 
   function surviveFetch(url, method) {
@@ -666,9 +598,6 @@
     _pendingBeacon = [];
   });
 
-  // ============================================================
-  // LOADING UI - Spinner / Loading bar
-  // ============================================================
   let isProfileLoading = false;
 
   function showProfileLoading() {
@@ -712,10 +641,6 @@
     }
   }
 
-  // ============================================================
-  // PENDING QUEUE - Save action BEFORE fetch
-  // So leaving page never loses follow / unfollow / delete
-  // ============================================================
   function getPending() {
     try {
       return JSON.parse(localStorage.getItem('pending_actions') || '[]');
@@ -766,9 +691,6 @@
     }));
   }
 
-  // ============================================================
-  // CONFIG
-  // ============================================================
   const BASE = "https://raymond-web-rho.vercel.app";
   const token = localStorage.getItem('token');
   if (!token) {
@@ -783,32 +705,16 @@
     }
   }
 
-  // ============================================================
-  // GLOBAL STATE
-  // ============================================================
   let profileUser = null;
   let isOwn = false;
   let profileId = "";
   let newAvatarFile = null;
 
-  // ============================================================
-  // INFINITE SCROLL STATE - ADDED ONLY - 8 PER PAGE
-  // profilePage = which page we are on (1,2,3...)
-  // isLoadingPosts = true while fetching, stops double fetch
-  // hasMorePosts = false when server returns less than 8 = no more posts
-  // loadedPostIds = remembers IDs already shown, so we never show same novel twice
-  // ============================================================
   let profilePage = 1;
   let isLoadingPosts = false;
   let hasMorePosts = true;
   let loadedPostIds = new Set();
 
-  // ============================================================
-  // postCard - ADDED ONLY - builds ONE novel card HTML
-  // Before: this HTML was written twice inside load() (cache + fresh)
-  // Now: one function, used by cache, fresh load, and scroll load
-  // p = one post, returns HTML string for that post
-  // ============================================================
   function postCard(p){
     let cover = p.cover ? '<img src="' + p.cover + '" loading="lazy">' : '<div class="noimg">📖</div>';
     let delBtn = isOwn ? '<button class="btn-delete" onclick="deletePost(event,\'' + p._id + '\')">🗑️ Delete</button>' : '';
@@ -816,33 +722,77 @@
   }
 
   // ============================================================
-  // loadProfilePosts - ADDED ONLY - loads 8 novels at a time
-  // pageToLoad = 1 for first 8, 2 for next 8, 3 for next 8...
-  // isFirstLoad = true = replace grid, false = APPEND to grid (scroll)
-  // Uses new backend: GET /api/posts/user/:userId?page=1&limit=8
-  // If backend route not added yet, fallback uses old /api/posts and slices 8
+  // CHANGED ONLY - POST COUNT: SHOW REAL TOTAL, NEVER "8+"
+  // Why: loadProfilePosts only loads 8 at a time, so we never know
+  // the total from that call alone.
+  // Fix: fetch the true total once, in background.
+  // Tries: 1) /api/posts/user/:id/count  2) /api/posts/user/:id?limit=1000
+  //        3) /api/posts (fallback, filter by user)
+  // If all fail, falls back to loaded count. Never shows "8+".
   // ============================================================
+  async function updatePostCount() {
+    const el = document.getElementById('postCount');
+    if (!el) return;
+    // If we already know there are no more pages, loaded count IS the total
+    if (!hasMorePosts) {
+      el.innerText = loadedPostIds.size;
+      return;
+    }
+    try {
+      // Try 1 - dedicated count endpoint (if you add it later, this wins)
+      try {
+        const r = await fetchNoCache(BASE + '/api/posts/user/' + profileId + '/count');
+        if (r.ok) {
+          const d = await r.json();
+          const c = (typeof d === 'number') ? d : (d.count ?? d.total ?? d.length);
+          if (typeof c === 'number') { el.innerText = c; return; }
+        }
+      } catch (e) {}
+      // Try 2 - paginated endpoint with big limit, just to count
+      try {
+        const r2 = await fetchNoCache(BASE + '/api/posts/user/' + profileId + '?page=1&limit=1000');
+        if (r2.ok) {
+          const d2 = await r2.json();
+          const arr2 = Array.isArray(d2) ? d2 : (d2.posts || d2.data || []);
+          if (Array.isArray(arr2) && arr2.length) {
+            // If backend caps at 1000, this is still the true total for <1000 novels
+            // If it returns total field, use it
+            if (typeof d2.total === 'number') { el.innerText = d2.total; return; }
+            if (typeof d2.count === 'number') { el.innerText = d2.count; return; }
+            // If we got less than limit, that's the full total
+            if (arr2.length < 1000) { el.innerText = arr2.length; return; }
+          }
+        }
+      } catch (e) {}
+      // Try 3 - fallback: old /api/posts, filter by user
+      const r3 = await fetchNoCache(BASE + '/api/posts');
+      if (r3 && r3.ok) {
+        const all = await r3.json();
+        if (Array.isArray(all)) {
+          const mine = all.filter(p => (p.user?._id || p.user) === profileId);
+          el.innerText = mine.length;
+          return;
+        }
+      }
+    } catch (e) {}
+    // Last fallback - never show "8+", show what we loaded
+    el.innerText = loadedPostIds.size;
+  }
+
   async function loadProfilePosts(pageToLoad = 1, isFirstLoad = false){
-    // Stop if already loading or no more posts
     if(isLoadingPosts || !hasMorePosts) return;
     isLoadingPosts = true;
-    // Show bottom loader only on scroll, not on first load
     if(!isFirstLoad) document.getElementById('scrollLoader').style.display = 'block';
 
     try {
-      // Try new paginated endpoint first
       let res = await fetchNoCache(BASE + '/api/posts/user/' + profileId + '?page=' + pageToLoad + '&limit=8');
-      // Fallback: if backend route not added yet (404), use old /api/posts and slice 8
       if(!res.ok){
         const allRes = await fetchNoCache(BASE + '/api/posts');
         if(allRes && allRes.ok){
           const all = await allRes.json();
-          // Filter only this user's posts
           const mineAll = Array.isArray(all) ? all.filter(p => (p.user?._id || p.user) === profileId) : [];
-          // Take only 8 for this page: page 1 = 0-7, page 2 = 8-15...
           const start = (pageToLoad-1)*8;
           const pagePosts = mineAll.slice(start, start+8);
-          // Less than 8 = this was last page
           if(pagePosts.length < 8) hasMorePosts = false;
           if(isFirstLoad){
             document.getElementById('grid').innerHTML = pagePosts.length ? pagePosts.map(p=>postCard(p)).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
@@ -862,7 +812,6 @@
       let posts = await res.json();
       if(!Array.isArray(posts)) posts = [];
 
-      // No posts at all
       if(!posts.length){
         hasMorePosts = false;
         if(isFirstLoad) document.getElementById('grid').innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
@@ -870,17 +819,13 @@
         document.getElementById('scrollLoader').style.display = 'none';
         return;
       }
-      // Less than 8 returned = last page, no more to load
       if(posts.length < 8) hasMorePosts = false;
 
       if(isFirstLoad){
-        // First page - REPLACE loading skeletons
         document.getElementById('grid').innerHTML = posts.map(p=>postCard(p)).join('');
         posts.forEach(p=>loadedPostIds.add(String(p._id)));
-        // Cache first page for instant load next time
         WRDB.save('profile_posts_' + profileId, posts);
       } else {
-        // Scroll page - APPEND, never clear, skip duplicates
         let newPosts = posts.filter(p => !loadedPostIds.has(String(p._id)));
         newPosts.forEach(p=>loadedPostIds.add(String(p._id)));
         if(newPosts.length) document.getElementById('grid').innerHTML += newPosts.map(p=>postCard(p)).join('');
@@ -898,12 +843,6 @@
     isLoadingPosts = false;
   }
 
-  // ============================================================
-  // SCROLL LISTENER - ADDED ONLY
-  // When user scrolls to 300px before bottom, load next 8
-  // window.innerHeight + scrollY = how far you scrolled
-  // document.body.scrollHeight - 300 = near bottom
-  // ============================================================
   window.addEventListener('scroll', () => {
     if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 300){
       if(!isLoadingPosts && hasMorePosts && profileId){
@@ -912,9 +851,6 @@
     }
   });
 
-  // ============================================================
-  // FETCH FOLLOW DATA - RETURNS IMMEDIATELY FROM MEMORY
-  // ============================================================
   async function fetchFollowFromBackend(userId) {
     if (profileUser && String(profileId) === String(userId) && profileUser.followers) {
       return {
@@ -949,16 +885,9 @@
     }
   }
 
-  // ============================================================
-  // LOAD - MAIN FUNCTION
-  // 1. Show cache instantly
-  // 2. Fetch USER - spinner stops HERE
-  // 3. Fetch POSTS in background (NOW 8 PER PAGE - see loadProfilePosts)
-  // ============================================================
   async function load() {
     profileId = new URLSearchParams(location.search).get('id') || getMyId();
     isOwn = profileId === getMyId();
-    // Reset pagination on fresh load - start again from page 1
     profilePage = 1; isLoadingPosts = false; hasMorePosts = true; loadedPostIds = new Set();
     showProfileLoading();
     retryPending().catch(() => {});
@@ -991,10 +920,8 @@
         }
 
         if (Array.isArray(cachedMine) && cachedMine.length) {
-          // Cached first page only - show it, scroll will load more from server
           document.getElementById('grid').innerHTML = cachedMine.map(p => postCard(p)).join('');
           cachedMine.forEach(p=>loadedPostIds.add(String(p._id)));
-          // Cache had 8 = there may be more, keep hasMore true so scroll fetches page 2
           profilePage = 1;
           if(cachedMine.length < 8) hasMorePosts = false;
         }
@@ -1022,7 +949,6 @@
     }
 
     try {
-      // STEP A - FETCH USER FIRST
       const r1 = await fetchNoCache(BASE + '/api/users/' + profileId).catch(() => null);
 
       if (r1 && r1.ok) {
@@ -1071,36 +997,21 @@
         saveProfileToStorage(profileId, profileUser);
       }
 
-      // STOP SPINNER HERE - followers/following already returned
       hideProfileLoading();
       isProfileLoading = false;
 
-      // STEP B - FETCH POSTS IN BACKGROUND - NOW 8 PER PAGE
-      // CHANGED: Before it fetched ALL posts via /api/posts then filtered.
-      // Now it calls loadProfilePosts(1, true) which fetches only first 8.
-      // If we already showed cache, we refresh page 1 fresh to sync.
+      // CHANGED ONLY - was: if(hasMorePosts) postCount = '8+' else postCount = loaded size
+      // Now: always call updatePostCount() - shows real total, never "8+"
       if(hasCache){
-        // We already show cache - now refresh page 1 fresh
-        // Reset dedup to allow fresh page 1 to re-render
         loadedPostIds = new Set();
         hasMorePosts = true;
         profilePage = 1;
         isLoadingPosts = false;
         await loadProfilePosts(1, true);
-        // postCount: if hasMore = there are more than 8, show "8+" until all loaded
-        // else exact count = loaded IDs
-        if(hasMorePosts){
-          document.getElementById('postCount').innerText = '8+';
-        } else {
-          document.getElementById('postCount').innerText = loadedPostIds.size;
-        }
+        await updatePostCount();
       } else {
         await loadProfilePosts(1, true);
-        if(hasMorePosts){
-          document.getElementById('postCount').innerText = '8+';
-        } else {
-          document.getElementById('postCount').innerText = loadedPostIds.size;
-        }
+        await updatePostCount();
       }
 
     } catch (e) {
@@ -1113,24 +1024,17 @@
     }
   }
 
-  // ============================================================
-  // TOGGLE FOLLOW - FAST + OPTIMISTIC
-  // ============================================================
   async function toggleFollow() {
     if (isProfileLoading && !profileUser) {
       return;
     }
-
     const fb = document.getElementById('followBtn');
     const fCountEl = document.getElementById('fCount');
     const wasFollowing = fb.innerText === 'Following';
     const myId = getMyId();
-
     const action = wasFollowing ? 'unfollow' : 'follow';
     const url = BASE + '/api/users/' + profileId + '/' + action;
-
     fb.disabled = true;
-
     if (wasFollowing) {
       fb.innerText = 'Follow';
       fb.className = 'btn btn-follow';
@@ -1149,10 +1053,8 @@
         profileUser.followers.push(myId);
       }
     }
-
     savePending({ url: url, method: 'POST' });
     fb.disabled = false;
-
     try {
       const result = await surviveFetch(url, 'POST');
       if (!result.ok || result.data.ok === false) {
@@ -1172,19 +1074,14 @@
     }
   }
 
-  // ============================================================
-  // UNFOLLOW FROM LIST
-  // ============================================================
   async function unfollowFromList(userId, btnEl) {
     if (btnEl) {
       btnEl.innerText = '...';
       btnEl.disabled = true;
     }
-
     const rowEl = btnEl ? btnEl.closest('.row') : document.getElementById('follow-row-' + userId);
     const savedRowHTML = rowEl ? rowEl.outerHTML : '';
     const savedFg = parseInt(document.getElementById('fgCount').innerText) || 0;
-
     if (rowEl) {
       rowEl.remove();
     }
@@ -1199,10 +1096,8 @@
     if (body && !body.querySelector('.row')) {
       body.innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
     }
-
     const url = BASE + '/api/users/' + userId + '/unfollow';
     savePending({ url: url, method: 'POST' });
-
     try {
       const result = await surviveFetch(url, 'POST');
       if (!result.ok || result.data.ok === false) {
@@ -1229,28 +1124,12 @@
     }
   }
 
-  // ============================================================
-  // FIXED - BUILD FOLLOW ROW - NEVER SHOWS USER ID AS TEXT
-  // OLD BUG:
-  //   const name = (u && u.username) || String(id);
-  //   If username missing, it showed the ID like "6aec93388c..."
-  // NEW:
-  //   If username missing -> show grey shimmer "Loading..." placeholder
-  //   If avatar missing -> show grey shimmer circle, NOT first letter of ID
-  //   ID is ONLY used in id="follow-row-..." and onclick="...?id=..."
-  //   which are hidden attributes, never visible text.
-  // ============================================================
   function buildFollowRow(u, type) {
     const id = (u && u._id) || u;
-
-    // Has real data? Use it. No data? Show Loading placeholder, NEVER id.
     const hasName = u && typeof u === 'object' && u.username;
     const hasAvatar = u && typeof u === 'object' && u.avatar;
-
     const nameText = hasName ? u.username : 'Loading...';
     const nameClass = hasName ? 'followName' : 'followName loadingName';
-
-    // Avatar: real picture, or first letter of NAME, or grey shimmer if no name yet
     let avatarHTML = '';
     let avatarClass = 'mini';
     if (hasAvatar) {
@@ -1258,31 +1137,21 @@
     } else if (hasName) {
       avatarHTML = u.username[0].toUpperCase();
     } else {
-      // No name yet - grey shimmer circle, no letter, no ID
       avatarHTML = '';
       avatarClass = 'mini loadingMini';
     }
-
     const unfollowBtn = (isOwn && type === 'following') ? '<button class="btn-mini-unfollow" onclick="event.stopPropagation(); unfollowFromList(\'' + id + '\', this)">Unfollow</button>' : '';
-
     return '<div class="row" id="follow-row-' + id + '" onclick="location.href=\'profile.html?id=' + id + '\'"><div class="' + avatarClass + '" id="follow-avatar-' + id + '">' + avatarHTML + '</div><div><b class="' + nameClass + '" id="follow-name-' + id + '">' + nameText + '</b></div>' + unfollowBtn + '</div>';
   }
 
-  // ============================================================
-  // FIXED - FILL ONE ROW
-  // Uses direct fetch (no shared Response) and when it fills,
-  // it also REMOVES the loading shimmer classes.
-  // ============================================================
   async function fillOneFollowRow(userOrId) {
     if (userOrId && typeof userOrId === 'object' && userOrId.username) {
       return;
     }
-
     const userId = (userOrId && userOrId._id) || userOrId;
     if (!userId) {
       return;
     }
-
     try {
       const res = await fetch(BASE + '/api/users/' + userId, {
         headers: {
@@ -1291,26 +1160,19 @@
         },
         cache: 'no-store'
       });
-
       if (!res.ok) {
         return;
       }
-
       const data = await res.json();
       const fullUser = data.user || data;
-
       if (!fullUser || !fullUser.username) {
         return;
       }
-
-      // Fill name + remove shimmer
       const nameEl = document.getElementById('follow-name-' + userId);
       if (nameEl) {
         nameEl.innerText = fullUser.username;
         nameEl.classList.remove('loadingName');
       }
-
-      // Fill avatar + remove shimmer
       const avEl = document.getElementById('follow-avatar-' + userId);
       if (avEl) {
         avEl.classList.remove('loadingMini');
@@ -1320,32 +1182,22 @@
           avEl.innerHTML = fullUser.username[0].toUpperCase();
         }
       }
-    } catch (e) {
-      // Ignore - row stays as Loading... placeholder, never ID
-    }
+    } catch (e) {}
   }
 
-  // ============================================================
-  // FIXED - SHOW LIST
-  // Try batch first. If batch 404, fill every row one by one.
-  // Rows start as Loading... shimmer, never ID.
-  // ============================================================
   async function showList(type) {
     document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
     document.getElementById('listModal').classList.add('open');
-
     let instantList = [];
     if (profileUser) {
       instantList = type === 'followers' ? (profileUser.followers || []) : (profileUser.following || []);
     }
-
     if (instantList.length) {
       document.getElementById('listBody').innerHTML = instantList.map(u => buildFollowRow(u, type)).join('');
     } else {
       document.getElementById('listBody').innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
       return;
     }
-
     try {
       const res = await fetch(BASE + '/api/users/' + profileId + '/' + type, {
         headers: {
@@ -1354,17 +1206,14 @@
         },
         cache: 'no-store'
       });
-
       if (res.ok) {
         const data = await res.json();
         const freshList = data[type] || [];
-
         if (freshList.length) {
           if (!document.getElementById('listModal').classList.contains('open')) {
             return;
           }
           document.getElementById('listBody').innerHTML = freshList.map(u => buildFollowRow(u, type)).join('');
-
           if (profileUser) {
             if (type === 'followers') {
               profileUser.followers = freshList;
@@ -1376,13 +1225,10 @@
           return;
         }
       }
-
-      // Batch 404 / empty - fallback fill one by one
       for (let i = 0; i < instantList.length; i += 5) {
         const chunk = instantList.slice(i, i + 5);
         await Promise.all(chunk.map(u => fillOneFollowRow(u)));
       }
-
     } catch (e) {
       for (let i = 0; i < instantList.length; i += 5) {
         const chunk = instantList.slice(i, i + 5);
@@ -1399,9 +1245,6 @@
     location.href = 'message.html?to=' + profileId;
   }
 
-  // ============================================================
-  // DELETE POST
-  // ============================================================
   async function deletePost(e, postId) {
     e.stopPropagation();
     if (!isOwn) {
@@ -1410,32 +1253,28 @@
     if (!confirm('Delete this novel? This cannot be undone.')) {
       return;
     }
-
     const btn = e.target;
     const card = btn.closest('.gcard');
     const savedHTML = card ? card.outerHTML : '';
     const savedCount = parseInt(document.getElementById('postCount').innerText) || 0;
     const grid = document.getElementById('grid');
     const countEl = document.getElementById('postCount');
-
     btn.innerText = 'Deleting...';
     btn.disabled = true;
-
     if (card) {
       card.remove();
     }
-    // ADDED ONLY - remove from loaded IDs so it never comes back on scroll
     loadedPostIds.delete(String(postId));
-    if (countEl && !String(countEl.innerText).includes('+')) {
+    // CHANGED ONLY - was: if count does NOT include '+' then decrement.
+    // Now count is always a real number, so always decrement.
+    if (countEl) {
       countEl.innerText = Math.max(0, savedCount - 1);
     }
     if (grid && !grid.querySelector('.gcard')) {
       grid.innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
     }
-
     const url = BASE + '/api/posts/' + postId;
     savePending({ url: url, method: 'DELETE' });
-
     try {
       await WRDB.delete('profile_posts_' + profileId);
       await WRDB.delete('profile_' + profileId);
@@ -1446,7 +1285,6 @@
       }
       localStorage.setItem('deleted_post_ids', JSON.stringify(del));
     } catch (err) {}
-
     try {
       const result = await surviveFetch(url, 'DELETE');
       if (!result.ok || result.data.ok === false) {
@@ -1464,14 +1302,10 @@
       if (countEl) {
         countEl.innerText = savedCount;
       }
-      // ADDED ONLY - put back ID if delete failed
       loadedPostIds.add(String(postId));
     }
   }
 
-  // ============================================================
-  // EDIT PROFILE
-  // ============================================================
   function openEdit() {
     if (!isOwn) {
       return;
@@ -1523,7 +1357,6 @@
       const username = document.getElementById('editName').value.trim();
       const bio = document.getElementById('editBio').value.trim();
       const link = document.getElementById('editLink').value.trim();
-
       const res1 = await fetch(BASE + '/api/users/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', authorization: token },
@@ -1533,7 +1366,6 @@
       if (!res1.ok) {
         throw new Error('Could not save profile');
       }
-
       if (newAvatarFile) {
         const fd = new FormData();
         fd.append('file', newAvatarFile);
@@ -1547,7 +1379,6 @@
           throw new Error('Could not save picture');
         }
       }
-
       alert('Profile updated! ✅');
       closeEdit();
       load();
@@ -1573,11 +1404,7 @@
     load();
   }
 
-  // ============================================================
-  // START - Only load() here.
-  // ============================================================
   load();
-
 </script>
 </body>
 </html>
