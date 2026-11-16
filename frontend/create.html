@@ -176,6 +176,15 @@
         }
 
         alert('Published! 🎉');
+        // ============================================================
+        // NEW - PROFILE ONCE A DAY + INSTANT NEW POST - SAVES DATA
+        // Profile fetch is once per day, but when you make a new post
+        // we set this flag. Profile.html sees it, ignores the 24h
+        // timer ONCE, fetches fresh instantly, then clears the flag.
+        // So new post shows instantly, next opens go back to 24h.
+        // Followers / Following are NOT affected - they stay live.
+        // ============================================================
+        localStorage.setItem('profile_force_refresh', '1');
         location.href = 'profile.html';
 
       } catch (e) {

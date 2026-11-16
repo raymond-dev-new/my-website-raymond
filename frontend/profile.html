@@ -397,7 +397,7 @@
       <p id="bio" style="color:#aaa;font-size:14px;margin:8px 0">Loading...</p>
       <a id="linkLine" href="#" target="_blank" style="color:#7dd3fc;font-size:13px;display:none"></a>
       <div class="stats">
-        <div class="stat"><b id="postCount">...</b><span>novels</span></div>
+        <!-- REMOVED - Post count number removed to save data. No more novels count, no fetch to count it. -->
         <div class="stat" onclick="showList('followers')"><b id="fCount">...</b><span>followers</span></div>
         <div class="stat" onclick="showList('following')"><b id="fgCount">...</b><span>following</span></div>
       </div>
@@ -519,6 +519,34 @@
   function saveProfileToStorage(profileIdToSave, user) {
     const safe = stripFollowFields(user);
     WRDB.save('profile_' + profileIdToSave, safe);
+  }
+
+  // ============================================================
+  // NEW - FOLLOW COUNTS CACHE (small, separate from profile)
+  // We save only 2 numbers: followers count + following count.
+  // So even when profile is 24h cached, we can still show
+  // followers / following instantly, then refresh them live.
+  // ============================================================
+  function saveFollowCounts(profileIdToSave, followersLen, followingLen) {
+    try {
+      localStorage.setItem('profile_follow_counts_' + profileIdToSave, JSON.stringify({
+        f: followersLen,
+        fg: followingLen,
+        time: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  function getFollowCounts(profileIdToSave) {
+    try {
+      const raw = localStorage.getItem('profile_follow_counts_' + profileIdToSave);
+      if (!raw) {
+        return null;
+      }
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
   }
 
   function getCacheFast(key) {
@@ -722,104 +750,57 @@
   }
 
   // ============================================================
-  // CHANGED ONLY - POST COUNT: SHOW REAL TOTAL, NEVER "8+"
-  // Why: loadProfilePosts only loads 8 at a time, so we never know
-  // the total from that call alone.
-  // Fix: fetch the true total once, in background.
-  // Tries: 1) /api/posts/user/:id/count  2) /api/posts/user/:id?limit=1000
-  //        3) /api/posts (fallback, filter by user)
-  // If all fail, falls back to loaded count. Never shows "8+".
+  // REMOVED - updatePostCount() DELETED COMPLETELY
+  // No more fetch to count posts, no more post count number.
+  // This saves data: no limit=1000 fetch, no /api/posts fetch.
+  // Followers / Following are NOT touched.
   // ============================================================
-  async function updatePostCount() {
-    const el = document.getElementById('postCount');
-    if (!el) return;
-    // If we already know there are no more pages, loaded count IS the total
-    if (!hasMorePosts) {
-      el.innerText = loadedPostIds.size;
-      return;
-    }
-    try {
-      // Try 1 - dedicated count endpoint (if you add it later, this wins)
-      try {
-        const r = await fetchNoCache(BASE + '/api/posts/user/' + profileId + '/count');
-        if (r.ok) {
-          const d = await r.json();
-          const c = (typeof d === 'number') ? d : (d.count ?? d.total ?? d.length);
-          if (typeof c === 'number') { el.innerText = c; return; }
-        }
-      } catch (e) {}
-      // Try 2 - paginated endpoint with big limit, just to count
-      try {
-        const r2 = await fetchNoCache(BASE + '/api/posts/user/' + profileId + '?page=1&limit=1000');
-        if (r2.ok) {
-          const d2 = await r2.json();
-          const arr2 = Array.isArray(d2) ? d2 : (d2.posts || d2.data || []);
-          if (Array.isArray(arr2) && arr2.length) {
-            // If backend caps at 1000, this is still the true total for <1000 novels
-            // If it returns total field, use it
-            if (typeof d2.total === 'number') { el.innerText = d2.total; return; }
-            if (typeof d2.count === 'number') { el.innerText = d2.count; return; }
-            // If we got less than limit, that's the full total
-            if (arr2.length < 1000) { el.innerText = arr2.length; return; }
-          }
-        }
-      } catch (e) {}
-      // Try 3 - fallback: old /api/posts, filter by user
-      const r3 = await fetchNoCache(BASE + '/api/posts');
-      if (r3 && r3.ok) {
-        const all = await r3.json();
-        if (Array.isArray(all)) {
-          const mine = all.filter(p => (p.user?._id || p.user) === profileId);
-          el.innerText = mine.length;
-          return;
-        }
-      }
-    } catch (e) {}
-    // Last fallback - never show "8+", show what we loaded
-    el.innerText = loadedPostIds.size;
-  }
 
   async function loadProfilePosts(pageToLoad = 1, isFirstLoad = false){
-    if(isLoadingPosts || !hasMorePosts) return;
+    if(isLoadingPosts || !hasMorePosts) {
+      return;
+    }
     isLoadingPosts = true;
-    if(!isFirstLoad) document.getElementById('scrollLoader').style.display = 'block';
+    if(!isFirstLoad) {
+      document.getElementById('scrollLoader').style.display = 'block';
+    }
 
     try {
       let res = await fetchNoCache(BASE + '/api/posts/user/' + profileId + '?page=' + pageToLoad + '&limit=8');
+
+      // ============================================================
+      // FIX - NO MORE FALLBACK THAT DOWNLOADS ALL POSTS - SAVES DATA
+      // Before: if user posts failed, it fetched /api/posts (ALL posts
+      // from ALL users) just to filter one user. That was huge.
+      // Now: if user posts fail, just stop. Show cached / empty.
+      // ============================================================
       if(!res.ok){
-        const allRes = await fetchNoCache(BASE + '/api/posts');
-        if(allRes && allRes.ok){
-          const all = await allRes.json();
-          const mineAll = Array.isArray(all) ? all.filter(p => (p.user?._id || p.user) === profileId) : [];
-          const start = (pageToLoad-1)*8;
-          const pagePosts = mineAll.slice(start, start+8);
-          if(pagePosts.length < 8) hasMorePosts = false;
-          if(isFirstLoad){
-            document.getElementById('grid').innerHTML = pagePosts.length ? pagePosts.map(p=>postCard(p)).join('') : '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
-            pagePosts.forEach(p=>loadedPostIds.add(String(p._id)));
-          } else {
-            const newPosts = pagePosts.filter(p=>!loadedPostIds.has(String(p._id)));
-            newPosts.forEach(p=>loadedPostIds.add(String(p._id)));
-            if(newPosts.length) document.getElementById('grid').innerHTML += newPosts.map(p=>postCard(p)).join('');
-          }
-          profilePage = pageToLoad;
-          isLoadingPosts = false;
-          document.getElementById('scrollLoader').style.display = 'none';
-          return;
-        }
-      }
-
-      let posts = await res.json();
-      if(!Array.isArray(posts)) posts = [];
-
-      if(!posts.length){
         hasMorePosts = false;
-        if(isFirstLoad) document.getElementById('grid').innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        if(isFirstLoad && !document.querySelector('#grid .gcard:not(.loading)')){
+          document.getElementById('grid').innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        }
         isLoadingPosts = false;
         document.getElementById('scrollLoader').style.display = 'none';
         return;
       }
-      if(posts.length < 8) hasMorePosts = false;
+
+      let posts = await res.json();
+      if(!Array.isArray(posts)) {
+        posts = [];
+      }
+
+      if(!posts.length){
+        hasMorePosts = false;
+        if(isFirstLoad) {
+          document.getElementById('grid').innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
+        }
+        isLoadingPosts = false;
+        document.getElementById('scrollLoader').style.display = 'none';
+        return;
+      }
+      if(posts.length < 8) {
+        hasMorePosts = false;
+      }
 
       if(isFirstLoad){
         document.getElementById('grid').innerHTML = posts.map(p=>postCard(p)).join('');
@@ -828,7 +809,9 @@
       } else {
         let newPosts = posts.filter(p => !loadedPostIds.has(String(p._id)));
         newPosts.forEach(p=>loadedPostIds.add(String(p._id)));
-        if(newPosts.length) document.getElementById('grid').innerHTML += newPosts.map(p=>postCard(p)).join('');
+        if(newPosts.length) {
+          document.getElementById('grid').innerHTML += newPosts.map(p=>postCard(p)).join('');
+        }
       }
       profilePage = pageToLoad;
     } catch(e) {
@@ -879,23 +862,79 @@
   function applyFollowFromBackend(followers, following) {
     document.getElementById('fCount').innerText = (followers || []).length;
     document.getElementById('fgCount').innerText = (following || []).length;
+    // NEW - Save follow counts separately so cached profile can still show them
+    saveFollowCounts(profileId, (followers || []).length, (following || []).length);
     if (profileUser) {
       profileUser.followers = followers || [];
       profileUser.following = following || [];
     }
   }
 
+  // ============================================================
+  // NEW - REFRESH FOLLOW ONLY (ALWAYS LIVE, NOT 24H)
+  // This runs even when profile + posts are 24h cached.
+  // It fetches ONLY /api/users/:id to update:
+  // - followers count, following count
+  // - Follow / Following button state
+  // It does NOT touch posts, bio, avatar, or the 24h timer.
+  // So followers stay live while profile stays cached.
+  // ============================================================
+  async function refreshFollowOnly() {
+    try {
+      const res = await fetchNoCache(BASE + '/api/users/' + profileId).catch(() => null);
+      if (!res || !res.ok) {
+        return;
+      }
+      const data = await res.json();
+      const freshUser = data.user || data;
+      const followers = freshUser.followers || [];
+      const following = freshUser.following || [];
+      // Update numbers on page
+      applyFollowFromBackend(followers, following);
+      // Update Follow button if viewing someone else
+      if (!isOwn) {
+        const fb = document.getElementById('followBtn');
+        if (fb) {
+          const amIFollowing = followers.some(f => (f._id || f) === getMyId());
+          fb.style.display = 'block';
+          fb.innerText = amIFollowing ? 'Following' : 'Follow';
+          fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
+          fb.disabled = false;
+        }
+      }
+      // Keep profileUser follow lists fresh for showList()
+      if (profileUser) {
+        profileUser.followers = followers;
+        profileUser.following = following;
+      }
+    } catch (e) {}
+  }
+
   async function load() {
     profileId = new URLSearchParams(location.search).get('id') || getMyId();
     isOwn = profileId === getMyId();
-    profilePage = 1; isLoadingPosts = false; hasMorePosts = true; loadedPostIds = new Set();
+    profilePage = 1;
+    isLoadingPosts = false;
+    hasMorePosts = true;
+    loadedPostIds = new Set();
     showProfileLoading();
     retryPending().catch(() => {});
 
-    // ONCE PER DAY PER USER - only for OTHER users, not own profile
-    // Each profileId has its own timer, so you can still fetch different users
+    // ============================================================
+    // 24H RULE - PROFILE + POSTS ONLY, NOT FOLLOWERS
+    // Profile + posts fetch = once per day per user.
+    // Followers / Following = ALWAYS live via refreshFollowOnly().
+    // If you just made a new post / edited / deleted, create.html
+    // / saveProfile / deletePost sets profile_force_refresh = 1,
+    // then this load ignores 24h timer once and fetches fresh.
+    // ============================================================
     let skipFreshFetch = false;
-    if (!isOwn) {
+    const forceRefresh = localStorage.getItem('profile_force_refresh') === '1';
+    if (forceRefresh) {
+      localStorage.removeItem('profile_force_refresh');
+      localStorage.removeItem('profile_last_fetch_' + profileId);
+      skipFreshFetch = false;
+    } else {
       const lastFetch = Number(localStorage.getItem('profile_last_fetch_' + profileId) || 0);
       if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
         skipFreshFetch = true;
@@ -929,11 +968,20 @@
           document.getElementById('avatar').classList.remove('loading');
         }
 
+        // NEW - Show cached follow counts instantly (from last fresh fetch)
+        const cachedCounts = getFollowCounts(profileId);
+        if (cachedCounts) {
+          document.getElementById('fCount').innerText = cachedCounts.f;
+          document.getElementById('fgCount').innerText = cachedCounts.fg;
+        }
+
         if (Array.isArray(cachedMine) && cachedMine.length) {
           document.getElementById('grid').innerHTML = cachedMine.map(p => postCard(p)).join('');
           cachedMine.forEach(p=>loadedPostIds.add(String(p._id)));
           profilePage = 1;
-          if(cachedMine.length < 8) hasMorePosts = false;
+          if(cachedMine.length < 8) {
+            hasMorePosts = false;
+          }
         }
 
         if (isOwn) {
@@ -950,23 +998,20 @@
       }
     } catch (e) {}
 
-    // If same other user fetched within 24h and we have cache - STOP, no fresh fetch
+    // If same user was fetched within 24h and we have cache - STOP profile/posts fetch
+    // BUT still refresh FOLLOWERS live in background, then return.
     if (skipFreshFetch && hasCache) {
       hideProfileLoading();
-      // Show cached counts - follower counts from cache are empty (stripped), so keep what cache gave
-      // Post count = cached posts count if we don't know more
-      const pcEl = document.getElementById('postCount');
-      if (pcEl && pcEl.innerText === '...') pcEl.innerText = loadedPostIds.size;
-      // Follow button: we don't have fresh follower list, keep it as Follow (user can still tap)
-      const fb2 = document.getElementById('followBtn');
-      if (fb2 && !isOwn) { fb2.innerText = 'Follow'; fb2.className = 'btn btn-follow'; fb2.disabled = false; }
+      // REMOVED - No more postCount update here. Post count number is gone.
+      // NEW - Followers still fetch + update even in cached mode
+      refreshFollowOnly();
       return;
     }
 
     if (!hasCache) {
       document.getElementById('name').innerText = 'Loading...';
       document.getElementById('bio').innerText = 'Loading...';
-      document.getElementById('postCount').innerText = '...';
+      // REMOVED - No more postCount = '...' . Post count is gone.
       document.getElementById('fCount').innerText = '...';
       document.getElementById('fgCount').innerText = '...';
     }
@@ -1018,27 +1063,23 @@
         }
 
         saveProfileToStorage(profileId, profileUser);
-        // Save 24h timer for THIS user only
-        if (!isOwn) {
-          localStorage.setItem('profile_last_fetch_' + profileId, String(Date.now()));
-        }
+        // Save 24h timer for THIS user - profile + posts only, not followers
+        localStorage.setItem('profile_last_fetch_' + profileId, String(Date.now()));
       }
 
       hideProfileLoading();
       isProfileLoading = false;
 
-      // CHANGED ONLY - was: if(hasMorePosts) postCount = '8+' else postCount = loaded size
-      // Now: always call updatePostCount() - shows real total, never "8+"
       if(hasCache){
         loadedPostIds = new Set();
         hasMorePosts = true;
         profilePage = 1;
         isLoadingPosts = false;
         await loadProfilePosts(1, true);
-        await updatePostCount();
+        // REMOVED - No more await updatePostCount(). Post count is gone.
       } else {
         await loadProfilePosts(1, true);
-        await updatePostCount();
+        // REMOVED - No more await updatePostCount(). Post count is gone.
       }
 
     } catch (e) {
@@ -1055,6 +1096,7 @@
     if (isProfileLoading && !profileUser) {
       return;
     }
+    // NEW - Follow is ALWAYS live, never blocked by 24h profile cache
     const fb = document.getElementById('followBtn');
     const fCountEl = document.getElementById('fCount');
     const wasFollowing = fb.innerText === 'Following';
@@ -1080,6 +1122,8 @@
         profileUser.followers.push(myId);
       }
     }
+    // NEW - Save new count so cached profile shows correct number next time
+    saveFollowCounts(profileId, parseInt(fCountEl.innerText) || 0, parseInt(document.getElementById('fgCount').innerText) || 0);
     savePending({ url: url, method: 'POST' });
     fb.disabled = false;
     try {
@@ -1088,6 +1132,8 @@
         throw new Error(result.data.error || 'failed');
       }
       removePending(url, 'POST');
+      // NEW - After follow/unfollow succeeds, refresh follow counts live from backend
+      refreshFollowOnly();
     } catch (e) {
       if (wasFollowing) {
         fb.innerText = 'Following';
@@ -1098,6 +1144,7 @@
         fb.className = 'btn btn-follow';
         fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
       }
+      saveFollowCounts(profileId, parseInt(fCountEl.innerText) || 0, parseInt(document.getElementById('fgCount').innerText) || 0);
     }
   }
 
@@ -1119,6 +1166,8 @@
     if (fg) {
       fg.innerText = Math.max(0, savedFg - 1);
     }
+    // NEW - Save new following count so cached profile stays correct
+    saveFollowCounts(profileId, parseInt(document.getElementById('fCount').innerText) || 0, parseInt(fg.innerText) || 0);
     const body = document.getElementById('listBody');
     if (body && !body.querySelector('.row')) {
       body.innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
@@ -1131,6 +1180,8 @@
         throw new Error('failed');
       }
       removePending(url, 'POST');
+      // NEW - Refresh follow counts live after unfollow from list
+      refreshFollowOnly();
     } catch (e) {
       alert('Could not unfollow. Will retry on next load.');
       if (savedRowHTML && body) {
@@ -1142,6 +1193,7 @@
       if (fg) {
         fg.innerText = savedFg;
       }
+      saveFollowCounts(profileId, parseInt(document.getElementById('fCount').innerText) || 0, savedFg);
       if (profileUser) {
         if (!profileUser.following) {
           profileUser.following = [];
@@ -1213,6 +1265,7 @@
   }
 
   async function showList(type) {
+    // NEW - Followers / Following list is ALWAYS live, never 24h cached
     document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
     document.getElementById('listModal').classList.add('open');
     let instantList = [];
@@ -1283,20 +1336,15 @@
     const btn = e.target;
     const card = btn.closest('.gcard');
     const savedHTML = card ? card.outerHTML : '';
-    const savedCount = parseInt(document.getElementById('postCount').innerText) || 0;
+    // REMOVED - No more savedCount / postCount logic. Post count number is gone.
     const grid = document.getElementById('grid');
-    const countEl = document.getElementById('postCount');
     btn.innerText = 'Deleting...';
     btn.disabled = true;
     if (card) {
       card.remove();
     }
     loadedPostIds.delete(String(postId));
-    // CHANGED ONLY - was: if count does NOT include '+' then decrement.
-    // Now count is always a real number, so always decrement.
-    if (countEl) {
-      countEl.innerText = Math.max(0, savedCount - 1);
-    }
+    // REMOVED - No more countEl.innerText update. Post count is gone.
     if (grid && !grid.querySelector('.gcard')) {
       grid.innerHTML = '<p style="grid-column:1/3;text-align:center;color:#777">No novels yet. Write your first one! ✨</p>';
     }
@@ -1311,6 +1359,8 @@
         del.push(postId);
       }
       localStorage.setItem('deleted_post_ids', JSON.stringify(del));
+      // NEW - After delete, force fresh on next profile open so deleted post stays gone
+      localStorage.setItem('profile_force_refresh', '1');
     } catch (err) {}
     try {
       const result = await surviveFetch(url, 'DELETE');
@@ -1326,9 +1376,7 @@
         }
         grid.insertAdjacentHTML('beforeend', savedHTML);
       }
-      if (countEl) {
-        countEl.innerText = savedCount;
-      }
+      // REMOVED - No more countEl restore. Post count is gone.
       loadedPostIds.add(String(postId));
     }
   }
@@ -1408,6 +1456,8 @@
       }
       alert('Profile updated! ✅');
       closeEdit();
+      // NEW - After edit, force fresh on next load so new name/bio/avatar shows instantly
+      localStorage.setItem('profile_force_refresh', '1');
       load();
     } catch (e) {
       alert(e.message);
@@ -1428,6 +1478,8 @@
     });
     alert('Picture removed');
     closeEdit();
+    // NEW - After remove avatar, force fresh so it shows instantly
+    localStorage.setItem('profile_force_refresh', '1');
     load();
   }
 

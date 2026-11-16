@@ -44,7 +44,7 @@ async function load(){
   } catch(e) {}
   // 2. First time ever OR 24 hours passed - fetch once to save first 10
   try {
-    const res = await fetch(BASE+'/api/posts/feed?page=1&limit=20', {headers:{authorization:token}});
+    const res = await fetch(BASE+'/api/posts/feed?page=1&limit=10', {headers:{authorization:token}});
     let posts = await res.json();
     if(!Array.isArray(posts)) posts = posts.posts || [];
     let first10 = posts.slice(0,10);
