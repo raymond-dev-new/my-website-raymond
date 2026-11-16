@@ -9,7 +9,7 @@
     /* ============================= */
     /* BASIC PAGE SETUP              */
     /* ============================= */
-        * {
+    * {
       box-sizing: border-box;
     }
     body {
@@ -80,7 +80,9 @@
     .chat {
       max-width: 600px;
       margin: 0 auto;
-      padding: 0 16px 170px 16px; /* FIXED - 170px bottom so last msg sits above input + nav */
+      /* CHANGED ONLY - was 170px, that caused the big empty space in your screenshot */
+      /* 110px is just enough to sit above input + nav */
+      padding: 0 16px 110px 16px;
       display: none; /* Hidden until you open a chat */
     }
     /* ============================= */
@@ -442,9 +444,9 @@
     </div>
     <div class="adminGroupSideBody">
       <!-- SIDE LINK 1 - Save Picture - same format you gave -->
-      <div class="side-link"><span>🖼️</span> <a href="media.html"> Save Picture </a></div>
+      <div class="side-link"><span>🖼️</span> <a href="save-picture.html"> Save Picture </a></div>
       <!-- SIDE LINK 2 - Save Note - same format you gave -->
-      <div class="side-link"><span>📝</span> <a href="note.html"> Save Note </a></div>
+      <div class="side-link"><span>📝</span> <a href="save-note.html"> Save Note </a></div>
     </div>
   </div>
   <!-- ADMIN GROUP SIDEBAR ONLY - END =================== -->
@@ -458,7 +460,8 @@
   <div class="chat" id="chatBox"></div>
 
   <!-- ================= GROUP ACTIONS ================= -->
-  <div id="groupActions" style="display:none; max-width:600px; margin:0 auto; padding:0 16px 170px 16px;"></div>
+  <!-- CHANGED ONLY - was 170px, now 110px - same reason as .chat -->
+  <div id="groupActions" style="display:none; max-width:600px; margin:0 auto; padding:0 16px 110px 16px;"></div>
 
   <!-- ================= INPUT ROW ================= -->
   <div class="inputRow" id="inputRow">
@@ -942,10 +945,10 @@
       const gPreviewClass = gUnread > 0 ? 'rowPreview unread' : 'rowPreview';
       const memberText = isAdmin ? ' • ' + totalGroupMembers + ' members' : '';
       const groupRow = '<div class="row" onclick="openGroupChat()" style="background:#1a1405;border-bottom:1px solid #2a2200">'
-                + '<div class="avatar groupAvatar">📢</div>'
-                + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b> <span class="rowTime">' + gTime + '</span></div>'
-                + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + gPreviewClass + '">' + escapeHtml(gPreview) + (isAdmin ? ' (' + totalGroupMembers + ' members)' : '') + '</span>' + gUnreadHtml + '</div>'
-                + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
+        + '<div class="avatar groupAvatar">📢</div>'
+        + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b> <span class="rowTime">' + gTime + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + gPreviewClass + '">' + escapeHtml(gPreview) + (isAdmin ? ' (' + totalGroupMembers + ' members)' : '') + '</span>' + gUnreadHtml + '</div>'
+        + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
       const htmlPeople = sorted.map(p => {
         const id = p._id || p;
         const name = displayNameFor(p) || '...';
@@ -959,10 +962,10 @@
         const previewClass = unread > 0 ? 'rowPreview unread' : 'rowPreview';
         const safeName = name.replace(/'/g, "\\'");
         return '<div class="row" onclick="openChat(\'' + id + '\',\'' + safeName + '\')">'
-                    + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
-                    + '<div class="rowInfo"><div class="rowTop"><b>' + escapeHtml(name) + '</b><span class="rowTime">' + timeText + '</span></div>'
-                    + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
-                    + '</div>';
+          + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
+          + '<div class="rowInfo"><div class="rowTop"><b>' + escapeHtml(name) + '</b><span class="rowTime">' + timeText + '</span></div>'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
+          + '</div>';
       }).join('');
       const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px"> Loading chat please wait....<br>Follow someone to chat privately.</p>');
       if (html === lastRenderedListHtml) return;
@@ -1062,10 +1065,10 @@
         memberLine = '<div style="text-align:center;color:#888;font-size:12px;padding:6px">Only admin can send messages here</div>';
       }
       ga.innerHTML = memberLine + '<div class="groupAdminBar">'
-                + '<button onclick="viewAdminProfile()">👤 View Admin Profile</button>'
-                + (isAdmin ? '<button onclick="alert(\'This is your group\')">⚙️ You are Admin</button>' : '<button class="primary" onclick="messageAdmin()">💬 Message Admin</button>')
-                + '</div>'
-                + '<div class="groupNotice"> </div>';
+        + '<button onclick="viewAdminProfile()">👤 View Admin Profile</button>'
+        + (isAdmin ? '<button onclick="alert(\'This is your group\')">⚙️ You are Admin</button>' : '<button class="primary" onclick="messageAdmin()">💬 Message Admin</button>')
+        + '</div>'
+        + '<div class="groupNotice"> </div>';
       if (chatMeta[GROUP_ID]) chatMeta[GROUP_ID].unread = 0;
       updateBadge();
       saveMetaToStorage();
