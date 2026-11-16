@@ -1,1288 +1,281 @@
 
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Messages</title>
-  <style>
-    /* ============================= */
-    /* BASIC PAGE SETUP              */
-    /* ============================= */
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      background: #0a0a12;
-      color: #fff;
-      font-family: Arial;
-      padding-top: 62px; /* FIXED - space for fixed top bar */
-      padding-bottom: 90px; /* Space for bottom nav */
-    }
-    /* ============================= */
-    /* TOP BAR - FIXED, NEVER SCROLLS */
-    /* ============================= */
-    .top {
-      position: fixed; /* FIXED */
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100; /* FIXED - above messages */
-      background: #0a0a12; /* FIXED - messages don't show through */
-      border-bottom: 1px solid #1a1a1a; /* FIXED */
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    /* ============================= */
-    /* PEOPLE LIST (CHAT LIST)      */
-    /* ============================= */
-    .list {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    /* One row in the list - one person */
-    .row {
-      display: flex;
-      gap: 12px;
-      padding: 14px 16px;
-      border-bottom: 1px solid #1a1a1a;
-      cursor: pointer;
-      align-items: center;
-    }
-    /* ============================= */
-    /* AVATAR - CIRCLE PROFILE PIC   */
-    /* ============================= */
-    .avatar {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: linear-gradient(45deg, #7c3aed, #ec4899);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    /* ============================= */
-    /* CHAT BOX                      */
-    /* ============================= */
-    .chat {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 0 16px 170px 16px; /* FIXED - 170px bottom so last msg sits above input + nav */
-      display: none; /* Hidden until you open a chat */
-    }
-    /* ============================= */
-    /* MESSAGE BUBBLE                */
-    /* ============================= */
-    .msg {
-      max-width: 75%;
-      padding: 11px 15px;
-      border-radius: 18px;
-      margin: 8px 0;
-      font-size: 14px;
-      line-height: 1.4;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: break-word;
-    }
-    /* My message - purple */
-    .mine {
-      background: linear-gradient(90deg, #7c3aed, #ec4899);
-      margin-left: auto;
-    }
-    /* Their message - dark grey */
-    .theirs {
-      background: #26262f;
-    }
-    /* ============================= */
-    /* INPUT ROW - TYPE MESSAGE      */
-    /* ============================= */
-    .inputRow {
-      position: fixed;
-      bottom: 48px;
-      left: 0;
-      right: 0;
-      z-index: 100; /* FIXED - stays above messages */
-      max-width: 600px;
-      margin: 0 auto;
-      display: none; /* Hidden until chat is opened */
-      gap: 8px;
-      padding: 10px;
-      background: #0a0a12;
-      align-items: flex-end;
-    }
-    .inputRow textarea {
-      flex: 1;
-      background: #1e1e2a;
-      border: 1px solid #333;
-      border-radius: 24px;
-      color: #fff;
-      padding: 13px;
-      outline: none;
-      font-family: Arial;
-      font-size: 14px;
-      resize: none;
-      max-height: 120px;
-      overflow-y: auto;
-      line-height: 1.4;
-    }
-    .inputRow button {
-      background: linear-gradient(90deg, #7c3aed, #ec4899);
-      color: #fff;
-      border: none;
-      border-radius: 24px;
-      padding: 0 20px;
-      font-weight: 700;
-      height: 44px;
-      flex-shrink: 0;
-    }
-    /* ============================= */
-    /* BOTTOM NAVIGATION             */
-    /* ============================= */
-    .nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(10, 10, 18, .95);
-      border-top: 1px solid #262626;
-      display: flex;
-      justify-content: space-around;
-      padding: 14px 0;
-      z-index: 100;
-    }
-    .nav a {
-      color: #fff;
-      text-decoration: none;
-      font-size: 22px;
-    }
-    /* ============================= */
-    /* MESSAGE WRAPPER               */
-    /* ============================= */
-    .msgWrap {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      background: transparent !important;
-      margin: 2px 0;
-    }
-    .msgWrap.mine {
-      align-items: flex-end;
-    }
-    .msgWrap.theirs {
-      align-items: flex-start;
-    }
-    /* Bubble inside wrapper */
-    .msg {
-      width: fit-content;
-      max-width: 75%;
-      padding: 10px 14px;
-      border-radius: 16px;
-      font-size: 14px;
-      line-height: 1.4;
-      word-break: break-word;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
-    }
-    .msg.mine {
-      background: linear-gradient(90deg, #7c3aed, #ec4899);
-      border-bottom-right-radius: 4px;
-      align-self: flex-end;
-    }
-    .msg.theirs {
-      background: #26262f;
-      border-bottom-left-radius: 4px;
-      align-self: flex-start;
-    }
-    /* ============================= */
-    /* DELETE BUTTON                 */
-    /* ============================= */
-    .delBtn {
-      background: rgba(0, 0, 0, .25);
-      color: #fff;
-      border: none;
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      cursor: pointer;
-      margin-top: 3px;
-      opacity: .7;
-    }
-    /* ============================= */
-    /* CHAT HEADER - TOP OF CHAT     */
-    /* ============================= */
-    .chatHeaderInfo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-    }
-    .chatHeaderInfo .avatar {
-      width: 36px;
-      height: 36px;
-      font-size: 14px;
-    }
-    /* ============================= */
-    /* ROW INFO - NAME + PREVIEW     */
-    /* ============================= */
-    .rowInfo {
-      flex: 1;
-      min-width: 0;
-    }
-    .rowTop {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-    .rowPreview {
-      font-size: 12px;
-      color: #888;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 200px;
-    }
-    .rowPreview.unread {
-      color: #fff;
-      font-weight: 700;
-    }
-    .rowTime {
-      font-size: 11px;
-      color: #777;
-      flex-shrink: 0;
-    }
-    .chatUnread {
-      background: #ff3b30;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 800;
-      min-width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 5px;
-      margin-left: 6px;
-      flex-shrink: 0;
-    }
-    /* ================================================= */
-    /* ===== GROUP ONLY - ADDED - START ================= */
-    /* ================================================= */
-    .groupBadge {
-      background: #f59e0b;
-      color: #000;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 999px;
-      margin-left: 4px;
-    }
-    .groupAvatar {
-      background: linear-gradient(45deg, #f59e0b, #ec4899) !important;
-      font-size: 22px !important;
-    }
-    .groupNotice {
-      text-align: center;
-      color: #888;
-      font-size: 12px;
-      padding: 10px;
-      background: #1a1a1a;
-      border-radius: 12px;
-      margin: 10px 0;
-      white-space: pre-wrap;
-    }
-    .groupAdminBar {
-      display: flex;
-      gap: 8px;
-      padding: 10px 0;
-    }
-    .groupAdminBar button {
-      flex: 1;
-      background: #26262f;
-      color: #fff;
-      border: 1px solid #333;
-      padding: 10px;
-      border-radius: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .groupAdminBar button.primary {
-      background: linear-gradient(90deg, #7c3aed, #ec4899);
-      border: none;
-    }
-    /* ===== GROUP ONLY - END =========================== */
-  </style>
-</head>
-<body>
-
-  <!-- ================= TOP BAR - FIXED ================= -->
-  <div class="top">
-    <div class="chatHeaderInfo" id="chatHeaderInfo" onclick="goToChatProfile()">
-      <b id="topTitle">💬 Messages</b>
-      <span id="chatHeaderAvatar" style="display: none;"></span>
-    </div>
-    <span onclick="showList()" style="cursor: pointer; display: none;" id="backBtn">← Back</span>
+<html><head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Feed</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0a0a12;color:#fff;font-family:Arial;padding-bottom:90px}
+.top{max-width:935px;margin:0 auto;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);z-index:10}
+.logo{font-family:cursive;font-size:26px;background:linear-gradient(90deg,#a78bfa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.section{max-width:935px;margin:0 auto;padding:14px 16px 4px}
+.section h3{margin:0}
+.section p{color:#888;font-size:12px;margin:4px 0}
+.grid{max-width:935px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:10px 16px}
+.card{background:#16161f;border:1px solid #26262f;border-radius:18px;overflow:hidden;cursor:pointer;transition:.2s}
+.card:active{transform:scale(.97)}
+.cover{position:relative;width:100%;height:220px;background:#222}
+.cover img{width:100%;height:100%;object-fit:cover}
+.noimg{width:100%;height:100%;background:linear-gradient(135deg,#7c3aed,#ec4899,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:56px}
+.pin{position:absolute;top:10px;left:10px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.body{padding:12px}
+.title{font-size:14px;font-weight:800;line-height:1.3;min-height:36px}
+.meta{font-size:12px;color:#999;margin-top:8px;display:flex;gap:10px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,18,.95);backdrop-filter:blur(12px);border-top:1px solid #262626;display:flex;justify-content:space-around;padding:14px 0}
+.nav a{color:#fff;text-decoration:none;font-size:22px}
+.nav a.active{transform:scale(1.25)}
+button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-weight:700}
+.sidebar{position:fixed;top:0;left:-260px;width:250px;height:100%;background:#14141d;border-right:1px solid #262626;z-index:100;transition:left .3s;padding:20px}
+.sidebar.open{left:0}
+.sidebar a{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;padding:13px 12px;border-radius:12px;font-size:15px;font-weight:700;margin-top:6px}
+.sidebar a:hover,.sidebar a.active{background:#26262f}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99}
+.sidebar-overlay.open{display:block}
+.side-link{padding:14px 16px;background:#1a1a1a;border:1px solid #262626;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.menuBtn{background:none!important;border:none!important;color:#fff!important;font-size:22px!important;padding:0 8px 0 0!important;cursor:pointer}
+.spinner{width:42px;height:42px;margin:18px auto 10px;border:4px solid #26262f;border-top:4px solid #ec4899;border-right:4px solid #a78bfa;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.loadMore{grid-column:1/3;text-align:center;color:#888;padding:16px 0;font-size:13px}
+</style>
+</head><body>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <b style="font-size:20px">WildReaders ✨</b>
+    <span onclick="toggleSidebar()" style="cursor:pointer;font-size:20px">✕</span>
   </div>
-
-  <!-- ================= PEOPLE LIST ================= -->
-  <div class="list" id="peopleList">
-    <p style="text-align: center; color: #777; padding: 30px;">Loading people...</p>
+  <div class="side-link ball"><span>🏆</span> League Match </div>
+  <div class="side-link Country"><span>🌍</span> Country Match </div>
+  <div class="side-link"><span>🗝️🔐</span> <a href="resetpassword.html"> Reset Password </a></div>
+  <div class="side-link"><span>📊</span> <a href="next.html"> Games </a></div>
+</div>
+<div class="top">
+  <div style="display:flex;align-items:center;gap:6px">
+    <button type="button" class="menuBtn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+    <b class="logo">WildReaders ✨</b>
   </div>
-
-  <!-- ================= CHAT BOX ================= -->
-  <div class="chat" id="chatBox"></div>
-
-  <!-- ================= GROUP ACTIONS ================= -->
-  <div id="groupActions" style="display:none; max-width:600px; margin:0 auto; padding:0 16px 170px 16px;"></div>
-
-  <!-- ================= INPUT ROW ================= -->
-  <div class="inputRow" id="inputRow">
-    <textarea id="msgInput" rows="1" placeholder="Type message...&#10;Enter = new line + space"></textarea>
-    <button onclick="sendMsg()">Send</button>
-  </div>
-
-  <!-- ================= BOTTOM NAV ================= -->
-  <div class="nav">
-    <a href="feed.html">🏠</a>
-    <a href="search.html">🔍</a>
-    <a href="create.html">✍️</a>
-    <a href="message.html">💬</a>
-    <a href="diary.html">📖</a>
-    <a href="profile.html">👤</a>
-  </div>
-
-  <script>
-    const WRDB = {
-      dbName: 'WildReadersDB',
-      storeName: 'cache',
-      _open() {
-        return new Promise((resolve, reject) => {
-          const req = indexedDB.open(this.dbName, 1);
-          req.onupgradeneeded = () => {
-            if (!req.result.objectStoreNames.contains(this.storeName)) {
-              req.result.createObjectStore(this.storeName);
-            }
-          };
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      },
-      async save(key, data) {
-        try {
-          const db = await this._open();
-          return new Promise((resolve) => {
-            const tx = db.transaction(this.storeName, 'readwrite');
-            tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
-            tx.oncomplete = () => resolve(true);
-            tx.onerror = () => resolve(false);
-          });
-        } catch (e) { return false; }
-      },
-      async get(key) {
-        const realGet = (async () => {
-          try {
-            const db = await this._open();
-            return new Promise((resolve) => {
-              const tx = db.transaction(this.storeName, 'readonly');
-              const req = tx.objectStore(this.storeName).get(key);
-              req.onsuccess = () => resolve(req.result ? req.result.data : null);
-              req.onerror = () => resolve(null);
-            });
-          } catch (e) { return null; }
-        })();
-        const timeout = new Promise(r => setTimeout(() => r(null), 500));
-        return Promise.race([realGet, timeout]);
-      }
-    };
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-    function formatMessageText(text) {
-      const safe = String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      return safe.replace(/\n/g, '<br>');
-    }
-    function handleChatKey(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const el = document.getElementById('msgInput');
-        if (!el) return;
-        const start = el.selectionStart || 0;
-        const end = el.selectionEnd || 0;
-        const before = el.value.slice(0, start);
-        const after = el.value.slice(end);
-        el.value = before + "\n " + after;
-        const newPos = start + 2;
-        el.selectionStart = el.selectionEnd = newPos;
-        autoGrowInput();
-      }
-    }
-    function autoGrowInput() {
-      const el = document.getElementById('msgInput');
-      if (!el) return;
-      el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-    }
-    document.addEventListener('DOMContentLoaded', () => {
-      const el = document.getElementById('msgInput');
-      if (el) {
-        el.addEventListener('keydown', handleChatKey);
-        el.addEventListener('input', autoGrowInput);
-      }
+  <button id="logoutBtn"> Logout</button>
+</div>
+<div class="section" id="pinSec" style="display:none">
+  <h3>📌 Pinned For You</h3>
+  <p id="pinCountdown">3 random novels stay here for 3 days</p>
+</div>
+<div class="grid" id="pinnedGrid"></div>
+<div class="section">
+  <h3>📚 Discover Stories</h3>
+  <p>Tap any cover to read</p>
+</div>
+<div class="grid" id="feedGrid">
+  <div style="grid-column:1/3;text-align:center;color:#777"><div class="spinner"></div><p style="text-align:center;color:#777">Loading stories... <br> updating page usually take 1 minutes + please stay on page while is still loading</p></div>
+</div>
+<div id="scrollLoader" style="display:none;text-align:center;padding:16px;color:#888"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto 8px"></div>Loading more stories...</div>
+<div class="nav">
+  <a href="feed.html" class="active">🏠</a>
+  <a href="search.html">🔍</a>
+  <a href="create.html">✍️</a>
+  <a href="message.html">💬</a>
+  <a href="diary.html">📖</a>
+  <a href="profile.html">👤</a>
+</div>
+<script>
+const WRDB = {
+  dbName: 'WildReadersDB',
+  storeName: 'cache',
+  _open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.dbName, 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains(this.storeName)) {
+          req.result.createObjectStore(this.storeName);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
-    
-    (function attachChatInputNow() {
-      const el = document.getElementById('msgInput');
-      if (el && !el.dataset.lbBound) {
-        el.dataset.lbBound = '1';
-        el.addEventListener('keydown', handleChatKey);
-        el.addEventListener('input', autoGrowInput);
-      }
-    })();
-
-    // ============================================================
-    // 1. SETUP - BASE URL + LOGIN CHECK
-    // ============================================================
-    const BASE = "https://raymond-web-rho.vercel.app";
-    const token = localStorage.getItem('token');
-    if (!token) location.href = "login.html";
-
-    function getMyId() {
-      try {
-        return JSON.parse(atob(token.split('.')[1])).id;
-      } catch {
-        return "";
-      }
-    }
-    function getMyEmailFromToken() {
-      try {
-        const fromToken = (JSON.parse(atob(token.split('.')[1])).email || "").toLowerCase().trim();
-        if (fromToken) return fromToken;
-      } catch {}
-      return (localStorage.getItem('userEmail') || localStorage.getItem('myEmail') || "").toLowerCase().trim();
-    }
-
-    // ============================================================
-    // 1B. GROUP CONFIG - ADDED ONLY - DO NOT CHANGE EMAIL
-    // ============================================================
-    const ADMIN_EMAIL = "letswintrade@gmail.com";
-    const GROUP_ID = "ADMIN_GROUP";
-    const GROUP_NAME = "📢 WildReaders";
-    let isAdmin = (getMyEmailFromToken() === ADMIN_EMAIL) || (localStorage.getItem('isAdmin') === 'true');
-    let myEmail = getMyEmailFromToken();
-    let adminUserId = isAdmin ? getMyId() : "";
-    let adminUserName = "LetsWin";
-    let adminUserAvatar = "";
-    let totalGroupMembers = 0;
-    let isGroupChat = false;
-
-    let profileCache = {};
-    function isIdLike(str) {
-      if (!str) return true;
-      const s = String(str).trim();
-      return /^[0-9a-f]{20,}$/i.test(s) || /^[0-9a-f]{8}-[0-9a-f-]{10,}$/i.test(s);
-    }
-    function displayNameFor(p) {
-      const id = p._id || p;
-      if (typeof p === 'object' && p.username && !isIdLike(p.username)) return p.username;
-      if (profileCache[id] && profileCache[id].username && !isIdLike(profileCache[id].username)) return profileCache[id].username;
-      return '';
-    }
-    function displayAvatarFor(p) {
-      const id = p._id || p;
-      if (typeof p === 'object' && p.avatar) return p.avatar;
-      if (profileCache[id] && profileCache[id].avatar) return profileCache[id].avatar;
-      return '';
-    }
-    function displayInitialFor(p) {
-      const name = displayNameFor(p);
-      if (name) return name[0].toUpperCase();
-      return '•';
-    }
-    async function fetchProfileForId(id) {
-      if (!id || id === GROUP_ID || profileCache[id]) return profileCache[id] || null;
-      try {
-        const r = await fetch(BASE + '/api/users/' + id, { headers: { authorization: token } });
-        if (!r.ok) return null;
-        const d = await r.json();
-        const u = d.user || d;
-        if (u && u.username && !isIdLike(u.username)) {
-          profileCache[id] = { username: u.username, avatar: u.avatar || '' };
-          const found = peopleCache.find(x => (x._id || x) === id);
-          if (found && typeof found === 'object') { 
-          found.username = u.username;
-          if (u.avatar) found.avatar = u.avatar; 
-         }
-          return profileCache[id];
-        }
-      } catch {}
-      return null;
-    }
-
-    async function enrichProfiles() {
-      const missing = peopleCache
-        .map(p => p._id || p)
-        .filter(id => id && id !== GROUP_ID && !displayNameFor(peopleCache.find(x => (x._id || x) === id) || id));
-      if (!missing.length) return;
-      await Promise.all(missing.map(id => fetchProfileForId(id)));
-      savePeopleToStorage();
-      renderPeopleList();
-    }
-
-    // ============================================================
-    // 2. STATE
-    // ============================================================
-    let chatWith = null;
-    let chatWithName = '';
-    let chatWithAvatar = '';
-    let peopleCache = [];
-    let chatMeta = {};
-    let lastRenderedListHtml = '';
-    let lastRenderedChatHtml = '';
-
-    // ============================================================
-    // 2B. SAFE STORAGE
-    // ============================================================
-    const MAX_MSGS_PER_CHAT = 30;
-    const MAX_CHATS_SAVED = 15;
-    const MAX_PEOPLE_SAVED = 50;
-    function getPeopleCacheKey() { return 'msg_people_' + getMyId(); }
-    function getMetaCacheKey() { return 'msg_meta_' + getMyId(); }
-    function getChatCacheKey(otherId) { return 'msg_chat_' + getMyId() + '_' + otherId; }
-    function getChatOrderKey() { return 'msg_order_' + getMyId(); }
-
-    function safeSetItem(key, value) {
-      try {
-         localStorage.setItem(key, value); 
-         return true; 
-       } catch (e) {
-        const freed = deleteOldestChatFromStorage();
-        if (freed) { try { localStorage.setItem(key, value); return true; } catch (e2) {} }
-        try { clearAllMessageCache(); localStorage.setItem(key, value); return true; } catch (e3) { return false; }
-      }
-    }
-
-    function getChatOrder() {
-      try { 
-        const raw = localStorage.getItem(getChatOrderKey()); 
-        const arr = raw ? JSON.parse(raw) : [];
-        return Array.isArray(arr) ? arr : [];
-      } catch { return []; }
-    }
-
-    function touchChatInOrder(otherId) {
-      let order = getChatOrder().filter(id => id !== otherId);
-      order.push(otherId);
-      if (order.length > MAX_CHATS_SAVED) order = order.slice(order.length - MAX_CHATS_SAVED);
-      try { localStorage.setItem(getChatOrderKey(), JSON.stringify(order)); } catch {}
-    }
-    
-    function deleteOldestChatFromStorage() {
-      const order = getChatOrder();
-      if (!order.length) return false;
-      const oldestId = order[0];
-      try { localStorage.removeItem(getChatCacheKey(oldestId)); } catch {}
-      const newOrder = order.slice(1);
-      try { localStorage.setItem(getChatOrderKey(), JSON.stringify(newOrder)); } catch {}
-      return true;
-    }
-
-    function clearAllMessageCache() {
-      const order = getChatOrder();
-      for (const id of order) { try { localStorage.removeItem(getChatCacheKey(id)); } catch {} }
-      try { localStorage.removeItem(getChatOrderKey()); } catch {}
-    }
-    function trimMessages(msgs) {
-      if (!Array.isArray(msgs)) return [];
-      const last = msgs.slice(-MAX_MSGS_PER_CHAT);
-      return last.map(m => ({
-         _id: m._id,
-          from: (m.from?._id || m.from),
-          text: String(m.text || '').slice(0, 2000), 
-          createdAt: m.createdAt || '' 
-        }));
-    }
-
-    function savePeopleToStorage() {
-      const slim = (peopleCache || []).slice(0, MAX_PEOPLE_SAVED).map(p => ({
-        _id: p._id || p,
-        username: (typeof p === 'object' && p.username && !isIdLike(p.username)) ? p.username : (profileCache[p._id || p]?.username || ''),
-        avatar: (typeof p === 'object' ? (p.avatar || '') : '') || (profileCache[p._id || p]?.avatar || '')
-      }));
-      safeSetItem(getPeopleCacheKey(), JSON.stringify(slim));
-      WRDB.save(getPeopleCacheKey(), slim);
-    }
-
-    function saveMetaToStorage() {
-      safeSetItem(getMetaCacheKey(), JSON.stringify(chatMeta));
-      WRDB.save(getMetaCacheKey(), chatMeta);
-    }
-
-    function saveMessagesToStorage(otherId, msgs) {
-      const trimmed = trimMessages(msgs);
-      touchChatInOrder(otherId);
-      let order = getChatOrder();
-      if (order.length > MAX_CHATS_SAVED) deleteOldestChatFromStorage();
-      safeSetItem(getChatCacheKey(otherId), JSON.stringify(trimmed));
-      WRDB.save(getChatCacheKey(otherId), trimmed);
-    }
-
-    function loadMessagesFromStorage(otherId) {
-      try { 
-        const raw = localStorage.getItem(getChatCacheKey(otherId));
-         if (!raw) return [];
-         const arr = JSON.parse(raw);
-         return Array.isArray(arr) ? arr : [];
-        } catch { return []; }
-    }
-
-    async function loadMessagesFromWRDB(otherId) {
-      const data = await WRDB.get(getChatCacheKey(otherId));
-      return Array.isArray(data) ? data : [];
-    }
-
-    function loadCacheAtStart() {
-      try {
-        const peopleRaw = localStorage.getItem(getPeopleCacheKey());
-        if (peopleRaw) {
-           const parsed = JSON.parse(peopleRaw); 
-           if (Array.isArray(parsed) && parsed.length) peopleCache = parsed; 
-        }
-        const metaRaw = localStorage.getItem(getMetaCacheKey());
-        if (metaRaw) {
-           const parsed = JSON.parse(metaRaw);
-           if (parsed && typeof parsed === 'object') chatMeta = parsed; 
-        }
-      } catch {}
-    }
-
-    async function loadCacheFromWRDBAtStart() {
-      try {
-        if (!peopleCache.length) { 
-          const p = await WRDB.get(getPeopleCacheKey());
-          if (Array.isArray(p) && p.length) peopleCache = p; 
-        }
-        const m = await WRDB.get(getMetaCacheKey());
-        if (m && typeof m === 'object') {
-           if (!Object.keys(chatMeta).length) chatMeta = m; 
-        }
-      } catch {}
-    }
-
-    function getReadKey(otherId) { return 'read_' + getMyId() + '_' + otherId; }
-    function getLastReadId(otherId) { return localStorage.getItem(getReadKey(otherId)) || ''; }
-    function saveLastReadId(otherId, msgId) { if (msgId) safeSetItem(getReadKey(otherId), msgId); }
-
-    // ============================================================
-    // 2C. GROUP HELPERS
-    // ============================================================
-    async function identifyAdminAndMembers() {
-      if (getMyEmailFromToken() === ADMIN_EMAIL) { 
-        isAdmin = true;
-        if (!adminUserId) adminUserId = getMyId(); 
-      }
-      if (isAdmin) {
-        if (!adminUserId) adminUserId = getMyId();
-        if (!chatMeta[GROUP_ID]) { chatMeta[GROUP_ID] = { lastText: 'Tap to view announcements', lastTime: 0, unread: 0, lastMsgId: '' }; saveMetaToStorage(); }
-        fetch(BASE + '/api/group-members-count', { headers: { authorization: token } })
-          .then(r => r.ok ? r.json() : null)
-          .then(d => { if (d && d.count != null) { totalGroupMembers = d.count; if (!chatWith) renderPeopleList(); } })
-          .catch(() => {});
-        return;
-      }
-      try {
-        const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
-        const meData = await meRes.json();
-        const me = meData.user || meData;
-        if (me) {
-          if (me.email) myEmail = String(me.email).toLowerCase();
-          if (myEmail === ADMIN_EMAIL) {
-             isAdmin = true;
-             adminUserId = getMyId();
-             adminUserName = me.username || "LetsWin";
-             adminUserAvatar = me.avatar || ""; 
-          }
-        }
-      } catch {}
-      if (!isAdmin) {
-        try {
-          const r = await fetch(BASE + '/api/admin-user', { headers: { authorization: token } });
-          if (r.ok) {
-             const d = await r.json();
-             const adm = d.user || d;
-             if (adm && adm._id) { adminUserId = adm._id;
-             adminUserName = adm.username || "LetsWin";
-             adminUserAvatar = adm.avatar || ""; } 
-          }
-        } catch {}
-      }
-      if (!chatMeta[GROUP_ID]) { 
-         chatMeta[GROUP_ID] = { 
-         lastText: 'Tap to view announcements',
-         lastTime: 0,
-         unread: 0, 
-         lastMsgId: '' 
-        };
-       saveMetaToStorage(); 
-     }
-    }
-
-    async function getGroupMessages() {
-      try {
-        const res = await fetch(BASE + '/api/group-messages', { headers: { authorization: token } });
-        if (res.ok) {
-           const msgs = await res.json(); 
-           if (Array.isArray(msgs)) return msgs; 
-        }
-      } catch {}
-      const fromWRDB = await loadMessagesFromWRDB(GROUP_ID);
-      if (fromWRDB.length) return fromWRDB;
-      return loadMessagesFromStorage(GROUP_ID);
-    }
-
-    async function sendGroupMessage(text) {
-      const res = await fetch(BASE + '/api/group-messages', { method: 'POST', headers: { 'Content-Type': 'application/json', authorization: token }, body: JSON.stringify({ text }) });
-      return res.ok;
-    }
-
-    // ============================================================
-    // 3. LOAD PEOPLE
-    // ============================================================
-    async function loadPeople() {
-      loadCacheAtStart();
-      await loadCacheFromWRDBAtStart();
-      renderPeopleList();
-      updateBadge();
-      identifyAdminAndMembers();
-      renderPeopleList();
-      updateBadge();
-      const toEarly = new URLSearchParams(location.search).get('to');
-      if (toEarly) {
-        if (toEarly === GROUP_ID) { openGroupChat(); } else {
-          const foundEarly = peopleCache.find(p => (p._id || p) === toEarly);
-          openChat(toEarly, displayNameFor(foundEarly || toEarly) || '');
-        }
-      }
-      try {
-        const meRes = await fetch(BASE + '/api/users/' + getMyId(), { headers: { authorization: token } });
-        const meData = await meRes.json();
-        const me = meData.user || meData;
-        if (me && me.email && String(me.email).toLowerCase().trim() === ADMIN_EMAIL) { isAdmin = true; adminUserId = getMyId(); }
-        let people = [...(me.followers || []), ...(me.following || [])];
-        let seen = {};
-        people = people.filter(p => { 
-          let id = p._id || p;
-           if (seen[id]) return false;
-           seen[id] = true;
-           return id !== getMyId(); 
-        });
-        peopleCache = people;
-        savePeopleToStorage();
-        identifyAdminAndMembers();
-        renderPeopleList();
-        enrichProfiles();
-        await refreshRecentAndUnread(true);
-        await refreshGroupMeta(true);
-        const to = new URLSearchParams(location.search).get('to');
-        if (to && !chatWith) {
-          if (to === GROUP_ID) { openGroupChat(); } else {
-            const found = people.find(p => (p._id || p) === to);
-            openChat(to, displayNameFor(found || to) || '');
-          }
-        }
-      } catch (e) {
-        renderPeopleList();
-        enrichProfiles();
-      }
-    }
-
-    // ============================================================
-    // 4. RENDER PEOPLE LIST - GROUP ALWAYS AT TOP
-    // ============================================================
-    function renderPeopleList() {
-      let sorted = [...peopleCache].sort((a, b) => {
-        const idA = a._id || a;
-        const idB = b._id || b;
-        const timeA = chatMeta[idA]?.lastTime || 0;
-        const timeB = chatMeta[idB]?.lastTime || 0;
-        return timeB - timeA;
+  },
+  async save(key, data) {
+    try {
+      const db = await this._open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
       });
-      const gMeta = chatMeta[GROUP_ID] || { lastText: 'Tap to view announcements', lastTime: 0, unread: 0 };
-      const gPreview = gMeta.lastText || 'Tap to view announcements';
-      const gTime = gMeta.lastTime ? formatTime(gMeta.lastTime) : '';
-      const gUnread = gMeta.unread || 0;
-      const gUnreadHtml = gUnread > 0 ? '<span class="chatUnread">' + gUnread + '</span>' : '';
-      const gPreviewClass = gUnread > 0 ? 'rowPreview unread' : 'rowPreview';
-      const memberText = isAdmin ? ' • ' + totalGroupMembers + ' members' : '';
-      const groupRow = '<div class="row" onclick="openGroupChat()" style="background:#1a1405;border-bottom:1px solid #2a2200">'
-        + '<div class="avatar groupAvatar">📢</div>'
-        + '<div class="rowInfo"><div class="rowTop"><b>' + GROUP_NAME + '<span class="groupBadge">GROUP</span></b> <span class="rowTime">' + gTime + '</span></div>'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + gPreviewClass + '">' + escapeHtml(gPreview) + (isAdmin ? ' (' + totalGroupMembers + ' members)' : '') + '</span>' + gUnreadHtml + '</div>'
-        + '<div style="font-size:11px;color:#f59e0b">By Admin' + memberText + ' • Tap to view</div></div></div>';
-      const htmlPeople = sorted.map(p => {
-        const id = p._id || p;
-        const name = displayNameFor(p) || '...';
-        const avUrl = displayAvatarFor(p);
-        const av = avUrl ? '<img src="' + avUrl + '">' : escapeHtml(displayInitialFor(p));
-        const meta = chatMeta[id] || {};
-        const preview = meta.lastText || 'Tap to chat privately';
-        const timeText = meta.lastTime ? formatTime(meta.lastTime) : '';
-        const unread = meta.unread || 0;
-        const unreadHtml = unread > 0 ? '<span class="chatUnread">' + unread + '</span>' : '';
-        const previewClass = unread > 0 ? 'rowPreview unread' : 'rowPreview';
-        const safeName = name.replace(/'/g, "\\'");
-        return '<div class="row" onclick="openChat(\'' + id + '\',\'' + safeName + '\')">'
-          + '<div class="avatar" onclick="event.stopPropagation(); location.href=\'profile.html?id=' + id + '\'">' + av + '</div>'
-          + '<div class="rowInfo"><div class="rowTop"><b>' + escapeHtml(name) + '</b><span class="rowTime">' + timeText + '</span></div>'
-          + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="' + previewClass + '">' + escapeHtml(preview) + '</span>' + unreadHtml + '</div></div>'
-          + '</div>';
-      }).join('');
-      const html = groupRow + (sorted.length ? htmlPeople : '<p style="text-align:center;color:#777;padding:20px"> Loading chat please wait....<br>Follow someone to chat privately.</p>');
-      if (html === lastRenderedListHtml) return;
-      lastRenderedListHtml = html;
-      document.getElementById('peopleList').innerHTML = html;
+    } catch (e) { return false; }
+  },
+  async get(key) {
+    try {
+      const db = await this._open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.storeName, 'readonly');
+        const req = tx.objectStore(this.storeName).get(key);
+        req.onsuccess = () => resolve(req.result ? req.result.data : null);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) { return null; }
+  }
+};
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+function renderFeedFromCache(posts) {
+  if (!Array.isArray(posts) || !posts.length) return;
+  let pinned = getPinned(posts);
+  let pinnedIds = pinned.map(p => p._id);
+  let rest = shuffle(posts.filter(p => !pinnedIds.includes(p._id)));
+  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+  document.getElementById('pinSec').style.display='block';
+  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+}
+const BASE="https://raymond-web-rho.vercel.app";
+const token=localStorage.getItem('token');
+if(!token) location.href="login.html";
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function shuffle(a){
+  let arr = [...a];
+  for(let i = arr.length-1; i > 0 ; i--){
+    let j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function seededShuffle(a, seed){
+  let arr = [...a];
+  let s = seed >>> 0;
+  function rand(){
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  for(let i = arr.length-1; i > 0; i--){
+    let j = Math.floor(rand() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function getPinned(all){
+  if(!Array.isArray(all) || !all.length) return [];
+  const THREE = 3*24*60*60*1000;
+  const period = Math.floor(Date.now() / THREE);
+  let sorted = [...all].sort((a,b) => String(a._id).localeCompare(String(b._id)));
+  let shuffled = seededShuffle(sorted, period);
+  return shuffled.slice(0,3);
+}
+let globalPinnedIds = new Set();
+let allLoadedIds = new Set();
+async function updatePinsFromAllPosts(){
+  try{
+    const res = await fetch(BASE+'/api/posts', {headers:{authorization:token}});
+    let allPosts = await res.json();
+    if(!Array.isArray(allPosts)) allPosts = allPosts.posts || [];
+    if(!allPosts.length) return;
+    let pinned = getPinned(allPosts);
+    globalPinnedIds = new Set(pinned.map(p => String(p._id)));
+    document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+    document.getElementById('pinSec').style.display='block';
+    const THREE = 3*24*60*60*1000;
+    const next = (Math.floor(Date.now()/THREE)+1)*THREE;
+    const d = Math.ceil((next - Date.now())/(24*60*60*1000));
+    document.getElementById('pinCountdown').innerText = '3 random novels stay here for 3 days • New pins in ' + d + ' day' + (d>1?'s':'');
+    pinned.forEach(p => allLoadedIds.add(String(p._id)));
+  }catch(e){}
+}
+function card(p, isPin) {
+  let cover = p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>';
+  return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'read.html?id='+p._id+'\'"> <div class="cover">'+(isPin?'<span class="pin">📌 PINNED</span>':'')+cover+' </div> <div class="body"> <div class="title">'+p.title+'</div> <div class="meta"> <span>@'+(p.user?.username||'author')+'</span> <span>❤️ '+(p.likes?.length||0)+'</span> <span>💬 '+(p.comments?.length||0)+'</span> </div> </div> </div>';
+}
+let isLoading = false;
+async function fetch30(){
+  let freshSeed = Math.floor(Math.random()*1000000000);
+  const res = await fetch(BASE+'/api/posts/feed?page=1&limit=30&seed='+freshSeed,{
+    headers:{authorization:token}
+  });
+  let posts = await res.json();
+  if(!Array.isArray(posts)) posts = posts.posts || [];
+  return posts;
+}
+function render30(posts){
+  let pinned = getPinned(posts);
+  let pinnedIds = pinned.map(p => String(p._id));
+  pinned.forEach(p => allLoadedIds.add(String(p._id)));
+  let rest = shuffle(posts.filter(p => !pinnedIds.includes(String(p._id))));
+  rest.forEach(p => allLoadedIds.add(String(p._id)));
+  document.getElementById('pinnedGrid').innerHTML = pinned.map(p=>card(p,true)).join('');
+  document.getElementById('pinSec').style.display='block';
+  document.getElementById('feedGrid').innerHTML = rest.map(p=>card(p,false)).join('');
+}
+async function load(){
+  if(isLoading) return;
+  isLoading = true;
+  document.getElementById('scrollLoader').style.display = 'block';
+  try {
+    const cachedPosts = await Promise.race([
+      WRDB.get('feed_posts'),
+      new Promise(r => setTimeout(() => r(null), 500))
+    ]);
+    if (cachedPosts && cachedPosts.length) {
+      renderFeedFromCache(cachedPosts);
+      cachedPosts.forEach(p => allLoadedIds.add(String(p._id)));
     }
-
-    function escapeHtml(text) {
-      return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    function formatTime(timestamp) {
-      const d = new Date(timestamp);
-      const now = new Date();
-      const sameDay = d.toDateString() === now.toDateString();
-      if (sameDay) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
-    }
-
-    // ============================================================
-    // 5. OPEN PRIVATE CHAT
-    // ============================================================
-    async function openChat(id, name) {
-      isGroupChat = false;
-      document.getElementById('groupActions').style.display = 'none';
-      chatWith = id;
-      let realName = (name && !isIdLike(name)) ? name : displayNameFor(peopleCache.find(p => (p._id || p) === id) || id);
-      if (!realName) {
-        const prof = await fetchProfileForId(id);
-        realName = prof?.username || '';
-        if (realName) renderPeopleList();
-      }
-      chatWithName = realName || '...';
-      const found = peopleCache.find(p => (p._id || p) === id);
-      chatWithAvatar = displayAvatarFor(found || id) || '';
-      document.getElementById('peopleList').style.display = 'none';
-      document.getElementById('chatBox').style.display = 'block';
-      document.getElementById('inputRow').style.display = 'flex';
-      document.getElementById('msgInput').placeholder = "Type private message...";
-      document.getElementById('topTitle').innerText = '💬 ' + chatWithName;
-      const avEl = document.getElementById('chatHeaderAvatar');
-      avEl.style.display = 'flex';
-      avEl.className = 'avatar';
-      avEl.innerHTML = chatWithAvatar ? '<img src="' + chatWithAvatar + '">' : escapeHtml(chatWithName[0]?.toUpperCase() || '•');
-      document.getElementById('backBtn').style.display = 'block';
-      if (chatMeta[id]) chatMeta[id].unread = 0;
-      updateBadge();
-      saveMetaToStorage();
-      const cached = loadMessagesFromStorage(id);
-      if (cached.length) {
-        renderChatMessages(cached);
-        saveLastReadId(id, cached[cached.length - 1]._id);
-      } else {
-        const cachedWRDB = await loadMessagesFromWRDB(id);
-        if (cachedWRDB.length) {
-          renderChatMessages(cachedWRDB);
-          saveLastReadId(id, cachedWRDB[cachedWRDB.length - 1]._id);
-        } else {
-          document.getElementById('chatBox').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
-          lastRenderedChatHtml = '';
-        }
-      }
-      await loadMessages(true);
-    }
-
-    // ============================================================
-    // 5B. OPEN GROUP CHAT
-    // ============================================================
-    async function openGroupChat() {
-      isGroupChat = true;
-      chatWith = GROUP_ID;
-      chatWithName = GROUP_NAME;
-      document.getElementById('peopleList').style.display = 'none';
-      document.getElementById('chatBox').style.display = 'block';
-      document.getElementById('backBtn').style.display = 'block';
-      document.getElementById('topTitle').innerText = GROUP_NAME;
-      const avEl = document.getElementById('chatHeaderAvatar');
-      avEl.style.display = 'flex';
-      avEl.className = 'avatar groupAvatar';
-      avEl.innerHTML = '📢';
-      if (isAdmin) {
-        document.getElementById('inputRow').style.display = 'flex';
-        document.getElementById('msgInput').placeholder = "Send announcement to all users...";
-      } else {
-        document.getElementById('inputRow').style.display = 'none';
-      }
-      const ga = document.getElementById('groupActions');
-      ga.style.display = 'block';
-      let memberLine = '';
-      if (isAdmin) {
-        memberLine = '<div style="text-align:center;color:#f59e0b;font-size:12px;padding:6px">👥 ' + totalGroupMembers + ' members in this group (only you can see this)</div>';
-      } else {
-        memberLine = '<div style="text-align:center;color:#888;font-size:12px;padding:6px">Only admin can send messages here</div>';
-      }
-      ga.innerHTML = memberLine + '<div class="groupAdminBar">'
-        + '<button onclick="viewAdminProfile()">👤 View Admin Profile</button>'
-        + (isAdmin ? '<button onclick="alert(\'This is your group\')">⚙️ You are Admin</button>' : '<button class="primary" onclick="messageAdmin()">💬 Message Admin</button>')
-        + '</div>'
-        + '<div class="groupNotice"> </div>';
-      if (chatMeta[GROUP_ID]) chatMeta[GROUP_ID].unread = 0;
-      updateBadge();
-      saveMetaToStorage();
-      const cached = loadMessagesFromStorage(GROUP_ID);
-      if (cached.length) {
-        renderGroupMessages(cached);
-        saveLastReadId(GROUP_ID, cached[cached.length - 1]._id);
-      } else {
-        const cachedWRDB = await loadMessagesFromWRDB(GROUP_ID);
-        if (cachedWRDB.length) {
-          renderGroupMessages(cachedWRDB);
-          saveLastReadId(GROUP_ID, cachedWRDB[cachedWRDB.length - 1]._id);
-        } else {
-          document.getElementById('chatBox').innerHTML = '<p style="text-align:center;color:#777;padding:30px">No announcements yet.</p>';
-          lastRenderedChatHtml = '';
-        }
-      }
-      await loadGroupMessages(true);
-    }
-
-    function viewAdminProfile() {
-      if (adminUserId) { location.href = 'profile.html?id=' + adminUserId; }
-      else if (isAdmin) { location.href = 'profile.html'; }
-      else { alert('Admin profile loading... tap again'); }
-    }
-
-    function messageAdmin() {
-      if (adminUserId) { location.href = 'message.html?to=' + adminUserId; } 
-      else { alert('Admin loading... try again'); }
-    }
-
-    function renderGroupMessages(msgs) {
-      const html = msgs.length ? msgs.map(m => {
-        const isMine = isAdmin && ((m.from?._id || m.from) === getMyId());
-        const senderName = isAdmin ? 'You (Admin)' : (m.from?.username || adminUserName || 'Admin');
-        const del = isAdmin ? '<button class="delBtn" onclick="deleteGroupMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
-        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"><div style="font-size:11px;color:#aaa;margin-bottom:2px">' + escapeHtml(senderName) + ' • Admin</div><div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
-      }).join('') : '<p style="text-align:center;color:#777;padding:30px">No announcements yet.</p>';
-      if (html === lastRenderedChatHtml) return;
-      lastRenderedChatHtml = html;
-      document.getElementById('chatBox').innerHTML = html;
-      window.scrollTo(0, document.body.scrollHeight);
-    }
-   
-    async function loadGroupMessages(silent) {
-      if (!isGroupChat) return;
-      const msgs = await getGroupMessages();
-      if (!msgs) return;
-      if (msgs.length === 0) {
-        saveMessagesToStorage(GROUP_ID, []);
-        chatMeta[GROUP_ID] = { lastText: 'No announcements yet', lastTime: Date.now(), unread: 0, lastMsgId: '' };
-        saveMetaToStorage();
-        updateBadge();
-        renderGroupMessages([]); 
-        return;
-      }
-      saveMessagesToStorage(GROUP_ID, msgs);
-      if (msgs.length) {
-        saveLastReadId(GROUP_ID, msgs[msgs.length - 1]._id);
-        chatMeta[GROUP_ID] = { lastText: msgs[msgs.length - 1].text, lastTime: msgs[msgs.length - 1].createdAt ? new Date(msgs[msgs.length - 1].createdAt).getTime() : Date.now(), lastMsgId: msgs[msgs.length - 1]._id, unread: 0 };
-        saveMetaToStorage(); 
-        updateBadge();
-      }
-      renderGroupMessages(msgs);
-    }
-
-    async function deleteGroupMsg(e, msgId) {
-      e.stopPropagation();
-      if (!confirm('Delete this announcement for everyone?')) return;
-      if (String(msgId).startsWith('temp_')) { alert('Wait a second, message is still sending...'); return; }
-      try {
-        const res = await fetch(BASE + '/api/group-messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
-        if (!res.ok) { alert('Could not delete from server. Message still exists for users. Try again.'); return; }
-      } catch { alert('No connection. Could not delete from server.'); return; }
-      const wrap = e.target.closest('.msgWrap');
-      if (wrap) wrap.remove();
-      lastRenderedChatHtml = '';
-      const cached = loadMessagesFromStorage(GROUP_ID);
-      const filtered = cached.filter(m => m._id !== msgId);
-      saveMessagesToStorage(GROUP_ID, filtered);
-      await loadGroupMessages(true);
-      await refreshGroupMeta(true);
-    }
-
-    async function refreshGroupMeta(silent) {
-      const msgs = await getGroupMessages();
-      if (!msgs || !msgs.length) return;
-      const lastMsg = msgs[msgs.length - 1];
-      const lastTime = lastMsg.createdAt ? new Date(lastMsg.createdAt).getTime() : Date.now();
-      const lastReadId = getLastReadId(GROUP_ID);
-      let unread = 0;
-      if (isGroupChat) { unread = 0; }
-      else if (!lastReadId) { 
-        unread = 0; 
-        saveLastReadId(GROUP_ID, lastMsg._id); 
-      }
-      else {
-        const idx = msgs.findIndex(m => m._id === lastReadId);
-        if (idx === -1) { 
-          if (lastMsg._id !== lastReadId) unread = 1; 
-      } else { unread = msgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; }
-      }
-      const old = chatMeta[GROUP_ID] || {};
-      if (old.lastMsgId !== lastMsg._id || old.unread !== unread) {
-        chatMeta[GROUP_ID] = { lastText: lastMsg.text, lastTime: lastTime, lastMsgId: lastMsg._id, unread: unread };
-        saveMetaToStorage(); 
-        updateBadge();
-        if (!chatWith) renderPeopleList();
+  } catch (e) {}
+  try {
+    let posts = await fetch30();
+    if(posts && posts.length){
+      WRDB.save('feed_posts', posts);
+      render30(posts);
+    } else {
+      let hasCards = document.querySelectorAll('#feedGrid .card').length > 0;
+      let hasPins = document.querySelectorAll('#pinnedGrid .card').length > 0;
+      if(!hasCards && !hasPins){
+        document.getElementById('feedGrid').innerHTML = '<p style="grid-column:1/3;text-align:center">No novels yet. Be the first! ✍️</p>';
       }
     }
-
-    // ============================================================
-    // 5C. GET PRIVATE MESSAGES FROM SERVER
-    // ============================================================
-    async function getMessagesFor(otherId) {
-      try {
-        const res = await fetch(BASE + '/api/messages/' + otherId, { headers: { authorization: token } });
-        const msgs = await res.json();
-        return Array.isArray(msgs) ? msgs : [];
-      } catch {
-        const fromWRDB = await loadMessagesFromWRDB(otherId);
-        if (fromWRDB.length) return fromWRDB;
-        return [];
-      }
+    updatePinsFromAllPosts();
+  } catch (e) {
+    const grid = document.getElementById('feedGrid');
+    if (grid && grid.innerHTML.includes('Loading stories')) {
+      grid.innerHTML = '<p style="grid-column:1/3;text-align:center">Could not load. Check internet and refresh.</p>';
     }
-
-    function renderChatMessages(msgs) {
-      const html = msgs.length ? msgs.map(m => {
-        const isMine = (m.from?._id || m.from) === getMyId();
-        const del = isMine ? '<button class="delBtn" onclick="deleteMsg(event,\'' + m._id + '\')">🗑️ Delete</button>' : '';
-        return '<div class="msgWrap ' + (isMine ? 'mine' : 'theirs') + '"> <div class="msg ' + (isMine ? 'mine' : 'theirs') + '">' + formatMessageText(m.text) + '</div>' + del + '</div>';
-      }).join('') : '<p style="text-align:center;color:#777;padding:30px">No messages yet. Say hello! 👋</p>';
-      if (html === lastRenderedChatHtml) return;
-      lastRenderedChatHtml = html;
-      document.getElementById('chatBox').innerHTML = html;
-      window.scrollTo(0, document.body.scrollHeight);
-    }
-
-    // ============================================================
-    // 6. LOAD PRIVATE MESSAGES
-    // ============================================================
-    async function loadMessages(silent) {
-      if (!chatWith || isGroupChat) return;
-      const msgs = await getMessagesFor(chatWith);
-      if (!msgs) return;
-      const cached = loadMessagesFromStorage(chatWith);
-      if (msgs.length === 0 && cached.length > 0) return;
-      saveMessagesToStorage(chatWith, msgs);
-      if (msgs.length) {
-        saveLastReadId(chatWith, msgs[msgs.length - 1]._id);
-        if (chatMeta[chatWith]) {
-          chatMeta[chatWith].unread = 0;
-          chatMeta[chatWith].lastText = ((msgs[msgs.length - 1].from?._id || msgs[msgs.length - 1].from) === getMyId() ? 'You: ' : '') + msgs[msgs.length - 1].text;
-          chatMeta[chatWith].lastTime = msgs[msgs.length - 1].createdAt ? new Date(msgs[msgs.length - 1].createdAt).getTime() : Date.now();
-          chatMeta[chatWith].lastMsgId = msgs[msgs.length - 1]._id;
-          saveMetaToStorage();
-        }
-        updateBadge();
-      }
-      renderChatMessages(msgs);
-    }
-
-    // ============================================================
-    // 7. SEND MESSAGE - PRIVATE + GROUP
-    // ============================================================
-    async function sendMsg() {
-      const input = document.getElementById('msgInput');
-      const rawText = input.value;
-      const text = rawText.trim();
-      if (!text) return;
-      const finalText = rawText.replace(/^\s+|\s+$/g, '');
-      if (isGroupChat) {
-        if (!isAdmin) { alert('Only admin can send in this group'); return; }
-        input.value = ''; 
-        input.style.height = 'auto';
-        const tempMsg = { _id: 'temp_' + Date.now(), from: getMyId(), text: finalText, createdAt: new Date().toISOString() };
-        const cached = loadMessagesFromStorage(GROUP_ID);
-        cached.push(tempMsg);
-        saveMessagesToStorage(GROUP_ID, cached);
-        renderGroupMessages(cached);
-        chatMeta[GROUP_ID] = { lastText: finalText, lastTime: Date.now(), lastMsgId: tempMsg._id, unread: 0 };
-        saveMetaToStorage();
-        await sendGroupMessage(finalText);
-        await loadGroupMessages(true);
-        await refreshGroupMeta(true);
-        return;
-      }
-      input.value = ''; 
-      input.style.height = 'auto';
-      const tempMsg = { _id: 'temp_' + Date.now(), from: getMyId(), text: finalText, createdAt: new Date().toISOString() };
-      const cached = loadMessagesFromStorage(chatWith);
-      cached.push(tempMsg);
-      saveMessagesToStorage(chatWith, cached);
-      renderChatMessages(cached);
-      try {
-        await fetch(BASE + '/api/messages/' + chatWith, { method: 'POST', headers: { 'Content-Type': 'application/json', authorization: token }, body: JSON.stringify({ text: finalText }) });
-      } catch (e) {}
-      await loadMessages(true);
-      await refreshRecentAndUnread(true);
-    }
-
-    // ============================================================
-    // 8. BACK TO LIST
-    // ============================================================
-    function showList() {
-      document.getElementById('peopleList').style.display = 'block';
-      document.getElementById('chatBox').style.display = 'none';
-      document.getElementById('inputRow').style.display = 'none';
-      document.getElementById('groupActions').style.display = 'none';
-      document.getElementById('topTitle').innerText = '💬 Messages';
-      document.getElementById('chatHeaderAvatar').style.display = 'none';
-      document.getElementById('backBtn').style.display = 'none';
-      chatWith = null; 
-      chatWithName = ''; 
-      isGroupChat = false; 
-      lastRenderedChatHtml = '';
-      refreshRecentAndUnread(true); 
-      refreshGroupMeta(true);
-    }
-
-    // ============================================================
-    // 9. DELETE PRIVATE MESSAGE
-    // ============================================================
-    async function deleteMsg(e, msgId) {
-      e.stopPropagation();
-      if (!confirm('Delete this message? It will be deleted for everyone.')) return;
-      const wrap = e.target.closest('.msgWrap');
-      if (wrap) wrap.remove();
-      lastRenderedChatHtml = '';
-      if (chatWith) {
-        const cached = loadMessagesFromStorage(chatWith);
-        const filtered = cached.filter(m => m._id !== msgId);
-        saveMessagesToStorage(chatWith, filtered);
-      }
-      try {
-        const res = await fetch(BASE + '/api/messages/' + msgId, { method: 'DELETE', headers: { authorization: token } });
-        if (!res.ok) { alert('Could not delete from server. Please try again.'); 
-        if (chatWith) loadMessages(true); }
-        else { refreshRecentAndUnread(true); }
-      } catch (err) { 
-        alert('Could not delete. Check connection.'); 
-        if (chatWith) loadMessages(true); 
-      }
-    }
-
-    // ============================================================
-    // 10. CLICK PROFILE IN CHAT
-    // ============================================================
-    function goToChatProfile() {
-      if (isGroupChat) { viewAdminProfile(); return; }
-      if (chatWith) location.href = 'profile.html?id=' + chatWith;
-    }
-
-    // ============================================================
-    // 11. NOTIFICATION BADGE - REMOVED
-    // ============================================================
-    function updateBadge() {}
-
-    // ============================================================
-    // 12. RECENT + UNREAD
-    // ============================================================
-    async function refreshRecentAndUnread(silent) {
-      if (!peopleCache.length) return;
-      let metaChanged = false;
-      for (const p of peopleCache) {
-        const id = p._id || p;
-        const msgs = await getMessagesFor(id);
-        let useMsgs = msgs;
-        if ((!msgs || !msgs.length) && loadMessagesFromStorage(id).length) { continue; }
-        if (!useMsgs.length) {
-          if (!chatMeta[id]) { chatMeta[id] = { lastText: '', lastTime: 0, unread: 0 }; metaChanged = true; }
-          continue;
-        }
-        saveMessagesToStorage(id, useMsgs);
-        const lastMsg = useMsgs[useMsgs.length - 1];
-        const lastTime = lastMsg.createdAt ? new Date(lastMsg.createdAt).getTime() : Date.now();
-        const lastText = (lastMsg.from?._id || lastMsg.from) === getMyId() ? 'You: ' + lastMsg.text : lastMsg.text;
-        const lastReadId = getLastReadId(id);
-        let unread = 0;
-        if (id === chatWith && !isGroupChat) { unread = 0; saveLastReadId(id, lastMsg._id); }
-        else if (!lastReadId) {
-          if (chatMeta[id] && chatMeta[id].lastText) {
-            const oldLastId = chatMeta[id].lastMsgId;
-            if (oldLastId) {
-               const idx = useMsgs.findIndex(m => m._id === oldLastId); 
-              if (idx !== -1) {
-                 unread = useMsgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; 
-              }
-             }
-          } else { unread = 0; saveLastReadId(id, lastMsg._id); }
-        } else {
-          const idx = useMsgs.findIndex(m => m._id === lastReadId);
-          if (idx === -1) { if (lastMsg._id !== lastReadId && (lastMsg.from?._id || lastMsg.from) !== getMyId()) { unread = 1; } else { unread = 0; } }
-          else { unread = useMsgs.slice(idx + 1).filter(m => (m.from?._id || m.from) !== getMyId()).length; }
-        }
-        const old = chatMeta[id];
-        if (!old || old.lastMsgId !== lastMsg._id || old.unread !== unread || old.lastText !== lastText) {
-          chatMeta[id] = { lastText: lastText, lastTime: lastTime, lastMsgId: lastMsg._id, unread: unread };
-          metaChanged = true;
-        }
-      }
-      if (metaChanged) saveMetaToStorage();
-      updateBadge();
-      if (!chatWith) renderPeopleList();
-    }
-
-    // ============================================================
-    // 13. START + LIGHT POLL - 10s, open chat only, pause when hidden
-    // ============================================================
-    loadPeople();
-    let _isPolling = false;
-    setInterval(async () => {
-      if (!chatWith) return;
-      if (document.hidden) return;
-      if (_isPolling) return;
-      _isPolling = true;
-      try {
-        if (isGroupChat) {
-          await loadGroupMessages(true);
-        } else {
-          await loadMessages(true);
-        }
-      } catch (e) {}
-      _isPolling = false;
-    }, 10000);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && chatWith) {
-        if (isGroupChat) loadGroupMessages(true);
-        else loadMessages(true);
-      }
-    });
-  </script>
+  }
+  document.getElementById('scrollLoader').style.display = 'none';
+  isLoading = false;
+}
+load();
+const button = document.getElementById('logoutBtn')
+button.addEventListener('click', () => {
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('myEmail');
+  localStorage.removeItem('isAdmin');
+  localStorage.removeItem('token')
+  location.href="dashboard.html"
+})
+const ball=document.querySelector('.ball');
+const Country=document.querySelector('.Country');
+if(ball) ball.addEventListener('click', async () => {
+  fetch(BASE+'/api/sync');
+  location.href="football.html";
+});
+if(Country) Country.addEventListener('click', async () => {
+  fetch(BASE+'/api/fetch-now');
+  location.href="countrymatch.html";
+});
+</script>
+<script>
+(function(rc){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = rc || {};
+s.src = "\/\/quarrelsomebitter.com\/bRXSV.sAdSGtle0XYJWJcq\/PeRmS9\/utZwUdlFkOP\/Thc\/2aMOjYMPz\/O\/DOUPtsN_zoYqy-MUzcMW4hO\/QP";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+</script>
 </body>
 </html>

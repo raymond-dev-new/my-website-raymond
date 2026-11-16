@@ -465,40 +465,35 @@ app.post('/api/posts/create', authh, uploadd.fields([{name:'file', maxCount:1}, 
 
 // FEED - MUST be before /:id - GET POSTS - Returns cover as R2 URL now, no change needed
 // ---------- Seeded shuffle ----------
-function seededShuffle(arr, seed){
-  let a = [...arr]; let s = seed >>> 0;
-  function rand(){
-    s = (s + 0x6D2B79F5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  }
-  for(let i=a.length-1;i>0;i--){ let j=Math.floor(rand()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-  return a;
-}
-
-// ---------- FEED — RANDOM ON EVERY FETCH, 30 POSTS ----------
+// ---------- FEED — TRUE RANDOM ON EVERY REFRESH ----------
 app.get('/api/posts/feed', async (req,res)=>{
   try{
+    // No cache — every refresh = new fetch, new random posts
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     const page = parseInt(req.query.page || 1);
     const limit = parseInt(req.query.limit || 30);
-    // NEW - New random seed on EVERY fetch, ignore frontend seed
-    // Old code reused same seed, so background fetch returned same 30 forever
-    const seed = Math.floor(Math.random() * 1000000000);
 
-    let allIds = await Post.find({}, { _id: 1 }).lean();
-    if(!allIds.length) return res.json([]);
+    // 1. Let MongoDB pick truly random posts — different every time
+    // $sample does not use a seed, so no repeat pattern
+    const sampled = await Post.aggregate([
+      { $sample: { size: limit } },
+      { $project: { _id: 1 } }
+    ]);
 
-    let shuffledIds = seededShuffle(allIds.map(p => p._id), seed);
-    let pageIds = shuffledIds.slice((page - 1) * limit, page * limit);
-    if(pageIds.length === 0) return res.json([]);
+    if(!sampled.length) return res.json([]);
 
+    let pageIds = sampled.map(p => p._id);
+
+    // 2. Get full posts for those random IDs
     let posts = await Post.find({ _id: { $in: pageIds } })
       .populate('user','username email avatar')
       .populate('comments.user','username email')
       .lean();
 
+    // 3. Keep MongoDB's random order — do NOT sort back
     let order = new Map(pageIds.map((id, i) => [String(id), i]));
     posts.sort((a,b) => order.get(String(a._id)) - order.get(String(b._id)));
 
@@ -508,7 +503,6 @@ app.get('/api/posts/feed', async (req,res)=>{
     res.status(500).json({ error: 'feed failed' });
   }
 });
-
 
 // Profile posts - 8 per page - ADDED ONLY for profile infinite scroll
 // page=1 = first 15, page=2 = next 15...
