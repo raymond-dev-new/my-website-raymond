@@ -808,6 +808,8 @@
         posts.forEach(p=>loadedPostIds.add(String(p._id)));
         WRDB.save('profile_posts_' + profileId, posts);
       } else {
+        // FIX - Remove any leftover loading skeletons before appending, so they can never stay stuck on top of real posts
+        document.querySelectorAll('#grid .gcard.loading').forEach(el => el.remove());
         let newPosts = posts.filter(p => !loadedPostIds.has(String(p._id)));
         newPosts.forEach(p=>loadedPostIds.add(String(p._id)));
         if(newPosts.length) {
@@ -943,6 +945,8 @@
     }
 
     let hasCache = false;
+    // FIX - Track if we actually have cached posts, not just cached profile. Profile cache alone is not enough to skip loading posts.
+    let hasCachedPosts = false;
     try {
       const cachedUser = await getCacheFast('profile_' + profileId);
       const cachedMine = await getCacheFast('profile_posts_' + profileId);
@@ -977,6 +981,7 @@
         }
 
         if (Array.isArray(cachedMine) && cachedMine.length) {
+          hasCachedPosts = true;
           document.getElementById('grid').innerHTML = cachedMine.map(p => postCard(p)).join('');
           cachedMine.forEach(p=>loadedPostIds.add(String(p._id)));
           profilePage = 1;
@@ -1006,6 +1011,10 @@
       // REMOVED - No more postCount update here. Post count number is gone.
       // NEW - Followers still fetch + update even in cached mode
       refreshFollowOnly();
+      // FIX - If we have profile cache but NO cached posts, the grid still shows the 2 loading skeletons. Load page 1 now instead of returning with empty skeletons, otherwise scroll would load page 2 and append after the skeletons.
+      if (!hasCachedPosts) {
+        await loadProfilePosts(1, true);
+      }
       return;
     }
 
@@ -1486,7 +1495,7 @@
 
   load();
 </script>
-  <script>
+<script>
 (function(dnztl){
 var d = document,
     s = d.createElement('script'),

