@@ -89,7 +89,7 @@ async function login(){
     if (d.user && d.user.avatar) localStorage.setItem('avatar', d.user.avatar);
     location.href='feed.html';
   }catch(e){
-    alert('Server error');
+    alert('Server error: ' + e);
   }finally{
     //  ADDED ONLY - Hide spinner again if login failed / error (if success we already left page)
     btn.disabled=false;
