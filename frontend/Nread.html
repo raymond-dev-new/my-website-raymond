@@ -4,35 +4,102 @@
 </head><body>
 <div class="box" id="box"><p style="text-align:center;color:#888;padding:50px">Loading novel... 📖</p></div>
 <script>
+// ===== CACHE - Same as Feed =====
+const WRDB = {
+  dbName: 'WildReadersDB',
+  storeName: 'cache',
+  _open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.dbName, 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains(this.storeName)) {
+          req.result.createObjectStore(this.storeName);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async save(key, data) {
+    try {
+      const db = await this._open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        tx.objectStore(this.storeName).put({ data: data, time: Date.now() }, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    } catch (e) { return false; }
+  },
+  async get(key) {
+    try {
+      const db = await this._open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.storeName, 'readonly');
+        const req = tx.objectStore(this.storeName).get(key);
+        req.onsuccess = () => resolve(req.result ? req.result.data : null);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) { return null; }
+  }
+};
 const BASE="https://raymond-web-rho.vercel.app";
 const token=localStorage.getItem('token');
 const id=new URLSearchParams(location.search).get('id');
 let post=null;
+const CACHE_KEY='read_'+id;
+const LAST_KEY='read_last_'+id;
 function getMyId(){ try{return JSON.parse(atob(token.split('.')[1])).id}catch{return""} }
-async function load(){
-  const res=await fetch(BASE+'/api/posts/'+id,{headers:{authorization:token}});
-  post=await res.json();
+function renderPost(){
+  if(!post) return;
   const liked=post.likes.includes(getMyId());
   const saved=post.savedBy && post.savedBy.includes(getMyId());
   let comments=post.comments.map(c=>'<div class="cmt"><b>@'+(c.user?.username||'user')+'</b> '+c.text+'</div>').join('') || '<p style="color:#777"></p>';
-  // NEW: use post.cover directly, no BASE +
   document.getElementById('box').innerHTML=`
     ${post.cover?'<img class="cover" src="'+post.cover+'">':''}
     <div class="title">${post.title}</div><div class="author" style="cursor:pointer"> @${'author'} • ${''}</div>
     <div class="row">
       <span onclick="doLike()">${liked?'❤️':'🤍'} ${post.likes.length} Likes</span>
-      
     </div>
      <h3 style="margin-top:26px">Welcome 😊 Login to see more features</h3></div>
     <div class="text">${post.content}</div>
     `;
 }
-async function doLike(){ await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); load(); }
-async function doSave(){ await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); load(); alert('Saved to Diary! 📖'); }
+async function load(forceFresh){
+  if(!forceFresh){
+    try{
+      const cached = await Promise.race([
+        WRDB.get(CACHE_KEY),
+        new Promise(r => setTimeout(() => r(null), 500))
+      ]);
+      if(cached){
+        post=cached;
+        renderPost();
+        const lastFetch = Number(localStorage.getItem(LAST_KEY) || 0);
+        if(lastFetch && (Date.now() - lastFetch) < 96*60*60*1000){
+          return;
+        }
+      }
+    }catch(e){}
+  }
+  try{
+    const res=await fetch(BASE+'/api/posts/'+id,{headers:{authorization:token}});
+    post=await res.json();
+    WRDB.save(CACHE_KEY, post);
+    localStorage.setItem(LAST_KEY, String(Date.now()));
+    renderPost();
+  }catch(e){
+    if(!post){
+      document.getElementById('box').innerHTML='<p style="text-align:center;color:#888;padding:50px">Could not load. Check internet and refresh.</p>';
+    }
+  }
+}
+async function doLike(){ await fetch(BASE+'/api/posts/'+id+'/like',{method:'POST',headers:{authorization:token}}); load(true); }
+async function doSave(){ await fetch(BASE+'/api/posts/'+id+'/save',{method:'POST',headers:{authorization:token}}); load(true); alert('Saved to Diary! 📖'); }
 async function doComment(){
   const t=document.getElementById('cInput').value.trim(); if(!t) return;
   await fetch(BASE+'/api/posts/'+id+'/comment',{method:'POST',headers:{'Content-Type':'application/json',authorization:token},body:JSON.stringify({text:t})});
-  load();
+  load(true);
 }
 load();
-</script></body></html> Does this code consume api
+</script></body></html>
