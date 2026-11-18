@@ -37,7 +37,7 @@ async function load(){
     if (saved && saved.length) {
       document.getElementById('feedGrid').innerHTML = saved.map(p=>card(p)).join('');
       const lastFetch = Number(localStorage.getItem('pinned_10_last_fetch') || 0);
-      if (lastFetch && (Date.now() - lastFetch) < 96*60*60*1000) {
+      if (lastFetch && (Date.now() - lastFetch) < 366*60*60*1000) {
         return; // STOP - still within 96 hours, no fetch
       }
       // 24 hours passed - fall through to fetch new 10 below
