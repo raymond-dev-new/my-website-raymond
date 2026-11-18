@@ -40,7 +40,7 @@ async function load(){
       if (lastFetch && (Date.now() - lastFetch) < 720*60*60*1000) {
         return; // STOP - still within 96 hours, no fetch
       }
-      // 24 hours passed - fall through to fetch new 10 below
+      // 1 month hours passed - fall through to fetch new 10 below
     }
   } catch(e) {}
   // 2. First time ever OR 24 hours passed - fetch once to save first 10
