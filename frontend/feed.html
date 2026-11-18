@@ -140,7 +140,7 @@ function card(p) {
 let isLoading = false;
 async function fetch30(){
   let freshSeed = Math.floor(Math.random()*1000000000);
-  const res = await fetch(BASE+'/api/posts/feed?page=1&limit=30&seed='+freshSeed,{
+  const res = await fetch(BASE+'/api/posts/feed?page=1&limit=22&seed='+freshSeed,{
     headers:{authorization:token}
   });
   let posts = await res.json();
@@ -164,9 +164,9 @@ async function load(){
     if (cachedPosts && cachedPosts.length) {
       renderFeedFromCache(cachedPosts);
       cachedPosts.forEach(p => allLoadedIds.add(String(p._id)));
-      // ONCE PER DAY: if last fetch was less than 24 hours ago, stop here - no new fetch
+      // ONCE PER DAY: if last fetch was less than 48 hours ago, stop here - no new fetch
       const lastFetch = Number(localStorage.getItem('feed_last_fetch') || 0);
-      if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
+      if (lastFetch && (Date.now() - lastFetch) < 48*60*60*1000) {
         document.getElementById('scrollLoader').style.display = 'none';
         isLoading = false;
         return;
@@ -213,18 +213,6 @@ if(Country) Country.addEventListener('click', async () => {
   fetch(BASE+'/api/fetch-now');
   location.href="countrymatch.html";
 });
-</script>
-<script>
-(function(rc){
-var d = document,
-    s = d.createElement('script'),
-    l = d.currentScript || d.scripts[d.scripts.length - 1];
-s.settings = rc || {};
-s.src = "\/\/quarrelsomebitter.com\/bRXSV.sAdSGtle0XYJWJcq\/PeRmS9\/utZwUdlFkOP\/Thc\/2aMOjYMPz\/O\/DOUPtsN_zoYqy-MUzcMW4hO\/QP";
-s.async = true;
-s.referrerPolicy = 'no-referrer-when-downgrade';
-l.parentNode.insertBefore(s, l);
-})({})
 </script>
 </body>
 </html>

@@ -28,16 +28,16 @@ const WRDB = {
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 const BASE="https://raymond-web-rho.vercel.app";
 const token=localStorage.getItem('token');
-function card(p){ let cover=p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>'; return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover"><span class="pin">📌 PINNED</span>'+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>'; }
+function card(p){ let cover=p.cover ? '<img src="'+p.cover+'" loading="lazy">' : '<div class="noimg">📖</div>'; return '<div class="card" data-id="'+p._id+'" onclick="location.href=\'Nread.html?id='+p._id+'\'"><div class="cover"><span class="pin"></span>'+cover+'</div><div class="body"><div class="title">'+p.title+'</div><div class="meta"><span>@'+(p.user?.username||'author')+'</span><span>❤️ '+(p.likes?.length||0)+'</span><span>💬 '+(p.comments?.length||0)+'</span></div></div></div>'; }
 async function load(){
-  // 1. Show saved 10 - if less than 24h since last fetch, NO FETCH
+  // 1. Show saved 10 - if less than 96h since last fetch, NO FETCH
   try {
     const saved = await WRDB.get('pinned_10_forever');
     if (saved && saved.length) {
       document.getElementById('feedGrid').innerHTML = saved.map(p=>card(p)).join('');
       const lastFetch = Number(localStorage.getItem('pinned_10_last_fetch') || 0);
-      if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
-        return; // STOP - still within 24 hours, no fetch
+      if (lastFetch && (Date.now() - lastFetch) < 96*60*60*1000) {
+        return; // STOP - still within 96 hours, no fetch
       }
       // 24 hours passed - fall through to fetch new 10 below
     }
@@ -63,8 +63,5 @@ async function load(){
   }
 }
 load();
-</script>
-<script>
-(function(rc){ var d = document, s = d.createElement('script'), l = d.currentScript || d.scripts[d.scripts.length - 1]; s.settings = rc || {}; s.src = "\/\/quarrelsomebitter.com\/bRXSV.sAdSGtle0XYJWJcq\/PeRmS9\/utZwUdlFkOP\/Thc\/2aMOjYMPz\/O\/DOUPtsN_zoYqy-MUzcMW4hO\/QP"; s.async = true; s.referrerPolicy = 'no-referrer-when-downgrade'; l.parentNode.insertBefore(s, l); })({})
 </script>
 </body></html>
