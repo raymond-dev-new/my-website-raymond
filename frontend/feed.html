@@ -58,6 +58,7 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
 <div class="section">
   <h3>📚 Discover Stories</h3>
   <p>Tap any cover to read</p>
+  <p>Your page will be updated with new novels every 3 days </p>
 </div>
 <div class="grid" id="feedGrid">
   <div style="grid-column:1/3;text-align:center;color:#777"><div class="spinner"></div><p style="text-align:center;color:#777">Loading stories... <br> updating page usually take 1 minutes + please stay on page while is still loading</p></div>
@@ -167,7 +168,7 @@ async function load(){
       cachedPosts.forEach(p => allLoadedIds.add(String(p._id)));
       // ONCE PER DAY: if last fetch was less than 48 hours ago, stop here - no new fetch
       const lastFetch = Number(localStorage.getItem('feed_last_fetch') || 0);
-      if (lastFetch && (Date.now() - lastFetch) < 48*60*60*1000) {
+      if (lastFetch && (Date.now() - lastFetch) < 72*60*60*1000) {
         document.getElementById('scrollLoader').style.display = 'none';
         isLoading = false;
         return;
