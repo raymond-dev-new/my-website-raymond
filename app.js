@@ -38,17 +38,18 @@
    app.use(express.static(path.join(__dirname, 'frontend')))
    app.use((req, res, next) => { console.log(` ${req.method} ${req.url}`); next(); })
    
-   mongoose.connect(url).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
-   app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'frontend', 'sbd.html')); })
+   mongoose.connect(url)
+   .then(() => console.log("MongoDB Connected"))
+   .catch(err => console.log(err));
 
+   app.get('/', (req, res) => {
+     res.sendFile(path.join(__dirname, 'frontend', 'dashboard.html')); 
+  })
 
-// ADDED ONLY - Put this at the very TOP of your file with your other require() lines
-// const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const SECRET = process.env.SECRET || 'my-secret-key-123';
 
 
-//Public Development URL ='https://pub-8de88b749b3443328e081c896840922a.r2.dev'
 const R2_CONFIG = {
   accessKeyId: "2017c00e704eb61d8912c00d685ea14d",
   secretAccessKey: "00f5acecbfc82cc8c5b511baaa94c956e9308c9582ff2e86efbf439eb28681e9",
@@ -187,10 +188,9 @@ function authh(req, res, next){
       id: jwt.verify(token, SECRET).id 
     }; 
     next(); 
-  }
-  catch(e){ console.log(e) }
+  } catch(e){ console.log(e) }
 }
-//return res.status(401).json({msg:'Invalid token'});
+
 // ===== UPLOADD - MEMORY ONLY, NO FOLDER =====
 // Renamed to uploadd with 2 d
 const uploadd = multer({
@@ -201,7 +201,7 @@ const uploadd = multer({
 // Helper: turn file buffer to base64 text for DB
 function toBase64(file){
   if(!file) return "";
-  return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+  return `data:${file.mimetype}; base64,${file.buffer.toString('base64')}`;
 }
 
 // =================================================

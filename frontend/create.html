@@ -83,7 +83,23 @@
     // ============================================================
     // ADDED ONLY - BANNED WORD CHECK FOR COVER PHOTO FILE NAME
     // ============================================================
-    const BANNED_WORDS = ['porn','xxx','sex','nude','naked','pussy','dick','cock','boobs','erotic','hentai','onlyfans','pornhub','xvideos'];
+    const BANNED_WORDS = [
+  // Porn / Adult sites
+  'porn','pornhub','xvideos','xnxx','xhamster','redtube','youporn','brazzers','onlyfans','fansly','manyvids','chaturbate','stripchat','livejasmin','cam4','bongacams','porntrex','porn300','tube8','spankbang','xhamsterlive','erome','fapello','pornonly','porn555',
+
+  // Sex / Sexual acts
+  'sex','sexy','sexual','erotic','erotica','hentai','xxx','xxn','porno','pornographic','nude','naked','nudity','pussy','dick','cock','penis','vagina','boobs','boob','tits','tit','ass','butt','anal','oral','blowjob','handjob','fuck','fucking','fucked','suck','sucking','cum','cumming','sperm','orgasm','masturbate','masturbation','jerkoff','horny','hardcore','softcore','threesome','gangbang','bukkake','creampie','deepthroat','doggy','missionary','pussies','dicks','cocks','penises','vaginas','clit','clitoris','nipple','nipples','fetish','kink','kinky','bdsm','bondage','dominatrix','submissive','escort','prostitute','hooker','slut','whore','bitch','milf','dilf','gilf','shemale','tranny','ladyboy','sexdoll','sexting','nudes','nsfw','leak','leaked','leaks','onlyfan',
+
+  // Genitals / Body explicit
+  'pubic','pubic hair','labia','testicle','testicles','balls','ball sack','anus','analsex','butthole','buttplug','dildo','vibrator','sextoy','sex toy','strap-on','strapon',
+
+  // Other adult
+  'playboy','penthouse','hustler','pornstar','porn star','camgirl','cam girl','camboy','stripper','stripping','stripclub','strip club','peeping','voyeur','exhibitionist','incest','rape','rapist','molest','pedophile','pedofilia','childporn','child porn','cp','teenporn','teen porn','lolita','jailbait',
+
+  // Drugs / Violence for file name (optional)
+  'weed','cocaine','heroin','meth','crack','opium','marijuana','ganja'
+];
+
     function hasBannedWord(fileName) {
       if (!fileName) return false;
       const lower = fileName.toLowerCase();

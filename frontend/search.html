@@ -68,7 +68,7 @@
   <script>
     const BASE = "https://raymond-web-rho.vercel.app";
     const token = localStorage.getItem('token');
-    if (!token) location.href = "login.html";
+    if (!token) location.href = "dashboard.html";
 
     let all = [];
     let mode = 'novel';
@@ -78,6 +78,7 @@
       document.getElementById('loading').style.display = 'block';
       document.getElementById('grid').style.display = 'none';
     }
+    
     function hideLoading() {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('grid').style.display = 'grid';
