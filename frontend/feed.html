@@ -169,7 +169,7 @@ async function load(){
       cachedPosts.forEach(p => allLoadedIds.add(String(p._id)));
       // ONCE PER DAY: if last fetch was less than 48 hours ago, stop here - no new fetch
       const lastFetch = Number(localStorage.getItem('feed_last_fetch') || 0);
-      if (lastFetch && (Date.now() - lastFetch) < 72*60*60*1000) {
+      if (lastFetch && (Date.now() - lastFetch) < 120*60*60*1000) {
         document.getElementById('scrollLoader').style.display = 'none';
         isLoading = false;
         return;

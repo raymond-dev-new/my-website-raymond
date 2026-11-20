@@ -935,7 +935,7 @@
       skipFreshFetch = false;
     } else {
       const lastFetch = Number(localStorage.getItem('profile_last_fetch_' + profileId) || 0);
-      if (lastFetch && (Date.now() - lastFetch) < 24*60*60*1000) {
+      if (lastFetch && (Date.now() - lastFetch) < 76*60*60*1000) {
         skipFreshFetch = true;
       }
     }

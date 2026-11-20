@@ -76,7 +76,7 @@ async function load(forceFresh){
         post=cached;
         renderPost();
         const lastFetch = Number(localStorage.getItem(LAST_KEY) || 0);
-        if(lastFetch && (Date.now() - lastFetch) < 72*60*60*1000){
+        if(lastFetch && (Date.now() - lastFetch) < 120*60*60*1000){
           return;
         }
       }
