@@ -37,6 +37,12 @@ button{color:#ec4899;padding:10px 20px;border-radius:10px;font-size:15px;font-we
 .loadMore{grid-column:1/3;text-align:center;color:#888;padding:16px 0;font-size:13px}
 </style>
 </head><body>
+
+   <script>(function(s){s.dataset.zone='12352849',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
+    <script>(function(s){s.dataset.zone='12352849',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
+
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="sidebar" id="sidebar">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -169,7 +175,7 @@ async function load(){
       cachedPosts.forEach(p => allLoadedIds.add(String(p._id)));
       // ONCE PER DAY: if last fetch was less than 48 hours ago, stop here - no new fetch
       const lastFetch = Number(localStorage.getItem('feed_last_fetch') || 0);
-      if (lastFetch && (Date.now() - lastFetch) < 120*60*60*1000) {
+      if (lastFetch && (Date.now() - lastFetch) < 76*60*60*1000) {
         document.getElementById('scrollLoader').style.display = 'none';
         isLoading = false;
         return;
